@@ -1,0 +1,12 @@
+{
+  "name": "noctf",
+  "version": "0.1.0",
+  "description": "noctf monorepo",
+  "main": "index.js",
+  "repository": "https://github.com/DownUnderCTF/noctf",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "pkg/*/"
+  ]
+}
