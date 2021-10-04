@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { createHash } from 'crypto';
 import {
   AuthLoginRequest, AuthLoginRequestType, AuthRegisterRequest, AuthRegisterRequestType,
   AuthVerifyRequest, AuthVerifyRequestType,
@@ -10,6 +11,7 @@ import {
   DefaultResponse, DefaultResponseType,
 } from '../../schemas/responses';
 import services from '../../services';
+import { ipKeyGenerator } from '../../util/ratelimit';
 
 export default async function register(fastify: FastifyInstance) {
   fastify.get<{ Reply: AuthJWKSResponseType }>(
@@ -44,13 +46,15 @@ export default async function register(fastify: FastifyInstance) {
       config: {
         permission: 'auth.public.login',
         rateLimit: {
-          max: 20,
+          max: 10,
           timeWindow: '1 minute',
+          keyGenerator: ipKeyGenerator,
         },
       },
       handler: async (request, reply) => {
+        const sid = createHash('sha256').update('100').digest();
         reply.send({
-          token: await services.authToken.generate('default', '1', '100'),
+          token: await services.authToken.generate('default', [], '1', sid),
         });
       },
     },
@@ -70,8 +74,9 @@ export default async function register(fastify: FastifyInstance) {
       config: {
         permission: 'auth.public.register',
         rateLimit: {
-          max: 8,
+          max: 5,
           timeWindow: '1 minute',
+          keyGenerator: ipKeyGenerator,
         },
       },
       handler: async (request, reply) => {
@@ -93,10 +98,16 @@ export default async function register(fastify: FastifyInstance) {
       },
       config: {
         permission: 'auth.public.verify',
+        rateLimit: {
+          max: 5,
+          timeWindow: '1 minute',
+          keyGenerator: ipKeyGenerator,
+        }
       },
       handler: async (request, reply) => {
+        const sid = createHash('sha256').update('100').digest();
         reply.code(200).send({
-          token: await services.authToken.generate('default', '1', '100'),
+          token: await services.authToken.generate('default', [], '1', sid),
         });
       },
     },

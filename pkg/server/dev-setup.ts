@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const SECRETS_DIR = '../../data/secrets/token-signature';
-const TRUNCATE_HASH_LENGTH = 18;
+const KID_LENGTH = 16;
 
 const generateSigningKey = async (path: string) => {
   const { privateKey } = await generateKeyPair('EdDSA', { crv: 'Ed25519' });
@@ -13,7 +13,7 @@ const generateSigningKey = async (path: string) => {
   jwk.kid = createHash('sha256')
     .update(Math.floor(Date.now() / 1000).toString() + jwk.x)
     .digest()
-    .slice(0, TRUNCATE_HASH_LENGTH)
+    .slice(0, KID_LENGTH)
     .toString('base64url');
   
   fs.writeFileSync(path, JSON.stringify(jwk));

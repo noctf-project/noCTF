@@ -1,6 +1,6 @@
 import { RouteHandler } from 'fastify';
 import services from '../services';
-import { AuthTokenServiceError } from '../services/auth_token';
+import AuthTokenService, { AuthTokenServiceError } from '../services/auth_token';
 import { ERROR_INVALID_CREDENTIALS, ERROR_UNAUTHORIZED } from '../util/constants';
 
 const pbacHook: RouteHandler = async (request, reply) => {
@@ -39,7 +39,9 @@ const pbacHook: RouteHandler = async (request, reply) => {
       reply.code(401).send({
         error: e.message,
       });
+      return;
     }
+    throw e;
   }
 
   // Always allow this permission

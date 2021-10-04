@@ -7,6 +7,7 @@ import { NODE_ENV } from './config';
 import logger from './util/logger';
 import { ERROR_INTERNAL_SERVER_ERROR } from './util/constants';
 import pbacHook from './hooks/pbac';
+import { userKeyGenerator } from './util/ratelimit';
 
 let server: FastifyInstance;
 
@@ -45,14 +46,7 @@ export const init = async () => {
   server.register(fastifyRateLimit, {
     max: 100,
     timeWindow: '1 minute',
-    keyGenerator: (request) => (
-      /* eslint-disable prefer-template */
-      request.auth
-        ? `rl_u${request.auth.userId}`
-        : 'rl_i' + (request.headers['x-real-ip']?.toString()
-        || request.headers['x-forwarded-for']?.toString()
-        || request.ip)
-    ),
+    keyGenerator: userKeyGenerator,
   });
 
   server.register(Routes);

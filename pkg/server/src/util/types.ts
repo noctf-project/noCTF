@@ -10,11 +10,13 @@ export type AuthSigningKey = {
 };
 
 export type AuthToken = {
-  clientId: string;
-  userId: string;
-  expires: number;
+  sub: string;
+  uid: string;
+  iat: number;
+  exp: number;
+  sid: Uint8Array;
+  aud: string;
   scope: string[];
-  session: string;
 };
 
 export interface Request extends RequestGenericInterface {

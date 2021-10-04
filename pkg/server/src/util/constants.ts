@@ -1,5 +1,7 @@
 export const ERROR_UNAUTHORIZED = 'Unauthorized';
 export const ERROR_FORBIDDEN = 'Forbidden';
+export const ERROR_EXPIRED = 'Expired';
 export const ERROR_INVALID_CREDENTIALS = 'Invalid credentials';
 export const ERROR_INTERNAL_SERVER_ERROR = 'An unknown error occurred';
+export const ERROR_INVALID_TOKEN = 'Invalid token';
 export const ERROR_INVALID_TOKEN_SIGURATURE = 'Invalid token signature';

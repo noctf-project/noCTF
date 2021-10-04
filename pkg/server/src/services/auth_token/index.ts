@@ -1,16 +1,18 @@
 import * as path from 'path';
-import { createHash } from 'crypto';
-import { SignJWT } from 'jose/jwt/sign';
-import { jwtVerify } from 'jose/jwt/verify';
+import cbor from 'cbor';
+import { CompactSign } from 'jose/jws/compact/sign';
+import { compactVerify } from 'jose/jws/compact/verify';
 import { importJWK } from 'jose/key/import';
-import { JWSInvalid } from 'jose/util/errors';
+import { JWSInvalid, JWTExpired } from 'jose/util/errors';
 import { JWK, JWSHeaderParameters, KeyLike } from 'jose/types';
 import SecretsService, { QUALIFIER_TOKEN_SIGNATURE } from '../secrets';
-import { ERROR_INVALID_TOKEN_SIGURATURE } from '../../util/constants';
+import {
+  ERROR_EXPIRED, ERROR_INVALID_TOKEN, ERROR_INVALID_TOKEN_SIGURATURE
+} from '../../util/constants';
 import { AuthSigningKey, AuthToken } from '../../util/types';
+import logger from '../../util/logger';
 
 // Truncate hash values
-const TRUNCATE_HASH_LENGTH = 18;
 const KEY_PREFERENCES = ['primary', 'secondary'];
 
 export class AuthTokenServiceError extends Error {
@@ -22,19 +24,21 @@ export default class AuthTokenService {
   constructor(private secrets: SecretsService, private hostname: string, private expiry: number) {
   }
 
-  public async generate(clientId: string, userId: string, sessionId: string): Promise<string> {
+  public async generate(sub: string, scope: string[], uid: string, sid: Uint8Array): Promise<string> {
     const key = (await this.getValidKeys())[0];
-    return new SignJWT({ cid: clientId, scope: ['all'] })
+    const ctime = Math.floor(Date.now() / 1000);
+
+    const token = {
+      aud: this.hostname,
+      sub,
+      uid,
+      sid,
+      iat: ctime,
+      exp: ctime + this.expiry,
+      scope,
+    };
+    return await new CompactSign(cbor.encode(token))
       .setProtectedHeader({ alg: 'EdDSA', kid: key.publicJWK.kid })
-      .setIssuedAt()
-      .setSubject(userId)
-      .setAudience(this.hostname)
-      .setExpirationTime(Math.floor(Date.now() / 1000) + this.expiry)
-      .setJti(createHash('sha256')
-        .update(sessionId)
-        .digest()
-        .slice(0, TRUNCATE_HASH_LENGTH)
-        .toString('base64url'))
       .sign(key.privateKey);
   }
 
@@ -44,24 +48,57 @@ export default class AuthTokenService {
 
   public async parse(token: string): Promise<AuthToken> {
     try {
-      const parsed = await jwtVerify(token, this.getPublicKeyForJWT.bind(this), {
-        audience: this.hostname,
-        algorithms: ['EdDSA'],
-      });
+      const payload = await compactVerify(token, this.getPublicKeyForJWT.bind(this));
+      try {
+        const data = cbor.decode(payload.payload);
+        return this.validateClaims(data as unknown as AuthToken);
+      } catch (e) {
+        if (e instanceof AuthTokenServiceError) {
+          throw e;
+        }
 
-      return {
-        clientId: parsed.payload.cid as string || '',
-        userId: parsed.payload.sub as string || '',
-        scope: parsed.payload.scope as string[] || [],
-        session: parsed.payload.jti as string || '',
-        expires: parsed.payload.exp || 0,
-      };
+        logger.error('cbor decoding error', e);
+        throw new AuthTokenServiceError('token decode error');
+      }
+
+      return {} as unknown as AuthToken;
     } catch (e) {
       if (e instanceof JWSInvalid) {
         throw new AuthTokenServiceError(ERROR_INVALID_TOKEN_SIGURATURE);
+      } else if (e instanceof JWTExpired) {
+        throw new AuthTokenServiceError(ERROR_EXPIRED);
       }
       throw e;
     }
+  }
+
+  private validateClaims(token: AuthToken): AuthToken {
+    const ctime = Math.floor(Date.now() / 1000);
+
+    if (token.aud !== this.hostname) {
+      throw new AuthTokenServiceError(ERROR_INVALID_TOKEN);
+    }
+    
+    if (ctime < token.iat) {
+      logger.error('token is issued before current time', token);
+      throw new AuthTokenServiceError(ERROR_EXPIRED);
+    }
+
+    if (ctime > token.exp) {
+      throw new AuthTokenServiceError(ERROR_EXPIRED);
+    }
+    
+    if (!token.sid || !token.sub || !token.uid) {
+      logger.error('invalid token format', token);
+      throw new AuthTokenServiceError(ERROR_INVALID_TOKEN);
+    }
+    
+    // add scope if its missing
+    if (!token.scope) {
+      token.scope = [];
+    }
+
+    return token;
   }
 
   private async getPublicKeyForJWT(header: JWSHeaderParameters): Promise<KeyLike> {
