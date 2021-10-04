@@ -102,7 +102,7 @@ export default async function register(fastify: FastifyInstance) {
           max: 5,
           timeWindow: '1 minute',
           keyGenerator: ipKeyGenerator,
-        }
+        },
       },
       handler: async (request, reply) => {
         const sid = createHash('sha256').update('100').digest();

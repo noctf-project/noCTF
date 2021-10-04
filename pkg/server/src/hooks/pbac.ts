@@ -1,7 +1,9 @@
 import { RouteHandler } from 'fastify';
 import services from '../services';
-import AuthTokenService, { AuthTokenServiceError } from '../services/auth_token';
+import { AuthTokenServiceError } from '../services/auth_token';
 import { ERROR_INVALID_CREDENTIALS, ERROR_UNAUTHORIZED } from '../util/constants';
+
+const MAX_TOKEN_LENGTH = 768;
 
 const pbacHook: RouteHandler = async (request, reply) => {
   // skip if we can't find a pbac config value
@@ -33,7 +35,15 @@ const pbacHook: RouteHandler = async (request, reply) => {
   }
 
   try {
-    request.auth = await services.authToken.parse(token[1]);
+    if (token[1].length > MAX_TOKEN_LENGTH) {
+      reply.code(401).send({
+        error: ERROR_UNAUTHORIZED,
+      });
+      return;
+    }
+
+    // normalise token
+    request.auth = await services.authToken.parse(token[1].replace(/=/g, ''));
   } catch (e) {
     if (e instanceof AuthTokenServiceError) {
       reply.code(401).send({

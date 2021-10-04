@@ -5,3 +5,4 @@ export const ERROR_INVALID_CREDENTIALS = 'Invalid credentials';
 export const ERROR_INTERNAL_SERVER_ERROR = 'An unknown error occurred';
 export const ERROR_INVALID_TOKEN = 'Invalid token';
 export const ERROR_INVALID_TOKEN_SIGURATURE = 'Invalid token signature';
+export const ERROR_UNKNOWN_AUTH = 'Unknown auth error';

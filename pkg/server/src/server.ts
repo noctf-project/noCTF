@@ -29,6 +29,10 @@ export const init = async () => {
       reply.status(400).send({ error: error.message });
       return;
     }
+    if (error.statusCode) {
+      reply.status(error.statusCode).send({ error: error.message });
+      return;
+    }
 
     request.log.error(error);
 
@@ -44,7 +48,7 @@ export const init = async () => {
 
   // Mount rate limiting hook
   server.register(fastifyRateLimit, {
-    max: 100,
+    max: 80,
     timeWindow: '1 minute',
     keyGenerator: userKeyGenerator,
   });

@@ -6,7 +6,7 @@ const start = async () => {
   const server = await init();
 
   try {
-    await server.listen(PORT, '0.0.0.0');
+    await server.listen(PORT, '::');
   } catch (err) {
     server.log.error(err);
     process.exit(1);
