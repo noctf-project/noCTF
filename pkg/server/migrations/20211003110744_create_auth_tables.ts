@@ -1,4 +1,3 @@
-import { table } from "console";
 import { Knex } from "knex";
 
 
@@ -6,6 +5,7 @@ export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('users', (table) => {
     table.increments('id').primary();
     table.dateTime('created_at').notNullable().defaultTo(knex.fn.now());
+    table.boolean('banned').notNullable().defaultTo(false);
     table.string('email', 256).unique().notNullable();
     table.string('name', 48).unique().notNullable();
     table.string('password');
@@ -15,7 +15,8 @@ export async function up(knex: Knex): Promise<void> {
     table.string('session_hash').primary();
     table.integer('user_id').references('id').inTable('users');
     table.dateTime('created_at').notNullable().defaultTo(knex.fn.now());
-    table.integer('expires_at').notNullable();
+    table.dateTime('expires_at');
+    table.dateTime('revoked_at');
     table.string('scope').notNullable();
     table.string('client_id', 64).notNullable();
   });

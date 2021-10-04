@@ -17,9 +17,8 @@ import { TOKEN_EXPIRY } from '../../config';
 
 // Truncate hash values
 const KEY_PREFERENCES = ['primary', 'secondary'];
-const TOKEN_CACHE_TTL = 20;
+const TOKEN_CACHE_CHECK = 60;
 const CACHE_HIT_VALID = 1;
-const CACHE_HIT_INVALID = 2;
 
 export class AuthTokenServiceError extends Error {
 }
@@ -29,7 +28,7 @@ export default class AuthTokenService {
 
   private tokenCache = new NodeCache({
     stdTTL: TOKEN_EXPIRY,
-    checkperiod: TOKEN_CACHE_TTL,
+    checkperiod: TOKEN_CACHE_CHECK,
     maxKeys: 10000,
   });
 
@@ -88,14 +87,8 @@ export default class AuthTokenService {
       return claims;
     } catch (e) {
       if (e instanceof JWSInvalid || e instanceof JWSSignatureVerificationFailed) {
-        this.tokenCache.set(
-          hash,
-          [CACHE_HIT_INVALID, ERROR_INVALID_TOKEN_SIGURATURE],
-          TOKEN_CACHE_TTL,
-        );
         throw new AuthTokenServiceError(ERROR_INVALID_TOKEN_SIGURATURE);
       } else if (e instanceof AuthTokenServiceError) {
-        this.tokenCache.set(hash, [CACHE_HIT_INVALID, e.message], TOKEN_CACHE_TTL);
         throw e;
       }
       throw e;
