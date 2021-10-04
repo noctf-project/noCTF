@@ -1,17 +1,20 @@
 import fastify, { FastifyInstance } from 'fastify';
 import { fastifyRequestContextPlugin } from 'fastify-request-context';
 import { nanoid } from 'nanoid';
-import * as strings from './strings';
+import fastifyRateLimit from 'fastify-rate-limit';
 import Routes from './routes';
 import { NODE_ENV } from './config';
+import logger from './util/logger';
+import { ERROR_INTERNAL_SERVER_ERROR } from './util/constants';
+import pbacHook from './hooks/pbac';
 
-export let server: FastifyInstance;
+let server: FastifyInstance;
 
 export const init = async () => {
   if (server) return server;
-
   server = fastify({
-    logger: true,
+    logger,
+    trustProxy: true,
     genReqId: (req) => req.headers['x-request-id'] as string || nanoid(),
   });
 
@@ -29,9 +32,27 @@ export const init = async () => {
     request.log.error(error);
 
     reply.status(500).send({
-      error: strings.ERROR_INTERNAL_SERVER_ERROR,
+      error: ERROR_INTERNAL_SERVER_ERROR,
       trace: NODE_ENV === 'development' ? error.stack : undefined,
     });
+  });
+
+  // Mount auth hook
+  server.decorateRequest('auth', null);
+  server.addHook('onRequest', pbacHook);
+
+  // Mount rate limiting hook
+  server.register(fastifyRateLimit, {
+    max: 100,
+    timeWindow: '1 minute',
+    keyGenerator: (request) => (
+      /* eslint-disable prefer-template */
+      request.auth
+        ? `rl_u${request.auth.userId}`
+        : 'rl_i' + (request.headers['x-real-ip']?.toString()
+        || request.headers['x-forwarded-for']?.toString()
+        || request.ip)
+    ),
   });
 
   server.register(Routes);

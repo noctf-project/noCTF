@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import { server } from '../../server';
+import logger from '../../util/logger';
 
 export const QUALIFIER_TOKEN_SIGNATURE = 'token-signature';
 
@@ -10,17 +10,12 @@ export default class SecretsService {
   constructor(private root: string, private watch: boolean) {
   }
 
-  getSecret(qualifier: string, key: string, newerThan = 0): Promise<[number, string] | null> {
-    const fullPath = path.join(qualifier, key);
-    return this.getForPath(fullPath, newerThan);
-  }
-
-  async getForPath(fullPath: string, newerThan = 0): Promise<[number, string] | null> {
+  async getSecret(fullPath: string, newerThan = 0): Promise<[number, string] | null> {
     try {
       if (!this.cache[fullPath]) {
         this.cache[fullPath] = [Date.now(), await this.retrieveFromFilesystem(fullPath)];
         if (this.watch) {
-          server.log.info(`creating watcher for secret ${fullPath}`);
+          logger.info(`creating watcher for secret ${fullPath}`);
           this.createWatcher(
             fullPath,
             async () => {
@@ -39,7 +34,7 @@ export default class SecretsService {
   private createWatcher(fullPath: string, fn: () => void): void {
     fs.watch(path.join(this.root, fullPath), (event) => {
       if (event === 'change') {
-        server.log.info(`reloading secret ${fullPath}`);
+        logger.info(`reloading secret ${fullPath}`);
         fn();
       }
     });

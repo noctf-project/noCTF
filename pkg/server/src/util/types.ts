@@ -1,6 +1,7 @@
+import { RequestGenericInterface } from 'fastify';
 import { JWK, KeyLike } from 'jose/types';
 
-export type Key = {
+export type AuthSigningKey = {
   version: number;
   publicKey: KeyLike;
   publicJWK: JWK;
@@ -15,3 +16,7 @@ export type AuthToken = {
   scope: string[];
   session: string;
 };
+
+export interface Request extends RequestGenericInterface {
+  auth?: AuthToken;
+}

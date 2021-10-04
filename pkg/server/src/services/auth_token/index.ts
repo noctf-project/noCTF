@@ -1,27 +1,29 @@
+import * as path from 'path';
+import { createHash } from 'crypto';
 import { SignJWT } from 'jose/jwt/sign';
 import { jwtVerify } from 'jose/jwt/verify';
-import { createHash } from 'crypto';
 import { importJWK } from 'jose/key/import';
+import { JWSInvalid } from 'jose/util/errors';
 import { JWK, JWSHeaderParameters, KeyLike } from 'jose/types';
 import SecretsService, { QUALIFIER_TOKEN_SIGNATURE } from '../secrets';
-import { AuthToken, Key } from './types';
+import { ERROR_INVALID_TOKEN_SIGURATURE } from '../../util/constants';
+import { AuthSigningKey, AuthToken } from '../../util/types';
 
 // Truncate hash values
 const TRUNCATE_HASH_LENGTH = 18;
+const KEY_PREFERENCES = ['primary', 'secondary'];
 
 export class AuthTokenServiceError extends Error {
 }
 
 export default class AuthTokenService {
-  private primary?: Key;
-
-  private secondary?: Key;
+  private cache: { [name: string]: AuthSigningKey } = {};
 
   constructor(private secrets: SecretsService, private hostname: string, private expiry: number) {
   }
 
-  public async generate(clientId: string, userId: string, sessionId: string): Promise<String> {
-    const key = await this.getPrimaryKey();
+  public async generate(clientId: string, userId: string, sessionId: string): Promise<string> {
+    const key = (await this.getValidKeys())[0];
     return new SignJWT({ cid: clientId, scope: ['all'] })
       .setProtectedHeader({ alg: 'EdDSA', kid: key.publicJWK.kid })
       .setIssuedAt()
@@ -37,87 +39,64 @@ export default class AuthTokenService {
   }
 
   public async getPublicJWKs(): Promise<JWK[]> {
-    return [
-      (await this.getPrimaryKey()).publicJWK,
-      (await this.getSecondaryKey()).publicJWK,
-    ];
+    return (await this.getValidKeys()).map(({ publicJWK }) => publicJWK);
   }
 
   public async parse(token: string): Promise<AuthToken> {
-    const parsed = await jwtVerify(token, this.getJWKForJWT.bind(this), {
-      audience: this.hostname,
-      algorithms: ['EdDSA'],
-    });
+    try {
+      const parsed = await jwtVerify(token, this.getPublicKeyForJWT.bind(this), {
+        audience: this.hostname,
+        algorithms: ['EdDSA'],
+      });
 
-    return {
-      clientId: parsed.payload.cid as string || '',
-      userId: parsed.payload.sub as string || '',
-      scope: parsed.payload.scope as string[] || [],
-      session: parsed.payload.jti as string || '',
-      expires: parsed.payload.exp || 0,
-    };
-  }
-
-  private async getJWKForJWT(header: JWSHeaderParameters): Promise<KeyLike> {
-    const primaryKey = await this.getPrimaryKey();
-    if (primaryKey.publicJWK.kid === header.kid) {
-      return primaryKey.publicKey;
+      return {
+        clientId: parsed.payload.cid as string || '',
+        userId: parsed.payload.sub as string || '',
+        scope: parsed.payload.scope as string[] || [],
+        session: parsed.payload.jti as string || '',
+        expires: parsed.payload.exp || 0,
+      };
+    } catch (e) {
+      if (e instanceof JWSInvalid) {
+        throw new AuthTokenServiceError(ERROR_INVALID_TOKEN_SIGURATURE);
+      }
+      throw e;
     }
-
-    const secondaryKey = await this.getSecondaryKey();
-    if (secondaryKey.publicJWK.kid === header.kid) {
-      return secondaryKey.publicKey;
-    }
-
-    throw new AuthTokenServiceError('unable to find a valid key');
   }
 
-  private async getPrimaryKey(): Promise<Key> {
+  private async getPublicKeyForJWT(header: JWSHeaderParameters): Promise<KeyLike> {
+    const match = (await this.getValidKeys())
+      .find(({ publicJWK: { kid } }) => kid === header.kid);
+
+    if (!match) throw new AuthTokenServiceError('signing key does not exist');
+
+    return match.publicKey;
+  }
+
+  private async getKey(name: string): Promise<AuthSigningKey> {
     const secret = await this.secrets.getSecret(
-      QUALIFIER_TOKEN_SIGNATURE,
-      'primary',
-      this.primary?.version || 0,
+      path.join(QUALIFIER_TOKEN_SIGNATURE, name),
+      this.cache[name]?.version,
     );
-    if (!secret && this.primary) return this.primary;
-    this.primary = await this.deserializeEd25519Key('primary', this.primary?.version || 0);
-    return this.primary;
-  }
 
-  private async getSecondaryKey(): Promise<Key> {
-    const secret = await this.secrets.getSecret(
-      QUALIFIER_TOKEN_SIGNATURE,
-      'secondary',
-      this.secondary?.version,
-    );
-    if (!secret && this.secondary) return this.secondary;
-    this.secondary = await this.deserializeEd25519Key('secondary', this.secondary?.version || 0);
-    return this.secondary;
-  }
+    if (!secret && !this.cache[name]) { throw new AuthTokenServiceError(`no ${name} key found in secrets`); }
+    if (!secret && this.cache[name]) return this.cache[name];
 
-  private async deserializeEd25519Key(name: string, version: number): Promise<Key> {
-    const secret = await this.secrets.getSecret(QUALIFIER_TOKEN_SIGNATURE, name, version);
-    if (!secret) throw new AuthTokenServiceError(`no ${name} key found in secrets`);
-    const privateJWK = JSON.parse(secret[1]);
-    const publicJWK = AuthTokenService.getPublicEd25519Key(privateJWK);
+    const privateJWK: JWK = JSON.parse(secret ? secret[1] : '{}');
+    const publicJWK: JWK = { ...privateJWK, d: undefined };
 
-    return {
-      version: secret[0],
+    this.cache[name] = {
+      version: secret ? secret[0] : 0,
       publicKey: await importJWK(publicJWK, 'EdDSA'),
-      publicJWK,
       privateKey: await importJWK(privateJWK, 'EdDSA'),
+      publicJWK,
       privateJWK,
     };
+
+    return this.cache[name];
   }
 
-  private static getPublicEd25519Key(privateKey: JWK): JWK {
-    return {
-      ...privateKey,
-      d: undefined,
-      kid: createHash('sha256')
-        .update(privateKey.x || '')
-        .digest()
-        .slice(0, TRUNCATE_HASH_LENGTH)
-        .toString('base64url'),
-    };
+  private getValidKeys(): Promise<AuthSigningKey[]> {
+    return Promise.all(KEY_PREFERENCES.map((name) => this.getKey(name)));
   }
 }

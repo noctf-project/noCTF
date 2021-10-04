@@ -45,7 +45,7 @@ export async function up(knex: Knex): Promise<void> {
   await knex('role_permissions').insert([
     { role_id: publicRoleId, permission: 'auth.public.login' },
     { role_id: publicRoleId, permission: 'auth.public.register' },
-    { role_id: publicRoleId, permission: 'auth.public.reset_password' },
+    { role_id: publicRoleId, permission: 'auth.public.verify' },
     { role_id: defaultRoleId, permission: 'auth.self.*' }
   ]);
 }
