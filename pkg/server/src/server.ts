@@ -7,7 +7,8 @@ import { NODE_ENV } from './config';
 import logger from './util/logger';
 import { ERROR_INTERNAL_SERVER_ERROR } from './util/constants';
 import pbacHook from './hooks/pbac';
-import { userKeyGenerator } from './util/ratelimit';
+import { clientUserKeyGenerator } from './util/ratelimit';
+import authHook from './hooks/auth';
 
 let server: FastifyInstance;
 
@@ -44,13 +45,14 @@ export const init = async () => {
 
   // Mount auth hook
   server.decorateRequest('auth', null);
+  server.addHook('onRequest', authHook);
   server.addHook('onRequest', pbacHook);
 
   // Mount rate limiting hook
   server.register(fastifyRateLimit, {
     max: 80,
     timeWindow: '1 minute',
-    keyGenerator: userKeyGenerator,
+    keyGenerator: clientUserKeyGenerator,
   });
 
   server.register(Routes);

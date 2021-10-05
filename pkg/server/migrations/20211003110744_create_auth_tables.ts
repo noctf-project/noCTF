@@ -11,6 +11,15 @@ export async function up(knex: Knex): Promise<void> {
     table.string('password');
   });
 
+  await knex.schema.createTable('clients', (table) => {
+    table.increments('id').primary();
+    table.string('name', 48).notNullable();
+    table.string('description').notNullable();
+    table.string('oauth_client_id').notNullable().unique();
+    table.string('oauth_client_secret').notNullable();
+    table.boolean('enabled').notNullable();
+  });
+
   await knex.schema.createTable('user_sessions', (table) => {
     table.string('session_hash').primary();
     table.integer('user_id').references('id').inTable('users');
@@ -18,7 +27,7 @@ export async function up(knex: Knex): Promise<void> {
     table.dateTime('expires_at');
     table.dateTime('revoked_at');
     table.string('scope').notNullable();
-    table.string('client_id', 64).notNullable();
+    table.integer('client_id').notNullable().references('id').inTable('clients');
   });
 
   await knex.schema.createTable('roles', (table) => {

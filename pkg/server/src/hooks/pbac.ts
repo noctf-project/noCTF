@@ -11,7 +11,7 @@ const pbacHook: RouteHandler = async (request, reply) => {
     return;
   }
 
-  if (!request.headers.authorization) {
+  if (!request.auth) {
     // use public permissions
 
     // Always allow this permission
@@ -24,34 +24,6 @@ const pbacHook: RouteHandler = async (request, reply) => {
       error: ERROR_UNAUTHORIZED,
     });
     return;
-  }
-
-  const token = request.headers.authorization?.match(/^Bearer (.*)$/);
-  if (!token) {
-    reply.code(401).send({
-      error: ERROR_INVALID_CREDENTIALS,
-    });
-    return;
-  }
-
-  try {
-    if (token[1].length > MAX_TOKEN_LENGTH) {
-      reply.code(401).send({
-        error: ERROR_UNAUTHORIZED,
-      });
-      return;
-    }
-
-    // normalise token
-    request.auth = await services.authToken.parse(token[1].replace(/=/g, ''));
-  } catch (e) {
-    if (e instanceof AuthTokenServiceError) {
-      reply.code(401).send({
-        error: e.message,
-      });
-      return;
-    }
-    throw e;
   }
 
   // Always allow this permission

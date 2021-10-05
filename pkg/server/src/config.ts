@@ -12,7 +12,8 @@ declare const process : {
     NOCTF_DATABASE_CONNECTION_NAME: string,
     NOCTF_DATABASE_CONNECTION_HOST: string,
     NOCTF_DATABASE_CONNECTION_USERNAME: string,
-    NOCTF_DATABASE_CONNECTION_PASSWORD: string
+    NOCTF_DATABASE_CONNECTION_PASSWORD: string,
+    NOCTF_REDIS_URL: string,
   }
 };
 
@@ -30,7 +31,6 @@ export const SECRETS_WATCH = (
 );
 
 export const DATABASE_CLIENT = process.env.NOCTF_DATABASE_CLIENT || 'sqlite3';
-
 export const DATABASE_CONNECTION = {
   filename: process.env.NOCTF_DATABASE_CONNECTION_FILENAME || './data/noctf.db',
   database: process.env.NOCTF_DATABASE_CONNECTION_NAME,
@@ -38,3 +38,5 @@ export const DATABASE_CONNECTION = {
   username: process.env.NOCTF_DATABASE_CONNECTION_USERNAME,
   password: process.env.NOCTF_DATABASE_CONNECTION_PASSWORD,
 };
+
+export const REDIS_URL = process.env.NOCTF_REDIS_URL || 'redis://127.0.0.1:6379/';

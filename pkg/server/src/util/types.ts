@@ -10,7 +10,7 @@ export type AuthSigningKey = {
 };
 
 export type AuthToken = {
-  sub: string;
+  cid: string;
   uid: string;
   iat: number;
   exp: number;

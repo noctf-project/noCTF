@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import {
   AuthLoginRequest, AuthLoginRequestType, AuthRegisterRequest, AuthRegisterRequestType,
   AuthVerifyRequest, AuthVerifyRequestType,
@@ -12,6 +12,7 @@ import {
 } from '../../schemas/responses';
 import services from '../../services';
 import { ipKeyGenerator } from '../../util/ratelimit';
+import { TOKEN_EXPIRY } from '../../config';
 
 export default async function register(fastify: FastifyInstance) {
   fastify.get<{ Reply: AuthJWKSResponseType }>(
@@ -52,9 +53,12 @@ export default async function register(fastify: FastifyInstance) {
         },
       },
       handler: async (request, reply) => {
-        const sid = createHash('sha256').update('100').digest();
+        const refresh = (await randomBytes(48)).toString('base64url');
+        const sid = createHash('sha256').update(refresh).digest();
         reply.send({
-          token: await services.authToken.generate('default', [], '1', sid),
+          access_token: await services.authToken.generate('default', [], '1', sid),
+          refresh_token: refresh,
+          expires: TOKEN_EXPIRY,
         });
       },
     },
@@ -105,9 +109,12 @@ export default async function register(fastify: FastifyInstance) {
         },
       },
       handler: async (request, reply) => {
-        const sid = createHash('sha256').update('100').digest();
-        reply.code(200).send({
-          token: await services.authToken.generate('default', [], '1', sid),
+        const refresh = (await randomBytes(48)).toString('base64url');
+        const sid = createHash('sha256').update(refresh).digest();
+        reply.send({
+          access_token: await services.authToken.generate('default', [], '1', sid),
+          refresh_token: refresh,
+          expires: TOKEN_EXPIRY,
         });
       },
     },
@@ -146,6 +153,9 @@ export default async function register(fastify: FastifyInstance) {
         permission: 'auth.self.session',
       },
       handler: async (request, reply) => {
+        if (request.auth) {
+          services.authToken.revoke(request.auth.sid);
+        }
         reply.code(200).send({});
       },
     },

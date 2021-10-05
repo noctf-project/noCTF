@@ -8,7 +8,9 @@ export type DefaultResponseType = Static<typeof DefaultResponse>;
 
 export const AuthLoginResponse = Type.Object({
   ...DefaultResponse.properties,
-  token: Type.String(),
+  access_token: Type.String(),
+  refresh_token: Type.String(),
+  expires: Type.Number()
 });
 export type AuthLoginResponseType = Static<typeof AuthLoginResponse>;
 

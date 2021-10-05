@@ -8,7 +8,7 @@ export const ipKeyGenerator = (request: FastifyRequest) => {
   || request.headers['x-forwarded-for']?.toString()
   || request.ip);
 
-  let key = `i{ip}`;
+  let key = 'i{ip}';
 
   // Convert ipv4 into more efficient hex
   try {
@@ -28,6 +28,6 @@ export const ipKeyGenerator = (request: FastifyRequest) => {
   return key;
 };
 
-export const userKeyGenerator = (request: FastifyRequest) => (
-  request.auth ? `u${request.auth.uid}` : ipKeyGenerator(request)
+export const clientUserKeyGenerator = (request: FastifyRequest) => (
+  request.auth ? `c${request.auth.cid}u${request.auth.uid}` : ipKeyGenerator(request)
 );
