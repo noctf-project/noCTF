@@ -4,7 +4,7 @@ import { AuthTokenServiceError } from '../services/auth_token';
 
 const MAX_TOKEN_LENGTH = 768;
 
-const authHook: RouteHandler = async (request, reply) => {
+const authHook: RouteHandler = async (request) => {
   // skip if we can't find a pbac config value
   if (!request.headers.authorization) {
     return;

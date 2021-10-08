@@ -1,16 +1,13 @@
 import {
-  DATABASE_CLIENT, DATABASE_CONNECTION, HOSTNAME, REDIS_URL,
-  SECRETS_DIR, SECRETS_WATCH, TOKEN_EXPIRY,
+  DATABASE_CLIENT, DATABASE_CONNECTION,
+  HOSTNAME, REDIS_URL, TOKEN_EXPIRY,
 } from '../config';
 import AuthTokenService from './auth_token';
 import CacheService from './cache';
 import DatabaseService from './database';
-import SecretsService from './secrets';
 
 // Singleton class which exposes services
 export class Services {
-  private _secrets: SecretsService;
-
   private _cache: CacheService;
 
   private _authToken: AuthTokenService;
@@ -18,14 +15,9 @@ export class Services {
   private _database: DatabaseService;
 
   constructor() {
-    this._secrets = new SecretsService(SECRETS_DIR, SECRETS_WATCH);
     this._cache = new CacheService(REDIS_URL);
-    this._authToken = new AuthTokenService(this._secrets, this._cache, HOSTNAME, TOKEN_EXPIRY);
+    this._authToken = new AuthTokenService(this._cache, HOSTNAME, TOKEN_EXPIRY);
     this._database = new DatabaseService(DATABASE_CLIENT, DATABASE_CONNECTION);
-  }
-
-  get secrets() {
-    return this._secrets;
   }
 
   get cache() {

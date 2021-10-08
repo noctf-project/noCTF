@@ -2,7 +2,6 @@ import { RequestGenericInterface } from 'fastify';
 import { JWK, KeyLike } from 'jose/types';
 
 export type AuthSigningKey = {
-  version: number;
   publicKey: KeyLike;
   publicJWK: JWK;
   privateKey: KeyLike;

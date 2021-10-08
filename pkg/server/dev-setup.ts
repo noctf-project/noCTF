@@ -26,9 +26,9 @@ const main = async () => {
   });
 
   // generate the keys
-
-  await generateSigningKey(path.join(SECRETS_DIR, 'primary'));
-  await generateSigningKey(path.join(SECRETS_DIR, 'secondary'));
+  const primary = Math.floor(Date.now()/86400000) * 86400;
+  await generateSigningKey(path.join(SECRETS_DIR, primary.toString()));
+  await generateSigningKey(path.join(SECRETS_DIR, (primary - 86400).toString()));
 };
 
 

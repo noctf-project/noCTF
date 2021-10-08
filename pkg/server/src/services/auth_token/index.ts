@@ -1,5 +1,5 @@
-import * as path from 'path';
 import cbor from 'cbor';
+import * as path from 'path';
 import NodeCache from 'node-cache';
 import { CompactSign } from 'jose/jws/compact/sign';
 import { compactVerify } from 'jose/jws/compact/verify';
@@ -7,14 +7,12 @@ import { importJWK } from 'jose/key/import';
 import { JWSInvalid, JWSSignatureVerificationFailed } from 'jose/util/errors';
 import { JWK, JWSHeaderParameters, KeyLike } from 'jose/types';
 import { createHash } from 'crypto';
-import SecretsService, { QUALIFIER_TOKEN_SIGNATURE } from '../secrets';
 import { AuthSigningKey, AuthToken } from '../../util/types';
 import logger from '../../util/logger';
 import { TOKEN_EXPIRY } from '../../config';
 import CacheService from '../cache';
+import SecretRetriever from '../../util/secret_retriever';
 
-// Truncate hash values
-const KEY_PREFERENCES = ['primary', 'secondary'];
 const TOKEN_CACHE_TTL = 15;
 const TOKEN_CACHE_CHECK = 120;
 const TOKEN_MAX_KEYS = 10000;
@@ -26,8 +24,12 @@ const REVOKED_KEY = 'auth_revoked';
 export class AuthTokenServiceError extends Error {
 }
 
+const QUALIFIER = 'token-signature';
 export default class AuthTokenService {
-  private keyCache: { [name: string]: AuthSigningKey } = {};
+  private log = logger.child({ filename: path.basename(__filename) });
+  private keys = new SecretRetriever<AuthSigningKey>(QUALIFIER, {
+    cast: AuthTokenService.parseSecret,
+  });
 
   private tokenCache = new NodeCache({
     stdTTL: TOKEN_EXPIRY,
@@ -35,14 +37,24 @@ export default class AuthTokenService {
     maxKeys: TOKEN_MAX_KEYS,
   });
 
-  constructor(private secrets: SecretsService, private externalCache: CacheService,
+  constructor(private externalCache: CacheService,
     private hostname: string, private expiry: number) {
   }
 
   public async generate(cid: string, scope: string[],
     uid: string, sid: Uint8Array): Promise<string> {
+    const keys = await this.keys.getAll();
+    // Get the first suitable key (key with an id greater than the current time)
+    const version = Object.keys(keys)
+      .map(parseInt)
+      .filter((v) => !!v)
+      .sort((a, b) => b - a)
+      .find((id) => id <= Math.floor(Date.now()/1000));
+    if (!version) {
+      throw new AuthTokenServiceError('cannot find suitable signing key');
+    }
+    const key = keys[version];
 
-    const key = (await this.getValidKeys())[0];
     const ctime = Math.floor(Date.now() / 1000);
 
     const token: AuthToken = {
@@ -71,12 +83,13 @@ export default class AuthTokenService {
     await this.externalCache.setex(
       `${REVOKED_KEY}:${Buffer.from(sid).toString('base64url')}`,
       this.expiry + MAX_DRIFT,
-      '1'
+      '1',
     );
   }
 
   public async getPublicJWKs(): Promise<JWK[]> {
-    return (await this.getValidKeys()).map(({ publicJWK }) => publicJWK);
+    const keys = this.keys.getAll();
+    return Object.keys(keys).map((key) => keys[key].publicJWK);
   }
 
   public async parse(token: string): Promise<AuthToken> {
@@ -89,7 +102,7 @@ export default class AuthTokenService {
       // Token already validated
       const data = Buffer.from(token.split('.')[1], 'base64url');
       return this.validateClaims(data);
-    } else if (value === CACHE_HIT_REVOKED) {
+    } if (value === CACHE_HIT_REVOKED) {
       throw new AuthTokenServiceError('revoked');
     }
     throw new AuthTokenServiceError('unknown token error');
@@ -108,7 +121,7 @@ export default class AuthTokenService {
       this.tokenCache.set(
         hash,
         CACHE_HIT_VALID,
-        Math.min(claims.exp - ctime, TOKEN_CACHE_TTL)
+        Math.min(claims.exp - ctime, TOKEN_CACHE_TTL),
       );
       return claims;
     } catch (e) {
@@ -130,7 +143,7 @@ export default class AuthTokenService {
     }
 
     if (ctime < token.iat) {
-      logger.error({ token }, 'token is issued before current time');
+      this.log.error({ token }, 'token is issued before current time');
       throw new AuthTokenServiceError('expired');
     }
 
@@ -138,8 +151,8 @@ export default class AuthTokenService {
       throw new AuthTokenServiceError('expired');
     }
 
-    if (!token.sid || !token.sub || !token.uid) {
-      logger.error({ token }, 'invalid token format');
+    if (!token.sid || !token.cid || !token.uid) {
+      this.log.error({ token }, 'invalid token format');
       throw new AuthTokenServiceError('invalid token format');
     }
 
@@ -152,40 +165,21 @@ export default class AuthTokenService {
   }
 
   private async getPublicKeyForJWT(header: JWSHeaderParameters): Promise<KeyLike> {
-    const match = (await this.getValidKeys())
-      .find(({ publicJWK: { kid } }) => kid === header.kid);
-
+    const keys = this.keys.getAll();
+    const match = Object.keys(keys).find((key) => keys[key].publicJWK.kid === header.kid);
     if (!match) throw new AuthTokenServiceError('signing key does not exist');
-
-    return match.publicKey;
+    return keys[match].publicKey;
   }
 
-  private async getKey(name: string): Promise<AuthSigningKey> {
-    const secret = await this.secrets.getSecret(
-      path.join(QUALIFIER_TOKEN_SIGNATURE, name),
-      this.keyCache[name]?.version,
-    );
-
-    if (!secret && !this.keyCache[name]) {
-      throw new AuthTokenServiceError(`no ${name} key found in secrets`);
-    }
-    if (!secret && this.keyCache[name]) return this.keyCache[name];
-
-    const privateJWK: JWK = JSON.parse(secret ? secret[1] : '{}');
+  private static async parseSecret(secret: string): Promise<AuthSigningKey> {
+    const privateJWK: JWK = JSON.parse(secret);
     const publicJWK: JWK = { ...privateJWK, d: undefined };
 
-    this.keyCache[name] = {
-      version: secret ? secret[0] : 0,
+    return {
       publicKey: await importJWK(publicJWK, 'EdDSA'),
       privateKey: await importJWK(privateJWK, 'EdDSA'),
       publicJWK,
       privateJWK,
     };
-
-    return this.keyCache[name];
-  }
-
-  private getValidKeys(): Promise<AuthSigningKey[]> {
-    return Promise.all(KEY_PREFERENCES.map((name) => this.getKey(name)));
   }
 }

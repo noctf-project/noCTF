@@ -65,6 +65,7 @@ export async function down(knex: Knex): Promise<void> {
   await knex.schema.dropTable('role_permissions');
   await knex.schema.dropTable('roles');
   await knex.schema.dropTable('user_sessions');
+  await knex.schema.dropTable('clients');
   await knex.schema.dropTable('users');
 }
 

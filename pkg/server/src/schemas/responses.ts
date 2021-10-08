@@ -10,7 +10,7 @@ export const AuthLoginResponse = Type.Object({
   ...DefaultResponse.properties,
   access_token: Type.String(),
   refresh_token: Type.String(),
-  expires: Type.Number()
+  expires: Type.Number(),
 });
 export type AuthLoginResponseType = Static<typeof AuthLoginResponse>;
 

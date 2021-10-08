@@ -1,9 +1,5 @@
 import { RouteHandler } from 'fastify';
-import services from '../services';
-import { AuthTokenServiceError } from '../services/auth_token';
-import { ERROR_INVALID_CREDENTIALS, ERROR_UNAUTHORIZED } from '../util/constants';
-
-const MAX_TOKEN_LENGTH = 768;
+import { ERROR_UNAUTHORIZED } from '../util/constants';
 
 const pbacHook: RouteHandler = async (request, reply) => {
   // skip if we can't find a pbac config value
