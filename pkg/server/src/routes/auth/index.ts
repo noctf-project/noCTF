@@ -13,6 +13,8 @@ import {
 import services from '../../services';
 import { ipKeyGenerator } from '../../util/ratelimit';
 import { TOKEN_EXPIRY } from '../../config';
+import UserDAO from '../../models/User';
+import RoleDAO from '../../models/Role';
 
 export default async function register(fastify: FastifyInstance) {
   fastify.get<{ Reply: AuthJWKSResponseType }>(
@@ -53,10 +55,11 @@ export default async function register(fastify: FastifyInstance) {
         },
       },
       handler: async (request, reply) => {
+        await UserDAO.getByEmail(request.body.email);
         const refresh = (await randomBytes(48)).toString('base64url');
         const sid = createHash('sha256').update(refresh).digest();
         reply.send({
-          access_token: await services.authToken.generate('default', [], '1', sid),
+          access_token: await services.authToken.generate(0, 1, [], sid),
           refresh_token: refresh,
           expires: TOKEN_EXPIRY,
         });
@@ -84,6 +87,7 @@ export default async function register(fastify: FastifyInstance) {
         },
       },
       handler: async (request, reply) => {
+        await UserDAO.create(request.body.email, request.body.name);
         reply.code(200).send({});
       },
     },
@@ -101,9 +105,9 @@ export default async function register(fastify: FastifyInstance) {
         },
       },
       config: {
-        permission: 'auth.public.verify',
+        permission: 'auth.public.login',
         rateLimit: {
-          max: 5,
+          max: 10,
           timeWindow: '1 minute',
           keyGenerator: ipKeyGenerator,
         },
@@ -112,7 +116,7 @@ export default async function register(fastify: FastifyInstance) {
         const refresh = (await randomBytes(48)).toString('base64url');
         const sid = createHash('sha256').update(refresh).digest();
         reply.send({
-          access_token: await services.authToken.generate('default', [], '1', sid),
+          access_token: await services.authToken.generate(0, 1, [], sid),
           refresh_token: refresh,
           expires: TOKEN_EXPIRY,
         });
@@ -124,7 +128,7 @@ export default async function register(fastify: FastifyInstance) {
     '/permissions',
     {
       config: {
-        permission: 'auth.self.session',
+        permission: 'auth.self.permission',
       },
       schema: {
         tags: ['auth'],
@@ -133,8 +137,14 @@ export default async function register(fastify: FastifyInstance) {
         },
       },
       handler: async (request, reply) => {
+        if (!request.auth) {
+          reply.code(200).send({
+            permissions: await RoleDAO.getRolePermissionsByName('public'),
+          });
+          return;
+        }
         reply.code(200).send({
-          permissions: [],
+          permissions: await UserDAO.getPermissions(request.auth?.uid),
         });
       },
     },

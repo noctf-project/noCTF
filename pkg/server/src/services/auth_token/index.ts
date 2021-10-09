@@ -12,6 +12,7 @@ import logger from '../../util/logger';
 import { TOKEN_EXPIRY } from '../../config';
 import CacheService from '../cache';
 import SecretRetriever from '../../util/secret_retriever';
+import { now } from '../../util/helpers';
 
 const TOKEN_CACHE_TTL = 15;
 const TOKEN_CACHE_CHECK = 120;
@@ -27,6 +28,7 @@ export class AuthTokenServiceError extends Error {
 const QUALIFIER = 'token-signature';
 export default class AuthTokenService {
   private log = logger.child({ filename: path.basename(__filename) });
+
   private keys = new SecretRetriever<AuthSigningKey>(QUALIFIER, {
     cast: AuthTokenService.parseSecret,
   });
@@ -41,21 +43,21 @@ export default class AuthTokenService {
     private hostname: string, private expiry: number) {
   }
 
-  public async generate(cid: string, scope: string[],
-    uid: string, sid: Uint8Array): Promise<string> {
+  public async generate(cid: number, uid: number,
+    scope: string[], sid: Uint8Array): Promise<string> {
     const keys = await this.keys.getAll();
     // Get the first suitable key (key with an id greater than the current time)
     const version = Object.keys(keys)
       .map(parseInt)
       .filter((v) => !!v)
       .sort((a, b) => b - a)
-      .find((id) => id <= Math.floor(Date.now()/1000));
+      .find((id) => id <= now());
     if (!version) {
       throw new AuthTokenServiceError('cannot find suitable signing key');
     }
     const key = keys[version];
 
-    const ctime = Math.floor(Date.now() / 1000);
+    const ctime = now();
 
     const token: AuthToken = {
       aud: this.hostname,
@@ -109,7 +111,7 @@ export default class AuthTokenService {
   }
 
   private async rawParse(token: string, hash: string): Promise<AuthToken> {
-    const ctime = Math.floor(Date.now() / 1000);
+    const ctime = now();
 
     try {
       const payload = await compactVerify(token, this.getPublicKeyForJWT.bind(this));
@@ -135,7 +137,7 @@ export default class AuthTokenService {
   }
 
   private validateClaims(data: ArrayBuffer): AuthToken {
-    const ctime = Math.floor(Date.now() / 1000);
+    const ctime = now();
     const token = cbor.decode(data);
 
     if (token.aud !== this.hostname) {
@@ -151,7 +153,7 @@ export default class AuthTokenService {
       throw new AuthTokenServiceError('expired');
     }
 
-    if (!token.sid || !token.cid || !token.uid) {
+    if (!token.sid || (!token.cid && token.cid !== 0) || !token.uid) {
       this.log.error({ token }, 'invalid token format');
       throw new AuthTokenServiceError('invalid token format');
     }

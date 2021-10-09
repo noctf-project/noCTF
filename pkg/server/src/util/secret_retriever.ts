@@ -15,6 +15,7 @@ export default class SecretRetriever<T = string> {
   private values: { [name: string]: T } = {};
 
   private root: string;
+
   private log = logger.child({ filename: path.basename(__filename) });
 
   private cast: (str: string) => Promise<T> | T;

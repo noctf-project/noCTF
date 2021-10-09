@@ -1,5 +1,9 @@
 import { RouteHandler } from 'fastify';
-import { ERROR_UNAUTHORIZED } from '../util/constants';
+import RoleDAO from '../models/Role';
+import UserDAO from '../models/User';
+import { ERROR_FORBIDDEN, ERROR_UNAUTHORIZED } from '../util/constants';
+import { evaluate } from '../util/permissions';
+
 
 const pbacHook: RouteHandler = async (request, reply) => {
   // skip if we can't find a pbac config value
@@ -7,12 +11,22 @@ const pbacHook: RouteHandler = async (request, reply) => {
     return;
   }
 
-  if (!request.auth) {
-    // use public permissions
+  // Always allow this permission
+  if (reply.context.config.permission === 'auth.self.permission') {
+    return;
+  }
 
+  if (!request.auth) {
     // Always allow this permission
     // TODO: allow admins to login but not users if the permission is unset
     if (reply.context.config.permission === 'auth.public.login') {
+      return;
+    }
+
+    // use public permissions
+    const roles = await RoleDAO.getRolePermissionsByName('public');
+
+    if (evaluate(reply.context.config.permission, roles)) {
       return;
     }
 
@@ -22,13 +36,19 @@ const pbacHook: RouteHandler = async (request, reply) => {
     return;
   }
 
-  // Always allow this permission
+  // Always allow this permission when logged in
   if (reply.context.config.permission === 'auth.self.session') {
     return;
   }
 
-  // TODO: check permissions
-  request.log.info('TODO: check permissions');
+  const roles = await UserDAO.getPermissions(request.auth.uid);
+  if (evaluate(reply.context.config.permission, roles)) {
+    return;
+  }
+
+  reply.code(403).send({
+    error: ERROR_FORBIDDEN,
+  });
 };
 
 export default pbacHook;

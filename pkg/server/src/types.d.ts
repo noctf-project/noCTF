@@ -8,6 +8,6 @@ declare module 'fastify' {
   }
 
   interface FastifyRequest {
-    auth?: AuthToken;
+    auth: AuthToken;
   }
 }

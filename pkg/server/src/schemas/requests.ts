@@ -1,14 +1,14 @@
 import { Static, Type } from '@sinclair/typebox';
 
 export const AuthLoginRequest = Type.Object({
-  username: Type.String(),
+  email: Type.String({ format: 'email' }),
   password: Type.String(),
 });
 export type AuthLoginRequestType = Static<typeof AuthLoginRequest>;
 
 export const AuthRegisterRequest = Type.Object({
-  username: Type.String(),
-  email: Type.String(),
+  name: Type.String(),
+  email: Type.String({ format: 'email' }),
 });
 export type AuthRegisterRequestType = Static<typeof AuthRegisterRequest>;
 

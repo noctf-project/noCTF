@@ -9,6 +9,7 @@ import { ERROR_INTERNAL_SERVER_ERROR } from './util/constants';
 import pbacHook from './hooks/pbac';
 import { clientUserKeyGenerator } from './util/ratelimit';
 import authHook from './hooks/auth';
+import services from './services';
 
 let server: FastifyInstance;
 
@@ -50,9 +51,10 @@ export const init = async () => {
 
   // Mount rate limiting hook
   server.register(fastifyRateLimit, {
-    max: 80,
+    max: 90,
     timeWindow: '1 minute',
     keyGenerator: clientUserKeyGenerator,
+    redis: services.cache,
   });
 
   server.register(Routes);

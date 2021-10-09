@@ -9,8 +9,8 @@ export type AuthSigningKey = {
 };
 
 export type AuthToken = {
-  cid: string;
-  uid: string;
+  cid: number;
+  uid: number;
   iat: number;
   exp: number;
   sid: Uint8Array;
