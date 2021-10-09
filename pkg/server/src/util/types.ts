@@ -8,7 +8,12 @@ export type AuthSigningKey = {
   privateJWK: JWK;
 };
 
-export type AuthToken = {
+export interface AuthTokenBase {
+  typ: string;
+}
+
+export interface AuthToken extends AuthTokenBase {
+  typ: 'auth';
   cid: number;
   uid: number;
   iat: number;
@@ -16,7 +21,14 @@ export type AuthToken = {
   sid: Uint8Array;
   aud: string;
   scope: string[];
-};
+}
+
+export interface AuthTokenVerify extends AuthTokenBase {
+  typ: 'verify';
+  tok: ArrayBuffer;
+  exp: number;
+  uid: number;
+}
 
 export interface Request extends RequestGenericInterface {
   auth?: AuthToken;

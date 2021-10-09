@@ -1,14 +1,15 @@
 import { FastifyInstance } from 'fastify';
 import { createHash, randomBytes } from 'crypto';
 import {
-  AuthLoginRequest, AuthLoginRequestType, AuthRegisterRequest, AuthRegisterRequestType,
+  AuthLoginRequest, AuthLoginRequestType, AuthRegisterCheckRequest,
+  AuthRegisterCheckRequestType, AuthRegisterRequest, AuthRegisterRequestType,
   AuthVerifyRequest, AuthVerifyRequestType,
 } from '../../schemas/requests';
 import {
   AuthJWKSResponse, AuthJWKSResponseType, AuthLoginResponse, AuthLoginResponseType,
-  AuthPermissionsResponse, AuthPermissionsResponseType, AuthRegisterResponse,
-  AuthRegisterResponseType, AuthVerifyResponse, AuthVerifyResponseType,
-  DefaultResponse, DefaultResponseType,
+  AuthPermissionsResponse, AuthPermissionsResponseType, AuthRegisterCheckResponse,
+  AuthRegisterCheckResponseType, AuthRegisterResponse, AuthRegisterResponseType,
+  AuthVerifyResponse, AuthVerifyResponseType, DefaultResponse, DefaultResponseType,
 } from '../../schemas/responses';
 import services from '../../services';
 import { ipKeyGenerator } from '../../util/ratelimit';
@@ -87,8 +88,54 @@ export default async function register(fastify: FastifyInstance) {
         },
       },
       handler: async (request, reply) => {
-        await UserDAO.create(request.body.email, request.body.name);
+        const user = await UserDAO.create(request.body);
+        const { token } = await UserDAO.generateVerify(user.id);
+        request.log.info(`created user: verification token ${token}`);
         reply.code(200).send({});
+      },
+    },
+  );
+
+  fastify.post<{
+    Body: AuthRegisterCheckRequestType,
+    Reply: AuthRegisterCheckResponseType
+  }>(
+    '/register/check',
+    {
+      schema: {
+        tags: ['auth'],
+        security: [],
+        body: AuthRegisterCheckRequest,
+        response: {
+          default: AuthRegisterCheckResponse,
+        },
+      },
+      config: {
+        permission: 'auth.public.register',
+        rateLimit: {
+          max: 30,
+          keyGenerator: ipKeyGenerator,
+        },
+      },
+      handler: async (request, reply) => {
+        if (request.body.email && request.body.name) {
+          reply.code(400).send({
+            error: 'Either email or name must be provided, but not both',
+          });
+          return;
+        }
+
+        if (request.body.email) {
+          reply.code(200).send({ exists: !!(await UserDAO.getIDByEmail(request.body.email)) });
+          return;
+        } if (request.body.name) {
+          reply.code(200).send({ exists: !!(await UserDAO.getIDByName(request.body.name)) });
+          return;
+        }
+
+        reply.code(400).send({
+          error: 'Either email or name must be provided, but not both',
+        });
       },
     },
   );

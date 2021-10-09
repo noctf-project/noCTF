@@ -4,7 +4,6 @@ import UserDAO from '../models/User';
 import { ERROR_FORBIDDEN, ERROR_UNAUTHORIZED } from '../util/constants';
 import { evaluate } from '../util/permissions';
 
-
 const pbacHook: RouteHandler = async (request, reply) => {
   // skip if we can't find a pbac config value
   if (!reply.context.config.permission) {

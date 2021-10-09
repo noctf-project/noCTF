@@ -21,7 +21,7 @@ export async function up(knex: Knex): Promise<void> {
     table.boolean('banned').notNullable().defaultTo(false);
     table.string('email', 256).unique().notNullable();
     table.string('name', 48).unique().notNullable();
-    table.string('token_hash', 64);
+    table.string('verify_hash');
     table.string('password');
   });
 

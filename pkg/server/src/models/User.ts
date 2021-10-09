@@ -1,8 +1,11 @@
+import { createHmac, randomBytes } from 'crypto';
+import { TOKEN_EXPIRY } from '../config';
 import services from '../services';
 import CacheService from '../services/cache';
 import DatabaseService from '../services/database';
 import { now } from '../util/helpers';
 import { evaluateSingle } from '../util/permissions';
+import { AuthTokenVerify } from '../util/types';
 import RoleDAO from './Role';
 
 export type User = {
@@ -14,6 +17,8 @@ export type User = {
   banned: boolean;
 };
 
+const VERIFY_TOKEN_EXPIRY = 3600;
+
 // TODO: kill idEmail cache when user is changed/deleted
 export class UserDAO {
   private tableName = 'users';
@@ -23,7 +28,12 @@ export class UserDAO {
   constructor(private database: DatabaseService, private cache: CacheService) {
   }
 
-  public async create(email: string, name: string): Promise<User> {
+  /**
+   * Create a user
+   * @param user User object
+   * @returns User object
+   */
+  public async create({ email, name }: { email: string, name: string }): Promise<User> {
     const created_at = now();
     const res = await this.database.builder(this.tableName).insert({
       name,
@@ -40,6 +50,41 @@ export class UserDAO {
       email: email.toLowerCase(),
       created_at,
       banned: false,
+    };
+  }
+
+  /**
+   * Generate a verification token for a user id
+   * @param id user id
+   * @returns verification token and expiry in seconds
+   */
+  public async generateVerify(id: number): Promise<{ token: string, expires: number }> {
+    const nonce: Buffer = await (new Promise((resolve, reject) => (
+      randomBytes(32, (err, buf) => (err ? reject(err) : resolve(buf)))))
+    );
+    const expires = now() + TOKEN_EXPIRY;
+    const payload: AuthTokenVerify = {
+      typ: 'verify',
+      uid: id,
+      tok: nonce,
+      exp: expires,
+    };
+    const token = await services.authToken.signPayload(payload);
+
+    const hash = createHmac('sha256', Buffer.from(token))
+      .update(nonce)
+      .digest()
+      .toString('base64url');
+
+    await this.database.builder(this.tableName)
+      .update({
+        verify_hash: hash,
+      })
+      .where({ id });
+
+    return {
+      token,
+      expires: VERIFY_TOKEN_EXPIRY,
     };
   }
 
@@ -66,22 +111,29 @@ export class UserDAO {
         .first())?.id);
   }
 
+  public async getIDByName(name: string): Promise<number | null> {
+    return this.cache.computeIfAbsent(`users_idName:${name}`, async () => (
+      await this.database.builder(this.tableName)
+        .select('id')
+        .where({ name })
+        .first())?.id);
+  }
+
   public async getPermissions(id: number): Promise<string[]> {
-    return this.cache.computeIfAbsent(`user_permission:${id}`, async () => {
-      const permissions = (await Promise.all(
-        (await this.database.builder(this.roleTableName)
-          .select('role_id')
-          .where({ user_id: id })
-        ).map(({ role_id }) => RoleDAO.getRolePermissionsById(role_id)),
-      )
-      ).flat().sort();
-      return permissions.reduce((total: string[], current) => {
-        if(total.length === 0 || !evaluateSingle(total[total.length - 1], current)) {
+    return this.cache.computeIfAbsent(`users_permission:${id}`, async () => (await Promise.all(
+      (await this.database.builder(this.roleTableName)
+        .select('role_id')
+        .where({ user_id: id })
+      ).map(({ role_id }) => RoleDAO.getRolePermissionsById(role_id)),
+    ))
+      .flat()
+      .sort()
+      .reduce((total: string[], current) => { // Reduce step to simplify permissions
+        if (total.length === 0 || !evaluateSingle(total[total.length - 1], current)) {
           total.push(current);
         }
         return total;
-      }, []);
-    });
+      }, []));
   }
 
   public async addRole(id: number, role: string) {
@@ -90,7 +142,7 @@ export class UserDAO {
       .insert({ user_id: id, role_id: roleId });
 
     // clear the cache
-    await this.cache.purge(`user_permission:${id}`);
+    await this.cache.purge(`users_permission:${id}`);
   }
 }
 

@@ -7,7 +7,7 @@ import { importJWK } from 'jose/key/import';
 import { JWSInvalid, JWSSignatureVerificationFailed } from 'jose/util/errors';
 import { JWK, JWSHeaderParameters, KeyLike } from 'jose/types';
 import { createHash } from 'crypto';
-import { AuthSigningKey, AuthToken } from '../../util/types';
+import { AuthSigningKey, AuthToken, AuthTokenBase } from '../../util/types';
 import logger from '../../util/logger';
 import { TOKEN_EXPIRY } from '../../config';
 import CacheService from '../cache';
@@ -20,6 +20,7 @@ const TOKEN_MAX_KEYS = 10000;
 const MAX_DRIFT = 60;
 const CACHE_HIT_VALID = 1;
 const CACHE_HIT_REVOKED = 2;
+const TYPE_AUTH_TOKEN = 'auth';
 const REVOKED_KEY = 'auth_revoked';
 
 export class AuthTokenServiceError extends Error {
@@ -43,8 +44,42 @@ export default class AuthTokenService {
     private hostname: string, private expiry: number) {
   }
 
+  /**
+   * Generate a session token
+   * @param cid client id (0 for default)
+   * @param uid user id
+   * @param scope scope of token
+   * @param sid session id
+   * @returns access token
+   */
   public async generate(cid: number, uid: number,
     scope: string[], sid: Uint8Array): Promise<string> {
+    const ctime = now();
+
+    const token: AuthToken = {
+      typ: TYPE_AUTH_TOKEN,
+      aud: this.hostname,
+      cid,
+      uid,
+      sid,
+      iat: ctime,
+      exp: ctime + this.expiry,
+      scope,
+    };
+
+    const signed = await this.signPayload(token);
+
+    const hash = createHash('sha256').update(signed).digest().toString('base64url');
+    this.tokenCache.set(hash, CACHE_HIT_VALID, TOKEN_CACHE_TTL);
+    return signed;
+  }
+
+  /**
+   * Sign an arbitrary JSON payload as CBOR encoded JWS
+   * @param payload JSON payload
+   * @returns CBOR JWS token
+   */
+  public async signPayload(payload: AuthTokenBase): Promise<string> {
     const keys = await this.keys.getAll();
     // Get the first suitable key (key with an id greater than the current time)
     const version = Object.keys(keys)
@@ -56,31 +91,31 @@ export default class AuthTokenService {
       throw new AuthTokenServiceError('cannot find suitable signing key');
     }
     const key = keys[version];
-
-    const ctime = now();
-
-    const token: AuthToken = {
-      aud: this.hostname,
-      cid,
-      uid,
-      sid,
-      iat: ctime,
-      exp: ctime + this.expiry,
-      scope,
-    };
-    const signed = await new CompactSign(cbor.encode(token))
+    return new CompactSign(cbor.encode(payload))
       .setProtectedHeader({ alg: 'EdDSA', kid: key.publicJWK.kid })
       .sign(key.privateKey);
+  }
 
-    const hash = createHash('sha256').update(signed).digest().toString('base64url');
-    this.tokenCache.set(hash, CACHE_HIT_VALID, TOKEN_CACHE_TTL);
-    return signed;
+  /**
+   * Verify an arbitrary JWS token
+   * @param payload token
+   * @returns contents of token if successful
+   */
+  public async verifyPayload(token: string): Promise<ArrayBuffer> {
+    return (await compactVerify(
+      token,
+      this.getPublicKeyForJWT.bind(this),
+    )).payload;
   }
 
   private async checkRevocation(sid: ArrayBuffer): Promise<boolean> {
     return !!(await this.externalCache.get(`${REVOKED_KEY}:${Buffer.from(sid).toString('base64url')}`));
   }
 
+  /**
+   * Revoke a session ID
+   * @param sid session id
+   */
   public async revoke(sid: ArrayBuffer) {
     await this.externalCache.setex(
       `${REVOKED_KEY}:${Buffer.from(sid).toString('base64url')}`,
@@ -89,11 +124,20 @@ export default class AuthTokenService {
     );
   }
 
+  /**
+   * Get a list of public keys
+   * @returns JWK public keys
+   */
   public async getPublicJWKs(): Promise<JWK[]> {
     const keys = this.keys.getAll();
     return Object.keys(keys).map((key) => keys[key].publicJWK);
   }
 
+  /**
+   * Parse an auth token and check its expiry
+   * @param token auth token
+   * @returns AuthToken if successful
+   */
   public async parse(token: string): Promise<AuthToken> {
     const hash = createHash('sha256').update(token).digest().toString('base64url');
     const value: (number | undefined) = this.tokenCache.get(hash);
@@ -114,8 +158,8 @@ export default class AuthTokenService {
     const ctime = now();
 
     try {
-      const payload = await compactVerify(token, this.getPublicKeyForJWT.bind(this));
-      const claims = this.validateClaims(payload.payload);
+      const payload = await this.verifyPayload(token);
+      const claims = this.validateClaims(payload);
       if (await this.checkRevocation(claims.sid)) {
         this.tokenCache.set(hash, CACHE_HIT_REVOKED, claims.exp - ctime);
         throw new AuthTokenServiceError('revoked');
@@ -138,7 +182,11 @@ export default class AuthTokenService {
 
   private validateClaims(data: ArrayBuffer): AuthToken {
     const ctime = now();
-    const token = cbor.decode(data);
+    const token: AuthToken = cbor.decode(data);
+
+    if (token.typ !== TYPE_AUTH_TOKEN) {
+      throw new AuthTokenServiceError('invalid type');
+    }
 
     if (token.aud !== this.hostname) {
       throw new AuthTokenServiceError('invalid audience');

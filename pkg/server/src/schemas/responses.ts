@@ -7,27 +7,41 @@ export const DefaultResponse = Type.Object({
 export type DefaultResponseType = Static<typeof DefaultResponse>;
 
 export const AuthLoginResponse = Type.Object({
-  ...DefaultResponse.properties,
   access_token: Type.String(),
   refresh_token: Type.String(),
   expires: Type.Number(),
 });
-export type AuthLoginResponseType = Static<typeof AuthLoginResponse>;
+export type AuthLoginResponseType = (
+  DefaultResponseType | Static<typeof AuthLoginResponse>
+);
 
 export const AuthRegisterResponse = DefaultResponse;
-export type AuthRegisterResponseType = Static<typeof AuthRegisterResponse>;
+export type AuthRegisterResponseType = (
+  DefaultResponseType | Static<typeof AuthRegisterResponse>
+);
+
+export const AuthRegisterCheckResponse = Type.Object({
+  exists: Type.Boolean(),
+});
+export type AuthRegisterCheckResponseType = (
+  DefaultResponseType | Static<typeof AuthRegisterCheckResponse>
+);
 
 export const AuthVerifyResponse = AuthLoginResponse;
-export type AuthVerifyResponseType = Static<typeof AuthVerifyResponse>;
+export type AuthVerifyResponseType = (
+  DefaultResponseType | Static<typeof AuthVerifyResponse>
+);
 
 export const AuthJWKSResponse = Type.Object({
-  ...DefaultResponse.properties,
   keys: Type.Array(JWK),
 });
-export type AuthJWKSResponseType = Static<typeof AuthJWKSResponse>;
+export type AuthJWKSResponseType = (
+  DefaultResponseType | Static<typeof AuthJWKSResponse>
+);
 
 export const AuthPermissionsResponse = Type.Object({
-  ...DefaultResponse.properties,
   permissions: Type.Array(Type.String()),
 });
-export type AuthPermissionsResponseType = Static<typeof AuthPermissionsResponse>;
+export type AuthPermissionsResponseType = (
+  DefaultResponseType | Static<typeof AuthPermissionsResponse>
+);

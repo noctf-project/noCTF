@@ -11,7 +11,6 @@ export type Role = {
 export class RoleError extends Error {
 }
 
-
 // TODO: kill idName cache when role is changed/deleted
 export class RoleDAO {
   private tableName = 'roles';
