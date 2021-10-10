@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { createHash, randomBytes } from 'crypto';
 import {
   AuthLoginRequest, AuthLoginRequestType,
-  AuthRefreshRequest, AuthRefreshRequestType,
+  AuthTokenRequest, AuthTokenRequestType,
   AuthRegisterCheckRequest, AuthRegisterCheckRequestType,
   AuthRegisterRequest, AuthRegisterRequestType,
   AuthResetRequest, AuthResetRequestType,
@@ -12,7 +12,7 @@ import {
   AuthJWKSResponse, AuthJWKSResponseType,
   AuthLoginResponse, AuthLoginResponseType,
   AuthPermissionsResponse, AuthPermissionsResponseType,
-  AuthRefreshResponse, AuthRefreshResponseType,
+  AuthTokenResponse, AuthTokenResponseType,
   AuthRegisterCheckResponse, AuthRegisterCheckResponseType,
   AuthRegisterResponse, AuthRegisterResponseType,
   AuthVerifyResponse, AuthVerifyResponseType,
@@ -107,6 +107,12 @@ export default async function register(fastify: FastifyInstance) {
           });
           return;
         }
+        if (user.banned) {
+          reply.code(401).send({
+            error: 'your account has been banned'
+          });
+        }
+
         if (typeof password === 'string') {
           // hash upgrade
           await UserDAO.setPassword(user.id, password);
@@ -123,17 +129,17 @@ export default async function register(fastify: FastifyInstance) {
   );
 
   fastify.post<{
-    Body: AuthRefreshRequestType,
-    Reply: ErrorResponseType | AuthRefreshResponseType
+    Body: AuthTokenRequestType,
+    Reply: ErrorResponseType | AuthTokenResponseType
   }>(
-    '/refresh',
+    '/token',
     {
       schema: {
         tags: ['auth'],
         security: [],
-        body: AuthRefreshRequest,
+        body: AuthTokenRequest,
         response: {
-          default: AuthRefreshResponse,
+          default: AuthTokenResponse,
         },
       },
       config: {
@@ -144,8 +150,28 @@ export default async function register(fastify: FastifyInstance) {
         },
       },
       handler: async (request, reply) => {
+        if (request.body.grant_type !== 'refresh_token') {
+          reply.code(501).send({
+            error: 'only refresh_token is currently implemented'
+          });
+          return;
+        }
+        // TODO: support third party applications
+        if (request.body.client_id !== 'default') {
+          reply.code(400).send({
+            error: 'client_id should be default'
+          });
+          return;
+        }
+        if (!request.body.refresh_token) {
+          reply.code(400).send({
+            error: 'refresh_token is required'
+          });
+          return;
+        }
+
         const tokenHash = createHash('sha256')
-          .update(request.body.token)
+          .update(request.body.refresh_token)
           .digest();
         const tokenHashStr = tokenHash.toString('base64url');
         request.log.debug({ hash: tokenHash }, 'hashed refresh token');
@@ -156,10 +182,11 @@ export default async function register(fastify: FastifyInstance) {
             error: 'invalid refresh token',
           });
           return;
-        } if (session.client_id) {
-          // TODO: implement refresh for third party apps
+        }
+        
+        if (session.client_id) {
           reply.code(501).send({
-            error: 'not implemented yet',
+            error: 'refresh for third party apps not implemented yet',
           });
           return;
         }

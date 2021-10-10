@@ -8,7 +8,7 @@ export type ErrorResponseType = Static<typeof ErrorResponse>;
 
 export const AuthLoginResponse = Type.Object({
   access_token: Type.String(),
-  refresh_token: Type.String(),
+  refresh_token: Type.Optional(Type.String()),
   expires: Type.Number(),
 });
 export type AuthLoginResponseType = Static<typeof AuthLoginResponse>;
@@ -36,8 +36,5 @@ export const AuthPermissionsResponse = Type.Object({
 });
 export type AuthPermissionsResponseType = Static<typeof AuthPermissionsResponse>;
 
-export const AuthRefreshResponse = Type.Object({
-  access_token: Type.String(),
-  expires: Type.Number(),
-});
-export type AuthRefreshResponseType = Static<typeof AuthRefreshResponse>;
+export const AuthTokenResponse = AuthLoginResponse;
+export type AuthTokenResponseType = Static<typeof AuthTokenResponse>;

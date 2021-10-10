@@ -8,6 +8,7 @@ declare const process : {
     NOCTF_TOKEN_EXPIRY: string,
     NOCTF_DOCS_ENABLED: string,
     NOCTF_DATABASE_CLIENT: string,
+    NOCTF_DATABASE_CONNECTION_FILENAME: string,
     NOCTF_DATABASE_CONNECTION_NAME: string,
     NOCTF_DATABASE_CONNECTION_HOST: string,
     NOCTF_DATABASE_CONNECTION_USERNAME: string,
@@ -32,8 +33,9 @@ export const DOCS_ENABLED = process.env.NOCTF_DOCS_ENABLED
 export const SECRETS_WATCH = toBool(process.env.NOCTF_SECRETS_WATCH);
 export const VERIFY_EMAIL = toBool(process.env.NOCTF_VERIFY_EMAIL);
 
-export const DATABASE_CLIENT = process.env.NOCTF_DATABASE_CLIENT || 'postgresql';
+export const DATABASE_CLIENT = process.env.NOCTF_DATABASE_CLIENT || 'sqlite3';
 export const DATABASE_CONNECTION = {
+  filename: process.env.NOCTF_DATABASE_CONNECTION_FILENAME,
   database: process.env.NOCTF_DATABASE_CONNECTION_NAME,
   host: process.env.NOCTF_DATABASE_CONNECTION_HOST,
   user: process.env.NOCTF_DATABASE_CONNECTION_USERNAME,
