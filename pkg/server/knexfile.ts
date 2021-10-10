@@ -2,9 +2,19 @@
 
 module.exports = {
   development: {
-    client: 'sqlite3',
+    client: 'postgresql',
     connection: {
-      filename: '../../data/noctf.db'
+      host:     process.env.NOCTF_DATABASE_CONNECTION_HOST || 'postgres',
+      database: process.env.NOCTF_DATABASE_CONNECTION_NAME || 'noctf',
+      user:     process.env.NOCTF_DATABASE_CONNECTION_USERNAME || 'noctf',
+      password: process.env.NOCTF_DATABASE_CONNECTION_PASSWORD || 'devpassword'
+    },
+    pool: {
+      min: 2,
+      max: 4
+    },
+    migrations: {
+      tableName: 'knex_migrations'
     }
   },
 

@@ -45,7 +45,7 @@ export class UserDAO {
       name,
       email: email.toLowerCase(),
       created_at,
-    });
+    }).returning('id');
 
     // Give user the default role
     const defaultRole = await RoleDAO.getRoleIDByName('default');

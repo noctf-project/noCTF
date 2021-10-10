@@ -10,7 +10,7 @@ export async function up(knex: Knex): Promise<void> {
       case 'mysql':
         return knex.raw('(UNIX_TIMESTAMP())');
       case 'postgresql':
-        return knex.raw('(epoch from now())');
+        return knex.raw('(extract(epoch from now()))');
       default:
         return knex.fn.now();
     }
@@ -46,7 +46,7 @@ export async function up(knex: Knex): Promise<void> {
   });
 
   await knex.schema.createTable('roles', (table) => {
-    table.integer('id').primary();
+    table.increments('id').primary();
     table.string('name', 48).unique().notNullable();
     table.bigInteger('created_at').notNullable().defaultTo(now);
   });
