@@ -1,0 +1,34 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres
+    ports: [ 5432:5432 ]
+    environment:
+      POSTGRES_USER: noctf
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: noctf
+    volumes:
+      - postgres:/var/lib/postgres/data/
+  redis:
+    image: redis
+    ports: [ 6379:6379 ]
+  noctf_server:
+    build:
+      context: ./pkg/server/
+      dockerfile: Dockerfile.dev
+    ports: [ 3000:3000 ]
+    environment:
+      NOCTF_SECRETS_DIR: /data/secrets
+      NOCTF_SECRETS_WATCH: "true"
+      NOCTF_REDIS_URL: redis://redis:6379/
+      NOCTF_DATABASE_CONNECTION_NAME: noctf
+      NOCTF_DATABASE_CONNECTION_HOST: postgres
+      NOCTF_DATABASE_CONNECTION_USERNAME: noctf
+      NOCTF_DATABASE_CONNECTION_PASSWORD: devpassword
+    volumes:
+      - ./pkg/server/:/srv/
+      - ./data:/data:ro
+
+volumes:
+  postgres:

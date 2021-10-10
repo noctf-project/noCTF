@@ -39,7 +39,7 @@ export class UserDAO {
       name,
       email: email.toLowerCase(),
       created_at,
-    });
+    }).returning('id');
 
     // Give user the default role
     await this.addRole(res[0], 'default');

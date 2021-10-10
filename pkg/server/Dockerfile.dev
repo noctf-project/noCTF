@@ -1,0 +1,9 @@
+FROM node
+
+WORKDIR /srv
+
+COPY ./ /srv/
+
+ENV NODE_ENV development
+
+CMD [ "sh", "-c", "npx knex migrate:up && npx tsc-watch --onSuccess \"node dist/src/\"" ]

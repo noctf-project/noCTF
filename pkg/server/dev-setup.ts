@@ -1,7 +1,7 @@
 import { generateKeyPair } from 'jose/util/generate_key_pair';
 import { exportJWK } from 'jose/key/export';
 import { createHash } from 'crypto';
-import { pki } from 'node-forge';
+import { pki, md } from 'node-forge';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -43,7 +43,7 @@ const generateCertificate = (keyFile: string, certFile: string) => {
       value: 'localhost'
     }
   ])
-  cert.sign(keys.privateKey);
+  cert.sign(keys.privateKey, md.sha256.create());
 
   const pubKey = pki.certificateToPem(cert);
   fs.writeFileSync(keyFile, privKey);

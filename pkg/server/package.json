@@ -9,7 +9,7 @@
   "private": true,
   "scripts": {
     "dev": "NODE_ENV=development NOCTF_SECRETS_DIR='../../data/secrets' NOCTF_SECRETS_WATCH=true tsc-watch --onSuccess \"node dist/src/\"",
-    "dev-setup": "ts-node dev-setup.ts && knex migrate:up",
+    "dev-setup": "ts-node dev-setup.ts",
     "build": "tsc",
     "lint": "eslint --ext js,ts src/*",
     "fix-lint": "eslint --fix --ext js,ts src/"
