@@ -2,8 +2,9 @@
 
 module.exports = {
   development: {
-    client: 'postgresql',
+    client: process.env.NOCTF_DATABASE_CLIENT || 'sqlite3',
     connection: {
+      filename: process.env.NOCTF_DATABASE_CONNECTION_FILENAME || '../../data/noctf.db',
       host:     process.env.NOCTF_DATABASE_CONNECTION_HOST || 'postgres',
       database: process.env.NOCTF_DATABASE_CONNECTION_NAME || 'noctf',
       user:     process.env.NOCTF_DATABASE_CONNECTION_USERNAME || 'noctf',

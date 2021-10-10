@@ -109,7 +109,7 @@ export default async function register(fastify: FastifyInstance) {
         }
         if (user.banned) {
           reply.code(401).send({
-            error: 'your account has been banned'
+            error: 'account has been banned',
           });
         }
 
@@ -152,20 +152,20 @@ export default async function register(fastify: FastifyInstance) {
       handler: async (request, reply) => {
         if (request.body.grant_type !== 'refresh_token') {
           reply.code(501).send({
-            error: 'only refresh_token is currently implemented'
+            error: 'only refresh_token is currently implemented',
           });
           return;
         }
         // TODO: support third party applications
         if (request.body.client_id !== 'default') {
           reply.code(400).send({
-            error: 'client_id should be default'
+            error: 'client_id should be default',
           });
           return;
         }
         if (!request.body.refresh_token) {
           reply.code(400).send({
-            error: 'refresh_token is required'
+            error: 'refresh_token is required',
           });
           return;
         }
@@ -176,14 +176,14 @@ export default async function register(fastify: FastifyInstance) {
         const tokenHashStr = tokenHash.toString('base64url');
         request.log.debug({ hash: tokenHash }, 'hashed refresh token');
 
-        const session = await UserSessionDAO.getActiveBySessionHash(tokenHashStr);
+        const session = await UserSessionDAO.touchActiveSession(tokenHashStr);
         if (!session) {
           reply.code(401).send({
             error: 'invalid refresh token',
           });
           return;
         }
-        
+
         if (session.client_id) {
           reply.code(501).send({
             error: 'refresh for third party apps not implemented yet',

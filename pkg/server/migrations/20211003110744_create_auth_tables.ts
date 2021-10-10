@@ -31,6 +31,7 @@ export async function up(knex: Knex): Promise<void> {
     table.string('description').notNullable();
     table.string('oauth_client_id').notNullable().unique();
     table.string('oauth_client_secret_hash').notNullable();
+    table.string('oauth_origins');
     table.boolean('enabled').notNullable();
   });
 
@@ -40,6 +41,7 @@ export async function up(knex: Knex): Promise<void> {
     table.bigInteger('created_at').notNullable().defaultTo(now);
     table.bigInteger('expires_at');
     table.bigInteger('revoked_at');
+    table.bigInteger('touched_at').defaultTo(now);
     table.string('scope').notNullable();
     table.integer('client_id').references('id').inTable('clients');
     table.index(['client_id']);

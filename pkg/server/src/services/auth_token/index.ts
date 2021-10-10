@@ -5,8 +5,8 @@ import { CompactSign } from 'jose/jws/compact/sign';
 import { compactVerify } from 'jose/jws/compact/verify';
 import { importJWK } from 'jose/key/import';
 import { JWSInvalid, JWSSignatureVerificationFailed } from 'jose/util/errors';
-import { JWK, JWSHeaderParameters, KeyLike } from 'jose/types';
-import { createHash } from 'crypto';
+import { JWK } from 'jose/types';
+import { BinaryLike, createHash, createHmac } from 'crypto';
 import { AuthSigningKey, AuthToken, AuthTokenBase } from '../../util/types';
 import logger from '../../util/logger';
 import { TOKEN_EXPIRY } from '../../config';
@@ -14,7 +14,7 @@ import CacheService from '../cache';
 import SecretRetriever from '../../util/secret_retriever';
 import { now } from '../../util/helpers';
 
-const TOKEN_CACHE_TTL = 15;
+const TOKEN_CACHE_TTL = 30;
 const TOKEN_CACHE_CHECK = 120;
 const TOKEN_MAX_KEYS = 10000;
 const MAX_DRIFT = 60;
@@ -101,15 +101,34 @@ export default class AuthTokenService {
    * @param payload token
    * @returns contents of token if successful
    */
-  public async verifyPayload(token: string): Promise<AuthTokenBase> {
-    return cbor.decode((await compactVerify(
+  public async verifyPayload(token: string): Promise<{ kid: string, payload: AuthTokenBase }> {
+    const ret = await compactVerify(
       token,
-      this.getPublicKeyForJWT.bind(this),
-    )).payload);
+      async ({ kid }) => this.getSigningKeyForKid(kid!).publicKey,
+    );
+    return {
+      payload: cbor.decode(ret.payload),
+      kid: ret.protectedHeader.kid!,
+    };
+  }
+
+  /**
+   * Sign a HMAC with the specified key id
+   * @param kid key id
+   * @param payload payload
+   * @param alg algorithm (default: sha256)
+   * @returns hash digest
+   */
+  public signHMAC(kid: string, payload: BinaryLike, alg = 'sha256'): Buffer {
+    const key = this.getSigningKeyForKid(kid);
+    if (!key) throw new AuthTokenServiceError('kid doesn\'t exist');
+    return createHmac(alg, key.hmacKey).update(payload).digest();
   }
 
   private async checkRevocation(sid: ArrayBuffer): Promise<boolean> {
-    return !!(await this.externalCache.get(`${REVOKED_KEY}:${Buffer.from(sid).toString('base64url')}`));
+    return !!(await this.externalCache.get(
+      `${REVOKED_KEY}:${Buffer.from(sid).toString('base64url')}`,
+    ));
   }
 
   /**
@@ -159,7 +178,7 @@ export default class AuthTokenService {
 
     try {
       const payload = await this.verifyPayload(token);
-      const claims = this.validateClaims(payload as AuthToken);
+      const claims = this.validateClaims(payload.payload as AuthToken);
       if (await this.checkRevocation(claims.sid)) {
         this.tokenCache.set(hash, CACHE_HIT_REVOKED, claims.exp - ctime);
         throw new AuthTokenServiceError('revoked');
@@ -213,22 +232,24 @@ export default class AuthTokenService {
     return token;
   }
 
-  private async getPublicKeyForJWT(header: JWSHeaderParameters): Promise<KeyLike> {
+  private getSigningKeyForKid(kid: string): AuthSigningKey {
     const keys = this.keys.getAll();
-    const match = Object.keys(keys).find((key) => keys[key].publicJWK.kid === header.kid);
+    const match = Object.keys(keys).find((key) => keys[key].publicJWK.kid === kid);
     if (!match) throw new AuthTokenServiceError('signing key does not exist');
-    return keys[match].publicKey;
+    return keys[match];
   }
 
   private static async parseSecret(secret: string): Promise<AuthSigningKey> {
     const privateJWK: JWK = JSON.parse(secret);
     const publicJWK: JWK = { ...privateJWK, d: undefined };
+    const hmacKey = createHash('sha256').update(privateJWK.d!).digest();
 
     return {
       publicKey: await importJWK(publicJWK, 'EdDSA'),
       privateKey: await importJWK(privateJWK, 'EdDSA'),
       publicJWK,
       privateJWK,
+      hmacKey,
     };
   }
 }
