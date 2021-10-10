@@ -1,7 +1,8 @@
-import fastify, { FastifyInstance } from 'fastify';
+import fastify, { FastifyInstance, FastifyLoggerInstance } from 'fastify';
 import { fastifyRequestContextPlugin } from 'fastify-request-context';
 import { nanoid } from 'nanoid';
 import fastifyRateLimit from 'fastify-rate-limit';
+import { Http2Server, Http2ServerRequest, Http2ServerResponse } from 'http2';
 import Routes from './routes';
 import { NODE_ENV } from './config';
 import logger from './util/logger';
@@ -10,13 +11,22 @@ import pbacHook from './hooks/pbac';
 import { clientUserKeyGenerator } from './util/ratelimit';
 import authHook from './hooks/auth';
 import services from './services';
-
-let server: FastifyInstance;
+import SecretRetriever from './util/secret_retriever';
 
 export const init = async () => {
-  if (server) return server;
-  server = fastify({
+  const certSecret = new SecretRetriever('https', { watch: false });
+  await certSecret.loaded;
+
+  const server: FastifyInstance<
+    Http2Server, Http2ServerRequest, Http2ServerResponse, FastifyLoggerInstance
+  > = fastify({
     logger,
+    http2: true,
+    https: {
+      allowHTTP1: true,
+      key: certSecret.getValue('key.pem'),
+      cert: certSecret.getValue('cert.pem')
+    },
     trustProxy: true,
     genReqId: (req) => req.headers['x-request-id'] as string || nanoid(),
   });

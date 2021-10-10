@@ -1,10 +1,10 @@
-import { RouteHandler } from 'fastify';
+import { onRequestAsyncHookHandler } from 'fastify';
 import services from '../services';
 import { AuthTokenServiceError } from '../services/auth_token';
 
 const MAX_TOKEN_LENGTH = 768;
 
-const authHook: RouteHandler = async (request) => {
+const authHook: onRequestAsyncHookHandler<any, any, any> = async (request) => {
   // skip if we can't find a pbac config value
   if (!request.headers.authorization) {
     return;

@@ -1,10 +1,10 @@
-import { RouteHandler } from 'fastify';
+import { onRequestAsyncHookHandler, RouteHandler } from 'fastify';
 import RoleDAO from '../models/Role';
 import UserDAO from '../models/User';
 import { ERROR_FORBIDDEN, ERROR_UNAUTHORIZED } from '../util/constants';
 import { evaluate } from '../util/permissions';
 
-const pbacHook: RouteHandler = async (request, reply) => {
+const pbacHook: onRequestAsyncHookHandler<any, any, any> = async (request, reply) => {
   // skip if we can't find a pbac config value
   if (!reply.context.config.permission) {
     return;

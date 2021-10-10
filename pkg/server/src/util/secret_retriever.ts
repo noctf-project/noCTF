@@ -20,6 +20,8 @@ export default class SecretRetriever<T = string> {
 
   private cast: (str: string) => Promise<T> | T;
 
+  public readonly loaded?: Promise<void>;
+
   constructor(private qualifier: string, {
     cast = (a: string) => a as unknown as T,
     root = SECRETS_DIR,
@@ -31,9 +33,22 @@ export default class SecretRetriever<T = string> {
     // read in secrets
     const full = path.join(root, qualifier);
 
+    // load in initial
+    this.loaded = new Promise<void>((resolve, reject) => {
+      fs.readdir(full, (err, files) => {
+        if (err) reject(err);
+        resolve(Promise.all(
+          files.map(async (name) => this.values[name] = await this.readFromFilesystem(name))
+        ) as Promise<unknown> as Promise<void>);
+      });
+    });
+
     // create watcher
-    if (!watch) return; // or not
-    chokidar.watch('.', { cwd: full })
+    if (!watch) {
+      return;
+    }
+
+    chokidar.watch('.', { cwd: full, ignoreInitial: true })
       .on('add', async (name) => {
         this.log.warn(`adding ${name}`);
         this.values[name] = await this.readFromFilesystem(name);
