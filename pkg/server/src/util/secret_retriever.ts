@@ -38,7 +38,9 @@ export default class SecretRetriever<T = string> {
       fs.readdir(full, (err, files) => {
         if (err) reject(err);
         resolve(Promise.all(
-          files.map(async (name) => this.values[name] = await this.readFromFilesystem(name))
+          files.map(async (name) => {
+            this.values[name] = await this.readFromFilesystem(name);
+          }),
         ) as Promise<unknown> as Promise<void>);
       });
     });

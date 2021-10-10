@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@sinclair/typebox": "^0.20.5",
+    "argon2": "^0.28.2",
     "cbor": "^8.0.2",
     "chokidar": "^3.5.2",
     "fastify": "^3.22.0",

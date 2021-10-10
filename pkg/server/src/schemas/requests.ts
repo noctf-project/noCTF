@@ -20,6 +20,16 @@ export type AuthRegisterCheckRequestType = Static<typeof AuthRegisterCheckReques
 
 export const AuthVerifyRequest = Type.Object({
   token: Type.String(),
-  password: Type.String(),
+  password: Type.String({ minLength: 8 }),
 });
 export type AuthVerifyRequestType = Static<typeof AuthVerifyRequest>;
+
+export const AuthResetRequest = Type.Object({
+  email: Type.String({ format: 'email' }),
+});
+export type AuthResetRequestType = Static<typeof AuthResetRequest>;
+
+export const AuthRefreshRequest = Type.Object({
+  token: Type.String({ minLength: 32 }),
+});
+export type AuthRefreshRequestType = Static<typeof AuthRefreshRequest>;

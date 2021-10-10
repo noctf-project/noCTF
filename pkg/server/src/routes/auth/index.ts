@@ -1,21 +1,45 @@
 import { FastifyInstance } from 'fastify';
 import { createHash, randomBytes } from 'crypto';
 import {
-  AuthLoginRequest, AuthLoginRequestType, AuthRegisterCheckRequest,
-  AuthRegisterCheckRequestType, AuthRegisterRequest, AuthRegisterRequestType,
+  AuthLoginRequest, AuthLoginRequestType,
+  AuthRefreshRequest, AuthRefreshRequestType,
+  AuthRegisterCheckRequest, AuthRegisterCheckRequestType,
+  AuthRegisterRequest, AuthRegisterRequestType,
+  AuthResetRequest, AuthResetRequestType,
   AuthVerifyRequest, AuthVerifyRequestType,
 } from '../../schemas/requests';
 import {
-  AuthJWKSResponse, AuthJWKSResponseType, AuthLoginResponse, AuthLoginResponseType,
-  AuthPermissionsResponse, AuthPermissionsResponseType, AuthRegisterCheckResponse,
-  AuthRegisterCheckResponseType, AuthRegisterResponse, AuthRegisterResponseType,
-  AuthVerifyResponse, AuthVerifyResponseType, DefaultResponse, DefaultResponseType,
+  AuthJWKSResponse, AuthJWKSResponseType,
+  AuthLoginResponse, AuthLoginResponseType,
+  AuthPermissionsResponse, AuthPermissionsResponseType,
+  AuthRefreshResponse, AuthRefreshResponseType,
+  AuthRegisterCheckResponse, AuthRegisterCheckResponseType,
+  AuthRegisterResponse, AuthRegisterResponseType,
+  AuthVerifyResponse, AuthVerifyResponseType,
+  ErrorResponse, ErrorResponseType,
 } from '../../schemas/responses';
 import services from '../../services';
 import { ipKeyGenerator } from '../../util/ratelimit';
-import { TOKEN_EXPIRY } from '../../config';
+import { TOKEN_EXPIRY, VERIFY_EMAIL } from '../../config';
 import UserDAO from '../../models/User';
 import RoleDAO from '../../models/Role';
+import UserSessionDAO from '../../models/UserSession';
+import { hash, verify } from '../../util/password';
+import { now } from '../../util/helpers';
+
+const createSession = async (id: number, scope = []) => {
+  const refresh = (await randomBytes(48)).toString('base64url');
+  const sid = createHash('sha256').update(refresh).digest();
+  await UserSessionDAO.create({
+    session_hash: sid.toString('base64url'),
+    user_id: id,
+    scope: scope.join(','),
+    client_id: null,
+    expires_at: null,
+  });
+  const access = await services.authToken.generate(0, id, scope, sid);
+  return { refresh, access };
+};
 
 export default async function register(fastify: FastifyInstance) {
   fastify.get<{ Reply: AuthJWKSResponseType }>(
@@ -36,7 +60,10 @@ export default async function register(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{ Body: AuthLoginRequestType, Reply: AuthLoginResponseType }>(
+  fastify.post<{
+    Body: AuthLoginRequestType,
+    Reply: ErrorResponseType | AuthLoginResponseType
+  }>(
     '/login',
     {
       schema: {
@@ -45,6 +72,7 @@ export default async function register(fastify: FastifyInstance) {
         body: AuthLoginRequest,
         response: {
           default: AuthLoginResponse,
+          error: ErrorResponse,
         },
       },
       config: {
@@ -56,12 +84,109 @@ export default async function register(fastify: FastifyInstance) {
         },
       },
       handler: async (request, reply) => {
-        await UserDAO.getByEmail(request.body.email);
-        const refresh = (await randomBytes(48)).toString('base64url');
-        const sid = createHash('sha256').update(refresh).digest();
+        const user = await UserDAO.getByEmail(request.body.email);
+        if (!user) {
+          reply.code(401).send({
+            error: 'invalid credentials',
+          });
+          return;
+        }
+
+        if (!user.password) {
+          reply.code(401).send({
+            error: 'account not activated',
+          });
+          return;
+        }
+
+        // Hash the password
+        const password = await verify(user.password, request.body.password);
+        if (!password) {
+          reply.code(401).send({
+            error: 'invalid credentials',
+          });
+          return;
+        }
+        if (typeof password === 'string') {
+          // hash upgrade
+          await UserDAO.setPassword(user.id, password);
+        }
+
+        const { access, refresh } = await createSession(user.id);
         reply.send({
-          access_token: await services.authToken.generate(0, 1, [], sid),
+          access_token: access,
           refresh_token: refresh,
+          expires: TOKEN_EXPIRY,
+        });
+      },
+    },
+  );
+
+  fastify.post<{
+    Body: AuthRefreshRequestType,
+    Reply: ErrorResponseType | AuthRefreshResponseType
+  }>(
+    '/refresh',
+    {
+      schema: {
+        tags: ['auth'],
+        security: [],
+        body: AuthRefreshRequest,
+        response: {
+          default: AuthRefreshResponse,
+        },
+      },
+      config: {
+        rateLimit: {
+          max: 30,
+          timeWindow: '1 minute',
+          keyGenerator: ipKeyGenerator,
+        },
+      },
+      handler: async (request, reply) => {
+        const tokenHash = createHash('sha256')
+          .update(request.body.token)
+          .digest();
+        const tokenHashStr = tokenHash.toString('base64url');
+        request.log.debug({ hash: tokenHash }, 'hashed refresh token');
+
+        const session = await UserSessionDAO.getActiveBySessionHash(tokenHashStr);
+        if (!session) {
+          reply.code(401).send({
+            error: 'invalid refresh token',
+          });
+          return;
+        } if (session.client_id) {
+          // TODO: implement refresh for third party apps
+          reply.code(501).send({
+            error: 'not implemented yet',
+          });
+          return;
+        }
+        request.log.debug({ session }, 'session found for refresh token');
+
+        let token: string;
+
+        if (session.expires_at) {
+          token = await services.authToken.generate(
+            session.client_id || 0,
+            session.user_id,
+            session.scope.split(','),
+            tokenHash,
+            session.expires_at - now(),
+          );
+        } else {
+          token = await services.authToken.generate(
+            session.client_id || 0,
+            session.user_id,
+            session.scope.split(','),
+            tokenHash,
+          );
+        }
+        request.log.info({ uid: session.user_id }, 'generated session from refresh token');
+
+        reply.send({
+          access_token: token,
           expires: TOKEN_EXPIRY,
         });
       },
@@ -90,15 +215,19 @@ export default async function register(fastify: FastifyInstance) {
       handler: async (request, reply) => {
         const user = await UserDAO.create(request.body);
         const { token } = await UserDAO.generateVerify(user.id);
-        request.log.info(`created user: verification token ${token}`);
-        reply.code(200).send({});
+        // TODO: email verification
+        if (VERIFY_EMAIL) {
+          reply.send({});
+        } else {
+          reply.send({ token });
+        }
       },
     },
   );
 
   fastify.post<{
     Body: AuthRegisterCheckRequestType,
-    Reply: AuthRegisterCheckResponseType
+    Reply: ErrorResponseType | AuthRegisterCheckResponseType
   }>(
     '/register/check',
     {
@@ -108,6 +237,7 @@ export default async function register(fastify: FastifyInstance) {
         body: AuthRegisterCheckRequest,
         response: {
           default: AuthRegisterCheckResponse,
+          errror: ErrorResponse,
         },
       },
       config: {
@@ -126,10 +256,10 @@ export default async function register(fastify: FastifyInstance) {
         }
 
         if (request.body.email) {
-          reply.code(200).send({ exists: !!(await UserDAO.getIDByEmail(request.body.email)) });
+          reply.send({ exists: !!(await UserDAO.getIDByEmail(request.body.email)) });
           return;
         } if (request.body.name) {
-          reply.code(200).send({ exists: !!(await UserDAO.getIDByName(request.body.name)) });
+          reply.send({ exists: !!(await UserDAO.getIDByName(request.body.name)) });
           return;
         }
 
@@ -140,7 +270,10 @@ export default async function register(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{ Body: AuthVerifyRequestType, Reply: AuthVerifyResponseType }>(
+  fastify.post<{
+    Body: AuthVerifyRequestType,
+    Reply: ErrorResponseType | AuthVerifyResponseType
+  }>(
     '/verify',
     {
       schema: {
@@ -160,13 +293,61 @@ export default async function register(fastify: FastifyInstance) {
         },
       },
       handler: async (request, reply) => {
-        const refresh = (await randomBytes(48)).toString('base64url');
-        const sid = createHash('sha256').update(refresh).digest();
+        const id = await UserDAO.validateAndDiscardVerify(request.body.token);
+        if (!id) {
+          reply.code(401).send({
+            error: 'Invalid verification token',
+          });
+          return;
+        }
+
+        // Hash the password
+        const password = await hash(request.body.password);
+        await UserDAO.setPassword(id, password);
+
+        // Log the user in
+        const { access, refresh } = await createSession(id);
         reply.send({
-          access_token: await services.authToken.generate(0, 1, [], sid),
+          access_token: access,
           refresh_token: refresh,
           expires: TOKEN_EXPIRY,
         });
+      },
+    },
+  );
+
+  fastify.post<{ Body: AuthResetRequestType, Reply: ErrorResponseType }>(
+    '/reset',
+    {
+      schema: {
+        tags: ['auth'],
+        security: [],
+        body: AuthResetRequest,
+        response: {
+          default: ErrorResponse,
+        },
+      },
+      config: {
+        permission: 'auth.public.login',
+        rateLimit: {
+          max: 5,
+          timeWindow: '1 minute',
+          keyGenerator: ipKeyGenerator,
+        },
+      },
+      handler: async (request, reply) => {
+        const uid = await UserDAO.getIDByEmail(request.body.email);
+        if (!uid) {
+          request.log.debug({ email: request.body.email }, 'user with email does not exist');
+          reply.send({});
+          return;
+        }
+
+        // TODO: send token via email
+        const { token } = await UserDAO.generateVerify(uid);
+        request.log.info({ uid, token }, 'generated reset token');
+
+        reply.send({});
       },
     },
   );
@@ -185,25 +366,25 @@ export default async function register(fastify: FastifyInstance) {
       },
       handler: async (request, reply) => {
         if (!request.auth) {
-          reply.code(200).send({
+          reply.send({
             permissions: await RoleDAO.getRolePermissionsByName('public'),
           });
           return;
         }
-        reply.code(200).send({
+        reply.send({
           permissions: await UserDAO.getPermissions(request.auth?.uid),
         });
       },
     },
   );
 
-  fastify.post<{ Reply: DefaultResponseType }>(
+  fastify.post<{ Reply: ErrorResponseType }>(
     '/logout',
     {
       schema: {
         tags: ['auth'],
         response: {
-          default: DefaultResponse,
+          default: ErrorResponse,
         },
       },
       config: {
@@ -211,9 +392,13 @@ export default async function register(fastify: FastifyInstance) {
       },
       handler: async (request, reply) => {
         if (request.auth) {
-          services.authToken.revoke(request.auth.sid);
+          await services.authToken.revoke(request.auth.sid);
+          await UserSessionDAO.revoke(
+            request.auth.uid,
+            Buffer.from(request.auth.sid).toString('base64url'),
+          );
         }
-        reply.code(200).send({});
+        reply.send({});
       },
     },
   );

@@ -18,14 +18,14 @@ export const init = async () => {
   await certSecret.loaded;
 
   const server: FastifyInstance<
-    Http2Server, Http2ServerRequest, Http2ServerResponse, FastifyLoggerInstance
+  Http2Server, Http2ServerRequest, Http2ServerResponse, FastifyLoggerInstance
   > = fastify({
     logger,
     http2: true,
     https: {
       allowHTTP1: true,
       key: certSecret.getValue('key.pem'),
-      cert: certSecret.getValue('cert.pem')
+      cert: certSecret.getValue('cert.pem'),
     },
     trustProxy: true,
     genReqId: (req) => req.headers['x-request-id'] as string || nanoid(),

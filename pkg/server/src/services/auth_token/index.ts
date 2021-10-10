@@ -53,7 +53,7 @@ export default class AuthTokenService {
    * @returns access token
    */
   public async generate(cid: number, uid: number,
-    scope: string[], sid: Uint8Array): Promise<string> {
+    scope: string[], sid: Uint8Array, maxExpires = this.expiry): Promise<string> {
     const ctime = now();
 
     const token: AuthToken = {
@@ -63,7 +63,7 @@ export default class AuthTokenService {
       uid,
       sid,
       iat: ctime,
-      exp: ctime + this.expiry,
+      exp: Math.min(ctime + this.expiry, ctime + maxExpires),
       scope,
     };
 
@@ -101,11 +101,11 @@ export default class AuthTokenService {
    * @param payload token
    * @returns contents of token if successful
    */
-  public async verifyPayload(token: string): Promise<ArrayBuffer> {
-    return (await compactVerify(
+  public async verifyPayload(token: string): Promise<AuthTokenBase> {
+    return cbor.decode((await compactVerify(
       token,
       this.getPublicKeyForJWT.bind(this),
-    )).payload;
+    )).payload);
   }
 
   private async checkRevocation(sid: ArrayBuffer): Promise<boolean> {
@@ -146,7 +146,7 @@ export default class AuthTokenService {
       return this.rawParse(token, hash);
     } if (value === CACHE_HIT_VALID) {
       // Token already validated
-      const data = Buffer.from(token.split('.')[1], 'base64url');
+      const data = cbor.decode(Buffer.from(token.split('.')[1], 'base64url'));
       return this.validateClaims(data);
     } if (value === CACHE_HIT_REVOKED) {
       throw new AuthTokenServiceError('revoked');
@@ -159,7 +159,7 @@ export default class AuthTokenService {
 
     try {
       const payload = await this.verifyPayload(token);
-      const claims = this.validateClaims(payload);
+      const claims = this.validateClaims(payload as AuthToken);
       if (await this.checkRevocation(claims.sid)) {
         this.tokenCache.set(hash, CACHE_HIT_REVOKED, claims.exp - ctime);
         throw new AuthTokenServiceError('revoked');
@@ -180,10 +180,8 @@ export default class AuthTokenService {
     }
   }
 
-  private validateClaims(data: ArrayBuffer): AuthToken {
+  private validateClaims(token: AuthToken): AuthToken {
     const ctime = now();
-    const token: AuthToken = cbor.decode(data);
-
     if (token.typ !== TYPE_AUTH_TOKEN) {
       throw new AuthTokenServiceError('invalid type');
     }
@@ -207,6 +205,7 @@ export default class AuthTokenService {
     }
 
     // add scope if its missing
+    /* eslint-disable no-param-reassign */
     if (!token.scope) {
       token.scope = [];
     }

@@ -1,4 +1,4 @@
-import { onRequestAsyncHookHandler, RouteHandler } from 'fastify';
+import { onRequestAsyncHookHandler } from 'fastify';
 import RoleDAO from '../models/Role';
 import UserDAO from '../models/User';
 import { ERROR_FORBIDDEN, ERROR_UNAUTHORIZED } from '../util/constants';

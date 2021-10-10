@@ -25,7 +25,7 @@ export interface AuthToken extends AuthTokenBase {
 
 export interface AuthTokenVerify extends AuthTokenBase {
   typ: 'verify';
-  tok: ArrayBuffer;
+  tok: Uint8Array;
   exp: number;
   uid: number;
 }
