@@ -29,7 +29,11 @@ export const AuthResetRequest = Type.Object({
 });
 export type AuthResetRequestType = Static<typeof AuthResetRequest>;
 
-export const AuthRefreshRequest = Type.Object({
-  token: Type.String({ minLength: 32 }),
+export const AuthTokenRequest = Type.Object({
+  code: Type.Optional(Type.String({ minLength: 32 })),
+  refresh_token: Type.Optional(Type.String({ minLength: 32 })),
+  grant_type: Type.String({}),
+  client_id: Type.String(),
+  client_secret: Type.Optional(Type.String()),
 });
-export type AuthRefreshRequestType = Static<typeof AuthRefreshRequest>;
+export type AuthTokenRequestType = Static<typeof AuthTokenRequest>;

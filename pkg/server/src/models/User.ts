@@ -92,6 +92,8 @@ export class UserDAO {
       })
       .where({ id });
 
+    services.cache.purge(`users:${id}`);
+
     return {
       token,
       expires: VERIFY_TOKEN_EXPIRY,
@@ -105,7 +107,7 @@ export class UserDAO {
   public async validateAndDiscardVerify(token: string): Promise<number | null> {
     const ctime = now();
     try {
-      const data = (await services.authToken.verifyPayload(token)) as AuthTokenVerify;
+      const data = (await services.authToken.verifyPayload(token)).payload as AuthTokenVerify;
 
       if (data.typ !== VERIFY_TOKEN_TYPE) return null;
       if (ctime > data.exp) return null;
@@ -136,6 +138,7 @@ export class UserDAO {
       await this.database.builder(this.tableName)
         .update({ verify_hash: null })
         .where({ id: data.uid });
+      services.cache.purge(`users:${data.uid}`);
 
       return data.uid;
     } catch (e) {
@@ -152,6 +155,7 @@ export class UserDAO {
    * @param password password
    */
   public async setPassword(id: number, password: string): Promise<void> {
+    services.cache.purge(`users:${id}`);
     await this.database.builder(this.tableName)
       .update({ password })
       .where({ id });
@@ -227,7 +231,7 @@ export class UserDAO {
           total.push(current);
         }
         return total;
-      }, []));
+      }, []), 60);
   }
 
   /**

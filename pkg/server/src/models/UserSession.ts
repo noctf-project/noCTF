@@ -9,6 +9,7 @@ export type UserSession = {
   created_at?: number | null;
   expires_at?: number | null;
   revoked_at?: number | null;
+  touched_at?: number | null;
   scope: string;
   client_id?: number | null;
 };
@@ -36,16 +37,27 @@ export class UserSessionDAO {
         scope,
         client_id: client_id || null,
         expires_at: expires_at || null,
+        touched_at: now(),
       });
   }
 
-  public async getActiveBySessionHash(session_hash: string): Promise<UserSession> {
-    return this.database.builder(this.tableName)
+  /**
+   * Get and touch an active session. Touch sets the touched_at to current date
+   * which is when the token was last refreshed.
+   * @param session_hash hash of session
+   * @returns
+   */
+  public async touchActiveSession(session_hash: string): Promise<UserSession> {
+    const session = await this.database.builder(this.tableName)
       .select('*')
       .where({ session_hash, revoked_at: null })
       .andWhere((w) => w.whereNull('expires_at')
         .orWhere('expires_at', '>', now()))
       .first();
+    await this.database.builder(this.tableName)
+      .update({ touched_at: now() })
+      .where({ session_hash });
+    return session;
   }
 
   public async revoke(user_id: number, session_hash: string): Promise<void> {
