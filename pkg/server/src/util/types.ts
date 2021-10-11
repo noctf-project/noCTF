@@ -6,7 +6,7 @@ export type AuthSigningKey = {
   publicJWK: JWK;
   privateKey: KeyLike;
   privateJWK: JWK;
-  hmacKey: Buffer;
+  symmetricKey: Buffer;
 };
 
 export interface AuthTokenBase {

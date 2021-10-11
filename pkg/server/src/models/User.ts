@@ -79,7 +79,7 @@ export class UserDAO {
       tok: nonce,
       exp: expires,
     };
-    const token = await services.authToken.signPayload(payload);
+    const token = await services.authToken.encryptPayload(payload);
 
     const hash = createHash('sha256')
       .update(nonce)
@@ -107,7 +107,7 @@ export class UserDAO {
   public async validateAndDiscardVerify(token: string): Promise<number | null> {
     const ctime = now();
     try {
-      const data = (await services.authToken.verifyPayload(token)).payload as AuthTokenVerify;
+      const data = (await services.authToken.decryptPayload(token)).payload as AuthTokenVerify;
 
       if (data.typ !== VERIFY_TOKEN_TYPE) return null;
       if (ctime > data.exp) return null;
