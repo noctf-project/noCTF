@@ -3,6 +3,8 @@ import * as path from 'path';
 import NodeCache from 'node-cache';
 import { CompactSign } from 'jose/jws/compact/sign';
 import { compactVerify } from 'jose/jws/compact/verify';
+import { CompactEncrypt } from 'jose/jwe/compact/encrypt';
+import { compactDecrypt } from 'jose/jwe/compact/decrypt'
 import { importJWK } from 'jose/key/import';
 import { JWSInvalid, JWSSignatureVerificationFailed } from 'jose/util/errors';
 import { JWK } from 'jose/types';
@@ -13,6 +15,7 @@ import { TOKEN_EXPIRY } from '../../config';
 import CacheService from '../cache';
 import SecretRetriever from '../../util/secret_retriever';
 import { now } from '../../util/helpers';
+import { versions } from 'process';
 
 const TOKEN_CACHE_TTL = 30;
 const TOKEN_CACHE_CHECK = 120;
@@ -80,17 +83,7 @@ export default class AuthTokenService {
    * @returns CBOR JWS token
    */
   public async signPayload(payload: AuthTokenBase): Promise<string> {
-    const keys = await this.keys.getAll();
-    // Get the first suitable key (key with an id greater than the current time)
-    const version = Object.keys(keys)
-      .map(parseInt)
-      .filter((v) => !!v)
-      .sort((a, b) => b - a)
-      .find((id) => id <= now());
-    if (!version) {
-      throw new AuthTokenServiceError('cannot find suitable signing key');
-    }
-    const key = keys[version];
+    const key = await this.getLatestKey();
     return new CompactSign(cbor.encode(payload))
       .setProtectedHeader({ alg: 'EdDSA', kid: key.publicJWK.kid })
       .sign(key.privateKey);
@@ -113,6 +106,35 @@ export default class AuthTokenService {
   }
 
   /**
+   * Encrypt a CBOR payload with AES256 derived from private key
+   * @param kid key id
+   * @param payload payload
+   * @returns JWE
+   */
+  public async encryptPayload(payload: AuthTokenBase): Promise<string> {
+    const key = await this.getLatestKey();
+    return await new CompactEncrypt(cbor.encode(payload))
+      .setProtectedHeader({ kid: key.publicJWK.kid, enc: 'A256GCM', alg: 'dir' })
+      .encrypt(key.symmetricKey);
+  }
+
+  /**
+   * Decrypt a CBOR encoded JWE with kid derived from the private key
+   * @param token JWE token to decrypt
+   * @returns object
+   */
+  public async decryptPayload(token: string): Promise<{ kid: string, payload: AuthTokenBase }> {
+    const ret = await compactDecrypt(
+      token,
+      async ({ kid }) => this.getSigningKeyForKid(kid!).symmetricKey,
+    );
+    return {
+      payload: cbor.decode(ret.plaintext),
+      kid: ret.protectedHeader.kid!,
+    };
+  }
+
+  /**
    * Sign a HMAC with the specified key id
    * @param kid key id
    * @param payload payload
@@ -122,7 +144,7 @@ export default class AuthTokenService {
   public signHMAC(kid: string, payload: BinaryLike, alg = 'sha256'): Buffer {
     const key = this.getSigningKeyForKid(kid);
     if (!key) throw new AuthTokenServiceError('kid doesn\'t exist');
-    return createHmac(alg, key.hmacKey).update(payload).digest();
+    return createHmac(alg, key.symmetricKey).update(payload).digest();
   }
 
   private async checkRevocation(sid: ArrayBuffer): Promise<boolean> {
@@ -232,6 +254,20 @@ export default class AuthTokenService {
     return token;
   }
 
+  private async getLatestKey(): Promise<AuthSigningKey> {
+    const keys = await this.keys.getAll();
+    // Get the first suitable key (key with an id greater than the current time)
+    const version = Object.keys(keys)
+      .map(parseInt)
+      .filter((v) => !!v)
+      .sort((a, b) => b - a)
+      .find((id) => id <= now());
+    if (!version) {
+      throw new AuthTokenServiceError('cannot find suitable signing key');
+    }
+    return keys[version];
+  }
+
   private getSigningKeyForKid(kid: string): AuthSigningKey {
     const keys = this.keys.getAll();
     const match = Object.keys(keys).find((key) => keys[key].publicJWK.kid === kid);
@@ -242,14 +278,14 @@ export default class AuthTokenService {
   private static async parseSecret(secret: string): Promise<AuthSigningKey> {
     const privateJWK: JWK = JSON.parse(secret);
     const publicJWK: JWK = { ...privateJWK, d: undefined };
-    const hmacKey = createHash('sha256').update(privateJWK.d!).digest();
+    const symmetricKey = createHash('sha256').update(privateJWK.d!).digest();
 
     return {
       publicKey: await importJWK(publicJWK, 'EdDSA'),
       privateKey: await importJWK(privateJWK, 'EdDSA'),
       publicJWK,
       privateJWK,
-      hmacKey,
+      symmetricKey,
     };
   }
 }
