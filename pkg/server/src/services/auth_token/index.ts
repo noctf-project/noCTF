@@ -55,7 +55,7 @@ export default class AuthTokenService {
    * @returns access token
    */
   public async generate(aid: number, uid: number,
-    scope: string[], sid: Uint8Array, maxExpires = this.expiry): Promise<string> {
+    prm: string[], sid: Uint8Array, maxExpires = this.expiry): Promise<string> {
     const ctime = now();
 
     const token: AuthToken = {
@@ -66,7 +66,7 @@ export default class AuthTokenService {
       sid,
       iat: ctime,
       exp: Math.min(ctime + this.expiry, ctime + maxExpires),
-      scope,
+      prm,
     };
 
     const signed = await this.signPayload(token);
@@ -244,10 +244,8 @@ export default class AuthTokenService {
       throw new AuthTokenServiceError('invalid token format');
     }
 
-    // add scope if its missing
-    /* eslint-disable no-param-reassign */
-    if (!token.scope) {
-      token.scope = [];
+    if (!token.prm) {
+      throw new AuthTokenServiceError('no permissions defined');
     }
 
     return token;

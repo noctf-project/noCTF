@@ -92,7 +92,7 @@ export async function up(knex: Knex): Promise<void> {
     {
       name: 'api-full',
       description: 'Grants (almost) full API access to your account.',
-      permissions: '!auth.self.authorize,!user.self.edit,*'
+      permissions: '!user.self.edit,*'
     }
   ]);
 }

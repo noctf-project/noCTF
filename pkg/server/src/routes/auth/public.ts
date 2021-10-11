@@ -78,7 +78,7 @@ export default async function register(fastify: FastifyInstance) {
           await UserDAO.setPassword(user.id, password);
         }
 
-        const { access, refresh } = await createSession(user.id);
+        const { access, refresh } = await createSession(user.id, 0);
         reply.send({
           access_token: access,
           refresh_token: refresh,
@@ -201,7 +201,7 @@ export default async function register(fastify: FastifyInstance) {
         await UserDAO.setPassword(id, password);
 
         // Log the user in
-        const { access, refresh } = await createSession(id);
+        const { access, refresh } = await createSession(id, 0);
         reply.send({
           access_token: access,
           refresh_token: refresh,

@@ -43,8 +43,21 @@ const pbacHook: onRequestAsyncHookHandler<any, any, any> = async (request, reply
     return;
   }
 
+  // Only allow permission for appid = 0 to derive more permissions
+  if (reply.context.config.permission === 'auth.self.authorize') {
+    if (request.auth.aid !== 0) {
+      reply.code(403).send({
+        error: ERROR_FORBIDDEN,
+      });
+    }
+    return;
+  }
+
+  // allowed if both token and user allow the permission
   const permissions = await UserDAO.getPermissions(request.auth.uid);
-  if (evaluate(reply.context.config.permission, permissions)) {
+  const [allowedToken] = evaluate(reply.context.config.permission, request.auth.prm);
+  const [allowedUser] = evaluate(reply.context.config.permission, permissions);
+  if (allowedToken && allowedUser) {
     return;
   }
 
