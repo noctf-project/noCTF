@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { createHash, randomBytes } from 'crypto';
+import { createHash } from 'crypto';
 import {
   AuthLoginRequest, AuthLoginRequestType,
   AuthTokenRequest, AuthTokenRequestType,
@@ -26,20 +26,7 @@ import RoleDAO from '../../models/Role';
 import UserSessionDAO from '../../models/UserSession';
 import { hash, verify } from '../../util/password';
 import { now } from '../../util/helpers';
-
-const createSession = async (id: number, scope = []) => {
-  const refresh = (await randomBytes(48)).toString('base64url');
-  const sid = createHash('sha256').update(refresh).digest();
-  await UserSessionDAO.create({
-    session_hash: sid.toString('base64url'),
-    user_id: id,
-    scope: scope.join(','),
-    client_id: null,
-    expires_at: null,
-  });
-  const access = await services.authToken.generate(0, id, scope, sid);
-  return { refresh, access };
-};
+import { createSession } from '../../util/session';
 
 export default async function register(fastify: FastifyInstance) {
   fastify.get<{ Reply: AuthJWKSResponseType }>(

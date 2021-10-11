@@ -10,8 +10,10 @@ import { ERROR_INTERNAL_SERVER_ERROR } from './util/constants';
 import pbacHook from './hooks/pbac';
 import { clientUserKeyGenerator } from './util/ratelimit';
 import authHook from './hooks/auth';
-import services from './services';
 import SecretRetriever from './util/secret_retriever';
+import closeHook from './hooks/close';
+import services from './services';
+import { NoCTFHTTPException } from './util/exceptions';
 
 export const init = async () => {
   const certSecret = new SecretRetriever('https', { watch: false });
@@ -37,6 +39,14 @@ export const init = async () => {
   });
 
   server.setErrorHandler(async (error, request, reply) => {
+    if(error instanceof NoCTFHTTPException) {
+      reply.status(error.statusCode).send({
+        error: error.message,
+        detail: error.detail
+      });
+      return;
+    }
+
     if (error.validation) {
       reply.status(400).send({ error: error.message });
       return;
@@ -58,6 +68,7 @@ export const init = async () => {
   server.decorateRequest('auth', null);
   server.addHook('onRequest', authHook);
   server.addHook('onRequest', pbacHook);
+  server.addHook('onClose', closeHook);
 
   // Mount rate limiting hook
   server.register(fastifyRateLimit, {

@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'crypto';
-import { JWSInvalid, JWSSignatureVerificationFailed } from 'jose/util/errors';
+import { JWEInvalid } from 'jose/util/errors';
 import { TOKEN_EXPIRY } from '../config';
 import services from '../services';
 import CacheService from '../services/cache';
@@ -142,7 +142,7 @@ export class UserDAO {
 
       return data.uid;
     } catch (e) {
-      if (e instanceof JWSSignatureVerificationFailed || e instanceof JWSInvalid) {
+      if (e instanceof JWEInvalid) {
         return null;
       }
       throw e;
@@ -159,6 +159,7 @@ export class UserDAO {
     await this.database.builder(this.tableName)
       .update({ password })
       .where({ id });
+    await this.cache.purge(`users:${id}`);
   }
 
   /**
