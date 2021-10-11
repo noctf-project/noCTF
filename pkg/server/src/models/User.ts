@@ -159,6 +159,7 @@ export class UserDAO {
     await this.database.builder(this.tableName)
       .update({ password })
       .where({ id });
+    await this.cache.purge(`users:${id}`);
   }
 
   /**
