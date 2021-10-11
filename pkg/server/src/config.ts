@@ -10,6 +10,7 @@ declare const process : {
     NOCTF_DATABASE_CLIENT: string,
     NOCTF_DATABASE_CONNECTION_NAME: string,
     NOCTF_DATABASE_CONNECTION_HOST: string,
+    NOCTF_DATABASE_CONNECTION_PORT: string,
     NOCTF_DATABASE_CONNECTION_USERNAME: string,
     NOCTF_DATABASE_CONNECTION_PASSWORD: string,
     NOCTF_LOG_LEVEL: string,
@@ -36,6 +37,7 @@ export const DATABASE_CLIENT = process.env.NOCTF_DATABASE_CLIENT || 'postgresql'
 export const DATABASE_CONNECTION = {
   database: process.env.NOCTF_DATABASE_CONNECTION_NAME,
   host: process.env.NOCTF_DATABASE_CONNECTION_HOST,
+  port: +(process.env.NOCTF_DATABASE_CONNECTION_PORT || 5432),
   user: process.env.NOCTF_DATABASE_CONNECTION_USERNAME,
   password: process.env.NOCTF_DATABASE_CONNECTION_PASSWORD,
 };

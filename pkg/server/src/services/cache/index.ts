@@ -18,4 +18,8 @@ export default class CacheService extends IORedis {
   async purge(...keys: string[]) {
     this.del(...keys.map((key) => `${KEY_SIMPLE_PREFIX}_${key}`));
   }
+
+  async close() {
+    this.disconnect();
+  }
 }

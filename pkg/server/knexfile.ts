@@ -5,6 +5,7 @@ module.exports = {
     client: 'postgresql',
     connection: {
       host:     process.env.NOCTF_DATABASE_CONNECTION_HOST || 'postgres',
+      port:     +(process.env.NOCTF_DATABASE_CONNECTION_PORT || 5432),
       database: process.env.NOCTF_DATABASE_CONNECTION_NAME || 'noctf',
       user:     process.env.NOCTF_DATABASE_CONNECTION_USERNAME || 'noctf',
       password: process.env.NOCTF_DATABASE_CONNECTION_PASSWORD || 'devpassword'
