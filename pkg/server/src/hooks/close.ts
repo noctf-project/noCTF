@@ -1,5 +1,5 @@
-import { HookHandlerDoneFunction } from "fastify";
-import services from "../services";
+import { HookHandlerDoneFunction } from 'fastify';
+import services from '../services';
 
 const closeHook = async (_: any, done: HookHandlerDoneFunction) => {
   await services.database.close();

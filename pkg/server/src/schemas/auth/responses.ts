@@ -1,10 +1,5 @@
 import { Static, Type } from '@sinclair/typebox';
-import { JWK } from './datatypes';
-
-export const ErrorResponse = Type.Object({
-  error: Type.Optional(Type.String()),
-});
-export type ErrorResponseType = Static<typeof ErrorResponse>;
+import { JWK } from '../datatypes';
 
 export const AuthLoginResponse = Type.Object({
   access_token: Type.String(),

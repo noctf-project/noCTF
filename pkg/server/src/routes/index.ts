@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import swagger from 'fastify-swagger';
 import { DOCS_ENABLED } from '../config';
 import authRoutes from './auth';
+import challengeRoutes from './challenge';
 
 const apiRegister = async (fastify: FastifyInstance) => {
   fastify.register(swagger, {
@@ -39,6 +40,7 @@ const apiRegister = async (fastify: FastifyInstance) => {
   });
 
   fastify.register(authRoutes, { prefix: '/auth' });
+  fastify.register(challengeRoutes, { prefix: '/challenge' });
 };
 
 export default async function register(fastify: FastifyInstance) {

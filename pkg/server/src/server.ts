@@ -39,10 +39,10 @@ export const init = async () => {
   });
 
   server.setErrorHandler(async (error, request, reply) => {
-    if(error instanceof NoCTFHTTPException) {
+    if (error instanceof NoCTFHTTPException) {
       reply.status(error.statusCode).send({
         error: error.message,
-        detail: error.detail
+        detail: error.detail,
       });
       return;
     }
