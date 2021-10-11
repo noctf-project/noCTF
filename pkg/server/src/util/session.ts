@@ -1,6 +1,6 @@
-import { createHash, randomBytes } from "crypto";
-import UserSessionDAO from "../models/UserSession";
-import services from "../services";
+import { createHash, randomBytes } from 'crypto';
+import UserSessionDAO from '../models/UserSession';
+import services from '../services';
 
 export const createSession = async (id: number, scope = []) => {
   const refresh = (await randomBytes(48)).toString('base64url');

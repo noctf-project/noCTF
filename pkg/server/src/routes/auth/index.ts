@@ -7,7 +7,7 @@ import {
   AuthRegisterRequest, AuthRegisterRequestType,
   AuthResetRequest, AuthResetRequestType,
   AuthVerifyRequest, AuthVerifyRequestType,
-} from '../../schemas/requests';
+} from '../../schemas/auth/requests';
 import {
   AuthJWKSResponse, AuthJWKSResponseType,
   AuthLoginResponse, AuthLoginResponseType,
@@ -16,8 +16,7 @@ import {
   AuthRegisterCheckResponse, AuthRegisterCheckResponseType,
   AuthRegisterResponse, AuthRegisterResponseType,
   AuthVerifyResponse, AuthVerifyResponseType,
-  ErrorResponse, ErrorResponseType,
-} from '../../schemas/responses';
+} from '../../schemas/auth/responses';
 import services from '../../services';
 import { ipKeyGenerator } from '../../util/ratelimit';
 import { TOKEN_EXPIRY, VERIFY_EMAIL } from '../../config';
@@ -27,6 +26,7 @@ import UserSessionDAO from '../../models/UserSession';
 import { hash, verify } from '../../util/password';
 import { now } from '../../util/helpers';
 import { createSession } from '../../util/session';
+import { ErrorResponse, ErrorResponseType } from '../../schemas/base';
 
 export default async function register(fastify: FastifyInstance) {
   fastify.get<{ Reply: AuthJWKSResponseType }>(
