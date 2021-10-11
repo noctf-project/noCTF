@@ -6,7 +6,7 @@ import CacheService from '../services/cache';
 import DatabaseService from '../services/database';
 import { now } from '../util/helpers';
 import logger from '../util/logger';
-import { evaluateSingle } from '../util/permissions';
+import { checkEquivalent } from '../util/permissions';
 import { AuthTokenVerify } from '../util/types';
 import RoleDAO from './Role';
 
@@ -227,7 +227,7 @@ export class UserDAO {
       .flat()
       .sort()
       .reduce((total: string[], current) => { // Reduce step to simplify permissions
-        if (total.length === 0 || !evaluateSingle(total[total.length - 1], current)) {
+        if (total.length === 0 || !checkEquivalent(total[total.length - 1], current)) {
           total.push(current);
         }
         return total;

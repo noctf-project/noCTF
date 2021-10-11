@@ -4,7 +4,7 @@ import NodeCache from 'node-cache';
 import { CompactSign } from 'jose/jws/compact/sign';
 import { compactVerify } from 'jose/jws/compact/verify';
 import { CompactEncrypt } from 'jose/jwe/compact/encrypt';
-import { compactDecrypt } from 'jose/jwe/compact/decrypt'
+import { compactDecrypt } from 'jose/jwe/compact/decrypt';
 import { importJWK } from 'jose/key/import';
 import { JWSInvalid, JWSSignatureVerificationFailed } from 'jose/util/errors';
 import { JWK } from 'jose/types';
@@ -15,7 +15,6 @@ import { TOKEN_EXPIRY } from '../../config';
 import CacheService from '../cache';
 import SecretRetriever from '../../util/secret_retriever';
 import { now } from '../../util/helpers';
-import { versions } from 'process';
 
 const TOKEN_CACHE_TTL = 30;
 const TOKEN_CACHE_CHECK = 120;
@@ -113,7 +112,7 @@ export default class AuthTokenService {
    */
   public async encryptPayload(payload: AuthTokenBase): Promise<string> {
     const key = await this.getLatestKey();
-    return await new CompactEncrypt(cbor.encode(payload))
+    return new CompactEncrypt(cbor.encode(payload))
       .setProtectedHeader({ kid: key.publicJWK.kid, enc: 'A256GCM', alg: 'dir' })
       .encrypt(key.symmetricKey);
   }
