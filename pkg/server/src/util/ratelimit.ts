@@ -28,6 +28,6 @@ export const ipKeyGenerator = (request: FastifyRequest) => {
   return key;
 };
 
-export const clientUserKeyGenerator = (request: FastifyRequest) => (
-  request.auth ? `c${request.auth.cid}u${request.auth.uid}` : ipKeyGenerator(request)
+export const appUserKeyGenerator = (request: FastifyRequest) => (
+  request.auth ? `c${request.auth.aid}u${request.auth.uid}` : ipKeyGenerator(request)
 );

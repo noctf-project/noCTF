@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import services from '../services';
 import CacheService from '../services/cache';
 import DatabaseService from '../services/database';
@@ -11,7 +12,7 @@ export type UserSession = {
   revoked_at?: number | null;
   touched_at?: number | null;
   scope: string;
-  client_id?: number | null;
+  app_id?: number | null;
 };
 
 export class UserSessionDAOError extends Error {
@@ -27,7 +28,7 @@ export class UserSessionDAO {
     session_hash,
     user_id,
     scope,
-    client_id,
+    app_id,
     expires_at,
   }: UserSession): Promise<void> {
     await this.database.builder(this.tableName)
@@ -35,7 +36,7 @@ export class UserSessionDAO {
         session_hash,
         user_id,
         scope,
-        client_id: client_id || null,
+        app_id: app_id || null,
         expires_at: expires_at || null,
         touched_at: now(),
       });
@@ -47,7 +48,10 @@ export class UserSessionDAO {
    * @param session_hash hash of session
    * @returns
    */
-  public async touchActiveSession(session_hash: string): Promise<UserSession> {
+  public async touchRefreshToken(refreshToken: string): Promise<UserSession> {
+    const session_hash = createHash('sha256')
+      .update(refreshToken)
+      .digest('base64url');
     const session = await this.database.builder(this.tableName)
       .select('*')
       .where({ session_hash, revoked_at: null })

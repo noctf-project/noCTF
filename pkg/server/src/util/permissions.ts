@@ -23,7 +23,7 @@ export const evaluate = (permission: string, permissions: string[]): [
       ? permission.startsWith(x.slice(0, x.length - 1))
       : x === permission);
   });
-  return [!!found && found.startsWith('!'), found];
+  return [!!found && !found.startsWith('!'), found];
 };
 
 /**

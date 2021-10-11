@@ -15,7 +15,7 @@ export interface AuthTokenBase {
 
 export interface AuthToken extends AuthTokenBase {
   typ: 'auth';
-  cid: number;
+  aid: number;
   uid: number;
   iat: number;
   exp: number;

@@ -21,7 +21,7 @@ export default class DatabaseService {
 
   builder(...args: any[]) {
     return this._builder(...args).on('error', (e: Error) => {
-      if(!(e instanceof DatabaseError)) {
+      if (!(e instanceof DatabaseError)) {
         throw e;
       }
 

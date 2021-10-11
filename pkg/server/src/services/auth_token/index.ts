@@ -54,14 +54,14 @@ export default class AuthTokenService {
    * @param sid session id
    * @returns access token
    */
-  public async generate(cid: number, uid: number,
+  public async generate(aid: number, uid: number,
     scope: string[], sid: Uint8Array, maxExpires = this.expiry): Promise<string> {
     const ctime = now();
 
     const token: AuthToken = {
       typ: TYPE_AUTH_TOKEN,
       aud: this.hostname,
-      cid,
+      aid,
       uid,
       sid,
       iat: ctime,
@@ -239,7 +239,7 @@ export default class AuthTokenService {
       throw new AuthTokenServiceError('expired');
     }
 
-    if (!token.sid || (!token.cid && token.cid !== 0) || !token.uid) {
+    if (!token.sid || (!token.aid && token.aid !== 0) || !token.uid) {
       this.log.error({ token }, 'invalid token format');
       throw new AuthTokenServiceError('invalid token format');
     }

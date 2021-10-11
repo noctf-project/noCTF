@@ -8,7 +8,7 @@ import { NODE_ENV } from './config';
 import logger from './util/logger';
 import { ERROR_INTERNAL_SERVER_ERROR } from './util/constants';
 import pbacHook from './hooks/pbac';
-import { clientUserKeyGenerator } from './util/ratelimit';
+import { appUserKeyGenerator } from './util/ratelimit';
 import authHook from './hooks/auth';
 import SecretRetriever from './util/secret_retriever';
 import closeHook from './hooks/close';
@@ -39,10 +39,10 @@ export const init = async () => {
   });
 
   server.setErrorHandler(async (error, request, reply) => {
-    if(error instanceof NoCTFHTTPException) {
+    if (error instanceof NoCTFHTTPException) {
       reply.status(error.statusCode).send({
         error: error.message,
-        detail: error.detail
+        detail: error.detail,
       });
       return;
     }
@@ -74,7 +74,7 @@ export const init = async () => {
   server.register(fastifyRateLimit, {
     max: 90,
     timeWindow: '1 minute',
-    keyGenerator: clientUserKeyGenerator,
+    keyGenerator: appUserKeyGenerator,
     redis: services.cache,
   });
 

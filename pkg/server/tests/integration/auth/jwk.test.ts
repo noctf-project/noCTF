@@ -1,12 +1,12 @@
 import test from 'tape';
 import { bootstrap } from '../conftest';
 
-test('/jwks', async (t) => {
+test('/oauth2/jwks', async (t) => {
   const { app } = await bootstrap(t);
 
   const response = await app.inject({
     method: 'get',
-    path: '/api/auth/jwks',
+    path: '/api/auth/oauth2/jwks',
   });
   const data = response.json();
 

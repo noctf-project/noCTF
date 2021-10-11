@@ -5,6 +5,8 @@ import DatabaseService from '../services/database';
 export type Role = {
   id: number;
   name: string;
+  description: string;
+  permissions: string;
   created_at: number;
 };
 
@@ -27,26 +29,18 @@ export class RoleDAO {
       .first());
   }
 
+  public async getPermissionsByID(id: number): Promise<string[]> {
+    return this.cache.computeIfAbsent(`roles_permissions:${id}`, async () => (await this.database
+      .builder(this.tableName)
+      .select('permissions')
+      .where({ id })
+      .first()).permissions.split(','));
+  }
+
   public async getByName(name: string): Promise<Role | null> {
     const id = await this.getRoleIDByName(name);
     if (!id) return null;
     return this.getRole(id);
-  }
-
-  public async getRolePermissionsById(id: number): Promise<string[]> {
-    return this.cache.computeIfAbsent(`roles_permissions:${id}`, async () => (
-      await this.database.builder(this.permissionTableName)
-        .select('permission')
-        .where({ role_id: id })
-    )
-      .map(({ permission }) => permission)
-      .sort());
-  }
-
-  public async getRolePermissionsByName(name: string): Promise<string[]> {
-    const id = await this.getRoleIDByName(name);
-    if (!id) throw new RoleError('role doesn\'t exist');
-    return this.getRolePermissionsById(id);
   }
 
   public async getRoleIDByName(name: string): Promise<number | null> {

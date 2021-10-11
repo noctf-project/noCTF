@@ -1,6 +1,6 @@
-import { createHash, randomBytes } from "crypto";
-import UserSessionDAO from "../models/UserSession";
-import services from "../services";
+import { createHash, randomBytes } from 'crypto';
+import UserSessionDAO from '../models/UserSession';
+import services from '../services';
 
 export const createSession = async (id: number, scope = []) => {
   const refresh = (await randomBytes(48)).toString('base64url');
@@ -9,7 +9,7 @@ export const createSession = async (id: number, scope = []) => {
     session_hash: sid.toString('base64url'),
     user_id: id,
     scope: scope.join(','),
-    client_id: null,
+    app_id: null,
     expires_at: null,
   });
   const access = await services.authToken.generate(0, id, scope, sid);

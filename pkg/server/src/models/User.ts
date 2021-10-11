@@ -135,10 +135,12 @@ export class UserDAO {
       }
 
       // invalidate the token
-      await this.database.builder(this.tableName)
-        .update({ verify_hash: null })
-        .where({ id: data.uid });
-      services.cache.purge(`users:${data.uid}`);
+      await Promise.all([
+        this.database.builder(this.tableName)
+          .update({ verify_hash: null })
+          .where({ id: data.uid }),
+        services.cache.purge(`users:${data.uid}`),
+      ]);
 
       return data.uid;
     } catch (e) {
@@ -155,11 +157,13 @@ export class UserDAO {
    * @param password password
    */
   public async setPassword(id: number, password: string): Promise<void> {
-    services.cache.purge(`users:${id}`);
-    await this.database.builder(this.tableName)
-      .update({ password })
-      .where({ id });
-    await this.cache.purge(`users:${id}`);
+    await Promise.all([
+      services.cache.purge(`users:${id}`),
+      this.database.builder(this.tableName)
+        .update({ password })
+        .where({ id }),
+      this.cache.purge(`users:${id}`),
+    ]);
   }
 
   /**
@@ -223,7 +227,7 @@ export class UserDAO {
       (await this.database.builder(this.roleTableName)
         .select('role_id')
         .where({ user_id: id })
-      ).map(({ role_id }) => RoleDAO.getRolePermissionsById(role_id)),
+      ).map(({ role_id }) => RoleDAO.getPermissionsByID(role_id)),
     ))
       .flat()
       .sort()
