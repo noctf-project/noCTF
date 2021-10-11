@@ -2,40 +2,44 @@ import test from 'tape';
 import { bootstrap } from '../conftest';
 
 
-test('/refresh', async t => {
+test('/token', async t => {
     const { app, fixtures } = await bootstrap(t);
-    const { token } = await fixtures.makeUser({
-        name: 'refresh-test-username',
-        password: 'refresh-test-password',
-        email: 'refresh-test@example.com'
+    const { token: userToken } = await fixtures.makeUser({
+        name: 'token-test-username',
+        password: 'token-test-password',
+        email: 'token-test@example.com'
     });
 
-    t.test('invalid refresh token', async t => {
-        const refresh = await app.inject({
+    t.test('invalid token', async t => {
+        const token = await app.inject({
             method: 'post',
-            path: '/api/auth/refresh',
+            path: '/api/auth/token',
             payload: JSON.stringify({
-                token: 'invalidinvalidinvalidinvalidinvalid'
+                refresh_token: 'invalidinvalidinvalidinvalidinvalid',
+                grant_type: 'refresh_token',
+                client_id: 'default',
             }),
             headers: {'content-type': 'application/json'}
         });
-        t.equal(refresh.statusCode, 401);
-        t.match(refresh.json().error, /.+/);
+        t.equal(token.statusCode, 401);
+        t.match(token.json().error, /.+/);
     });
 
     t.skip('3rd part apps');
 
-    t.test('refresh', async t => {
-        const refresh = await app.inject({
+    t.test('token', async t => {
+        const token = await app.inject({
             method: 'post',
-            path: '/api/auth/refresh',
+            path: '/api/auth/token',
             payload: JSON.stringify({
-                token: token.refresh
+                refresh_token: userToken.refresh,
+                grant_type: 'refresh_token',
+                client_id: 'default',
             }),
             headers: {'content-type': 'application/json'}
         });
-        t.equal(refresh.statusCode, 200);
-        t.match(refresh.json().access_token, /.+/);
+        t.equal(token.statusCode, 200);
+        t.match(token.json().access_token, /.+/);
     });
 });
 
@@ -85,9 +89,11 @@ test('/logout', async t => {
     // Check revoke worked
     const refresh = await app.inject({
         method: 'post',
-        path: '/api/auth/refresh',
+        path: '/api/auth/token',
         payload: JSON.stringify({
-            token: token.refresh
+            refresh_token: token.refresh,
+            grant_type: 'refresh_token',
+            client_id: 'default',
         }),
         headers: {'content-type': 'application/json'}
     });

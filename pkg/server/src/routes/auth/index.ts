@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { createHash, randomBytes } from 'crypto';
+import { createHash } from 'crypto';
 import {
   AuthLoginRequest, AuthLoginRequestType,
   AuthTokenRequest, AuthTokenRequestType,

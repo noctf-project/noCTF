@@ -6,6 +6,7 @@ REDIS_PORT=16379
 
 export NOCTF_LOG_LEVEL=warn
 export NOCTF_SECRETS_DIR="$(dirname $0)/../../../../data/secrets"
+export NOCTF_DATABASE_CLIENT=postgresql
 export NOCTF_DATABASE_CONNECTION_NAME=noctf
 export NOCTF_DATABASE_CONNECTION_HOST=localhost
 export NOCTF_DATABASE_CONNECTION_PORT="$POSTGRES_PORT"
