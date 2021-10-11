@@ -1,8 +1,7 @@
 import { createHash } from 'crypto';
 import services from '../services';
-import CacheService from '../services/cache';
-import DatabaseService from '../services/database';
 import { now } from '../util/helpers';
+import BaseDAO from './Base';
 
 export type UserSession = {
   session_hash: string;
@@ -18,11 +17,8 @@ export type UserSession = {
 export class UserSessionDAOError extends Error {
 }
 
-export class UserSessionDAO {
-  private tableName = 'user_sessions';
-
-  constructor(private database: DatabaseService, private cache: CacheService) {
-  }
+export class UserSessionDAO extends BaseDAO {
+  tableName = 'user_sessions';
 
   public async create({
     session_hash,

@@ -24,7 +24,7 @@ const pbacHook: onRequestAsyncHookHandler<any, any, any> = async (request, reply
 
     // use public permissions
     const permissions = await RoleDAO.getPermissionsByID(
-      (await RoleDAO.getRoleIDByName('public'))!,
+      (await RoleDAO.getIDByName('public'))!,
     );
 
     const [allowed] = evaluate(reply.context.config.permission, permissions);

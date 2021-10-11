@@ -27,11 +27,11 @@ export async function up(knex: Knex): Promise<void> {
 
   await knex.schema.createTable('apps', (table) => {
     table.increments('id').primary();
+    table.bigInteger('created_at').notNullable().defaultTo(now);
     table.string('name', 48).notNullable();
-    table.string('description').notNullable();
-    table.string('client_id').notNullable().unique();
+    table.string('client_id', 48).notNullable().unique();
     table.string('client_secret_hash').notNullable();
-    table.string('allowed_origins');
+    table.string('allowed_redirect_uris').notNullable();
     table.boolean('enabled').notNullable();
   });
 
@@ -86,6 +86,14 @@ export async function up(knex: Knex): Promise<void> {
       description: 'Superuser. Do not delete.',
       permissions: '*'
     },
+  ]);
+
+  await knex('scopes').insert([
+    {
+      name: 'api-full',
+      description: 'Grants (almost) full API access to your account.',
+      permissions: '!auth.self.authorize,!user.self.edit,*'
+    }
   ]);
 }
 

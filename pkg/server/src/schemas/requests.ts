@@ -1,4 +1,5 @@
 import { Static, Type } from '@sinclair/typebox';
+import { AuthAuthorizeGrantTypeEnum } from './datatypes';
 
 export const AuthLoginRequest = Type.Object({
   email: Type.String({ format: 'email' }),
@@ -32,7 +33,7 @@ export type AuthResetRequestType = Static<typeof AuthResetRequest>;
 export const AuthTokenRequest = Type.Object({
   code: Type.Optional(Type.String({ minLength: 32 })),
   refresh_token: Type.Optional(Type.String({ minLength: 32 })),
-  grant_type: Type.String({}),
+  grant_type: Type.Enum(AuthAuthorizeGrantTypeEnum),
   client_id: Type.String(),
   client_secret: Type.Optional(Type.String()),
 });

@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { URLSearchParams } from 'url';
 import { TOKEN_EXPIRY } from '../../config';
 import { AuthTokenRequest, AuthTokenRequestType } from '../../schemas/requests';
 import {
@@ -8,6 +9,8 @@ import {
 import services from '../../services';
 import { now } from '../../util/helpers';
 import { ipKeyGenerator } from '../../util/ratelimit';
+import { AuthAuthorizeQuery, AuthAuthorizeQueryType } from '../../schemas/queries';
+import AppDAO from '../../models/App';
 import UserSessionDAO from '../../models/UserSession';
 
 export default async function register(fastify: FastifyInstance) {
@@ -25,6 +28,48 @@ export default async function register(fastify: FastifyInstance) {
         reply.send({
           keys: await services.authToken.getPublicJWKs(),
         });
+      },
+    },
+  );
+
+  fastify.get<{ Querystring: AuthAuthorizeQueryType, Reply: ErrorResponseType }>(
+    '/authorize',
+    {
+      schema: {
+        querystring: AuthAuthorizeQuery,
+        tags: ['auth'],
+        security: [],
+      },
+      handler: async (request, reply) => {
+        // Lookup client ID
+        const {
+          client_id, redirect_uri, response_type, scope, state,
+        } = request.query;
+        const app = await AppDAO.getByClientID(request.query.client_id);
+
+        if (!app || !app.enabled) {
+          reply.code(400).send({
+            error: 'invalid client_id',
+          });
+          return;
+        }
+
+        // Check if redirect URI is legit
+        const origins = app.allowed_redirect_uris.split(',');
+        const uri = new URL(request.query.redirect_uri);
+        if (origins.indexOf(`${uri.origin}${uri.pathname}`) === -1) {
+          reply.code(400).send({
+            error: 'invalid redirect_uri for client_id',
+          });
+        }
+
+        // TODO: check if scope is legit
+        const redirectQuery = new URLSearchParams(
+          {
+            client_id, redirect_uri, response_type, scope, state,
+          },
+        );
+        reply.redirect(307, `/authorize?${redirectQuery.toString()}`);
       },
     },
   );

@@ -2,12 +2,11 @@ import { createHash, randomBytes } from 'crypto';
 import { JWEInvalid } from 'jose/util/errors';
 import { TOKEN_EXPIRY } from '../config';
 import services from '../services';
-import CacheService from '../services/cache';
-import DatabaseService from '../services/database';
 import { now } from '../util/helpers';
 import logger from '../util/logger';
 import { checkEquivalent } from '../util/permissions';
 import { AuthTokenVerify } from '../util/types';
+import BaseDAO from './Base';
 import RoleDAO from './Role';
 
 const VERIFY_TOKEN_EXPIRY = 3600;
@@ -26,13 +25,10 @@ export class UserDAOError extends Error {
 }
 
 // TODO: kill idEmail cache when user is changed/deleted
-export class UserDAO {
-  private tableName = 'users';
+export class UserDAO extends BaseDAO {
+  tableName = 'users';
 
   private roleTableName = 'user_roles';
-
-  constructor(private database: DatabaseService, private cache: CacheService) {
-  }
 
   /**
    * Create a user
@@ -48,7 +44,7 @@ export class UserDAO {
     }).returning('id');
 
     // Give user the default role
-    const defaultRole = await RoleDAO.getRoleIDByName('default');
+    const defaultRole = await RoleDAO.getIDByName('default');
     if (!defaultRole) {
       throw new Error('\'default\' role doe not exist, please add it');
     }

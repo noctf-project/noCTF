@@ -9,7 +9,6 @@ import RoleDAO from '../../models/Role';
 import UserSessionDAO from '../../models/UserSession';
 
 export default async function register(fastify: FastifyInstance) {
-
   fastify.get<{ Reply: AuthPermissionsResponseType }>(
     '/permissions',
     {
@@ -26,7 +25,7 @@ export default async function register(fastify: FastifyInstance) {
         if (!request.auth) {
           reply.send({
             permissions: await RoleDAO.getPermissionsByID(
-              (await RoleDAO.getRoleIDByName('public'))!,
+              (await RoleDAO.getIDByName('public'))!,
             ),
           });
           return;

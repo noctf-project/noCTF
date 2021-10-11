@@ -1,6 +1,5 @@
 import services from '../services';
-import CacheService from '../services/cache';
-import DatabaseService from '../services/database';
+import BaseDAO from './Base';
 
 export type Role = {
   id: number;
@@ -14,13 +13,8 @@ export class RoleError extends Error {
 }
 
 // TODO: kill idName cache when role is changed/deleted
-export class RoleDAO {
-  private tableName = 'roles';
-
-  private permissionTableName = 'role_permissions';
-
-  constructor(private database: DatabaseService, private cache: CacheService) {
-  }
+export class RoleDAO extends BaseDAO {
+  tableName = 'roles';
 
   public async getRole(id: number): Promise<Role | null> {
     return this.cache.computeIfAbsent(`roles:${id}`, () => this.database.builder(this.tableName)
@@ -38,12 +32,12 @@ export class RoleDAO {
   }
 
   public async getByName(name: string): Promise<Role | null> {
-    const id = await this.getRoleIDByName(name);
+    const id = await this.getIDByName(name);
     if (!id) return null;
     return this.getRole(id);
   }
 
-  public async getRoleIDByName(name: string): Promise<number | null> {
+  public async getIDByName(name: string): Promise<number | null> {
     const key = name.toLowerCase();
 
     return this.cache.computeIfAbsent(`roles_idName:${key}`, async () => (

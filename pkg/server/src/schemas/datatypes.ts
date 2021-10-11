@@ -14,3 +14,12 @@ export const PublicUser = Type.Object({
   id: Type.String(),
   username: Type.String(),
 });
+
+export enum AuthAuthorizeResponseTypeEnum {
+  Code = 'code',
+}
+
+export enum AuthAuthorizeGrantTypeEnum {
+  Code = 'code',
+  RefreshToken = 'refresh_token',
+}
