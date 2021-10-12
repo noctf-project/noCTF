@@ -8,7 +8,7 @@ import { createSession } from '../../src/util/session';
 async function makeUser(user: { name: string, password: string, email: string }) {
   const newUser = await UserDAO.create({ name: user.name, email: user.email });
   await UserDAO.setPassword(newUser.id, user.password);
-  return { user: newUser, token: await createSession(newUser.id) };
+  return { user: newUser, token: await createSession(newUser.id, 0, []) };
 }
 
 export const bootstrap = (() => {

@@ -4,7 +4,6 @@ import { TOKEN_EXPIRY } from '../config';
 import services from '../services';
 import { now } from '../util/helpers';
 import logger from '../util/logger';
-import { checkEquivalent } from '../util/permissions';
 import { AuthTokenVerify } from '../util/types';
 import BaseDAO from './Base';
 import RoleDAO from './Role';
@@ -218,21 +217,13 @@ export class UserDAO extends BaseDAO {
    * @param id id of user
    * @returns simplified list of permissions (i.e. ["a.b.*", "a.b.c", "a.b.d"] -> ["a.b.*"])
    */
-  public async getPermissions(id: number): Promise<string[]> {
+  public async getPermissions(id: number): Promise<string[][]> {
     return this.cache.computeIfAbsent(`users_permission:${id}`, async () => (await Promise.all(
       (await this.database.builder(this.roleTableName)
         .select('role_id')
         .where({ user_id: id })
       ).map(({ role_id }) => RoleDAO.getPermissionsByID(role_id)),
-    ))
-      .flat()
-      .sort()
-      .reduce((total: string[], current) => { // Reduce step to simplify permissions
-        if (total.length === 0 || !checkEquivalent(total[total.length - 1], current)) {
-          total.push(current);
-        }
-        return total;
-      }, []), 60);
+    )), 60);
   }
 
   /**

@@ -14,6 +14,7 @@ import SecretRetriever from './util/secret_retriever';
 import closeHook from './hooks/close';
 import services from './services';
 import { NoCTFHTTPException } from './util/exceptions';
+import { parse } from 'querystring';
 
 export const init = async () => {
   const certSecret = new SecretRetriever('https', { watch: false });
@@ -63,6 +64,15 @@ export const init = async () => {
       trace: NODE_ENV === 'development' ? error.stack : undefined,
     });
   });
+
+  // add urlencoded bodyparser (for oauth grr)
+  server.addContentTypeParser(
+    'application/x-www-form-urlencoded',
+    { parseAs: 'buffer', bodyLimit: 1024*1024 }, // 1MB
+    (req, body, done) => {
+      done(null, parse(body.toString()));
+    }
+  );
 
   // Mount auth hook
   server.decorateRequest('auth', null);

@@ -55,7 +55,7 @@ export default class AuthTokenService {
    * @returns access token
    */
   public async generate(aid: number, uid: number,
-    prm: string[], sid: Uint8Array, maxExpires = this.expiry): Promise<string> {
+    prm: string[][], sid: Uint8Array, maxExpires = this.expiry): Promise<string> {
     const ctime = now();
 
     const token: AuthToken = {

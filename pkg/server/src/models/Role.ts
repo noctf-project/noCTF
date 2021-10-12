@@ -24,11 +24,16 @@ export class RoleDAO extends BaseDAO {
   }
 
   public async getPermissionsByID(id: number): Promise<string[]> {
-    return this.cache.computeIfAbsent(`roles_permissions:${id}`, async () => (await this.database
-      .builder(this.tableName)
-      .select('permissions')
-      .where({ id })
-      .first()).permissions.split(','));
+    return this.cache.computeIfAbsent(`roles_permissions:${id}`, async () => {
+      const perms = await this.database
+        .builder(this.tableName)
+        .select('permissions')
+        .where({ id })
+        .first();
+      if (!perms) return [];
+
+      return perms.permissions.split(',').sort();
+    });
   }
 
   public async getByName(name: string): Promise<Role | null> {

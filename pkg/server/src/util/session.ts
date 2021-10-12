@@ -1,6 +1,8 @@
 import { createHash, randomBytes } from 'crypto';
+import ScopeDAO from '../models/Scope';
 import UserSessionDAO from '../models/UserSession';
 import services from '../services';
+import { checkEquivalent } from './permissions';
 
 export const createSession = async (id: number, aid: number, scope: string[] = []) => {
   const refresh = (await randomBytes(48)).toString('base64url');
@@ -13,10 +15,9 @@ export const createSession = async (id: number, aid: number, scope: string[] = [
     expires_at: null,
   });
 
-  let perms = ['*'];
+  let perms = [['*']];
   if (aid !== 0 || scope.length !== 0) {
-    // TODO: convert scope to perms
-    perms = [];
+    perms = (await Promise.all(scope.map((s) => ScopeDAO.getPermissionsByName(s))));
   }
 
   const access = await services.authToken.generate(aid, id, perms, sid);

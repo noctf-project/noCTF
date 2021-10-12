@@ -1,5 +1,5 @@
 import { Static, Type } from '@sinclair/typebox';
-import { AuthAuthorizeGrantTypeEnum } from './datatypes';
+import { AuthAuthorizeGrantTypeEnum, AuthAuthorizeResponseTypeEnum } from './datatypes';
 
 export const AuthLoginRequest = Type.Object({
   email: Type.String({ format: 'email' }),
@@ -38,3 +38,27 @@ export const AuthTokenRequest = Type.Object({
   client_secret: Type.Optional(Type.String()),
 });
 export type AuthTokenRequestType = Static<typeof AuthTokenRequest>;
+
+export const AuthConsentRequest = Type.Object({
+  client_id: Type.String({
+    pattern: '[a-zA-Z0-9_-]+',
+    minLength: 4,
+    maxLength: 48,
+  }),
+  scope: Type.Array(Type.String({
+    pattern: '[a-z0-9-_]+'
+  }), { maxItems: 8 }),
+});
+export type AuthConsentRequestType = Static<typeof AuthConsentRequest>;
+
+export const AuthGrantRequest = Type.Object({
+  response_type: Type.Enum(AuthAuthorizeResponseTypeEnum),
+  client_id: Type.String({
+    pattern: '[a-zA-Z0-9_-]+',
+    minLength: 4,
+    maxLength: 48,
+  }),
+  redirect_uri: Type.String({ format: 'uri' }),
+  scope: Type.String(),
+});
+export type AuthGrantRequestType = Static<typeof AuthGrantRequest>;

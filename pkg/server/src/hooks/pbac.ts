@@ -55,12 +55,27 @@ const pbacHook: onRequestAsyncHookHandler<any, any, any> = async (request, reply
 
   // allowed if both token and user allow the permission
   const permissions = await UserDAO.getPermissions(request.auth.uid);
-  const [allowedToken] = evaluate(reply.context.config.permission, request.auth.prm);
-  const [allowedUser] = evaluate(reply.context.config.permission, permissions);
-  if (allowedToken && allowedUser) {
+  let allowedToken = false;
+  for (const i of request.auth.prm) {
+    const [allowed] = evaluate(reply.context.config.permission, i);
+    if (allowed) {
+      allowedToken = true;
+      break;
+    }
+  }
+  if (!allowedToken) {
+    reply.code(403).send({
+      error: ERROR_FORBIDDEN,
+    });
     return;
   }
 
+  for (const i of permissions) {
+    const [allowedUser] = evaluate(reply.context.config.permission, i);
+    if (allowedUser) {
+      return;
+    }
+  }
   reply.code(403).send({
     error: ERROR_FORBIDDEN,
   });

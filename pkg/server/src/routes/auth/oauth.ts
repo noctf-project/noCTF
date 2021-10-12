@@ -1,10 +1,17 @@
 import { FastifyInstance } from 'fastify';
 import { URLSearchParams } from 'url';
 import { TOKEN_EXPIRY } from '../../config';
-import { AuthTokenRequest, AuthTokenRequestType } from '../../schemas/requests';
+import {
+  AuthGrantRequest, AuthGrantRequestType,
+  AuthConsentRequest, AuthConsentRequestType,
+  AuthTokenRequest, AuthTokenRequestType
+} from '../../schemas/requests';
 import {
   ErrorResponseType,
-  AuthTokenResponse, AuthTokenResponseType, AuthJWKSResponseType, AuthJWKSResponse,
+  AuthTokenResponse, AuthTokenResponseType,
+  AuthJWKSResponseType, AuthJWKSResponse,
+  AuthConsentResponse, AuthConsentResponseType,
+  AuthGrantResponseType, AuthGrantResponse
 } from '../../schemas/responses';
 import services from '../../services';
 import { now } from '../../util/helpers';
@@ -12,6 +19,7 @@ import { ipKeyGenerator } from '../../util/ratelimit';
 import { AuthAuthorizeQuery, AuthAuthorizeQueryType } from '../../schemas/queries';
 import AppDAO from '../../models/App';
 import UserSessionDAO from '../../models/UserSession';
+import ScopeDAO from '../../models/Scope';
 
 export default async function register(fastify: FastifyInstance) {
   fastify.get<{ Reply: AuthJWKSResponseType }>(
@@ -19,6 +27,7 @@ export default async function register(fastify: FastifyInstance) {
     {
       schema: {
         tags: ['auth'],
+        description: 'List the token signing keys.',
         security: [],
         response: {
           default: AuthJWKSResponse,
@@ -37,6 +46,7 @@ export default async function register(fastify: FastifyInstance) {
     {
       schema: {
         querystring: AuthAuthorizeQuery,
+        description: 'OAuth2 Authorize endpoint',
         tags: ['auth'],
         security: [],
       },
@@ -75,6 +85,67 @@ export default async function register(fastify: FastifyInstance) {
   );
 
   fastify.post<{
+    Body: AuthGrantRequestType,
+    Reply: ErrorResponseType | AuthGrantResponseType
+  }>('/grant', {
+    schema: {
+      tags: ['auth'],
+      body: AuthGrantRequest,
+      description: 'Authorize an OAuth2 application and generate an authorization code.',
+      response: {
+        default: AuthGrantResponse
+      }
+    },
+    config: {
+      permission: 'auth.self.authorize',
+    },
+    handler: (request, reply) => {
+
+    }
+  });
+
+  fastify.post<{
+    Body: AuthConsentRequestType,
+    Reply: ErrorResponseType | AuthConsentResponseType
+  }>(
+    '/consent',
+    {
+      schema: {
+        body: AuthConsentRequest,
+        description: 'Show information for the consent screen',
+        tags: ['auth'],
+        response: {
+          default: AuthConsentResponse,
+        }
+      },
+      config: {
+        permission: 'auth.self.authorize',
+      },
+      handler: async (request, reply) => {
+        const app = await AppDAO.getByClientID(request.body.client_id);
+        if (!app || !app.enabled) {
+          reply.code(404).send({
+            error: 'invalid client_id'
+          });
+          return;
+        }
+
+        const scopes = (await 
+          Promise.all(request.body.scope.map((name) => ScopeDAO.getByName(name)))
+        )
+          .filter((a) => a)
+          .map(({ name, description }) => ({ name, description }));
+
+        reply.send({
+          name: app.name,
+          description: app.description,
+          scopes
+        });
+      },
+    },
+  );
+
+  fastify.post<{
     Body: AuthTokenRequestType,
     Reply: ErrorResponseType | AuthTokenResponseType
   }>(
@@ -82,11 +153,13 @@ export default async function register(fastify: FastifyInstance) {
     {
       schema: {
         tags: ['auth'],
+        description: 'OAuth2 token endpoint',
         security: [],
         body: AuthTokenRequest,
         response: {
           default: AuthTokenResponse,
         },
+        consumes: ['application/json', 'application/x-www-form-urlencoded'],
       },
       config: {
         rateLimit: {
@@ -134,11 +207,12 @@ export default async function register(fastify: FastifyInstance) {
 
         let token: string;
 
+        // TODO: fix permission
         if (session.expires_at) {
           token = await services.authToken.generate(
             session.app_id || 0,
             session.user_id,
-            session.scope.split(','),
+            [],
             Buffer.from(session.session_hash, 'base64url'),
             session.expires_at - now(),
           );
@@ -146,7 +220,7 @@ export default async function register(fastify: FastifyInstance) {
           token = await services.authToken.generate(
             session.app_id || 0,
             session.user_id,
-            session.scope.split(','),
+            [],
             Buffer.from(session.session_hash, 'base64url'),
           );
         }

@@ -1,5 +1,5 @@
 import { Static, Type } from '@sinclair/typebox';
-import { JWK } from './datatypes';
+import { AuthAuthorizeResponseTypeEnum, JWK } from './datatypes';
 
 export const ErrorResponse = Type.Object({
   error: Type.Optional(Type.String()),
@@ -32,9 +32,25 @@ export const AuthJWKSResponse = Type.Object({
 export type AuthJWKSResponseType = Static<typeof AuthJWKSResponse>;
 
 export const AuthPermissionsResponse = Type.Object({
-  permissions: Type.Array(Type.String()),
+  permissions: Type.Array(Type.Array(Type.String())),
 });
 export type AuthPermissionsResponseType = Static<typeof AuthPermissionsResponse>;
 
 export const AuthTokenResponse = AuthLoginResponse;
 export type AuthTokenResponseType = Static<typeof AuthTokenResponse>;
+
+export const AuthConsentResponse = Type.Object({
+  name: Type.String(),
+  description: Type.String(),
+  scopes: Type.Array(Type.Object({
+    name: Type.String(),
+    description: Type.String(),
+  })),
+});
+export type AuthConsentResponseType = Static<typeof AuthConsentResponse>;
+
+export const AuthGrantResponse = Type.Object({
+  response_type: Type.Enum(AuthAuthorizeResponseTypeEnum),
+  token: Type.String()
+});
+export type AuthGrantResponseType = Static<typeof AuthGrantResponse>;

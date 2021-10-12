@@ -57,7 +57,7 @@ test('/permissions', async (t) => {
       path: '/api/auth/permissions',
     });
     tt.equal(perms.statusCode, 200);
-    tt.deepEqual(perms.json(), { permissions: ['auth.public.login', 'auth.public.register'] });
+    tt.deepEqual(perms.json(), { permissions: [['auth.public.login', 'auth.public.register']] });
   });
 
   t.test('authed', async (tt) => {
@@ -66,7 +66,7 @@ test('/permissions', async (t) => {
       headers: { authorization: `Bearer ${token.access}` },
     });
     tt.equal(perms.statusCode, 200);
-    tt.deepEqual(perms.json(), { permissions: ['auth.self.*'] });
+    tt.deepEqual(perms.json(), { permissions: [['auth.self.*']] });
   });
 });
 

@@ -9,6 +9,7 @@ export type App = {
   client_secret_hash: string;
   allowed_redirect_uris: string;
   enabled: boolean;
+  created_at?: number;
 };
 
 export class AppDAO extends BaseDAO {

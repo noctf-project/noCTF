@@ -21,7 +21,7 @@ export interface AuthToken extends AuthTokenBase {
   exp: number;
   sid: Uint8Array;
   aud: string;
-  prm: string[];
+  prm: string[][];
 }
 
 export interface AuthTokenVerify extends AuthTokenBase {
