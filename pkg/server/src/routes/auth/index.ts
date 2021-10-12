@@ -26,7 +26,7 @@ import UserSessionDAO from '../../models/UserSession';
 import { hash, verify } from '../../util/password';
 import { now } from '../../util/helpers';
 import { createSession } from '../../util/session';
-import { ErrorResponse, ErrorResponseType } from '../../schemas/base';
+import { ErrorResponse, ErrorResponseType } from '../../schemas/common';
 
 export default async function register(fastify: FastifyInstance) {
   fastify.get<{ Reply: AuthJWKSResponseType }>(
