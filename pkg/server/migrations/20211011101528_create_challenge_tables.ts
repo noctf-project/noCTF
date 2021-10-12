@@ -3,10 +3,10 @@ import { Knex } from "knex";
 
 export async function up(knex: Knex): Promise<void> {
     await knex.schema.createTable('challenge_revisions', (table) => {
-        table.comment('List of all revisions for a challenge');
+        table.comment('List of all revisions for a challenge, can support a tree like representation');
 
         table.increments('id').primary().comment('challenge revision id');
-        table.integer('superseded_by').defaultTo(null).comment('next revision, null if this is the latest revision');
+        table.integer('supersedes').defaultTo(null).comment('revision this revision supersedes, null if this is the first revision');
 
         table.string('name').notNullable().comment('challenge name');
         table.string('category').notNullable().comment('challenge category');
@@ -15,7 +15,7 @@ export async function up(knex: Knex): Promise<void> {
         table.integer('revisor').notNullable().comment('author of this revision');
         table.bigInteger('created_at').notNullable().defaultTo(knex.fn.now()).comment('when the revision was created');
 
-        table.foreign('superseded_by').references('id').inTable('challenge_revisions');
+        table.foreign('supersedes').references('id').inTable('challenge_revisions');
         table.foreign('revisor').references('id').inTable('users');
     }); 
 
