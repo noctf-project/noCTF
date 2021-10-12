@@ -1,4 +1,5 @@
 import { Static, Type } from '@sinclair/typebox';
+import { PaginatedResponse } from '../common';
 
 export const ChallengeChallengeResponse = Type.Object({
   id: Type.Number(),
@@ -8,19 +9,21 @@ export const ChallengeChallengeResponse = Type.Object({
 });
 export type ChallengeChallengeResponseType = Static<typeof ChallengeChallengeResponse>;
 
-export const ChallengeListResponse = Type.Object({
+export const ChallengeListResponse = PaginatedResponse(Type.Object({
   challenges: Type.Array(ChallengeChallengeResponse),
-});
+}));
 export type ChallengeListResponseType = Static<typeof ChallengeListResponse>;
 
-export const ChallengePlayerSolveListResponse = Type.Array(
-  Type.Object({
-    id: Type.Number(),
-    challenge_id: Type.Number(),
-    team_id: Type.Number(),
-    team_name: Type.String(),
-  }),
-);
+export const ChallengePlayerSolveListResponse = PaginatedResponse(Type.Object({
+  solves: Type.Array(
+    Type.Object({
+      id: Type.Number(),
+      challenge_id: Type.Number(),
+      team_id: Type.Number(),
+      team_name: Type.String(),
+    }),
+  )
+}));
 export type ChallengePlayerSolveListResponseType = Static<typeof ChallengePlayerSolveListResponse>;
 
 export const ChallengeHintResponse = Type.Object({
@@ -33,7 +36,9 @@ export const ChallengeHintResponse = Type.Object({
 });
 export type ChallengeHintResponseType = Static<typeof ChallengeHintResponse>;
 
-export const ChallengeHintListResponse = Type.Array(ChallengeHintResponse);
+export const ChallengeHintListResponse = PaginatedResponse(Type.Object({
+  hints: Type.Array(ChallengeHintResponse)
+}));
 export type ChallengeHintListResponseType = Static<typeof ChallengeHintListResponse>;
 
 export const ChallengeSolveAttemptResponse = Type.Object({
