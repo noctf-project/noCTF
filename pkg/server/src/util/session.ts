@@ -1,11 +1,14 @@
-import { createHash, randomBytes } from 'crypto';
+import { createHash } from 'crypto';
 import ScopeDAO from '../models/Scope';
 import UserSessionDAO from '../models/UserSession';
 import services from '../services';
-import { checkEquivalent } from './permissions';
+import { asyncRandomBytes } from './crypto';
 
-export const createSession = async (id: number, aid: number, scope: string[] = []) => {
-  const refresh = (await randomBytes(48)).toString('base64url');
+export const createSession = async (id: number,
+  aid: number,
+  scope: string[] = [],
+  suppliedRefresh?: string) => {
+  const refresh = suppliedRefresh || (await asyncRandomBytes(48)).toString('base64url');
   const sid = createHash('sha256').update(refresh).digest();
   await UserSessionDAO.create({
     session_hash: sid.toString('base64url'),

@@ -46,7 +46,7 @@ export const AuthConsentRequest = Type.Object({
     maxLength: 48,
   }),
   scope: Type.Array(Type.String({
-    pattern: '[a-z0-9-_]+'
+    pattern: '[a-z0-9-_]+',
   }), { maxItems: 8 }),
 });
 export type AuthConsentRequestType = Static<typeof AuthConsentRequest>;
@@ -58,7 +58,8 @@ export const AuthGrantRequest = Type.Object({
     minLength: 4,
     maxLength: 48,
   }),
-  redirect_uri: Type.String({ format: 'uri' }),
-  scope: Type.String(),
+  scope: Type.Array(Type.String({
+    pattern: '[a-z0-9-_]+',
+  }), { maxItems: 8 }),
 });
 export type AuthGrantRequestType = Static<typeof AuthGrantRequest>;

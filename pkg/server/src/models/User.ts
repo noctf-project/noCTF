@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'crypto';
 import { JWEInvalid } from 'jose/util/errors';
-import { TOKEN_EXPIRY } from '../config';
+import { HOSTNAME, TOKEN_EXPIRY } from '../config';
 import services from '../services';
 import { now } from '../util/helpers';
 import logger from '../util/logger';
@@ -67,11 +67,14 @@ export class UserDAO extends BaseDAO {
     const nonce: Buffer = await (new Promise((resolve, reject) => (
       randomBytes(32, (err, buf) => (err ? reject(err) : resolve(buf)))))
     );
-    const expires = now() + TOKEN_EXPIRY;
+    const ctime = now();
+    const expires = ctime + TOKEN_EXPIRY;
     const payload: AuthTokenVerify = {
       typ: VERIFY_TOKEN_TYPE,
       uid: id,
       tok: nonce,
+      aud: HOSTNAME,
+      iat: ctime,
       exp: expires,
     };
     const token = await services.authToken.encryptPayload(payload);
@@ -106,6 +109,7 @@ export class UserDAO extends BaseDAO {
 
       if (data.typ !== VERIFY_TOKEN_TYPE) return null;
       if (ctime > data.exp) return null;
+      if (data.aud !== HOSTNAME) return null;
 
       // lookup verification token for user
       const { verify_hash: expectedHash } = await this.database.builder(this.tableName)
@@ -218,7 +222,7 @@ export class UserDAO extends BaseDAO {
    * @returns simplified list of permissions (i.e. ["a.b.*", "a.b.c", "a.b.d"] -> ["a.b.*"])
    */
   public async getPermissions(id: number): Promise<string[][]> {
-    return this.cache.computeIfAbsent(`users_permission:${id}`, async () => (await Promise.all(
+    return this.cache.computeIfAbsent(`users_permission:${id}`, async () => (Promise.all(
       (await this.database.builder(this.roleTableName)
         .select('role_id')
         .where({ user_id: id })

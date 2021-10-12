@@ -56,6 +56,7 @@ const pbacHook: onRequestAsyncHookHandler<any, any, any> = async (request, reply
   // allowed if both token and user allow the permission
   const permissions = await UserDAO.getPermissions(request.auth.uid);
   let allowedToken = false;
+  /* eslint-disable-next-line */
   for (const i of request.auth.prm) {
     const [allowed] = evaluate(reply.context.config.permission, i);
     if (allowed) {
@@ -70,6 +71,7 @@ const pbacHook: onRequestAsyncHookHandler<any, any, any> = async (request, reply
     return;
   }
 
+  /* eslint-disable-next-line */
   for (const i of permissions) {
     const [allowedUser] = evaluate(reply.context.config.permission, i);
     if (allowedUser) {

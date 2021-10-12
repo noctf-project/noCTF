@@ -51,6 +51,6 @@ export type AuthConsentResponseType = Static<typeof AuthConsentResponse>;
 
 export const AuthGrantResponse = Type.Object({
   response_type: Type.Enum(AuthAuthorizeResponseTypeEnum),
-  token: Type.String()
+  token: Type.String(),
 });
 export type AuthGrantResponseType = Static<typeof AuthGrantResponse>;

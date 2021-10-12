@@ -3,6 +3,7 @@ import { fastifyRequestContextPlugin } from 'fastify-request-context';
 import { nanoid } from 'nanoid';
 import fastifyRateLimit from 'fastify-rate-limit';
 import { Http2Server, Http2ServerRequest, Http2ServerResponse } from 'http2';
+import { parse } from 'querystring';
 import Routes from './routes';
 import { NODE_ENV } from './config';
 import logger from './util/logger';
@@ -14,7 +15,6 @@ import SecretRetriever from './util/secret_retriever';
 import closeHook from './hooks/close';
 import services from './services';
 import { NoCTFHTTPException } from './util/exceptions';
-import { parse } from 'querystring';
 
 export const init = async () => {
   const certSecret = new SecretRetriever('https', { watch: false });
@@ -68,10 +68,10 @@ export const init = async () => {
   // add urlencoded bodyparser (for oauth grr)
   server.addContentTypeParser(
     'application/x-www-form-urlencoded',
-    { parseAs: 'buffer', bodyLimit: 1024*1024 }, // 1MB
+    { parseAs: 'buffer', bodyLimit: 1024 * 1024 }, // 1MB
     (req, body, done) => {
       done(null, parse(body.toString()));
-    }
+    },
   );
 
   // Mount auth hook

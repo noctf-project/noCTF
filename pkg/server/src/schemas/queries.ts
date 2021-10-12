@@ -9,7 +9,9 @@ export const AuthAuthorizeQuery = Type.Object({
     maxLength: 48,
   }),
   redirect_uri: Type.String({ format: 'uri' }),
-  scope: Type.String(),
+  scope: Type.String({
+    pattern: '[a-z0-9-_]+',
+  }),
   state: Type.String(),
 });
 export type AuthAuthorizeQueryType = Static<typeof AuthAuthorizeQuery>;

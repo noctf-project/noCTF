@@ -17,10 +17,11 @@ export class RoleDAO extends BaseDAO {
   tableName = 'roles';
 
   public async getRole(id: number): Promise<Role | null> {
-    return this.cache.computeIfAbsent(`roles:${id}`, () => this.database.builder(this.tableName)
+    return this.cache.computeIfAbsent(`roles:${id}`, async () => await (this.database
+      .builder(this.tableName)
       .select('*')
       .where({ id })
-      .first());
+      .first()) || null);
   }
 
   public async getPermissionsByID(id: number): Promise<string[]> {
@@ -49,7 +50,7 @@ export class RoleDAO extends BaseDAO {
       await this.database.builder(this.tableName)
         .select('id')
         .where({ name: key })
-        .first())?.id);
+        .first())?.id) || null;
   }
 }
 

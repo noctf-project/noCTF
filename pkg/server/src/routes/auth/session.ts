@@ -25,8 +25,8 @@ export default async function register(fastify: FastifyInstance) {
         if (!request.auth) {
           reply.send({
             permissions: [
-              await RoleDAO.getPermissionsByID((await RoleDAO.getIDByName('public'))!)
-            ]
+              await RoleDAO.getPermissionsByID((await RoleDAO.getIDByName('public'))!),
+            ],
           });
           return;
         }

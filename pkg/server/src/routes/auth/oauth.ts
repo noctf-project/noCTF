@@ -4,14 +4,14 @@ import { TOKEN_EXPIRY } from '../../config';
 import {
   AuthGrantRequest, AuthGrantRequestType,
   AuthConsentRequest, AuthConsentRequestType,
-  AuthTokenRequest, AuthTokenRequestType
+  AuthTokenRequest, AuthTokenRequestType,
 } from '../../schemas/requests';
 import {
   ErrorResponseType,
   AuthTokenResponse, AuthTokenResponseType,
   AuthJWKSResponseType, AuthJWKSResponse,
   AuthConsentResponse, AuthConsentResponseType,
-  AuthGrantResponseType, AuthGrantResponse
+  AuthGrantResponseType, AuthGrantResponse,
 } from '../../schemas/responses';
 import services from '../../services';
 import { now } from '../../util/helpers';
@@ -19,7 +19,7 @@ import { ipKeyGenerator } from '../../util/ratelimit';
 import { AuthAuthorizeQuery, AuthAuthorizeQueryType } from '../../schemas/queries';
 import AppDAO from '../../models/App';
 import UserSessionDAO from '../../models/UserSession';
-import ScopeDAO from '../../models/Scope';
+import ScopeDAO, { Scope } from '../../models/Scope';
 
 export default async function register(fastify: FastifyInstance) {
   fastify.get<{ Reply: AuthJWKSResponseType }>(
@@ -93,15 +93,44 @@ export default async function register(fastify: FastifyInstance) {
       body: AuthGrantRequest,
       description: 'Authorize an OAuth2 application and generate an authorization code.',
       response: {
-        default: AuthGrantResponse
-      }
+        default: AuthGrantResponse,
+      },
     },
     config: {
       permission: 'auth.self.authorize',
     },
-    handler: (request, reply) => {
+    handler: async (request, reply) => {
+      // Lookup client ID
+      const { client_id, response_type, scope } = request.body;
+      const app = await AppDAO.getByClientID(client_id);
+      if (!app || !app.enabled) {
+        reply.code(400).send({
+          error: 'invalid client_id',
+        });
+        return;
+      }
 
-    }
+      const scopeSet = new Set(scope.map((s) => s.toLowerCase()));
+
+      const scopes = (await
+      Promise.all(Array.from(scopeSet).map((name) => ScopeDAO.getByName(name)))
+      );
+      if (scopes.indexOf(null) !== -1) {
+        reply.code(400).send({
+          error: 'one or more scopes are invalid',
+        });
+        return;
+      }
+
+      reply.send({
+        token: await services.authToken.generateOAuthCode(
+          app.id,
+          request.auth.uid,
+          Array.from(scopeSet),
+        ),
+        response_type,
+      });
+    },
   });
 
   fastify.post<{
@@ -116,7 +145,7 @@ export default async function register(fastify: FastifyInstance) {
         tags: ['auth'],
         response: {
           default: AuthConsentResponse,
-        }
+        },
       },
       config: {
         permission: 'auth.self.authorize',
@@ -125,21 +154,29 @@ export default async function register(fastify: FastifyInstance) {
         const app = await AppDAO.getByClientID(request.body.client_id);
         if (!app || !app.enabled) {
           reply.code(404).send({
-            error: 'invalid client_id'
+            error: 'invalid client_id',
           });
           return;
         }
 
-        const scopes = (await 
-          Promise.all(request.body.scope.map((name) => ScopeDAO.getByName(name)))
-        )
-          .filter((a) => a)
-          .map(({ name, description }) => ({ name, description }));
+        const scopeSet = new Set(request.body.scope.map((s) => s.toLowerCase()));
+
+        const scopes = (await
+        Promise.all(Array.from(scopeSet).map((name) => ScopeDAO.getByName(name)))
+        );
+
+        if (scopes.indexOf(null) !== -1) {
+          reply.code(400).send({
+            error: 'one or more scopes are invalid',
+          });
+          return;
+        }
 
         reply.send({
           name: app.name,
           description: app.description,
-          scopes
+          scopes: (scopes as unknown as Scope[])
+            .map(({ name, description }) => ({ name, description })),
         });
       },
     },
@@ -207,12 +244,12 @@ export default async function register(fastify: FastifyInstance) {
 
         let token: string;
 
-        // TODO: fix permission
+        // TODO: fix permission by converting scopes to permissions
         if (session.expires_at) {
           token = await services.authToken.generate(
             session.app_id || 0,
             session.user_id,
-            [],
+            [['*']],
             Buffer.from(session.session_hash, 'base64url'),
             session.expires_at - now(),
           );
@@ -220,7 +257,7 @@ export default async function register(fastify: FastifyInstance) {
           token = await services.authToken.generate(
             session.app_id || 0,
             session.user_id,
-            [],
+            [['*']],
             Buffer.from(session.session_hash, 'base64url'),
           );
         }

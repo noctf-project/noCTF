@@ -9,12 +9,15 @@ import { importJWK } from 'jose/key/import';
 import { JWSInvalid, JWSSignatureVerificationFailed } from 'jose/util/errors';
 import { JWK } from 'jose/types';
 import { BinaryLike, createHash, createHmac } from 'crypto';
-import { AuthSigningKey, AuthToken, AuthTokenBase } from '../../util/types';
+import {
+  AuthSigningKey, AuthToken, AuthTokenBase, AuthTokenCode,
+} from '../../util/types';
 import logger from '../../util/logger';
 import { TOKEN_EXPIRY } from '../../config';
 import CacheService from '../cache';
 import SecretRetriever from '../../util/secret_retriever';
 import { now } from '../../util/helpers';
+import { asyncRandomBytes } from '../../util/crypto';
 
 const TOKEN_CACHE_TTL = 30;
 const TOKEN_CACHE_CHECK = 120;
@@ -22,7 +25,9 @@ const TOKEN_MAX_KEYS = 10000;
 const MAX_DRIFT = 60;
 const CACHE_HIT_VALID = 1;
 const CACHE_HIT_REVOKED = 2;
+const OAUTH_CODE_EXPIRY = 300;
 const TYPE_AUTH_TOKEN = 'auth';
+const TYPE_CODE_TOKEN = 'code';
 const REVOKED_KEY = 'auth_revoked';
 
 export class AuthTokenServiceError extends Error {
@@ -74,6 +79,56 @@ export default class AuthTokenService {
     const hash = createHash('sha256').update(signed).digest().toString('base64url');
     this.tokenCache.set(hash, CACHE_HIT_VALID, TOKEN_CACHE_TTL);
     return signed;
+  }
+
+  /**
+   * Generate an OAuth code grant
+   * @param aid appid
+   * @param uid user id
+   * @param scope scopes
+   * @returns oauth code grant JWE
+   */
+  public async generateOAuthCode(aid: number, uid: number, scope: string[]): Promise<string> {
+    const ctime = now();
+    const token: AuthTokenCode = {
+      uid,
+      aid,
+      scp: scope,
+      iat: ctime,
+      exp: ctime + OAUTH_CODE_EXPIRY,
+      aud: this.hostname,
+      typ: 'code',
+      tok: await asyncRandomBytes(48),
+    };
+
+    return this.encryptPayload(token);
+  }
+
+  /**
+   * Validates the OAuth Code and returns the decoded content on success
+   * @param token encoded auth token
+   * @param aid app id to check against
+   * @returns AuthTokenCode
+   */
+  public async validateOauthCode(token: string, aid: number): Promise<AuthTokenCode> {
+    const payload = (await this.decryptPayload(token)) as unknown as AuthTokenCode;
+    if (payload.typ !== TYPE_CODE_TOKEN) {
+      throw new AuthTokenServiceError('invalid type');
+    }
+
+    if (payload.aud !== this.hostname) {
+      throw new AuthTokenServiceError('invalid audience');
+    }
+
+    if (payload.aid !== aid) {
+      throw new AuthTokenServiceError('invalid app id');
+    }
+
+    if (now() > payload.exp) {
+      throw new AuthTokenServiceError('expired');
+    }
+
+    return payload;
   }
 
   /**
