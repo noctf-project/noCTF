@@ -1,4 +1,5 @@
 import { Knex } from "knex";
+import { now } from "../tools/migrations/utils";
 
 
 export async function up(knex: Knex): Promise<void> {
@@ -17,8 +18,8 @@ export async function up(knex: Knex): Promise<void> {
 
         table.bigInteger('display_at').comment('time the challenge should be displayed, null if challenge is hidden');
 
-        table.bigInteger('created_at').notNullable().defaultTo(knex.fn.now());
-        table.bigInteger('updated_at').notNullable().defaultTo(knex.fn.now());
+        table.bigInteger('created_at').notNullable().defaultTo(now(knex));
+        table.bigInteger('updated_at').notNullable().defaultTo(now(knex));
     });
 
     await knex.schema.createTable('flags', (table) => {
@@ -26,6 +27,9 @@ export async function up(knex: Knex): Promise<void> {
         table.integer('challenge_id').notNullable();
 
         table.string('flag').notNullable().comment('flag to match against');
+
+        table.bigInteger('created_at').notNullable().defaultTo(now(knex));
+        table.bigInteger('updated_at').notNullable().defaultTo(now(knex));
 
         table.foreign('challenge_id').references('id').inTable('challenges');
     });
@@ -40,32 +44,32 @@ export async function up(knex: Knex): Promise<void> {
 
         table.bigInteger('released_at').notNullable().comment('time the hint should be displayed, null if the hint is hidden');
 
-        table.bigInteger('created_at').notNullable().defaultTo(knex.fn.now());
-        table.bigInteger('updated_at').notNullable().defaultTo(knex.fn.now());
+        table.bigInteger('created_at').notNullable().defaultTo(now(knex));
+        table.bigInteger('updated_at').notNullable().defaultTo(now(knex));
 
-        table.foreign('challenge_id').references('id').inTable('challenge_revisions');
+        table.foreign('challenge_id').references('id').inTable('challenges');
     });
 
     await knex.schema.createTable('submissions', (table) => {
         table.increments('id').primary();
-        table.integer('challenge').notNullable();  // denormalize for sanity
+        table.integer('challenge_id').notNullable();  // denormalize for sanity
 
         table.string('submission').notNullable();
         table.integer('submitter').notNullable();
         // TODO: team entry when we implement teams
 
-        table.bigInteger('submitted_at').notNullable().defaultTo(knex.fn.now());
+        table.bigInteger('submitted_at').notNullable().defaultTo(now(knex));
 
-        table.foreign('challenge').references('id').inTable('challenges');
+        table.foreign('challenge_id').references('id').inTable('challenges');
         table.foreign('submitter').references('id').inTable('users');
     });
 }
 
 
 export async function down(knex: Knex): Promise<void> {
-    await knex.schema.dropTable('challenges');
-    await knex.schema.dropTable('flags');
-    await knex.schema.dropTable('hints');
     await knex.schema.dropTable('submissions');
+    await knex.schema.dropTable('hints');
+    await knex.schema.dropTable('flags');
+    await knex.schema.dropTable('challenges');
 }
 
