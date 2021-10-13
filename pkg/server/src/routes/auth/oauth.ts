@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { URLSearchParams } from 'url';
+import { createHash } from 'crypto';
 import { TOKEN_EXPIRY } from '../../config';
 import {
   AuthGrantRequest, AuthGrantRequestType,
@@ -17,9 +18,12 @@ import services from '../../services';
 import { now } from '../../util/helpers';
 import { ipKeyGenerator } from '../../util/ratelimit';
 import { AuthAuthorizeQuery, AuthAuthorizeQueryType } from '../../schemas/queries';
-import AppDAO from '../../models/App';
+import AppDAO, { App } from '../../models/App';
 import UserSessionDAO from '../../models/UserSession';
 import ScopeDAO, { Scope } from '../../models/Scope';
+import { AuthAuthorizeGrantTypeEnum } from '../../schemas/datatypes';
+import { createSession } from '../../util/session';
+import { AuthTokenServiceError } from '../../services/auth_token';
 
 export default async function register(fastify: FastifyInstance) {
   fastify.get<{ Reply: AuthJWKSResponseType }>(
@@ -79,7 +83,7 @@ export default async function register(fastify: FastifyInstance) {
             client_id, redirect_uri, response_type, scope, state,
           },
         );
-        reply.redirect(307, `/authorize?${redirectQuery.toString()}`);
+        reply.redirect(302, `/authorize?${redirectQuery.toString()}`);
       },
     },
   );
@@ -110,10 +114,9 @@ export default async function register(fastify: FastifyInstance) {
         return;
       }
 
-      const scopeSet = new Set(scope.map((s) => s.toLowerCase()));
-
+      const dedupedScopes = Array.from(new Set(scope.map((s) => s.toLowerCase())));
       const scopes = (await
-      Promise.all(Array.from(scopeSet).map((name) => ScopeDAO.getByName(name)))
+        Promise.all(dedupedScopes.map((name) => ScopeDAO.getByName(name)))
       );
       if (scopes.indexOf(null) !== -1) {
         reply.code(400).send({
@@ -126,7 +129,7 @@ export default async function register(fastify: FastifyInstance) {
         token: await services.authToken.generateOAuthCode(
           app.id,
           request.auth.uid,
-          Array.from(scopeSet),
+          dedupedScopes,
         ),
         response_type,
       });
@@ -159,12 +162,10 @@ export default async function register(fastify: FastifyInstance) {
           return;
         }
 
-        const scopeSet = new Set(request.body.scope.map((s) => s.toLowerCase()));
-
+        const dedupedScopes = Array.from(new Set(request.body.scope.map((s) => s.toLowerCase())));
         const scopes = (await
-        Promise.all(Array.from(scopeSet).map((name) => ScopeDAO.getByName(name)))
+          Promise.all(dedupedScopes.map((name) => ScopeDAO.getByName(name)))
         );
-
         if (scopes.indexOf(null) !== -1) {
           reply.code(400).send({
             error: 'one or more scopes are invalid',
@@ -206,67 +207,99 @@ export default async function register(fastify: FastifyInstance) {
         },
       },
       handler: async (request, reply) => {
-        if (request.body.grant_type !== 'refresh_token') {
-          reply.code(501).send({
-            error: 'only refresh_token is currently implemented',
-          });
-          return;
-        }
-        // TODO: support third party applications
+        let aid = 0;
+        let app: App | undefined;
         if (request.body.client_id !== 'default') {
-          reply.code(400).send({
-            error: 'client_id should be default',
-          });
-          return;
-        }
-        if (!request.body.refresh_token) {
-          reply.code(400).send({
-            error: 'refresh_token is required',
-          });
-          return;
-        }
-
-        const session = await UserSessionDAO.touchRefreshToken(request.body.refresh_token);
-        if (!session) {
-          reply.code(401).send({
-            error: 'invalid refresh token',
-          });
-          return;
+          app = await AppDAO.getByClientID(request.body.client_id);
+          if (!app || !app.enabled) {
+            reply.code(404).send({
+              error: 'invalid client_id',
+            });
+            return;
+          }
+          const secretHash = createHash('sha256').update(request.body.client_secret || '').digest();
+          if (!secretHash.equals(Buffer.from(app!.client_secret_hash, 'base64url'))) {
+            reply.code(400).send({
+              error: 'invalid client secret',
+            });
+            return;
+          }
+          aid = app.id;
         }
 
-        if (session.app_id) {
-          reply.code(501).send({
-            error: 'refresh for third party apps not implemented yet',
-          });
-          return;
+        switch (request.body.grant_type) {
+          case AuthAuthorizeGrantTypeEnum.Code: {
+            if (!request.body.code || aid === 0) {
+              reply.code(400).send({
+                error: 'invalid parameters',
+              });
+              return;
+            }
+            try {
+              const code = await services.authToken.validateOauthCode(request.body.code, aid);
+              const { refresh, access } = await createSession(
+                code.uid,
+                code.aid,
+                code.scp,
+                Buffer.from(code.tok).toString('base64url'),
+              );
+              reply.send({
+                access_token: access,
+                refresh_token: refresh,
+                expires: TOKEN_EXPIRY,
+              });
+            } catch (e) {
+              if (e instanceof AuthTokenServiceError) {
+                reply.code(400).send({
+                  error: 'invalid code',
+                });
+                return;
+              }
+              throw e;
+            }
+            break;
+          }
+          case AuthAuthorizeGrantTypeEnum.RefreshToken: {
+            if (!request.body.refresh_token) {
+              reply.code(400).send({
+                error: 'refresh_token is required',
+              });
+              return;
+            }
+            const session = await UserSessionDAO.touchRefreshToken(request.body.refresh_token, aid);
+            if (!session) {
+              reply.code(401).send({
+                error: 'invalid refresh token',
+              });
+              return;
+            }
+            request.log.debug({ session }, 'session found for refresh token');
+
+            const token = await services.authToken.generate(
+              session.app_id || 0,
+              session.user_id,
+              aid === 0
+                ? [['*']]
+                : (await Promise.all(session.scope.split(',').map(
+                  (s) => ScopeDAO.getPermissionsByName(s),
+                ))),
+              Buffer.from(session.session_hash, 'base64url'),
+              session.expires_at ? session.expires_at - now() : 0,
+            );
+
+            request.log.info({ uid: session.user_id }, 'generated session from refresh token');
+
+            reply.send({
+              access_token: token,
+              expires: TOKEN_EXPIRY,
+            });
+            break;
+          }
+          default:
+            reply.send({
+              error: 'invalid token grant type',
+            });
         }
-        request.log.debug({ session }, 'session found for refresh token');
-
-        let token: string;
-
-        // TODO: fix permission by converting scopes to permissions
-        if (session.expires_at) {
-          token = await services.authToken.generate(
-            session.app_id || 0,
-            session.user_id,
-            [['*']],
-            Buffer.from(session.session_hash, 'base64url'),
-            session.expires_at - now(),
-          );
-        } else {
-          token = await services.authToken.generate(
-            session.app_id || 0,
-            session.user_id,
-            [['*']],
-            Buffer.from(session.session_hash, 'base64url'),
-          );
-        }
-        request.log.info({ uid: session.user_id }, 'generated session from refresh token');
-
-        reply.send({
-          access_token: token,
-          expires: TOKEN_EXPIRY,
-        });
       },
     },
   );

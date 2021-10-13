@@ -16,7 +16,7 @@ export class RoleError extends Error {
 export class RoleDAO extends BaseDAO {
   tableName = 'roles';
 
-  public async getRole(id: number): Promise<Role | null> {
+  public async getRole(id: number): Promise<Role | undefined> {
     return this.cache.computeIfAbsent(`roles:${id}`, async () => await (this.database
       .builder(this.tableName)
       .select('*')
@@ -37,13 +37,13 @@ export class RoleDAO extends BaseDAO {
     });
   }
 
-  public async getByName(name: string): Promise<Role | null> {
+  public async getByName(name: string): Promise<Role | undefined> {
     const id = await this.getIDByName(name);
-    if (!id) return null;
+    if (!id) return;
     return this.getRole(id);
   }
 
-  public async getIDByName(name: string): Promise<number | null> {
+  public async getIDByName(name: string): Promise<number | undefined> {
     const key = name.toLowerCase();
 
     return this.cache.computeIfAbsent(`roles_idName:${key}`, async () => (

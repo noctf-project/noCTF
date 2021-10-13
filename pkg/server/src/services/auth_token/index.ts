@@ -8,7 +8,10 @@ import { compactDecrypt } from 'jose/jwe/compact/decrypt';
 import { importJWK } from 'jose/key/import';
 import { JWSInvalid, JWSSignatureVerificationFailed } from 'jose/util/errors';
 import { JWK } from 'jose/types';
-import { BinaryLike, createHash, createHmac } from 'crypto';
+import {
+  BinaryLike, createHash, createHmac, randomBytes,
+} from 'crypto';
+import { promisify } from 'util';
 import {
   AuthSigningKey, AuthToken, AuthTokenBase, AuthTokenCode,
 } from '../../util/types';
@@ -17,7 +20,6 @@ import { TOKEN_EXPIRY } from '../../config';
 import CacheService from '../cache';
 import SecretRetriever from '../../util/secret_retriever';
 import { now } from '../../util/helpers';
-import { asyncRandomBytes } from '../../util/crypto';
 
 const TOKEN_CACHE_TTL = 30;
 const TOKEN_CACHE_CHECK = 120;
@@ -29,6 +31,9 @@ const OAUTH_CODE_EXPIRY = 300;
 const TYPE_AUTH_TOKEN = 'auth';
 const TYPE_CODE_TOKEN = 'code';
 const REVOKED_KEY = 'auth_revoked';
+
+// helper
+const asyncRandomBytes = promisify(randomBytes);
 
 export class AuthTokenServiceError extends Error {
 }
@@ -60,7 +65,7 @@ export default class AuthTokenService {
    * @returns access token
    */
   public async generate(aid: number, uid: number,
-    prm: string[][], sid: Uint8Array, maxExpires = this.expiry): Promise<string> {
+    prm: string[][], sid: Uint8Array, maxExpires: number): Promise<string> {
     const ctime = now();
 
     const token: AuthToken = {
@@ -70,7 +75,7 @@ export default class AuthTokenService {
       uid,
       sid,
       iat: ctime,
-      exp: Math.min(ctime + this.expiry, ctime + maxExpires),
+      exp: Math.min(ctime + this.expiry, ctime + (maxExpires || this.expiry)),
       prm,
     };
 
@@ -111,7 +116,7 @@ export default class AuthTokenService {
    * @returns AuthTokenCode
    */
   public async validateOauthCode(token: string, aid: number): Promise<AuthTokenCode> {
-    const payload = (await this.decryptPayload(token)) as unknown as AuthTokenCode;
+    const payload = (await this.decryptPayload(token)).payload as AuthTokenCode;
     if (payload.typ !== TYPE_CODE_TOKEN) {
       throw new AuthTokenServiceError('invalid type');
     }

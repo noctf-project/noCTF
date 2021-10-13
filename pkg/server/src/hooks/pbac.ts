@@ -43,7 +43,7 @@ const pbacHook: onRequestAsyncHookHandler<any, any, any> = async (request, reply
     return;
   }
 
-  // Only allow permission for appid = 0 to derive more permissions
+  // Only allow for appid = 0 to derive tokens
   if (reply.context.config.permission === 'auth.self.authorize') {
     if (request.auth.aid !== 0) {
       reply.code(403).send({
@@ -53,31 +53,25 @@ const pbacHook: onRequestAsyncHookHandler<any, any, any> = async (request, reply
     return;
   }
 
-  // allowed if both token and user allow the permission
-  const permissions = await UserDAO.getPermissions(request.auth.uid);
-  let allowedToken = false;
-  /* eslint-disable-next-line */
-  for (const i of request.auth.prm) {
-    const [allowed] = evaluate(reply.context.config.permission, i);
-    if (allowed) {
-      allowedToken = true;
-      break;
-    }
-  }
+  // allowed if both token and user authorise the request
+  const allowedToken = request.auth.prm.some(
+    (p) => evaluate(reply.context.config.permission!, p)[0],
+  );
   if (!allowedToken) {
     reply.code(403).send({
       error: ERROR_FORBIDDEN,
     });
     return;
   }
-
-  /* eslint-disable-next-line */
-  for (const i of permissions) {
-    const [allowedUser] = evaluate(reply.context.config.permission, i);
-    if (allowedUser) {
-      return;
-    }
+  const permissions = await UserDAO.getPermissions(request.auth.uid);
+  const allowedUser = permissions.some(
+    (p) => evaluate(reply.context.config.permission!, p)[0],
+  );
+  if (allowedUser) {
+    return;
   }
+
+  // reject if we reach the end
   reply.code(403).send({
     error: ERROR_FORBIDDEN,
   });

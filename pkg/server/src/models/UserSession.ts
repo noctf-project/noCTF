@@ -1,9 +1,9 @@
-import { createHash } from 'crypto';
+import { createHmac } from 'crypto';
 import services from '../services';
 import { now } from '../util/helpers';
 import BaseDAO from './Base';
 
-export type UserSession = {
+export interface UserSession {
   session_hash: string;
   user_id: number;
   created_at?: number | null;
@@ -12,7 +12,7 @@ export type UserSession = {
   touched_at?: number | null;
   scope: string;
   app_id?: number | null;
-};
+}
 
 export class UserSessionDAOError extends Error {
 }
@@ -20,22 +20,22 @@ export class UserSessionDAOError extends Error {
 export class UserSessionDAO extends BaseDAO {
   tableName = 'user_sessions';
 
-  public async create({
-    session_hash,
-    user_id,
-    scope,
-    app_id,
-    expires_at,
-  }: UserSession): Promise<void> {
+  public async create(refreshToken: string, user_id: number, app_id: number,
+    scope: string[], expires_at?: number): Promise<Buffer> {
+    const session_hash = createHmac('sha256', refreshToken)
+      .update((app_id || 0).toString())
+      .digest();
     await this.database.builder(this.tableName)
       .insert({
-        session_hash,
+        session_hash: session_hash.toString('base64url'),
         user_id,
         scope,
         app_id: app_id || null,
         expires_at: expires_at || null,
         touched_at: now(),
       });
+
+    return session_hash;
   }
 
   /**
@@ -44,9 +44,9 @@ export class UserSessionDAO extends BaseDAO {
    * @param session_hash hash of session
    * @returns
    */
-  public async touchRefreshToken(refreshToken: string): Promise<UserSession> {
-    const session_hash = createHash('sha256')
-      .update(refreshToken)
+  public async touchRefreshToken(refreshToken: string, aid: number): Promise<UserSession> {
+    const session_hash = createHmac('sha256', refreshToken)
+      .update(aid.toString())
       .digest('base64url');
     const session = await this.database.builder(this.tableName)
       .select('*')

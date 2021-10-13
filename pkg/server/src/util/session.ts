@@ -1,28 +1,23 @@
-import { createHash } from 'crypto';
+import { randomBytes } from 'crypto';
+import { promisify } from 'util';
 import ScopeDAO from '../models/Scope';
 import UserSessionDAO from '../models/UserSession';
 import services from '../services';
-import { asyncRandomBytes } from './crypto';
+
+const asyncRandomBytes = promisify(randomBytes);
 
 export const createSession = async (id: number,
   aid: number,
   scope: string[] = [],
   suppliedRefresh?: string) => {
   const refresh = suppliedRefresh || (await asyncRandomBytes(48)).toString('base64url');
-  const sid = createHash('sha256').update(refresh).digest();
-  await UserSessionDAO.create({
-    session_hash: sid.toString('base64url'),
-    user_id: id,
-    scope: scope.join(','),
-    app_id: aid || null,
-    expires_at: null,
-  });
+  const sid = await UserSessionDAO.create(refresh, id, aid, scope);
 
   let perms = [['*']];
   if (aid !== 0 || scope.length !== 0) {
     perms = (await Promise.all(scope.map((s) => ScopeDAO.getPermissionsByName(s))));
   }
 
-  const access = await services.authToken.generate(aid, id, perms, sid);
+  const access = await services.authToken.generate(aid, id, perms, sid, 0);
   return { refresh, access };
 };

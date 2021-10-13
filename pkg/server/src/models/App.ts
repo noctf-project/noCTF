@@ -20,14 +20,14 @@ export class AppDAO extends BaseDAO {
    * @param id id
    * @returns App object if exists, else null
    */
-  public async getById(id: number): Promise<App> {
+  public async getById(id: number): Promise<App | undefined> {
     return this.cache.computeIfAbsent(`apps:${id}`, () => this.database.builder(this.tableName)
       .select('*')
       .where({ id })
       .first());
   }
 
-  public async getIDByClientID(client_id: string): Promise<number | null> {
+  public async getIDByClientID(client_id: string): Promise<number | undefined> {
     return this.cache.computeIfAbsent(`apps_idClientID:${client_id}`, async () => (
       await this.database.builder(this.tableName)
         .select('id')
@@ -38,11 +38,11 @@ export class AppDAO extends BaseDAO {
   /**
    * Get a user by Email
    * @param email email of user
-   * @returns User object if exists, else null
+   * @returns User object if exists, else undefined
    */
-  public async getByClientID(client_id: string): Promise<App | null> {
+  public async getByClientID(client_id: string): Promise<App | undefined> {
     const id = await this.getIDByClientID(client_id);
-    if (!id) return null;
+    if (!id) return;
     return this.getById(id);
   }
 }
