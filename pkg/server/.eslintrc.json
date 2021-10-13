@@ -11,6 +11,7 @@
     "max-classes-per-file": "off",
     "no-underscore-dangle": "off",
     "import/no-named-as-default": "off",
-    "@typescript-eslint/naming-convention": "off"
+    "@typescript-eslint/naming-convention": "off",
+    "consistent-return": "off"
   }
 }

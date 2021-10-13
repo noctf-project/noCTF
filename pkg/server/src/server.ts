@@ -3,6 +3,7 @@ import { fastifyRequestContextPlugin } from 'fastify-request-context';
 import { nanoid } from 'nanoid';
 import fastifyRateLimit from 'fastify-rate-limit';
 import { Http2Server, Http2ServerRequest, Http2ServerResponse } from 'http2';
+import { parse } from 'querystring';
 import Routes from './routes';
 import { NODE_ENV } from './config';
 import logger from './util/logger';
@@ -63,6 +64,15 @@ export const init = async () => {
       trace: NODE_ENV === 'development' ? error.stack : undefined,
     });
   });
+
+  // add urlencoded bodyparser (for oauth grr)
+  server.addContentTypeParser(
+    'application/x-www-form-urlencoded',
+    { parseAs: 'buffer', bodyLimit: 1024 * 1024 }, // 1MB
+    (req, body, done) => {
+      done(null, parse(body.toString()));
+    },
+  );
 
   // Mount auth hook
   server.decorateRequest('auth', null);

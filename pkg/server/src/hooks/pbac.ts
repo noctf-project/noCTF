@@ -24,7 +24,7 @@ const pbacHook: onRequestAsyncHookHandler<any, any, any> = async (request, reply
 
     // use public permissions
     const permissions = await RoleDAO.getPermissionsByID(
-      (await RoleDAO.getRoleIDByName('public'))!,
+      (await RoleDAO.getIDByName('public'))!,
     );
 
     const [allowed] = evaluate(reply.context.config.permission, permissions);
@@ -43,11 +43,35 @@ const pbacHook: onRequestAsyncHookHandler<any, any, any> = async (request, reply
     return;
   }
 
-  const permissions = await UserDAO.getPermissions(request.auth.uid);
-  if (evaluate(reply.context.config.permission, permissions)) {
+  // Only allow for appid = 0 to derive tokens
+  if (reply.context.config.permission === 'auth.self.authorize') {
+    if (request.auth.aid !== 0) {
+      reply.code(403).send({
+        error: ERROR_FORBIDDEN,
+      });
+    }
     return;
   }
 
+  // allowed if both token and user authorise the request
+  const allowedToken = request.auth.prm.some(
+    (p) => evaluate(reply.context.config.permission!, p)[0],
+  );
+  if (!allowedToken) {
+    reply.code(403).send({
+      error: ERROR_FORBIDDEN,
+    });
+    return;
+  }
+  const permissions = await UserDAO.getPermissions(request.auth.uid);
+  const allowedUser = permissions.some(
+    (p) => evaluate(reply.context.config.permission!, p)[0],
+  );
+  if (allowedUser) {
+    return;
+  }
+
+  // reject if we reach the end
   reply.code(403).send({
     error: ERROR_FORBIDDEN,
   });

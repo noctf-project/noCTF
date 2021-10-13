@@ -29,10 +29,11 @@ export async function up(knex: Knex): Promise<void> {
     table.increments('id').primary();
     table.string('name', 48).notNullable();
     table.string('description').notNullable();
-    table.string('client_id').notNullable().unique();
+    table.string('client_id', 48).notNullable().unique();
     table.string('client_secret_hash').notNullable();
-    table.string('allowed_origins');
+    table.string('allowed_redirect_uris').notNullable();
     table.boolean('enabled').notNullable();
+    table.bigInteger('created_at').notNullable().defaultTo(now);
   });
 
   await knex.schema.createTable('scopes', (table) => {
@@ -40,6 +41,7 @@ export async function up(knex: Knex): Promise<void> {
     table.string('name', 32).notNullable();
     table.string('description').notNullable();
     table.string('permissions').notNullable();
+    table.bigInteger('created_at').notNullable().defaultTo(now);
   });
 
   await knex.schema.createTable('user_sessions', (table) => {
@@ -86,6 +88,19 @@ export async function up(knex: Knex): Promise<void> {
       description: 'Superuser. Do not delete.',
       permissions: '*'
     },
+  ]);
+
+  await knex('scopes').insert([
+    {
+      name: 'api-full',
+      description: '(Almost) full API access to your account.',
+      permissions: '*'
+    },
+    {
+      name: 'profile',
+      description: 'Read-only access to your profile.',
+      permissions: 'profile.self.view',
+    }
   ]);
 }
 

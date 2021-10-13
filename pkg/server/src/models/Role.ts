@@ -1,6 +1,5 @@
 import services from '../services';
-import CacheService from '../services/cache';
-import DatabaseService from '../services/database';
+import BaseDAO from './Base';
 
 export type Role = {
   id: number;
@@ -14,43 +13,44 @@ export class RoleError extends Error {
 }
 
 // TODO: kill idName cache when role is changed/deleted
-export class RoleDAO {
-  private tableName = 'roles';
+export class RoleDAO extends BaseDAO {
+  tableName = 'roles';
 
-  private permissionTableName = 'role_permissions';
-
-  constructor(private database: DatabaseService, private cache: CacheService) {
-  }
-
-  public async getRole(id: number): Promise<Role | null> {
-    return this.cache.computeIfAbsent(`roles:${id}`, () => this.database.builder(this.tableName)
+  public async getRole(id: number): Promise<Role | undefined> {
+    return this.cache.computeIfAbsent(`roles:${id}`, async () => await (this.database
+      .builder(this.tableName)
       .select('*')
       .where({ id })
-      .first());
+      .first()) || null);
   }
 
   public async getPermissionsByID(id: number): Promise<string[]> {
-    return this.cache.computeIfAbsent(`roles_permissions:${id}`, async () => (await this.database
-      .builder(this.tableName)
-      .select('permissions')
-      .where({ id })
-      .first()).permissions.split(','));
+    return this.cache.computeIfAbsent(`roles_permissions:${id}`, async () => {
+      const perms = await this.database
+        .builder(this.tableName)
+        .select('permissions')
+        .where({ id })
+        .first();
+      if (!perms) return [];
+
+      return perms.permissions.split(',').sort();
+    });
   }
 
-  public async getByName(name: string): Promise<Role | null> {
-    const id = await this.getRoleIDByName(name);
-    if (!id) return null;
+  public async getByName(name: string): Promise<Role | undefined> {
+    const id = await this.getIDByName(name);
+    if (!id) return;
     return this.getRole(id);
   }
 
-  public async getRoleIDByName(name: string): Promise<number | null> {
+  public async getIDByName(name: string): Promise<number | undefined> {
     const key = name.toLowerCase();
 
     return this.cache.computeIfAbsent(`roles_idName:${key}`, async () => (
       await this.database.builder(this.tableName)
         .select('id')
         .where({ name: key })
-        .first())?.id);
+        .first())?.id) || null;
   }
 }
 
