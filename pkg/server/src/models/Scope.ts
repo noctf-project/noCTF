@@ -17,7 +17,7 @@ export class ScopeDAO extends BaseDAO {
    * @param id id
    * @returns Scope object if exists, else null
    */
-  public async getById(id: number): Promise<Scope | null> {
+  public async getById(id: number): Promise<Scope | undefined> {
     return this.cache.computeIfAbsent(`scopes:${id}`, async () => (await this.database
       .builder(this.tableName)
       .select('*')
@@ -30,7 +30,7 @@ export class ScopeDAO extends BaseDAO {
    * @param name name
    * @returns App object if exists, else null
    */
-  public async getByName(name: string): Promise<Scope | null> {
+  public async getByName(name: string): Promise<Scope | undefined> {
     const key = name.toLowerCase();
     return this.cache.computeIfAbsent(`scopes_byName:${key}`, async () => await (this.database
       .builder(this.tableName)

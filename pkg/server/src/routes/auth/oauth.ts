@@ -69,7 +69,7 @@ export default async function register(fastify: FastifyInstance) {
         }
 
         // Check if redirect URI is legit
-        const origins = app.allowed_redirect_uris.split(',');
+        const origins = app.allowed_redirect_uris.split(',').map((r) => r.replaceAll(/%2[Cc]/g, ','));
         const uri = new URL(request.query.redirect_uri);
         if (origins.indexOf(`${uri.origin}${uri.pathname}`) === -1) {
           reply.code(400).send({
@@ -118,7 +118,7 @@ export default async function register(fastify: FastifyInstance) {
       const scopes = (await
         Promise.all(dedupedScopes.map((name) => ScopeDAO.getByName(name)))
       );
-      if (scopes.indexOf(null) !== -1) {
+      if (scopes.indexOf(undefined) !== -1) {
         reply.code(400).send({
           error: 'one or more scopes are invalid',
         });
@@ -166,7 +166,7 @@ export default async function register(fastify: FastifyInstance) {
         const scopes = (await
           Promise.all(dedupedScopes.map((name) => ScopeDAO.getByName(name)))
         );
-        if (scopes.indexOf(null) !== -1) {
+        if (scopes.indexOf(undefined) !== -1) {
           reply.code(400).send({
             error: 'one or more scopes are invalid',
           });
