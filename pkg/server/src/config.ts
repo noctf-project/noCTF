@@ -16,6 +16,7 @@ declare const process : {
     NOCTF_DATABASE_CONNECTION_PASSWORD: string,
     NOCTF_LOG_LEVEL: string,
     NOCTF_REDIS_URL: string,
+    NOCTF_SECURE: string,
     NOCTF_VERIFY_EMAIL: string,
   }
 };
@@ -32,6 +33,7 @@ export const DOCS_ENABLED = process.env.NOCTF_DOCS_ENABLED
   ? process.env.NOCTF_DOCS_ENABLED !== 'false'
   : NODE_ENV === 'development';
 export const SECRETS_WATCH = toBool(process.env.NOCTF_SECRETS_WATCH);
+export const SECURE = toBool(process.env.NOCTF_SECURE || 'true');
 export const VERIFY_EMAIL = toBool(process.env.NOCTF_VERIFY_EMAIL);
 
 export const DATABASE_CLIENT = process.env.NOCTF_DATABASE_CLIENT || 'sqlite3';

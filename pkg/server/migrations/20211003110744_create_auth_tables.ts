@@ -53,7 +53,7 @@ export async function up(knex: Knex): Promise<void> {
     table.bigInteger('touched_at').defaultTo(now);
     table.string('scope').notNullable();
     table.integer('app_id').references('id').inTable('apps');
-    table.index(['app_id']);
+    table.index(['app_id', 'touched_at']);
   });
 
   await knex.schema.createTable('roles', (table) => {

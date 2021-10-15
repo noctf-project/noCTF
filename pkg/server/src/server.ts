@@ -5,7 +5,7 @@ import fastifyRateLimit from 'fastify-rate-limit';
 import { Http2Server, Http2ServerRequest, Http2ServerResponse } from 'http2';
 import { parse } from 'querystring';
 import Routes from './routes';
-import { NODE_ENV } from './config';
+import { NODE_ENV, SECURE } from './config';
 import logger from './util/logger';
 import { ERROR_INTERNAL_SERVER_ERROR } from './util/constants';
 import pbacHook from './hooks/pbac';
@@ -17,19 +17,24 @@ import services from './services';
 import { NoCTFHTTPException } from './util/exceptions';
 
 export const init = async () => {
-  const certSecret = new SecretRetriever('https', { watch: false });
-  await certSecret.loaded;
+  let certSecret;
+  if (SECURE) {
+    certSecret = new SecretRetriever('https', { watch: false });
+    await certSecret.loaded;
+  }
 
   const server: FastifyInstance<
   Http2Server, Http2ServerRequest, Http2ServerResponse, FastifyLoggerInstance
   > = fastify({
+    ...certSecret && {
+      https: {
+        allowHTTP1: true,
+        key: certSecret.getValue('key.pem'),
+        cert: certSecret.getValue('cert.pem'),
+      },
+    },
     logger,
     http2: true,
-    https: {
-      allowHTTP1: true,
-      key: certSecret.getValue('key.pem'),
-      cert: certSecret.getValue('cert.pem'),
-    },
     trustProxy: true,
     genReqId: (req) => req.headers['x-request-id'] as string || nanoid(),
   });
