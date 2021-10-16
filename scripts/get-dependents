@@ -1,0 +1,54 @@
+#!/usr/bin/node
+
+const fs = require('fs');
+const path = require('path');
+
+const PREFIX = '@noctf/';
+
+if (process.argv.length < 3 || !process.env.GIT_ROOT) {
+  console.error('usage: GIT_ROOT=absolute-dir ./get-dependents dependents-newline-separated');
+  process.exit(1);
+}
+
+const changed = process.argv[2].split('\n').map(p => path.join(PREFIX, p));
+
+// require all package.json in pkg
+const deps = fs.readdirSync(path.join(process.env.GIT_ROOT, 'pkg'), { withFileTypes: true })
+  .filter(d => d.isDirectory())
+  .map(d => d.name)
+  .reduce((accum, cur) => {
+    accum[path.join(PREFIX, cur)] = Object.keys(
+      require(path.join(process.env.GIT_ROOT, 'pkg', cur, 'package.json')).dependencies
+    )
+      .filter(p => p.startsWith(PREFIX));
+    
+    return accum;
+  }, {});
+
+// invert the digraph
+const graph = Object.keys(deps)
+  .reduce((accum, cur) => {
+    deps[cur].map((dep) => {
+      if (!accum[dep]) accum[dep] = [];
+      accum[dep].push(cur);
+    });
+    return accum;
+  }, {});
+
+
+// read off the graph to see what changed
+const visited = new Set();
+const stack = [...changed];
+while (stack.length > 0) {
+  const elem = stack.pop();
+  visited.add(elem);
+  if (!graph[elem]) continue;
+  graph[elem].map(n => !visited.has(n) && stack.push(n));
+}
+
+const final = Array.from(visited);
+if (final.length > 1) {
+  console.log(`{${final.join(',')}}`);
+} else {
+  console.log(final[0]);
+}

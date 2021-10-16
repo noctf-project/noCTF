@@ -11,15 +11,16 @@
     "dev": "NODE_ENV=development NOCTF_SECRETS_DIR='../../data/secrets' NOCTF_SECRETS_WATCH=true tsc-watch --onSuccess \"node build/dist/src/\"",
     "dev-setup": "ts-node dev-setup.ts",
     "build": "tsc",
+    "ci": "yarn lint && yarn test:integration",
     "lint": "eslint --ext js,ts src/*",
     "fix-lint": "eslint --fix --ext js,ts src/",
     "lint:tests": "eslint --ext js,ts tests/",
     "fix-lint:tests": "eslint --fix --ext js,ts tests/",
-    "test:integration": "bash tests/bootstrap/integration.sh tests/integration/**/*.test.ts",
+    "test:integration": "./tests/bootstrap/integration.sh tests/integration/**/*.test.ts",
     "test:integration:nyan": "REPORTER=tnyan bash tests/bootstrap/integration.sh tests/integration/**/*.test.ts"
   },
   "dependencies": {
-    "@sinclair/typebox": "^0.20.5",
+    "@noctf/schema": "workspace:pkg/schema",
     "argon2": "^0.28.2",
     "cbor": "^8.0.2",
     "chokidar": "^3.5.2",

@@ -1,27 +1,27 @@
 import { FastifyInstance } from 'fastify';
 import { URLSearchParams } from 'url';
 import { createHash } from 'crypto';
-import { TOKEN_EXPIRY } from '../../config';
 import {
   AuthGrantRequest, AuthGrantRequestType,
   AuthConsentRequest, AuthConsentRequestType,
   AuthTokenRequest, AuthTokenRequestType,
-} from '../../schemas/requests';
+} from '@noctf/schema/requests';
 import {
   ErrorResponseType,
   AuthTokenResponse, AuthTokenResponseType,
   AuthJWKSResponseType, AuthJWKSResponse,
   AuthConsentResponse, AuthConsentResponseType,
   AuthGrantResponseType, AuthGrantResponse,
-} from '../../schemas/responses';
+} from '@noctf/schema/responses';
+import { AuthAuthorizeQuery, AuthAuthorizeQueryType } from '@noctf/schema/queries';
+import { AuthAuthorizeGrantTypeEnum } from '@noctf/schema/datatypes';
+import { TOKEN_EXPIRY } from '../../config';
 import services from '../../services';
 import { now } from '../../util/helpers';
 import { ipKeyGenerator } from '../../util/ratelimit';
-import { AuthAuthorizeQuery, AuthAuthorizeQueryType } from '../../schemas/queries';
 import AppDAO, { App } from '../../models/App';
 import UserSessionDAO from '../../models/UserSession';
 import ScopeDAO, { Scope } from '../../models/Scope';
-import { AuthAuthorizeGrantTypeEnum } from '../../schemas/datatypes';
 import { createSession } from '../../util/session';
 import { AuthTokenServiceError } from '../../services/auth_token';
 
@@ -116,7 +116,7 @@ export default async function register(fastify: FastifyInstance) {
 
       const dedupedScopes = Array.from(new Set(scope.map((s) => s.toLowerCase())));
       const scopes = (await
-        Promise.all(dedupedScopes.map((name) => ScopeDAO.getByName(name)))
+      Promise.all(dedupedScopes.map((name) => ScopeDAO.getByName(name)))
       );
       if (scopes.indexOf(undefined) !== -1) {
         reply.code(400).send({
@@ -164,7 +164,7 @@ export default async function register(fastify: FastifyInstance) {
 
         const dedupedScopes = Array.from(new Set(request.body.scope.map((s) => s.toLowerCase())));
         const scopes = (await
-          Promise.all(dedupedScopes.map((name) => ScopeDAO.getByName(name)))
+        Promise.all(dedupedScopes.map((name) => ScopeDAO.getByName(name)))
         );
         if (scopes.indexOf(undefined) !== -1) {
           reply.code(400).send({

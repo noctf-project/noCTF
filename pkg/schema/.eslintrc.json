@@ -1,0 +1,17 @@
+{
+  "extends": [
+    "airbnb-base",
+    "airbnb-typescript/base"
+  ],
+  "parserOptions": {
+    "project": "./tsconfig.lint.json"
+  },
+  "rules": {
+    "import/prefer-default-export": "off",
+    "max-classes-per-file": "off",
+    "no-underscore-dangle": "off",
+    "import/no-named-as-default": "off",
+    "@typescript-eslint/naming-convention": "off",
+    "consistent-return": "off"
+  }
+}
