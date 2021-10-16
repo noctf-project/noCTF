@@ -1,0 +1,38 @@
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  server-test-integ:
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: development
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.base.sha }}
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: cache builds
+      uses: actions/cache@v2
+      id: cache-build
+      with:
+        path: |
+          pkg/*/build
+        key: ${{ runner.os }}-cache-build-${{ github.event.pull_request.head.sha }}
+        restore-keys: |
+          ${{ runner.os }}-cache-build-${{ github.event.pull_request.base.sha }}
+    - name: cache node_modules
+      uses: actions/cache@v2
+      id: cache-yarn1
+      with:
+        path: ~/.cache/yarn
+        key: ${{ runner.os }}-cache-yarn1-${{ hashFiles('yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cache-yarn1-
+    - name: yarn install
+      run: yarn install --immutable
+    - name: server integ test
+      run: yarn workspace @noctf/server test:integration
