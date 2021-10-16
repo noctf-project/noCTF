@@ -17,12 +17,11 @@ jobs:
       uses: actions/cache@v1
       id: cache-yarn
       with:
-        path: '**/node_modules'
-        key: ${{ runner.os }}-cache-yarn_${{ hashFiles('yarn.lock') }}
+        path: node_modules
+        key: ${{ runner.os }}-cache-yarn-${{ hashFiles('yarn.lock') }}
         restore-keys: |
-          ${{ runner.os }}-cache-yarn_${{ hashFiles('yarn.lock') }}
+          ${{ runner.os }}-cache-yarn-
     - name: yarn install
-      if: steps.cache-yarn.outputs.cache-hit != 'true'
       run: yarn install --immutable
     - name: server integ test
       run: yarn workspace noctf-server test:integration
