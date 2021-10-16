@@ -11,19 +11,19 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        ref: ${{ github.event.push.before }}
+        ref: ${{ github.event.before }}
     - uses: actions/checkout@v2
       with:
-        ref: ${{ github.event.push.after }}
-    - name: cache node_modules
+        ref: ${{ github.event.after }}
+    - name: cache build
       uses: actions/cache@v2
       id: cache-build
       with:
         path: |
           pkg/*/build
-        key: ${{ runner.os }}-cache-build-${{ github.event.push.after }}
+        key: ${{ runner.os }}-cache-build-${{ github.event.after }}
         restore-keys: |
-          ${{ runner.os }}-cache-build-${{ github.event.push.before }}
+          ${{ runner.os }}-cache-build-${{ github.event.before }}
     - name: cache node_modules
       uses: actions/cache@v2
       id: cache-yarn1
