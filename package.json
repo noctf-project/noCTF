@@ -6,5 +6,11 @@
   "repository": "https://github.com/DownUnderCTF/noctf",
   "license": "MIT",
   "private": true,
-  "workspaces": ["pkg/*"]
+  "workspaces": [
+    "pkg/*"
+  ],
+  "scripts": {
+    "ci": "./scripts/ci.sh"
+  },
+  "packageManager": "yarn@3.0.2"
 }

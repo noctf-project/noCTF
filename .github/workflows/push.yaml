@@ -26,12 +26,12 @@ jobs:
           ${{ runner.os }}-cache-build-${{ github.event.before }}
     - name: cache node_modules
       uses: actions/cache@v2
-      id: cache-yarn1
+      id: cache-yarn2
       with:
-        path: ~/.cache/yarn
-        key: ${{ runner.os }}-cache-yarn1-${{ hashFiles('yarn.lock') }}
+        path: .yarn/cache
+        key: ${{ runner.os }}-cache-yarn2-${{ hashFiles('yarn.lock') }}
         restore-keys: |
-          ${{ runner.os }}-cache-yarn1-
+          ${{ runner.os }}-cache-yarn2-
     - name: yarn install
       run: yarn install --immutable
     - name: server integ test

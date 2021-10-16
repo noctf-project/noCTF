@@ -8,7 +8,9 @@
   },
   "typesVersions": {
     "*": {
-      "*": ["./build/dist/*.d.ts"]
+      "*": [
+        "./build/dist/*.d.ts"
+      ]
     }
   },
   "main": "./build/dist/index.js",
@@ -19,6 +21,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "eslint --ext js,ts src/*",
+    "ci": "yarn lint",
     "fix-lint": "eslint --fix --ext js,ts src/"
   },
   "dependencies": {
