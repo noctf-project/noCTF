@@ -5,7 +5,7 @@ POSTGRES_PORT=15432
 REDIS_PORT=16379
 
 export NOCTF_LOG_LEVEL=warn
-export NOCTF_SECRETS_DIR="$(dirname $0)/../../../../data/secrets"
+export NOCTF_SECRETS_DIR="$(dirname $0)/../../../../data/secrets-integ"
 export NOCTF_DATABASE_CLIENT=postgresql
 export NOCTF_DATABASE_CONNECTION_NAME=noctf
 export NOCTF_DATABASE_CONNECTION_HOST=localhost
@@ -39,11 +39,12 @@ echo -e "=== SETUP ==="
 
 echo "$COMPOSE" | docker-compose -f /dev/stdin up -d
 
-npx knex migrate:up
+yarn knex migrate:up
+yarn ts-node dev-setup.ts
 
 echo -e "\n=== TESTS ==="
 REPORTER="${REPORTER:-faucet}"
-npx ts-node node_modules/tape/bin/tape "$@" | npx "$REPORTER"
+yarn tape -r ts-node/register "$@" | yarn "$REPORTER"
 
 
 echo -e "\n=== TEARDOWN ==="
