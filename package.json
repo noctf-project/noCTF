@@ -6,7 +6,5 @@
   "repository": "https://github.com/DownUnderCTF/noctf",
   "license": "MIT",
   "private": true,
-  "workspaces": [
-    "pkg/*/"
-  ]
+  "workspaces": ["pkg/*"]
 }

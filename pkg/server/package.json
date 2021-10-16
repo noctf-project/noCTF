@@ -1,5 +1,5 @@
 {
-  "name": "noctf-server",
+  "name": "@noctf/server",
   "version": "0.1.0",
   "description": "noCTF api server",
   "main": "dist/index.ts",
@@ -8,7 +8,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "NODE_ENV=development NOCTF_SECRETS_DIR='../../data/secrets' NOCTF_SECRETS_WATCH=true tsc-watch --onSuccess \"node dist/src/\"",
+    "dev": "NODE_ENV=development NOCTF_SECRETS_DIR='../../data/secrets' NOCTF_SECRETS_WATCH=true tsc-watch --onSuccess \"node build/dist/src/\"",
     "dev-setup": "ts-node dev-setup.ts",
     "build": "tsc",
     "lint": "eslint --ext js,ts src/*",
