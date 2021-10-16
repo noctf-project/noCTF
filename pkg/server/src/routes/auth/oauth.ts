@@ -6,22 +6,22 @@ import {
   AuthGrantRequest, AuthGrantRequestType,
   AuthConsentRequest, AuthConsentRequestType,
   AuthTokenRequest, AuthTokenRequestType,
-} from '../../schemas/requests';
+} from '@noctf/schema/requests';
 import {
   ErrorResponseType,
   AuthTokenResponse, AuthTokenResponseType,
   AuthJWKSResponseType, AuthJWKSResponse,
   AuthConsentResponse, AuthConsentResponseType,
   AuthGrantResponseType, AuthGrantResponse,
-} from '../../schemas/responses';
+} from '@noctf/schema/responses';
 import services from '../../services';
 import { now } from '../../util/helpers';
 import { ipKeyGenerator } from '../../util/ratelimit';
-import { AuthAuthorizeQuery, AuthAuthorizeQueryType } from '../../schemas/queries';
+import { AuthAuthorizeQuery, AuthAuthorizeQueryType } from '@noctf/schema/queries';
 import AppDAO, { App } from '../../models/App';
 import UserSessionDAO from '../../models/UserSession';
 import ScopeDAO, { Scope } from '../../models/Scope';
-import { AuthAuthorizeGrantTypeEnum } from '../../schemas/datatypes';
+import { AuthAuthorizeGrantTypeEnum } from '@noctf/schema/datatypes';
 import { createSession } from '../../util/session';
 import { AuthTokenServiceError } from '../../services/auth_token';
 

@@ -19,7 +19,7 @@
     "test:integration:nyan": "REPORTER=tnyan bash tests/bootstrap/integration.sh tests/integration/**/*.test.ts"
   },
   "dependencies": {
-    "@sinclair/typebox": "^0.20.5",
+    "@noctf/schema": "0.1.0",
     "argon2": "^0.28.2",
     "cbor": "^8.0.2",
     "chokidar": "^3.5.2",

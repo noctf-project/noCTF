@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import {
   AuthPermissionsResponse, AuthPermissionsResponseType,
   ErrorResponse, ErrorResponseType,
-} from '../../schemas/responses';
+} from '@noctf/schema/responses';
 import services from '../../services';
 import UserDAO from '../../models/User';
 import RoleDAO from '../../models/Role';
