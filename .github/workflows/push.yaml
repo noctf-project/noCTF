@@ -27,5 +27,7 @@ jobs:
           ${{ runner.os }}-cache-yarn2-
     - name: yarn install
       run: yarn install --immutable
-    - name: ci build and test
-      run: ./scripts/ci.sh
+    - name: build all
+      run: yarn build
+    - name: ci test
+      run: yarn ci

@@ -10,7 +10,8 @@
     "pkg/*"
   ],
   "scripts": {
-    "ci": "./scripts/ci.sh"
+    "ci": "./scripts/ci.sh",
+    "build": "yarn workspaces foreach -pitAv run build"
   },
   "packageManager": "yarn@3.0.2"
 }

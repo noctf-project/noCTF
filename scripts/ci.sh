@@ -4,5 +4,4 @@ changed=`git diff --name-only "$GIT_BEFORE" "$GIT_AFTER" | egrep '^pkg/' | cut -
 deps=`node "$GIT_ROOT/scripts/get-dependents" "$changed"`
 set -x
 
-yarn workspaces foreach -pitAv run build
 yarn workspaces foreach -pitv --from "$deps" run ci
