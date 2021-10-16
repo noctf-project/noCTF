@@ -45,7 +45,7 @@ ts-node dev-setup.ts
 
 echo -e "\n=== TESTS ==="
 REPORTER="${REPORTER:-faucet}"
-tape -r ts-node/register "$@" | "$REPORTER"
-
+nyc tape -r ts-node/register "$@" | "$REPORTER"
+nyc report --reporter=lcov --reporter=text
 
 echo -e "\n=== TEARDOWN ==="

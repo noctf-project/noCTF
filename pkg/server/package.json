@@ -52,6 +52,7 @@
     "eslint-plugin-import": "^2.24.2",
     "faucet": "^0.0.1",
     "node-forge": "^0.10.0",
+    "nyc": "^15.1.0",
     "tap": "^15.0.10",
     "tap-nyan": "^1.1.0",
     "tape": "^5.3.1",
