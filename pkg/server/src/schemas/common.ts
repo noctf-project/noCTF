@@ -10,7 +10,7 @@ export const PaginatedResponse = <T extends TSchema>(type: T) => Type.Object({
   pagination: Type.Object({
     cursor: Type.String(),
     hasNext: Type.Boolean(),
-  })
+  }),
 });
 export type PaginatedResponseType<T> = Omit<Static<ReturnType<typeof PaginatedResponse>>, 'data'> & {
   data: T

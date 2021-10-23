@@ -1,44 +1,55 @@
 import { Static, Type } from '@sinclair/typebox';
-import { PaginatedResponse } from '../common';
 
 export const ChallengeChallengeResponse = Type.Object({
   id: Type.Number(),
   name: Type.String(),
   category: Type.String(),
   description: Type.String(),
+  attachments: Type.Array(Type.Object({
+    name: Type.String(),
+    uri: Type.String(),
+  })),
+  score: Type.Object({
+    initial: Type.Number(),
+    decay: Type.Number(),
+    minimum: Type.Number(),
+  }),
+  display_at: Type.Number(),
+  created_at: Type.Number(),
+  updated_at: Type.Number(),
 });
 
 export type ChallengeChallengeResponseType = Static<typeof ChallengeChallengeResponse>;
 
-export const ChallengeListResponse = PaginatedResponse(Type.Object({
+// TODO: PaginatedResponse
+export const ChallengeListResponse = (Type.Object({
   challenges: Type.Array(ChallengeChallengeResponse),
 }));
 export type ChallengeListResponseType = Static<typeof ChallengeListResponse>;
 
-export const ChallengePlayerSolveListResponse = PaginatedResponse(Type.Object({
+// TODO: PaginatedResponse
+export const ChallengePlayerSolveListResponse = (Type.Object({
   solves: Type.Array(
     Type.Object({
-      id: Type.Number(),
       challenge_id: Type.Number(),
-      team_id: Type.Number(),
-      team_name: Type.String(),
+      submitter: Type.Number(),
     }),
-  )
+  ),
 }));
 export type ChallengePlayerSolveListResponseType = Static<typeof ChallengePlayerSolveListResponse>;
 
 export const ChallengeHintResponse = Type.Object({
   id: Type.Number(),
   hint: Type.Optional(Type.String()),
-  cost: Type.Number(),
-  unlocked: Type.Boolean(),
-  released: Type.Number(),
-  updated: Type.Number(),
+  released_at: Type.Number(),
+  created_at: Type.Number(),
+  updated_at: Type.Number(),
 });
 export type ChallengeHintResponseType = Static<typeof ChallengeHintResponse>;
 
-export const ChallengeHintListResponse = PaginatedResponse(Type.Object({
-  hints: Type.Array(ChallengeHintResponse)
+// TODO: PaginatedResponse
+export const ChallengeHintListResponse = (Type.Object({
+  hints: Type.Array(ChallengeHintResponse),
 }));
 export type ChallengeHintListResponseType = Static<typeof ChallengeHintListResponse>;
 

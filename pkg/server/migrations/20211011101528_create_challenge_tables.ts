@@ -12,9 +12,7 @@ export async function up(knex: Knex): Promise<void> {
 
         table.json('attachments').notNullable().defaultTo('[]').comment('application defined list of attachments');
 
-        table.integer('score_initial').notNullable().comment('Initial or maximum score. Set to desired score for static scoring');
-        table.integer('score_decay').notNullable().comment('Dynamic score decay. Set to INT32_MAX for static scoring');
-        table.integer('score_minimum').notNullable().comment('Minimum score. Set to 0 for static scoring');
+        table.json('score').notNullable().comment('Scoring configuration, requires {"initial":0,"decay":0,"minimum":0}');
 
         table.bigInteger('display_at').comment('time the challenge should be displayed, null if challenge is hidden');
 
@@ -41,7 +39,7 @@ export async function up(knex: Knex): Promise<void> {
         table.string('hint').notNullable();
         table.json('attachments').notNullable().defaultTo('[]').comment('application defined list of attachments');
 
-        table.bigInteger('released_at').notNullable().comment('time the hint should be displayed, null if the hint is hidden');
+        table.bigInteger('released_at').comment('time the hint should be displayed, null if the hint is hidden');
 
         table.bigInteger('created_at').notNullable().defaultTo(now(knex));
         table.bigInteger('updated_at').notNullable().defaultTo(now(knex));

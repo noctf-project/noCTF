@@ -1,7 +1,16 @@
 import { FastifyInstance, FastifySchema } from 'fastify';
-import { ChallengeSolveAttemptRequest } from '../../schemas/challenge/requests';
 import {
-  ChallengeChallengeResponse, ChallengeChallengeResponseType, ChallengeHintListResponse, ChallengeHintListResponseType, ChallengeHintResponse, ChallengeHintResponseType, ChallengeListResponse, ChallengeListResponseType, ChallengePlayerSolveListResponse, ChallengePlayerSolveListResponseType, ChallengeSolveAttemptResponse, ChallengeSolveAttemptResponseType,
+  ChallengeChallengeIdPath, ChallengeChallengePathType,
+  ChallengeHintIdPath, ChallengeHintIdPathType,
+  ChallengeSolveAttemptRequest, ChallengeSolveAttemptRequestType,
+} from '../../schemas/challenge/requests';
+import {
+  ChallengeChallengeResponse, ChallengeChallengeResponseType,
+  ChallengeHintListResponse, ChallengeHintListResponseType,
+  ChallengeHintResponse, ChallengeHintResponseType,
+  ChallengeListResponse, ChallengeListResponseType,
+  ChallengePlayerSolveListResponse, ChallengePlayerSolveListResponseType,
+  ChallengeSolveAttemptResponse, ChallengeSolveAttemptResponseType,
 } from '../../schemas/challenge/responses';
 import PlayerChallengeDAO from '../../models/PlayerChallenge';
 
@@ -14,18 +23,24 @@ export default async function register(fastify: FastifyInstance) {
     { schema: { ...BASE_SCHEMA, response: { default: ChallengeListResponse } } },
     async (request, reply) => {
       reply.send({
-        challenges: await PlayerChallengeDAO.listVisibleChallenges();
+        challenges: await PlayerChallengeDAO.listVisibleChallenges(),
       });
     },
   );
 
   // Get particular challenge
-  fastify.get<{ Reply: ChallengeChallengeResponseType }>(
-    '/:challengeid',
-    { schema: { ...BASE_SCHEMA, response: { default: ChallengeChallengeResponse } } },
+  fastify.get<{ Params: ChallengeChallengePathType, Reply: ChallengeChallengeResponseType }>(
+    '/:challengeId',
+    {
+      schema: {
+        ...BASE_SCHEMA,
+        params: { default: ChallengeChallengeIdPath },
+        response: { default: ChallengeChallengeResponse },
+      },
+    },
     async (request, reply) => {
-      const challenge = await PlayerChallengeDAO.getChallengeById(0);
-      if(challenge === null) {
+      const challenge = await PlayerChallengeDAO.getChallengeById(request.params.challengeId);
+      if (challenge === null) {
         reply.status(404);
       } else {
         reply.send(challenge);
@@ -34,51 +49,88 @@ export default async function register(fastify: FastifyInstance) {
   );
 
   // Get challenge solves
-  fastify.get<{ Reply: ChallengePlayerSolveListResponseType }>(
-    '/:challengeid/solves',
-    { schema: { ...BASE_SCHEMA, response: { default: ChallengePlayerSolveListResponse } } },
+  fastify.get<{ Params: ChallengeChallengePathType, Reply: ChallengePlayerSolveListResponseType }>(
+    '/:challengeId/solves',
+    {
+      schema: {
+        ...BASE_SCHEMA,
+        params: { default: ChallengeChallengeIdPath },
+        response: { default: ChallengePlayerSolveListResponse },
+      },
+    },
     async (request, reply) => {
-      const solves = await PlayerChallengeDAO.getChallengeSolves(0);
-      reply.send(solves);
+      const solves = await PlayerChallengeDAO.getChallengeSolves(request.params.challengeId);
+      reply.send({
+        solves,
+      });
     },
   );
 
   // List challenge hints
-  fastify.get<{ Reply: ChallengeHintListResponseType }>(
-    '/:challengeid/hints',
-    { schema: { ...BASE_SCHEMA, response: { default: ChallengeHintListResponse } } },
+  fastify.get<{ Params: ChallengeChallengePathType, Reply: ChallengeHintListResponseType }>(
+    '/:challengeId/hints',
+    {
+      schema: {
+        ...BASE_SCHEMA,
+        params: { default: ChallengeChallengeIdPath },
+        response: { default: ChallengeHintListResponse },
+      },
+    },
     async (request, reply) => {
-      const hints = await PlayerChallengeDAO.listChallengeHints(0, 0);
+      const hints = await PlayerChallengeDAO.listChallengeHints(
+        request.auth.uid,
+        request.params.challengeId,
+      );
+      reply.send({
+        hints,
+      });
     },
   );
 
   // Get challenge particular hint
-  fastify.get<{ Reply: ChallengeHintResponseType }>(
-    '/:challengeid/hints/:hintid',
-    { schema: { ...BASE_SCHEMA, response: { default: ChallengeHintResponse } } },
-    async (request, reply) => {
-      const hint = await PlayerChallengeDAO.getHint(0, 0);
+  fastify.get<{ Params: ChallengeHintIdPathType, Reply: ChallengeHintResponseType }>(
+    '/hints/:hintId',
+    {
+      schema: {
+        ...BASE_SCHEMA,
+        params: { default: ChallengeHintIdPath },
+        response: { default: ChallengeHintResponse },
+      },
     },
-  );
-
-  // Unlock hint
-  fastify.post<{ Reply: ChallengeHintResponseType }>(
-    '/:challengeid/hints/:hintid/unlock',
-    { schema: { ...BASE_SCHEMA, response: { default: ChallengeHintResponse } } },
     async (request, reply) => {
-      await PlayerChallengeDAO.unlockHint(0, 0)
+      const hint = await PlayerChallengeDAO.getHint(request.auth.uid, request.params.hintId);
+      if (!hint) {
+        reply.status(404);
+      } else {
+        reply.send(hint);
+      }
     },
   );
 
   // User solve attempt
-  fastify.post<{ Reply: ChallengeSolveAttemptResponseType }>(
-    '/:challengeid/solves',
-    { schema: { ...BASE_SCHEMA, body: ChallengeSolveAttemptRequest, response: { default: ChallengeSolveAttemptResponse } } },
+  fastify.post<{
+    Params: ChallengeChallengePathType,
+    Body: ChallengeSolveAttemptRequestType,
+    Reply: ChallengeSolveAttemptResponseType
+  }>(
+    '/:challengeId/solves',
+    {
+      schema: {
+        ...BASE_SCHEMA,
+        params: { default: ChallengeChallengeIdPath },
+        body: ChallengeSolveAttemptRequest,
+        response: { default: ChallengeSolveAttemptResponse },
+      },
+    },
     async (request, reply) => {
-      const res = await PlayerChallengeDAO.makeAndCheckSubmission(0, 0, '');
+      const success = await PlayerChallengeDAO.makeAndCheckSubmission(
+        request.auth.uid,
+        request.params.challengeId,
+        request.body.flag,
+      );
       reply.send({
-        success: res
-      })
+        success,
+      });
     },
   );
 }
