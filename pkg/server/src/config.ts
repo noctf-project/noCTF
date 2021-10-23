@@ -2,6 +2,7 @@ declare const process : {
   env: {
     NODE_ENV: string | undefined,
     PORT: string,
+    NOCTF_METRICS_FILENAME: string,
     NOCTF_SECRETS_DIR: string,
     NOCTF_SECRETS_WATCH: string,
     NOCTF_HOSTNAME: string,
@@ -26,6 +27,7 @@ const toBool = (val: string) => (!!val && val !== 'false');
 export const NODE_ENV = process.env.NODE_ENV || 'development';
 export const PORT = parseInt(process.env.PORT, 10) || 3000;
 export const HOSTNAME = process.env.NOCTF_HOSTNAME || 'localhost';
+export const METRICS_FILENAME = process.env.NOCTF_METRICS_FILENAME || '';
 export const LOG_LEVEL = process.env.NOCTF_LOG_LEVEL || 'info';
 export const TOKEN_EXPIRY = parseInt(process.env.NOCTF_TOKEN_EXPIRY, 10) || 3600;
 export const SECRETS_DIR = process.env.NOCTF_SECRETS_DIR || './data/secrets';

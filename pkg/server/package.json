@@ -32,14 +32,15 @@
     "ip-address": "^8.1.0",
     "jose": "^3.19.0",
     "knex": "^0.95.11",
+    "lru-cache": "^6.0.0",
     "nanoid": "^3.1.28",
-    "node-cache": "^5.1.2",
     "pg": "^8.7.1",
     "pino": "^6.13.3",
     "sqlite3": "^5.0.2"
   },
   "devDependencies": {
     "@types/ioredis": "^4.27.6",
+    "@types/lru-cache": "^5.1.1",
     "@types/node": "^16.10.2",
     "@types/node-forge": "^0.10.8",
     "@types/pg": "^8.6.1",

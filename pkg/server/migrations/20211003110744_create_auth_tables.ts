@@ -72,6 +72,14 @@ export async function up(knex: Knex): Promise<void> {
     table.index(['role_id']);
   });
 
+  await knex.schema.createTable('app_roles', (table) => {
+    table.integer('app_id').notNullable().references('id').inTable('apps');
+    table.integer('role_id').notNullable().references('id').inTable('roles');
+    table.bigInteger('created_at').notNullable().defaultTo(now);
+    table.unique(['app_id', 'role_id']);
+    table.index(['role_id']);
+  });
+
   await knex('roles').insert([
     {
       name: 'public',
@@ -110,6 +118,7 @@ export async function down(knex: Knex): Promise<void> {
   await knex.schema.dropTable('roles');
   await knex.schema.dropTable('user_sessions');
   await knex.schema.dropTable('scopes');
+  await knex.schema.dropTable('app_roles');
   await knex.schema.dropTable('apps');
   await knex.schema.dropTable('users');
 }

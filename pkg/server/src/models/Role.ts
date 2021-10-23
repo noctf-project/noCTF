@@ -24,6 +24,13 @@ export class RoleDAO extends BaseDAO {
       .first()) || null);
   }
 
+  /**
+   * Get role permissions by ID.
+   * Note: this function is cached for performance,
+   * use another endpoint if consistency is needed.
+   * @param id
+   * @returns
+   */
   public async getPermissionsByID(id: number): Promise<string[]> {
     return this.cache.computeIfAbsent(`roles_permissions:${id}`, async () => {
       const perms = await this.database
@@ -34,7 +41,7 @@ export class RoleDAO extends BaseDAO {
       if (!perms) return [];
 
       return perms.permissions.split(',').sort();
-    });
+    }, 60, 3);
   }
 
   public async getByName(name: string): Promise<Role | undefined> {

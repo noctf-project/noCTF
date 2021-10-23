@@ -27,7 +27,9 @@ export class UserDAOError extends Error {
 export class UserDAO extends BaseDAO {
   tableName = 'users';
 
-  private roleTableName = 'user_roles';
+  private appRoleTableName = 'app_roles';
+
+  private userRoleTableName = 'user_roles';
 
   /**
    * Create a user
@@ -223,11 +225,11 @@ export class UserDAO extends BaseDAO {
    */
   public async getPermissions(id: number): Promise<string[][]> {
     return this.cache.computeIfAbsent(`users_permission:${id}`, async () => (Promise.all(
-      (await this.database.builder(this.roleTableName)
+      (await this.database.builder(this.userRoleTableName)
         .select('role_id')
         .where({ user_id: id })
       ).map(({ role_id }) => RoleDAO.getPermissionsByID(role_id)),
-    )), 60);
+    )), 60, 3);
   }
 
   /**
@@ -236,11 +238,30 @@ export class UserDAO extends BaseDAO {
    * @param role role name
    */
   public async addRole(id: number, roleId: number) {
-    await this.database.builder(this.roleTableName)
+    await this.database.builder(this.userRoleTableName)
       .insert({ user_id: id, role_id: roleId });
 
     // clear the cache
     await this.cache.purge(`users_permission:${id}`);
+  }
+
+  /**
+   * Check if user can access application and cache the result for 60 seconds.
+   * @param userId
+   * @param appId
+   */
+  public async canAccessApplication(userId: number, appId: number) {
+    await this.cache.computeIfAbsent(`users_app:${userId}:${appId}`, async () => !!(
+      await this.database.builder(this.userRoleTableName)
+        .select('1')
+        .join(
+          this.appRoleTableName,
+          `${this.appRoleTableName}.role_id`,
+          `${this.userRoleTableName}.role_id`,
+        )
+        .where({ user_id: userId })
+        .first()),
+    60);
   }
 }
 

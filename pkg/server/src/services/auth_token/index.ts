@@ -1,6 +1,6 @@
 import cbor from 'cbor';
 import * as path from 'path';
-import NodeCache from 'node-cache';
+import LRUCache from 'lru-cache';
 import { CompactSign } from 'jose/jws/compact/sign';
 import { compactVerify } from 'jose/jws/compact/verify';
 import { CompactEncrypt } from 'jose/jwe/compact/encrypt';
@@ -16,14 +16,13 @@ import {
   AuthSigningKey, AuthToken, AuthTokenBase, AuthTokenCode,
 } from '../../util/types';
 import logger from '../../util/logger';
-import { TOKEN_EXPIRY } from '../../config';
 import CacheService from '../cache';
 import SecretRetriever from '../../util/secret_retriever';
 import { now } from '../../util/helpers';
+import MetricsService from '../metrics';
 
 const TOKEN_CACHE_TTL = 30;
-const TOKEN_CACHE_CHECK = 120;
-const TOKEN_MAX_KEYS = 10000;
+const TOKEN_CACHE_SIZE = 64 * 1024 * 1024;
 const MAX_DRIFT = 60;
 const CACHE_HIT_VALID = 1;
 const CACHE_HIT_REVOKED = 2;
@@ -46,14 +45,10 @@ export default class AuthTokenService {
     cast: AuthTokenService.parseSecret,
   });
 
-  private tokenCache = new NodeCache({
-    stdTTL: TOKEN_EXPIRY,
-    checkperiod: TOKEN_CACHE_CHECK,
-    maxKeys: TOKEN_MAX_KEYS,
-  });
+  private tokenCache = new LRUCache<string, number>(TOKEN_CACHE_SIZE);
 
-  constructor(private externalCache: CacheService,
-    private hostname: string, private expiry: number) {
+  constructor(private hostname: string, private expiry: number,
+    private metrics: MetricsService, private externalCache: CacheService) {
   }
 
   /**
@@ -82,7 +77,7 @@ export default class AuthTokenService {
     const signed = await this.signPayload(token);
 
     const hash = createHash('sha256').update(signed).digest().toString('base64url');
-    this.tokenCache.set(hash, CACHE_HIT_VALID, TOKEN_CACHE_TTL);
+    this.tokenCache.set(hash, CACHE_HIT_VALID, TOKEN_CACHE_TTL * 1000);
     return signed;
   }
 
@@ -243,12 +238,15 @@ export default class AuthTokenService {
     const value: (number | undefined) = this.tokenCache.get(hash);
 
     if (!value) {
+      this.metrics.record('auth_cache', { type: 'miss' }, 1);
       return this.rawParse(token, hash);
     } if (value === CACHE_HIT_VALID) {
       // Token already validated
+      this.metrics.record('auth_cache', { type: 'local' }, 1);
       const data = cbor.decode(Buffer.from(token.split('.')[1], 'base64url'));
       return this.validateClaims(data);
     } if (value === CACHE_HIT_REVOKED) {
+      this.metrics.record('auth_cache', { type: 'local' }, 1);
       throw new AuthTokenServiceError('revoked');
     }
     throw new AuthTokenServiceError('unknown token error');
@@ -261,13 +259,13 @@ export default class AuthTokenService {
       const payload = await this.verifyPayload(token);
       const claims = this.validateClaims(payload.payload as AuthToken);
       if (await this.checkRevocation(claims.sid)) {
-        this.tokenCache.set(hash, CACHE_HIT_REVOKED, claims.exp - ctime);
+        this.tokenCache.set(hash, CACHE_HIT_REVOKED, (claims.exp - ctime) * 1000);
         throw new AuthTokenServiceError('revoked');
       }
       this.tokenCache.set(
         hash,
         CACHE_HIT_VALID,
-        Math.min(claims.exp - ctime, TOKEN_CACHE_TTL),
+        Math.min(claims.exp - ctime, TOKEN_CACHE_TTL) * 1000,
       );
       return claims;
     } catch (e) {
@@ -305,7 +303,7 @@ export default class AuthTokenService {
     }
 
     if (!token.prm) {
-      throw new AuthTokenServiceError('no permissions defined');
+      throw new AuthTokenServiceError('no permissions');
     }
 
     return token;

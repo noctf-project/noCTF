@@ -15,6 +15,7 @@ import SecretRetriever from './util/secret_retriever';
 import closeHook from './hooks/close';
 import services from './services';
 import { NoCTFHTTPException } from './util/exceptions';
+import metricsHook from './hooks/metrics';
 
 export const init = async () => {
   let certSecret;
@@ -83,6 +84,7 @@ export const init = async () => {
   server.decorateRequest('auth', null);
   server.addHook('onRequest', authHook);
   server.addHook('onRequest', pbacHook);
+  server.addHook('onResponse', metricsHook);
   server.addHook('onClose', closeHook);
 
   // Mount rate limiting hook

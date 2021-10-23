@@ -40,3 +40,5 @@ export interface AuthTokenCode extends AuthTokenBase {
 export interface Request extends RequestGenericInterface {
   auth?: AuthToken;
 }
+
+export type KeyValue<T> = { [key: string]: T };
