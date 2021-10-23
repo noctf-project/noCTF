@@ -39,7 +39,6 @@ export async function up(knex: Knex): Promise<void> {
         table.integer('challenge_id').notNullable();
 
         table.string('hint').notNullable();
-        table.integer('cost').notNullable().defaultTo(0);
         table.json('attachments').notNullable().defaultTo('[]').comment('application defined list of attachments');
 
         table.bigInteger('released_at').notNullable().comment('time the hint should be displayed, null if the hint is hidden');
@@ -63,6 +62,19 @@ export async function up(knex: Knex): Promise<void> {
         table.foreign('challenge_id').references('id').inTable('challenges');
         table.foreign('submitter').references('id').inTable('users');
     });
+
+    // Can materialize this into a table if theres a performance requirement
+    await knex.schema.raw(`CREATE VIEW challenge_solves AS (${
+        knex.select(
+            'flag.id as flag_id',
+            'flag.challenge_id',
+            'submissions.submission',
+            'submissions.submitter',
+            'submissions.submitted_at'
+        )
+        .from('submissions')
+        .innerJoin('flags', 'flags.flag', 'submissions.submission')
+    })`);
 }
 
 
@@ -71,5 +83,6 @@ export async function down(knex: Knex): Promise<void> {
     await knex.schema.dropTable('hints');
     await knex.schema.dropTable('flags');
     await knex.schema.dropTable('challenges');
+    await knex.raw('DROP VIEW challenge_solves');
 }
 

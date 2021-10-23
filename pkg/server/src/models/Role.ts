@@ -1,11 +1,10 @@
 import services from '../services';
 import CacheService from '../services/cache';
 import DatabaseService from '../services/database';
+import { CreationTrackedObject, IndexedObject } from './Common';
 
-export type Role = {
-  id: number;
+export type Role = IndexedObject & CreationTrackedObject & {
   name: string;
-  created_at: number;
 };
 
 export class RoleError extends Error {

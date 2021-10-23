@@ -2,14 +2,15 @@ import services from '../services';
 import CacheService from '../services/cache';
 import DatabaseService from '../services/database';
 import { now } from '../util/helpers';
+import { UnixTimestamp } from './Common';
 
 export type UserSession = {
   session_hash: string;
   user_id: number;
-  created_at?: number | null;
-  expires_at?: number | null;
-  revoked_at?: number | null;
-  touched_at?: number | null;
+  created_at?: UnixTimestamp | null;
+  expires_at?: UnixTimestamp | null;
+  revoked_at?: UnixTimestamp | null;
+  touched_at?: UnixTimestamp | null;
   scope: string;
   client_id?: number | null;
 };

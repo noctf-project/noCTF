@@ -3,10 +3,11 @@ import { PaginatedResponse } from '../common';
 
 export const ChallengeChallengeResponse = Type.Object({
   id: Type.Number(),
-  category: Type.String(),
   name: Type.String(),
+  category: Type.String(),
   description: Type.String(),
 });
+
 export type ChallengeChallengeResponseType = Static<typeof ChallengeChallengeResponse>;
 
 export const ChallengeListResponse = PaginatedResponse(Type.Object({
