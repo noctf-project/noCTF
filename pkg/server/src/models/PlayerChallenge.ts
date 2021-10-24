@@ -7,8 +7,8 @@ import ChallengeDAO, {
 } from './Challenge';
 import { UnixTimestamp } from './Common';
 
-export type PlayerChallenge = Challenge & { display_at: UnixTimestamp };
-export type PlayerHint = Hint & { released_at: UnixTimestamp };
+export type PlayerChallenge = Omit<Challenge, 'created_at' | 'display_at'> & { display_at: UnixTimestamp };
+export type PlayerHint = Omit<Hint, 'created_at'> & { released_at: UnixTimestamp };
 export type PlayerAttachment = Attachment;
 export type PlayerChallengeSolve = Omit<ChallengeSolve, 'flag_id' | 'submission'>;
 
@@ -64,13 +64,17 @@ export class PlayerChallengeDAO {
     return hint ? this.filterHint(hint) : null;
   }
 
-  private filterHint = (rawHint: Hint): PlayerHint | null => (
-    rawHint.released_at === null || rawHint.released_at > now() ? null : rawHint as PlayerHint
-  );
+  private filterHint = (rawHint: Hint): PlayerHint | null => {
+    if (rawHint.released_at === null || rawHint.released_at > now()) { return null; }
+    const { created_at, ...hint } = rawHint;
+    return hint as PlayerHint;
+  };
 
-  private filterChallenge = (rawChal: Challenge): PlayerChallenge | null => (
-    rawChal.display_at === null || rawChal.display_at > now() ? null : rawChal as PlayerChallenge
-  );
+  private filterChallenge = (rawChal: Challenge): PlayerChallenge | null => {
+    if (rawChal.display_at === null || rawChal.display_at > now()) { return null; }
+    const { created_at, ...chal } = rawChal;
+    return chal as PlayerChallenge;
+  };
 }
 
 export default new PlayerChallengeDAO(ChallengeDAO, services.database, services.cache);

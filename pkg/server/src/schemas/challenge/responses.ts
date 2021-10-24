@@ -15,7 +15,6 @@ export const ChallengeChallengeResponse = Type.Object({
     minimum: Type.Number(),
   }),
   display_at: Type.Number(),
-  created_at: Type.Number(),
   updated_at: Type.Number(),
 });
 
@@ -42,7 +41,6 @@ export const ChallengeHintResponse = Type.Object({
   id: Type.Number(),
   hint: Type.Optional(Type.String()),
   released_at: Type.Number(),
-  created_at: Type.Number(),
   updated_at: Type.Number(),
 });
 export type ChallengeHintResponseType = Static<typeof ChallengeHintResponse>;

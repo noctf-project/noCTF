@@ -73,6 +73,14 @@ export async function up(knex: Knex): Promise<void> {
         .from('submissions')
         .innerJoin('flags', 'flags.flag', 'submissions.submission')
     })`);
+
+    const roles = (await knex('roles')
+        .select('id', 'name'))
+        .reduce((prev, cur) => ({ ...prev, [cur.name]: cur.id }), {});
+    await knex('role_permissions').insert([
+        { role_id: roles.default, permission: 'challenge.*.read' },
+        { role_id: roles.default, permission: 'submissions.write' },
+    ])
 }
 
 

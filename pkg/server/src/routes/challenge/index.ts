@@ -13,6 +13,7 @@ import {
   ChallengeSolveAttemptResponse, ChallengeSolveAttemptResponseType,
 } from '../../schemas/challenge/responses';
 import PlayerChallengeDAO from '../../models/PlayerChallenge';
+import { clientUserKeyGenerator } from '../../util/ratelimit';
 
 export default async function register(fastify: FastifyInstance) {
   const BASE_SCHEMA: FastifySchema = { tags: ['challenge'] };
@@ -20,7 +21,12 @@ export default async function register(fastify: FastifyInstance) {
   // List challenges
   fastify.get<{ Reply: ChallengeListResponseType }>(
     '/',
-    { schema: { ...BASE_SCHEMA, response: { default: ChallengeListResponse } } },
+    {
+      schema: { ...BASE_SCHEMA, response: { default: ChallengeListResponse } },
+      config: {
+        permission: 'challenge.challenge.read',
+      },
+    },
     async (request, reply) => {
       reply.send({
         challenges: await PlayerChallengeDAO.listVisibleChallenges(),
@@ -37,6 +43,9 @@ export default async function register(fastify: FastifyInstance) {
         params: { default: ChallengeChallengeIdPath },
         response: { default: ChallengeChallengeResponse },
       },
+      config: {
+        permission: 'challenge.challenge.read',
+      }
     },
     async (request, reply) => {
       const challenge = await PlayerChallengeDAO.getChallengeById(request.params.challengeId);
@@ -57,8 +66,12 @@ export default async function register(fastify: FastifyInstance) {
         params: { default: ChallengeChallengeIdPath },
         response: { default: ChallengePlayerSolveListResponse },
       },
+      config: {
+        permission: 'challenge.solves.read',
+      },
     },
     async (request, reply) => {
+      // TODO: filter out hidden teams
       const solves = await PlayerChallengeDAO.getChallengeSolves(request.params.challengeId);
       reply.send({
         solves,
@@ -74,6 +87,9 @@ export default async function register(fastify: FastifyInstance) {
         ...BASE_SCHEMA,
         params: { default: ChallengeChallengeIdPath },
         response: { default: ChallengeHintListResponse },
+      },
+      config: {
+        permission: 'challenge.hints.read',
       },
     },
     async (request, reply) => {
@@ -96,6 +112,9 @@ export default async function register(fastify: FastifyInstance) {
         params: { default: ChallengeHintIdPath },
         response: { default: ChallengeHintResponse },
       },
+      config: {
+        permission: 'challenge.hints.read',
+      },
     },
     async (request, reply) => {
       const hint = await PlayerChallengeDAO.getHint(request.auth.uid, request.params.hintId);
@@ -113,13 +132,21 @@ export default async function register(fastify: FastifyInstance) {
     Body: ChallengeSolveAttemptRequestType,
     Reply: ChallengeSolveAttemptResponseType
   }>(
-    '/:challengeId/solves',
+    '/:challengeId/solve',
     {
       schema: {
         ...BASE_SCHEMA,
         params: { default: ChallengeChallengeIdPath },
         body: ChallengeSolveAttemptRequest,
         response: { default: ChallengeSolveAttemptResponse },
+      },
+      config: {
+        permission: 'submissions.write',
+        rateLimit: {
+          max: 16,  // TODO: figure this out from data
+          timeWindow: '1 minute',
+          keyGenerator: clientUserKeyGenerator,
+        },
       },
     },
     async (request, reply) => {
