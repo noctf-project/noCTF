@@ -103,11 +103,11 @@ export async function up(knex: Knex): Promise<void> {
 
 export async function down(knex: Knex): Promise<void> {
   await knex.schema.dropTable('user_roles');
-  await knex.schema.dropTable('roles');
   await knex.schema.dropTable('user_sessions');
   await knex.schema.dropTable('scopes');
   await knex.schema.dropTable('app_roles');
   await knex.schema.dropTable('apps');
+  await knex.schema.dropTable('roles');
   await knex.schema.dropTable('users');
 }
 

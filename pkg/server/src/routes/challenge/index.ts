@@ -3,7 +3,7 @@ import {
   ChallengeChallengeIdPath, ChallengeChallengePathType,
   ChallengeHintIdPath, ChallengeHintIdPathType,
   ChallengeSolveAttemptRequest, ChallengeSolveAttemptRequestType,
-} from '../../schemas/challenge/requests';
+} from '@noctf/schema/challenge/requests';
 import {
   ChallengeChallengeResponse, ChallengeChallengeResponseType,
   ChallengeHintListResponse, ChallengeHintListResponseType,
@@ -11,7 +11,7 @@ import {
   ChallengeListResponse, ChallengeListResponseType,
   ChallengePlayerSolveListResponse, ChallengePlayerSolveListResponseType,
   ChallengeSolveAttemptResponse, ChallengeSolveAttemptResponseType,
-} from '../../schemas/challenge/responses';
+} from '@noctf/schema/challenge/responses';
 import PlayerChallengeDAO from '../../models/PlayerChallenge';
 import { NoCTFNotFoundException } from '../../util/exceptions';
 import { appUserKeyGenerator } from '../../util/ratelimit';

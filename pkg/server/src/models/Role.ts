@@ -1,7 +1,5 @@
 import services from '../services';
 import BaseDAO from './Base';
-import CacheService from '../services/cache';
-import DatabaseService from '../services/database';
 import { CreationTrackedObject, IndexedObject } from './Common';
 
 export type Role = IndexedObject & CreationTrackedObject & {

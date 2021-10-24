@@ -66,7 +66,7 @@ test('/permissions', async (t) => {
       headers: { authorization: `Bearer ${token.access}` },
     });
     tt.equal(perms.statusCode, 200);
-    tt.deepEqual(perms.json(), { permissions: [['auth.self.*']] });
+    tt.deepEqual(perms.json(), { permissions: [['auth.self.*', 'challenge.*.read', 'submissions.write']] });
   });
 });
 

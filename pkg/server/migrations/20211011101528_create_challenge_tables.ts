@@ -80,7 +80,7 @@ export async function up(knex: Knex): Promise<void> {
 
     await knex('roles').where({name: 'default'}).update({
         permissions: [
-            await knex('roles').select('permissions').where({name: 'default'}).first(),
+            (await knex('roles').select('permissions').where({name: 'default'}).first()).permissions!,
             'challenge.*.read',
             'submissions.write',
         ].join(',')

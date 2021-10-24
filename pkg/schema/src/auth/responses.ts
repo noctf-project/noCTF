@@ -1,11 +1,6 @@
 import { Static, Type } from '@sinclair/typebox';
 import { AuthAuthorizeResponseTypeEnum, JWK } from './datatypes';
 
-export const ErrorResponse = Type.Object({
-  error: Type.Optional(Type.String()),
-});
-export type ErrorResponseType = Static<typeof ErrorResponse>;
-
 export const AuthLoginResponse = Type.Object({
   access_token: Type.String(),
   refresh_token: Type.Optional(Type.String()),
