@@ -64,8 +64,8 @@ export async function up(knex: Knex): Promise<void> {
     // Can materialize this into a table if theres a performance requirement
     await knex.schema.raw(`CREATE VIEW challenge_solves AS (${
         knex.select(
-            'flag.id as flag_id',
-            'flag.challenge_id',
+            'flags.id as flag_id',
+            'flags.challenge_id',
             'submissions.submission',
             'submissions.submitter',
             'submissions.submitted_at'
@@ -85,10 +85,20 @@ export async function up(knex: Knex): Promise<void> {
 
 
 export async function down(knex: Knex): Promise<void> {
+    await knex.raw('DROP VIEW challenge_solves');
     await knex.schema.dropTable('submissions');
     await knex.schema.dropTable('hints');
     await knex.schema.dropTable('flags');
     await knex.schema.dropTable('challenges');
-    await knex.raw('DROP VIEW challenge_solves');
+
+    const roles = (await knex('roles')
+        .select('id', 'name'))
+        .reduce((prev, cur) => ({ ...prev, [cur.name]: cur.id }), {});
+    await knex('role_permissions')
+        .where({ role_id: roles.default })
+        .andWhere((w) => w
+            .where({ permission: 'challenge.*.read' })
+            .orWhere({ permission: 'submissions.write'})
+        ).delete();
 }
 
