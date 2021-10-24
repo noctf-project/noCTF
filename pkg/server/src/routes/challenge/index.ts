@@ -158,7 +158,7 @@ export default async function register(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      // TODO: can inline this during insert
+      // TODO: can inline this during insert if performance is an issue
       const challenge = await PlayerChallengeDAO.getChallengeById(request.params.challengeId);
       if (challenge === null) {
         throw new NoCTFNotFoundException('challenge', request.params.challengeId);

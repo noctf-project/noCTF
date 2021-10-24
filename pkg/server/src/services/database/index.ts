@@ -1,6 +1,7 @@
 import knex, { Knex } from 'knex';
 import { DatabaseError } from 'pg';
 import { NoCTFDatabaseException } from '../../util/exceptions';
+import attachPaginate from '../../util/paginator';
 
 export default class DatabaseService {
   private _builder: Knex;
@@ -17,6 +18,7 @@ export default class DatabaseService {
       client,
       connection,
     });
+    attachPaginate();
   }
 
   builder(...args: any[]) {
