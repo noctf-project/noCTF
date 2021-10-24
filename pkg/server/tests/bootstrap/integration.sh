@@ -40,7 +40,7 @@ echo -e "=== SETUP ==="
 
 echo "$COMPOSE" | docker-compose -f /dev/stdin up -d
 
-knex migrate:up
+knex migrate:latest
 ts-node dev-setup.ts
 
 echo -e "\n=== TESTS ==="

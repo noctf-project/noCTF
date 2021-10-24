@@ -78,13 +78,13 @@ export async function up(knex: Knex): Promise<void> {
         .orderBy('submitted_at', 'asc')
     })`);
 
-    const roles = (await knex('roles')
-        .select('id', 'name'))
-        .reduce((prev, cur) => ({ ...prev, [cur.name]: cur.id }), {});
-    await knex('role_permissions').insert([
-        { role_id: roles.default, permission: 'challenge.*.read' },
-        { role_id: roles.default, permission: 'submissions.write' },
-    ])
+    await knex('roles').where({name: 'default'}).update({
+        permissions: [
+            await knex('roles').select('permissions').where({name: 'default'}).first(),
+            'challenge.*.read',
+            'submissions.write',
+        ].join(',')
+    });
 }
 
 
@@ -95,14 +95,9 @@ export async function down(knex: Knex): Promise<void> {
     await knex.schema.dropTable('flags');
     await knex.schema.dropTable('challenges');
 
-    const roles = (await knex('roles')
-        .select('id', 'name'))
-        .reduce((prev, cur) => ({ ...prev, [cur.name]: cur.id }), {});
-    await knex('role_permissions')
-        .where({ role_id: roles.default })
-        .andWhere((w) => w
-            .where({ permission: 'challenge.*.read' })
-            .orWhere({ permission: 'submissions.write'})
-        ).delete();
+    await knex('roles').where({name: 'default'}).update({
+        permissions: (await knex('roles').select('permissions').where({name: 'default'}).first()).permissions!
+            .split(',').filter((p: string) => !(['challenge.*.read', 'submissions.write'].includes(p))).join(',')
+    });
 }
 
