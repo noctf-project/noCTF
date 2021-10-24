@@ -202,7 +202,7 @@ export default class AuthTokenService {
   }
 
   private async checkRevocation(sid: ArrayBuffer): Promise<boolean> {
-    return !!(await this.externalCache.get(
+    return !!(await this.externalCache.getRaw(
       `${REVOKED_KEY}:${Buffer.from(sid).toString('base64url')}`,
     ));
   }
@@ -212,10 +212,10 @@ export default class AuthTokenService {
    * @param sid session id
    */
   public async revoke(sid: ArrayBuffer) {
-    await this.externalCache.setex(
+    await this.externalCache.setRaw(
       `${REVOKED_KEY}:${Buffer.from(sid).toString('base64url')}`,
-      this.expiry + MAX_DRIFT,
       '1',
+      this.expiry + MAX_DRIFT,
     );
   }
 
