@@ -10,7 +10,7 @@ export async function up(knex: Knex): Promise<void> {
         table.string('category').notNullable();
         table.string('description').notNullable();
 
-        table.json('attachments').notNullable().defaultTo('[]').comment('application defined list of attachments');
+        table.json('attachments').notNullable().defaultTo('[]').comment('application defined list of attachments [{"name":"src.zip","uri":"s3://..."}]');
 
         table.json('score').notNullable().comment('Scoring configuration, requires {"initial":0,"decay":0,"minimum":0}');
 
@@ -37,7 +37,7 @@ export async function up(knex: Knex): Promise<void> {
         table.integer('challenge_id').notNullable();
 
         table.string('hint').notNullable();
-        table.json('attachments').notNullable().defaultTo('[]').comment('application defined list of attachments');
+        table.json('attachments').notNullable().defaultTo('[]').comment('application defined list of attachments [{"name":"src.zip","uri":"s3://..."}]');
 
         table.bigInteger('released_at').comment('time the hint should be displayed, null if the hint is hidden');
 
@@ -62,6 +62,7 @@ export async function up(knex: Knex): Promise<void> {
     });
 
     // Can materialize this into a table if theres a performance requirement
+    // FIXME: don't duplicate solves
     await knex.schema.raw(`CREATE VIEW challenge_solves AS (${
         knex.select(
             'flags.id as flag_id',
