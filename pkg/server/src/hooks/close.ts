@@ -1,9 +1,11 @@
 import { HookHandlerDoneFunction } from 'fastify';
+import { Redis } from 'ioredis';
 import services from '../services';
 
-const closeHook = async (_: any, done: HookHandlerDoneFunction) => {
+const closeHook = (rateLimitRedis: Redis) => async (_: any, done: HookHandlerDoneFunction) => {
   await services.database.close();
   await services.cache.close();
+  rateLimitRedis.disconnect();
   done();
 };
 

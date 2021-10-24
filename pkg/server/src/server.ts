@@ -4,8 +4,9 @@ import { nanoid } from 'nanoid';
 import fastifyRateLimit from 'fastify-rate-limit';
 import { Http2Server, Http2ServerRequest, Http2ServerResponse } from 'http2';
 import { parse } from 'querystring';
+import IORedis from 'ioredis';
 import Routes from './routes';
-import { NODE_ENV, SECURE } from './config';
+import { NODE_ENV, REDIS_URL, SECURE } from './config';
 import logger from './util/logger';
 import { ERROR_INTERNAL_SERVER_ERROR } from './util/constants';
 import pbacHook from './hooks/pbac';
@@ -13,7 +14,6 @@ import { appUserKeyGenerator } from './util/ratelimit';
 import authHook from './hooks/auth';
 import SecretRetriever from './util/secret_retriever';
 import closeHook from './hooks/close';
-import services from './services';
 import { NoCTFHTTPException } from './util/exceptions';
 import metricsHook from './hooks/metrics';
 
@@ -80,20 +80,21 @@ export const init = async () => {
     },
   );
 
+  // Mount rate limiting hook
+  const rateLimitRedis = new IORedis(REDIS_URL);
+  server.register(fastifyRateLimit, {
+    max: 90,
+    timeWindow: '1 minute',
+    keyGenerator: appUserKeyGenerator,
+    redis: rateLimitRedis,
+  });
+
   // Mount auth hook
   server.decorateRequest('auth', null);
   server.addHook('onRequest', authHook);
   server.addHook('onRequest', pbacHook);
   server.addHook('onResponse', metricsHook);
-  server.addHook('onClose', closeHook);
-
-  // Mount rate limiting hook
-  server.register(fastifyRateLimit, {
-    max: 90,
-    timeWindow: '1 minute',
-    keyGenerator: appUserKeyGenerator,
-    redis: services.cache,
-  });
+  server.addHook('onClose', closeHook(rateLimitRedis));
 
   server.register(Routes);
   return server;
