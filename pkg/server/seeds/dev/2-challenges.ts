@@ -9,6 +9,7 @@ export async function seed(knex: Knex): Promise<void> {
         description: 'This is a default challenge',
         attachments: JSON.stringify([]),
         score: JSON.stringify({initial: 500, decay: 100, minimum: 100}),
+        tags: JSON.stringify([]),
         display_at: now(knex),
         ...chal
     });
@@ -53,6 +54,7 @@ export async function seed(knex: Knex): Promise<void> {
         }),
 
         makeDefaultedChallenge({ id: 11, name: 'Hidden Challenge', description: 'This challenge is hidden', display_at: null }),
+        makeDefaultedChallenge({ id: 12, name: 'Tagged Challenge', description: 'This challenge has tags', tags: JSON.stringify([{key: "Difficulty", value: "Easy"}])}),
     ];
     const TEST_FLAGS = TEST_CHALLENGES.map((c, id) => ({
         id: id,

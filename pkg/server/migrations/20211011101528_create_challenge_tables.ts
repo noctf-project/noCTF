@@ -13,6 +13,7 @@ export async function up(knex: Knex): Promise<void> {
         table.json('attachments').notNullable().defaultTo('[]').comment('application defined list of attachments [{"name":"src.zip","uri":"s3://..."}]');
 
         table.json('score').notNullable().comment('Scoring configuration, requires {"initial":0,"decay":0,"minimum":0}');
+        table.json('tags').notNullable().defaultTo('[]').comment('Challenge Tags of form [{"key":"k", "value":"v"}]');
 
         table.bigInteger('display_at').comment('time the challenge should be displayed, null if challenge is hidden');
 

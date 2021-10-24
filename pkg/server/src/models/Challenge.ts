@@ -13,6 +13,7 @@ export type Challenge = IndexedObject & UpsertTrackedObject & {
     decay: number;
     minimum: number;
   };
+  tags: Tag[];
   display_at: UnixTimestamp | null;
 };
 
@@ -37,6 +38,11 @@ export type ChallengeSolve = {
   submission: string;
   submitter: number;
   submitted_at: UnixTimestamp;
+};
+
+export type Tag = {
+  key: string;
+  value: string;
 };
 
 /**
@@ -83,7 +89,10 @@ export class ChallengeDAO {
   }
 
   async getHintById(hintId: number): Promise<Hint | null> {
-    return this.database.builder(this.hintsTableName).where({ id: hintId }).first();
+    return this.cache.computeIfAbsent(`hint:${hintId}`, () => this.database.builder(this.hintsTableName)
+      .where({ id: hintId })
+      .first(),
+    60);
   }
 
   async makeSubmission(userId: number, challengeId: number, submission: string) {
