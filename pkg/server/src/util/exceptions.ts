@@ -34,3 +34,12 @@ export class NoCTFDatabaseException extends NoCTFHTTPException {
     }
   }
 }
+
+export class NoCTFNotFoundException extends NoCTFHTTPException {
+  constructor(resourceName: string, resourceIdentifier?: string | number, detail: any = {}) {
+    super(`${resourceName} not found`, 404, {
+      ...(resourceIdentifier === null ? {} : { resource: resourceIdentifier }),
+      ...detail,
+    });
+  }
+}

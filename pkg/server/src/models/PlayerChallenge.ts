@@ -53,13 +53,13 @@ export class PlayerChallengeDAO {
     return this.challengeDAO.checkSubmission(challengeId, submission);
   }
 
-  public async listChallengeHints(userId: number, challengeId: number): Promise<PlayerHint[]> {
+  public async listChallengeHints(challengeId: number): Promise<PlayerHint[]> {
     return (await this.challengeDAO.getChallengeHints(challengeId))
       .map((hint) => this.filterHint(hint))
       .filter((x): x is PlayerHint => x !== null);
   }
 
-  public async getHint(userId: number, hintId: number): Promise<PlayerHint | null> {
+  public async getHint(hintId: number): Promise<PlayerHint | null> {
     const hint = await this.challengeDAO.getHintById(hintId);
     return hint ? this.filterHint(hint) : null;
   }

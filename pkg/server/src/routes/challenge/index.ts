@@ -14,6 +14,7 @@ import {
 } from '../../schemas/challenge/responses';
 import PlayerChallengeDAO from '../../models/PlayerChallenge';
 import { clientUserKeyGenerator } from '../../util/ratelimit';
+import { NoCTFNotFoundException } from '../../util/exceptions';
 
 export default async function register(fastify: FastifyInstance) {
   const BASE_SCHEMA: FastifySchema = { tags: ['challenge'] };
@@ -45,12 +46,12 @@ export default async function register(fastify: FastifyInstance) {
       },
       config: {
         permission: 'challenge.challenge.read',
-      }
+      },
     },
     async (request, reply) => {
       const challenge = await PlayerChallengeDAO.getChallengeById(request.params.challengeId);
       if (challenge === null) {
-        reply.status(404);
+        throw new NoCTFNotFoundException('challenge', request.params.challengeId);
       } else {
         reply.send(challenge);
       }
@@ -71,6 +72,11 @@ export default async function register(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
+      const challenge = await PlayerChallengeDAO.getChallengeById(request.params.challengeId);
+      if (challenge === null) {
+        throw new NoCTFNotFoundException('challenge', request.params.challengeId);
+      }
+
       // TODO: filter out hidden teams
       const solves = await PlayerChallengeDAO.getChallengeSolves(request.params.challengeId);
       reply.send({
@@ -93,10 +99,12 @@ export default async function register(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const hints = await PlayerChallengeDAO.listChallengeHints(
-        request.auth.uid,
-        request.params.challengeId,
-      );
+      const challenge = await PlayerChallengeDAO.getChallengeById(request.params.challengeId);
+      if (challenge === null) {
+        throw new NoCTFNotFoundException('challenge', request.params.challengeId);
+      }
+
+      const hints = await PlayerChallengeDAO.listChallengeHints(request.params.challengeId);
       reply.send({
         hints,
       });
@@ -117,9 +125,9 @@ export default async function register(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const hint = await PlayerChallengeDAO.getHint(request.auth.uid, request.params.hintId);
+      const hint = await PlayerChallengeDAO.getHint(request.params.hintId);
       if (!hint) {
-        reply.status(404);
+        throw new NoCTFNotFoundException('hint', request.params.hintId);
       } else {
         reply.send(hint);
       }
@@ -143,13 +151,19 @@ export default async function register(fastify: FastifyInstance) {
       config: {
         permission: 'submissions.write',
         rateLimit: {
-          max: 16,  // TODO: figure this out from data
+          max: 16, // TODO: figure this out from data
           timeWindow: '1 minute',
           keyGenerator: clientUserKeyGenerator,
         },
       },
     },
     async (request, reply) => {
+      // TODO: can inline this during insert
+      const challenge = await PlayerChallengeDAO.getChallengeById(request.params.challengeId);
+      if (challenge === null) {
+        throw new NoCTFNotFoundException('challenge', request.params.challengeId);
+      }
+
       const success = await PlayerChallengeDAO.makeAndCheckSubmission(
         request.auth.uid,
         request.params.challengeId,

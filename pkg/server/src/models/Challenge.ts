@@ -58,7 +58,6 @@ export class ChallengeDAO {
   constructor(private database: DatabaseService, private cache: CacheService) {
   }
 
-  // TODO: paginate
   async listChallenges(): Promise<Challenge[]> {
     return this.database.builder(this.challengeTableName).select('*');
   }
@@ -97,12 +96,13 @@ export class ChallengeDAO {
   }
 
   async checkSubmission(challengeId: number, submission: string): Promise<boolean> {
-    return await this.database.builder(this.flagTableName)
-      .select('*')
+    const res = await this.database.builder(this.flagTableName)
+      .count()
       .where({
         challenge_id: challengeId,
-        submission,
-      }).first() !== null;
+        flag: submission,
+      }).first();
+    return +(res!.count) !== 0;
   }
 }
 

@@ -62,7 +62,6 @@ export async function up(knex: Knex): Promise<void> {
     });
 
     // Can materialize this into a table if theres a performance requirement
-    // FIXME: don't duplicate solves
     await knex.schema.raw(`CREATE VIEW challenge_solves AS (${
         knex.select(
             'flags.id as flag_id',
@@ -71,8 +70,11 @@ export async function up(knex: Knex): Promise<void> {
             'submissions.submitter',
             'submissions.submitted_at'
         )
+        .distinctOn('submitter')
         .from('submissions')
         .innerJoin('flags', 'flags.flag', 'submissions.submission')
+        .orderBy('submitter')
+        .orderBy('submitted_at', 'asc')
     })`);
 
     const roles = (await knex('roles')
