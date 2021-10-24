@@ -1,6 +1,6 @@
 import cbor from 'cbor';
 import * as path from 'path';
-import NodeCache from 'node-cache';
+import LRUCache from 'lru-cache';
 import { CompactSign } from 'jose/jws/compact/sign';
 import { compactVerify } from 'jose/jws/compact/verify';
 import { CompactEncrypt } from 'jose/jwe/compact/encrypt';
@@ -8,22 +8,31 @@ import { compactDecrypt } from 'jose/jwe/compact/decrypt';
 import { importJWK } from 'jose/key/import';
 import { JWSInvalid, JWSSignatureVerificationFailed } from 'jose/util/errors';
 import { JWK } from 'jose/types';
-import { BinaryLike, createHash, createHmac } from 'crypto';
-import { AuthSigningKey, AuthToken, AuthTokenBase } from '../../util/types';
+import {
+  BinaryLike, createHash, createHmac, randomBytes,
+} from 'crypto';
+import { promisify } from 'util';
+import {
+  AuthSigningKey, AuthToken, AuthTokenBase, AuthTokenCode,
+} from '../../util/types';
 import logger from '../../util/logger';
-import { TOKEN_EXPIRY } from '../../config';
 import CacheService from '../cache';
 import SecretRetriever from '../../util/secret_retriever';
 import { now } from '../../util/helpers';
+import MetricsService from '../metrics';
 
 const TOKEN_CACHE_TTL = 30;
-const TOKEN_CACHE_CHECK = 120;
-const TOKEN_MAX_KEYS = 10000;
+const TOKEN_CACHE_SIZE = 64 * 1024 * 1024;
 const MAX_DRIFT = 60;
 const CACHE_HIT_VALID = 1;
 const CACHE_HIT_REVOKED = 2;
+const OAUTH_CODE_EXPIRY = 300;
 const TYPE_AUTH_TOKEN = 'auth';
+const TYPE_CODE_TOKEN = 'code';
 const REVOKED_KEY = 'auth_revoked';
+
+// helper
+const asyncRandomBytes = promisify(randomBytes);
 
 export class AuthTokenServiceError extends Error {
 }
@@ -36,14 +45,10 @@ export default class AuthTokenService {
     cast: AuthTokenService.parseSecret,
   });
 
-  private tokenCache = new NodeCache({
-    stdTTL: TOKEN_EXPIRY,
-    checkperiod: TOKEN_CACHE_CHECK,
-    maxKeys: TOKEN_MAX_KEYS,
-  });
+  private tokenCache = new LRUCache<string, number>(TOKEN_CACHE_SIZE);
 
-  constructor(private externalCache: CacheService,
-    private hostname: string, private expiry: number) {
+  constructor(private hostname: string, private expiry: number,
+    private metrics: MetricsService, private externalCache: CacheService) {
   }
 
   /**
@@ -54,26 +59,76 @@ export default class AuthTokenService {
    * @param sid session id
    * @returns access token
    */
-  public async generate(cid: number, uid: number,
-    scope: string[], sid: Uint8Array, maxExpires = this.expiry): Promise<string> {
+  public async generate(aid: number, uid: number,
+    prm: string[][], sid: Uint8Array, maxExpires: number): Promise<string> {
     const ctime = now();
 
     const token: AuthToken = {
       typ: TYPE_AUTH_TOKEN,
       aud: this.hostname,
-      cid,
+      aid,
       uid,
       sid,
       iat: ctime,
-      exp: Math.min(ctime + this.expiry, ctime + maxExpires),
-      scope,
+      exp: Math.min(ctime + this.expiry, ctime + (maxExpires || this.expiry)),
+      prm,
     };
 
     const signed = await this.signPayload(token);
 
     const hash = createHash('sha256').update(signed).digest().toString('base64url');
-    this.tokenCache.set(hash, CACHE_HIT_VALID, TOKEN_CACHE_TTL);
+    this.tokenCache.set(hash, CACHE_HIT_VALID, TOKEN_CACHE_TTL * 1000);
     return signed;
+  }
+
+  /**
+   * Generate an OAuth code grant
+   * @param aid appid
+   * @param uid user id
+   * @param scope scopes
+   * @returns oauth code grant JWE
+   */
+  public async generateOAuthCode(aid: number, uid: number, scope: string[]): Promise<string> {
+    const ctime = now();
+    const token: AuthTokenCode = {
+      uid,
+      aid,
+      scp: scope,
+      iat: ctime,
+      exp: ctime + OAUTH_CODE_EXPIRY,
+      aud: this.hostname,
+      typ: 'code',
+      tok: await asyncRandomBytes(48),
+    };
+
+    return this.encryptPayload(token);
+  }
+
+  /**
+   * Validates the OAuth Code and returns the decoded content on success
+   * @param token encoded auth token
+   * @param aid app id to check against
+   * @returns AuthTokenCode
+   */
+  public async validateOauthCode(token: string, aid: number): Promise<AuthTokenCode> {
+    const payload = (await this.decryptPayload(token)).payload as AuthTokenCode;
+    if (payload.typ !== TYPE_CODE_TOKEN) {
+      throw new AuthTokenServiceError('invalid type');
+    }
+
+    if (payload.aud !== this.hostname) {
+      throw new AuthTokenServiceError('invalid audience');
+    }
+
+    if (payload.aid !== aid) {
+      throw new AuthTokenServiceError('invalid app id');
+    }
+
+    if (now() > payload.exp) {
+      throw new AuthTokenServiceError('expired');
+    }
+
+    return payload;
   }
 
   /**
@@ -183,12 +238,15 @@ export default class AuthTokenService {
     const value: (number | undefined) = this.tokenCache.get(hash);
 
     if (!value) {
+      this.metrics.record('auth_cache', { type: 'miss' }, 1);
       return this.rawParse(token, hash);
     } if (value === CACHE_HIT_VALID) {
       // Token already validated
+      this.metrics.record('auth_cache', { type: 'local' }, 1);
       const data = cbor.decode(Buffer.from(token.split('.')[1], 'base64url'));
       return this.validateClaims(data);
     } if (value === CACHE_HIT_REVOKED) {
+      this.metrics.record('auth_cache', { type: 'local' }, 1);
       throw new AuthTokenServiceError('revoked');
     }
     throw new AuthTokenServiceError('unknown token error');
@@ -201,13 +259,13 @@ export default class AuthTokenService {
       const payload = await this.verifyPayload(token);
       const claims = this.validateClaims(payload.payload as AuthToken);
       if (await this.checkRevocation(claims.sid)) {
-        this.tokenCache.set(hash, CACHE_HIT_REVOKED, claims.exp - ctime);
+        this.tokenCache.set(hash, CACHE_HIT_REVOKED, (claims.exp - ctime) * 1000);
         throw new AuthTokenServiceError('revoked');
       }
       this.tokenCache.set(
         hash,
         CACHE_HIT_VALID,
-        Math.min(claims.exp - ctime, TOKEN_CACHE_TTL),
+        Math.min(claims.exp - ctime, TOKEN_CACHE_TTL) * 1000,
       );
       return claims;
     } catch (e) {
@@ -239,15 +297,13 @@ export default class AuthTokenService {
       throw new AuthTokenServiceError('expired');
     }
 
-    if (!token.sid || (!token.cid && token.cid !== 0) || !token.uid) {
+    if (!token.sid || (!token.aid && token.aid !== 0) || !token.uid) {
       this.log.error({ token }, 'invalid token format');
       throw new AuthTokenServiceError('invalid token format');
     }
 
-    // add scope if its missing
-    /* eslint-disable no-param-reassign */
-    if (!token.scope) {
-      token.scope = [];
+    if (!token.prm) {
+      throw new AuthTokenServiceError('no permissions');
     }
 
     return token;

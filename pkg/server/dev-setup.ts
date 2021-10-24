@@ -5,7 +5,7 @@ import { pki, md } from 'node-forge';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const SECRETS_DIR = '../../data/secrets';
+const SECRETS_DIR = process.env.NOCTF_SECRETS_DIR || '../../data/secrets';
 const SECRETS_TOKEN_DIR = path.join(SECRETS_DIR, 'token-signature');
 const SECRETS_HTTPS_DIR = path.join(SECRETS_DIR, 'https');
 const KID_LENGTH = 16;

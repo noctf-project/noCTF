@@ -39,8 +39,8 @@ const apiRegister = async (fastify: FastifyInstance) => {
     },
   });
 
-  fastify.register(authRoutes, { prefix: '/auth' });
   fastify.register(challengeRoutes, { prefix: '/challenge' });
+  fastify.register(authRoutes);
 };
 
 export default async function register(fastify: FastifyInstance) {

@@ -7,6 +7,11 @@
   "license": "MIT",
   "private": true,
   "workspaces": [
-    "pkg/*/"
-  ]
+    "pkg/*"
+  ],
+  "scripts": {
+    "ci": "./scripts/ci.sh",
+    "build": "yarn workspaces foreach -pitAv run build"
+  },
+  "packageManager": "yarn@3.0.2"
 }

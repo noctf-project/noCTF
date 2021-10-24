@@ -1,0 +1,33 @@
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  server-test-integ:
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: development
+      GIT_BEFORE: ${{ github.event.pull_request.base.sha }}
+      GIT_AFTER: ${{ github.event.pull_request.head.sha }}
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.base.sha }}
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: cache node_modules
+      uses: actions/cache@v2
+      id: cache-yarn2
+      with:
+        path: .yarn/cache
+        key: ${{ runner.os }}-cache-yarn2-${{ hashFiles('yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cache-yarn2-
+    - name: yarn install
+      run: yarn install --immutable
+    - name: build all
+      run: yarn build
+    - name: ci test
+      run: yarn ci

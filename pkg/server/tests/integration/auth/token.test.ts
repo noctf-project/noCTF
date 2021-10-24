@@ -1,7 +1,7 @@
 import test from 'tape';
 import { bootstrap } from '../conftest';
 
-test('/token', async (t) => {
+test('/oauth2/token', async (t) => {
   const { app, fixtures } = await bootstrap(t);
   const { token: userToken } = await fixtures.makeUser({
     name: 'token-test-username',
@@ -12,7 +12,7 @@ test('/token', async (t) => {
   t.test('invalid token', async (tt) => {
     const token = await app.inject({
       method: 'post',
-      path: '/api/auth/token',
+      path: '/api/auth/oauth2/token',
       payload: JSON.stringify({
         refresh_token: 'invalidinvalidinvalidinvalidinvalid',
         grant_type: 'refresh_token',
@@ -29,7 +29,7 @@ test('/token', async (t) => {
   t.test('token', async (tt) => {
     const token = await app.inject({
       method: 'post',
-      path: '/api/auth/token',
+      path: '/api/auth/oauth2/token',
       payload: JSON.stringify({
         refresh_token: userToken.refresh,
         grant_type: 'refresh_token',
@@ -57,7 +57,7 @@ test('/permissions', async (t) => {
       path: '/api/auth/permissions',
     });
     tt.equal(perms.statusCode, 200);
-    tt.deepEqual(perms.json(), { permissions: ['auth.public.login', 'auth.public.register'] });
+    tt.deepEqual(perms.json(), { permissions: [['auth.public.login', 'auth.public.register']] });
   });
 
   t.test('authed', async (tt) => {
@@ -66,7 +66,7 @@ test('/permissions', async (t) => {
       headers: { authorization: `Bearer ${token.access}` },
     });
     tt.equal(perms.statusCode, 200);
-    tt.deepEqual(perms.json(), { permissions: ['auth.self.*'] });
+    tt.deepEqual(perms.json(), { permissions: [['auth.self.*']] });
   });
 });
 
@@ -88,7 +88,7 @@ test('/logout', async (t) => {
   // Check revoke worked
   const refresh = await app.inject({
     method: 'post',
-    path: '/api/auth/token',
+    path: '/api/auth/oauth2/token',
     payload: JSON.stringify({
       refresh_token: token.refresh,
       grant_type: 'refresh_token',

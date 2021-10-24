@@ -1,10 +1,10 @@
+import { createHmac } from 'crypto';
 import services from '../services';
-import CacheService from '../services/cache';
-import DatabaseService from '../services/database';
 import { now } from '../util/helpers';
 import { UnixTimestamp } from './Common';
+import BaseDAO from './Base';
 
-export type UserSession = {
+export interface UserSession {
   session_hash: string;
   user_id: number;
   created_at?: UnixTimestamp | null;
@@ -12,34 +12,31 @@ export type UserSession = {
   revoked_at?: UnixTimestamp | null;
   touched_at?: UnixTimestamp | null;
   scope: string;
-  client_id?: number | null;
-};
+  app_id?: number | null;
+}
 
 export class UserSessionDAOError extends Error {
 }
 
-export class UserSessionDAO {
-  private tableName = 'user_sessions';
+export class UserSessionDAO extends BaseDAO {
+  tableName = 'user_sessions';
 
-  constructor(private database: DatabaseService, private cache: CacheService) {
-  }
-
-  public async create({
-    session_hash,
-    user_id,
-    scope,
-    client_id,
-    expires_at,
-  }: UserSession): Promise<void> {
+  public async create(refreshToken: string, user_id: number, app_id: number,
+    scope: string[], expires_at?: number): Promise<Buffer> {
+    const session_hash = createHmac('sha256', refreshToken)
+      .update((app_id || 0).toString())
+      .digest();
     await this.database.builder(this.tableName)
       .insert({
-        session_hash,
+        session_hash: session_hash.toString('base64url'),
         user_id,
         scope,
-        client_id: client_id || null,
+        app_id: app_id || null,
         expires_at: expires_at || null,
         touched_at: now(),
       });
+
+    return session_hash;
   }
 
   /**
@@ -48,7 +45,10 @@ export class UserSessionDAO {
    * @param session_hash hash of session
    * @returns
    */
-  public async touchActiveSession(session_hash: string): Promise<UserSession> {
+  public async touchRefreshToken(refreshToken: string, aid: number): Promise<UserSession> {
+    const session_hash = createHmac('sha256', refreshToken)
+      .update(aid.toString())
+      .digest('base64url');
     const session = await this.database.builder(this.tableName)
       .select('*')
       .where({ session_hash, revoked_at: null })

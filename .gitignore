@@ -1,3 +1,11 @@
 node_modules/
 /data/
-.nyc_output/
+/pkg/*/build/
+/pkg/*/dist/
+/.yarn/*
+!/.yarn/patches
+!/.yarn/releases
+!/.yarn/plugins
+!/.yarn/sdks
+!/.yarn/versions
+.pnp.*

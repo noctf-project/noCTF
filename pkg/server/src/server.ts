@@ -3,32 +3,39 @@ import { fastifyRequestContextPlugin } from 'fastify-request-context';
 import { nanoid } from 'nanoid';
 import fastifyRateLimit from 'fastify-rate-limit';
 import { Http2Server, Http2ServerRequest, Http2ServerResponse } from 'http2';
+import { parse } from 'querystring';
 import Routes from './routes';
-import { NODE_ENV } from './config';
+import { NODE_ENV, SECURE } from './config';
 import logger from './util/logger';
 import { ERROR_INTERNAL_SERVER_ERROR } from './util/constants';
 import pbacHook from './hooks/pbac';
-import { clientUserKeyGenerator } from './util/ratelimit';
+import { appUserKeyGenerator } from './util/ratelimit';
 import authHook from './hooks/auth';
 import SecretRetriever from './util/secret_retriever';
 import closeHook from './hooks/close';
 import services from './services';
 import { NoCTFHTTPException } from './util/exceptions';
+import metricsHook from './hooks/metrics';
 
 export const init = async () => {
-  const certSecret = new SecretRetriever('https', { watch: false });
-  await certSecret.loaded;
+  let certSecret;
+  if (SECURE) {
+    certSecret = new SecretRetriever('https', { watch: false });
+    await certSecret.loaded;
+  }
 
   const server: FastifyInstance<
   Http2Server, Http2ServerRequest, Http2ServerResponse, FastifyLoggerInstance
   > = fastify({
+    ...certSecret && {
+      https: {
+        allowHTTP1: true,
+        key: certSecret.getValue('key.pem'),
+        cert: certSecret.getValue('cert.pem'),
+      },
+    },
     logger,
     http2: true,
-    https: {
-      allowHTTP1: true,
-      key: certSecret.getValue('key.pem'),
-      cert: certSecret.getValue('cert.pem'),
-    },
     trustProxy: true,
     genReqId: (req) => req.headers['x-request-id'] as string || nanoid(),
   });
@@ -64,17 +71,27 @@ export const init = async () => {
     });
   });
 
+  // add urlencoded bodyparser (for oauth grr)
+  server.addContentTypeParser(
+    'application/x-www-form-urlencoded',
+    { parseAs: 'buffer', bodyLimit: 1024 * 1024 }, // 1MB
+    (req, body, done) => {
+      done(null, parse(body.toString()));
+    },
+  );
+
   // Mount auth hook
   server.decorateRequest('auth', null);
   server.addHook('onRequest', authHook);
   server.addHook('onRequest', pbacHook);
+  server.addHook('onResponse', metricsHook);
   server.addHook('onClose', closeHook);
 
   // Mount rate limiting hook
   server.register(fastifyRateLimit, {
     max: 90,
     timeWindow: '1 minute',
-    keyGenerator: clientUserKeyGenerator,
+    keyGenerator: appUserKeyGenerator,
     redis: services.cache,
   });
 

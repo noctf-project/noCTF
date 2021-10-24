@@ -13,8 +13,8 @@ import {
   ChallengeSolveAttemptResponse, ChallengeSolveAttemptResponseType,
 } from '../../schemas/challenge/responses';
 import PlayerChallengeDAO from '../../models/PlayerChallenge';
-import { clientUserKeyGenerator } from '../../util/ratelimit';
 import { NoCTFNotFoundException } from '../../util/exceptions';
+import { appUserKeyGenerator } from '../../util/ratelimit';
 
 export default async function register(fastify: FastifyInstance) {
   const BASE_SCHEMA: FastifySchema = { tags: ['challenge'] };
@@ -153,7 +153,7 @@ export default async function register(fastify: FastifyInstance) {
         rateLimit: {
           max: 16, // TODO: figure this out from data
           timeWindow: '1 minute',
-          keyGenerator: clientUserKeyGenerator,
+          keyGenerator: appUserKeyGenerator,
         },
       },
     },

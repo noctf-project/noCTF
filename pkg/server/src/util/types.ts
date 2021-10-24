@@ -11,26 +11,34 @@ export type AuthSigningKey = {
 
 export interface AuthTokenBase {
   typ: string;
+  iat: number;
+  exp: number;
+  aud: string;
+  uid: number;
 }
 
 export interface AuthToken extends AuthTokenBase {
   typ: 'auth';
-  cid: number;
-  uid: number;
-  iat: number;
-  exp: number;
+  aid: number;
   sid: Uint8Array;
   aud: string;
-  scope: string[];
+  prm: string[][];
 }
 
 export interface AuthTokenVerify extends AuthTokenBase {
   typ: 'verify';
   tok: Uint8Array;
-  exp: number;
-  uid: number;
+}
+
+export interface AuthTokenCode extends AuthTokenBase {
+  typ: 'code';
+  tok: Uint8Array;
+  aid: number;
+  scp: string[];
 }
 
 export interface Request extends RequestGenericInterface {
   auth?: AuthToken;
 }
+
+export type KeyValue<T> = { [key: string]: T };

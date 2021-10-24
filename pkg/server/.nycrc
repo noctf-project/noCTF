@@ -1,0 +1,8 @@
+{
+  "all": true,
+  "include": [
+    "src/**/*.ts"
+  ],
+  "temp-dir": "build/nyc-output",
+  "report-dir": "build/coverage"
+}

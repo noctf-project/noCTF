@@ -1,14 +1,12 @@
 import { createHash, randomBytes } from 'crypto';
 import { JWEInvalid } from 'jose/util/errors';
-import { TOKEN_EXPIRY } from '../config';
+import { HOSTNAME, TOKEN_EXPIRY } from '../config';
 import services from '../services';
-import CacheService from '../services/cache';
-import DatabaseService from '../services/database';
 import { now } from '../util/helpers';
 import logger from '../util/logger';
-import { checkEquivalent } from '../util/permissions';
 import { AuthTokenVerify } from '../util/types';
 import { CreationTrackedObject, IndexedObject } from './Common';
+import BaseDAO from './Base';
 import RoleDAO from './Role';
 
 const VERIFY_TOKEN_EXPIRY = 3600;
@@ -25,13 +23,12 @@ export class UserDAOError extends Error {
 }
 
 // TODO: kill idEmail cache when user is changed/deleted
-export class UserDAO {
-  private tableName = 'users';
+export class UserDAO extends BaseDAO {
+  tableName = 'users';
 
-  private roleTableName = 'user_roles';
+  private appRoleTableName = 'app_roles';
 
-  constructor(private database: DatabaseService, private cache: CacheService) {
-  }
+  private userRoleTableName = 'user_roles';
 
   /**
    * Create a user
@@ -47,7 +44,7 @@ export class UserDAO {
     }).returning('id');
 
     // Give user the default role
-    const defaultRole = await RoleDAO.getRoleIDByName('default');
+    const defaultRole = await RoleDAO.getIDByName('default');
     if (!defaultRole) {
       throw new Error('\'default\' role doe not exist, please add it');
     }
@@ -71,11 +68,14 @@ export class UserDAO {
     const nonce: Buffer = await (new Promise((resolve, reject) => (
       randomBytes(32, (err, buf) => (err ? reject(err) : resolve(buf)))))
     );
-    const expires = now() + TOKEN_EXPIRY;
+    const ctime = now();
+    const expires = ctime + TOKEN_EXPIRY;
     const payload: AuthTokenVerify = {
       typ: VERIFY_TOKEN_TYPE,
       uid: id,
       tok: nonce,
+      aud: HOSTNAME,
+      iat: ctime,
       exp: expires,
     };
     const token = await services.authToken.encryptPayload(payload);
@@ -110,6 +110,7 @@ export class UserDAO {
 
       if (data.typ !== VERIFY_TOKEN_TYPE) return null;
       if (ctime > data.exp) return null;
+      if (data.aud !== HOSTNAME) return null;
 
       // lookup verification token for user
       const { verify_hash: expectedHash } = await this.database.builder(this.tableName)
@@ -134,10 +135,12 @@ export class UserDAO {
       }
 
       // invalidate the token
-      await this.database.builder(this.tableName)
-        .update({ verify_hash: null })
-        .where({ id: data.uid });
-      services.cache.purge(`users:${data.uid}`);
+      await Promise.all([
+        this.database.builder(this.tableName)
+          .update({ verify_hash: null })
+          .where({ id: data.uid }),
+        services.cache.purge(`users:${data.uid}`),
+      ]);
 
       return data.uid;
     } catch (e) {
@@ -154,11 +157,13 @@ export class UserDAO {
    * @param password password
    */
   public async setPassword(id: number, password: string): Promise<void> {
-    services.cache.purge(`users:${id}`);
-    await this.database.builder(this.tableName)
-      .update({ password })
-      .where({ id });
-    await this.cache.purge(`users:${id}`);
+    await Promise.all([
+      services.cache.purge(`users:${id}`),
+      this.database.builder(this.tableName)
+        .update({ password })
+        .where({ id }),
+      this.cache.purge(`users:${id}`),
+    ]);
   }
 
   /**
@@ -217,21 +222,13 @@ export class UserDAO {
    * @param id id of user
    * @returns simplified list of permissions (i.e. ["a.b.*", "a.b.c", "a.b.d"] -> ["a.b.*"])
    */
-  public async getPermissions(id: number): Promise<string[]> {
-    return this.cache.computeIfAbsent(`users_permission:${id}`, async () => (await Promise.all(
-      (await this.database.builder(this.roleTableName)
+  public async getPermissions(id: number): Promise<string[][]> {
+    return this.cache.computeIfAbsent(`users_permission:${id}`, async () => (Promise.all(
+      (await this.database.builder(this.userRoleTableName)
         .select('role_id')
         .where({ user_id: id })
-      ).map(({ role_id }) => RoleDAO.getRolePermissionsById(role_id)),
-    ))
-      .flat()
-      .sort()
-      .reduce((total: string[], current) => { // Reduce step to simplify permissions
-        if (total.length === 0 || !checkEquivalent(total[total.length - 1], current)) {
-          total.push(current);
-        }
-        return total;
-      }, []), 60);
+      ).map(({ role_id }) => RoleDAO.getPermissionsByID(role_id)),
+    )), 60, 3);
   }
 
   /**
@@ -240,11 +237,30 @@ export class UserDAO {
    * @param role role name
    */
   public async addRole(id: number, roleId: number) {
-    await this.database.builder(this.roleTableName)
+    await this.database.builder(this.userRoleTableName)
       .insert({ user_id: id, role_id: roleId });
 
     // clear the cache
     await this.cache.purge(`users_permission:${id}`);
+  }
+
+  /**
+   * Check if user can access application and cache the result for 60 seconds.
+   * @param userId
+   * @param appId
+   */
+  public async canAccessApplication(userId: number, appId: number) {
+    await this.cache.computeIfAbsent(`users_app:${userId}:${appId}`, async () => !!(
+      await this.database.builder(this.userRoleTableName)
+        .select('1')
+        .join(
+          this.appRoleTableName,
+          `${this.appRoleTableName}.role_id`,
+          `${this.userRoleTableName}.role_id`,
+        )
+        .where({ user_id: userId })
+        .first()),
+    60);
   }
 }
 

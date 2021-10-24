@@ -1,13 +1,16 @@
 import {
   DATABASE_CLIENT, DATABASE_CONNECTION,
-  HOSTNAME, REDIS_URL, TOKEN_EXPIRY,
+  HOSTNAME, METRICS_FILENAME, REDIS_URL, TOKEN_EXPIRY,
 } from '../config';
 import AuthTokenService from './auth_token';
 import CacheService from './cache';
 import DatabaseService from './database';
+import MetricsService from './metrics';
 
 // Singleton class which exposes services
 export class Services {
+  private _metrics: MetricsService;
+
   private _authToken: AuthTokenService;
 
   private _cache: CacheService;
@@ -15,9 +18,14 @@ export class Services {
   private _database: DatabaseService;
 
   constructor() {
-    this._cache = new CacheService(REDIS_URL);
-    this._authToken = new AuthTokenService(this._cache, HOSTNAME, TOKEN_EXPIRY);
+    this._metrics = new MetricsService(METRICS_FILENAME);
+    this._cache = new CacheService(REDIS_URL, this._metrics);
+    this._authToken = new AuthTokenService(HOSTNAME, TOKEN_EXPIRY, this._metrics, this._cache);
     this._database = new DatabaseService(DATABASE_CLIENT, DATABASE_CONNECTION);
+  }
+
+  get metrics() {
+    return this._metrics;
   }
 
   get cache() {
