@@ -1,4 +1,3 @@
-import { createHash, randomBytes } from 'crypto';
 import { randomBytes } from 'crypto';
 import { promisify } from 'util';
 import ScopeDAO from '../models/Scope';
