@@ -13,12 +13,13 @@ services:
   redis:
     image: redis
     ports: [ 6379:6379 ]
-  noctf_server:
-    build:
-      context: ./pkg/server/
-      dockerfile: Dockerfile.dev
+  noctf_dev_server:
+    image: node
     ports: [ 3000:3000 ]
+    command: ["sh", "-c", "yarn workspace @noctf/server run knex migrate:latest && yarn workspace @noctf/server dev:docker"]
+    working_dir: /srv/
     environment:
+      NODE_ENVIRONMENT: development
       NOCTF_SECRETS_DIR: /data/secrets
       NOCTF_SECRETS_WATCH: "true"
       NOCTF_REDIS_URL: redis://redis:6379/
@@ -28,7 +29,7 @@ services:
       NOCTF_DATABASE_CONNECTION_USERNAME: noctf
       NOCTF_DATABASE_CONNECTION_PASSWORD: devpassword
     volumes:
-      - ./pkg/server/:/srv/
+      - ./:/srv/
       - ./data:/data:ro
 
 volumes:

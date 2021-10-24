@@ -1,12 +1,11 @@
 import services from '../services';
 import BaseDAO from './Base';
+import { CreationTrackedObject, IndexedObject } from './Common';
 
-export type Role = {
-  id: number;
+export type Role = IndexedObject & CreationTrackedObject & {
   name: string;
   description: string;
   permissions: string;
-  created_at: number;
 };
 
 export class RoleError extends Error {

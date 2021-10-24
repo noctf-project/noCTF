@@ -11,9 +11,9 @@ import MetricsService from './metrics';
 export class Services {
   private _metrics: MetricsService;
 
-  private _cache: CacheService;
-
   private _authToken: AuthTokenService;
+
+  private _cache: CacheService;
 
   private _database: DatabaseService;
 

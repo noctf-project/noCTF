@@ -5,16 +5,16 @@ import {
   AuthGrantRequest, AuthGrantRequestType,
   AuthConsentRequest, AuthConsentRequestType,
   AuthTokenRequest, AuthTokenRequestType,
-} from '@noctf/schema/requests';
+} from '@noctf/schema/auth/requests';
 import {
-  ErrorResponseType,
   AuthTokenResponse, AuthTokenResponseType,
   AuthJWKSResponseType, AuthJWKSResponse,
   AuthConsentResponse, AuthConsentResponseType,
   AuthGrantResponseType, AuthGrantResponse,
-} from '@noctf/schema/responses';
-import { AuthAuthorizeQuery, AuthAuthorizeQueryType } from '@noctf/schema/queries';
-import { AuthAuthorizeGrantTypeEnum } from '@noctf/schema/datatypes';
+} from '@noctf/schema/auth/responses';
+import { ErrorResponseType } from '@noctf/schema/common/responses';
+import { AuthAuthorizeQuery, AuthAuthorizeQueryType } from '@noctf/schema/auth/queries';
+import { AuthAuthorizeGrantTypeEnum } from '@noctf/schema/auth/datatypes';
 import { TOKEN_EXPIRY } from '../../config';
 import services from '../../services';
 import { now } from '../../util/helpers';

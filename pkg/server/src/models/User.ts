@@ -5,18 +5,17 @@ import services from '../services';
 import { now } from '../util/helpers';
 import logger from '../util/logger';
 import { AuthTokenVerify } from '../util/types';
+import { CreationTrackedObject, IndexedObject } from './Common';
 import BaseDAO from './Base';
 import RoleDAO from './Role';
 
 const VERIFY_TOKEN_EXPIRY = 3600;
 const VERIFY_TOKEN_TYPE = 'verify';
 
-export type User = {
-  id: number;
+export type User = IndexedObject & CreationTrackedObject & {
   name: string;
   email: string;
   password?: string;
-  created_at: number;
   banned: boolean;
 };
 

@@ -5,14 +5,14 @@ import {
   AuthRegisterRequest, AuthRegisterRequestType,
   AuthResetRequest, AuthResetRequestType,
   AuthVerifyRequest, AuthVerifyRequestType,
-} from '@noctf/schema/requests';
+} from '@noctf/schema/auth/requests';
 import {
   AuthLoginResponse, AuthLoginResponseType,
   AuthRegisterCheckResponse, AuthRegisterCheckResponseType,
   AuthRegisterResponse, AuthRegisterResponseType,
   AuthVerifyResponse, AuthVerifyResponseType,
-  ErrorResponse, ErrorResponseType,
-} from '@noctf/schema/responses';
+} from '@noctf/schema/auth/responses';
+import { ErrorResponse, ErrorResponseType } from '@noctf/schema/common/responses';
 import { ipKeyGenerator } from '../../util/ratelimit';
 import { TOKEN_EXPIRY, VERIFY_EMAIL } from '../../config';
 import { hash, verify } from '../../util/password';
