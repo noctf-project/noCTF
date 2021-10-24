@@ -19,7 +19,7 @@ export default class CacheService {
   constructor(url: string, private metrics: MetricsService) {
     this.primary = new IORedis(url, { keyPrefix: KEY_SIMPLE_PREFIX });
     this.secondary = new IORedis(url);
-    // this.primary.on('ready', async () => this.setupPubSub());
+    this.primary.on('ready', async () => this.setupPubSub());
   }
 
   async computeIfAbsent(key: string, compute: () => any, remoteTTL = DEFAULT_TTL, localTTL = 0) {
