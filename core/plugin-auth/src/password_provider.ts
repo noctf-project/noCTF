@@ -43,7 +43,7 @@ export class PasswordProvider implements IdentityProvider {
   }
 
   async authPreCheck(email: string): Promise<AuthToken | null> {
-    const { enablePassword, enableRegistrationPassword } =
+    const { enablePassword, enableRegistrationPassword, validateEmail } =
       await this.getConfig();
     if (!enablePassword) {
       throw new NotFoundError("The requested auth provider cannot be found");
@@ -66,6 +66,7 @@ export class PasswordProvider implements IdentityProvider {
             provider_id: email,
           },
         ],
+        flags: validateEmail ? ["valid_email"] : [],
       };
     }
     if (identity.secret_data) {

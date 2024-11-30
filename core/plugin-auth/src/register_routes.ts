@@ -11,7 +11,8 @@ import { Service } from "@noctf/server-core";
 import { BadRequestError } from "@noctf/server-core/errors";
 
 export default async function (fastify: Service) {
-  const { identityService, userService } = fastify.container.cradle;
+  const { captchaService, identityService, userService } =
+    fastify.container.cradle;
 
   fastify.post<{
     Body: AuthRegisterTokenRequest;
@@ -52,8 +53,7 @@ export default async function (fastify: Service) {
       },
     },
     async (request) => {
-      // TODO: handle captcha
-      const { password, name, token } = request.body;
+      const { password, captcha, name, token } = request.body;
       const { flags, identity } = (await identityService.validateToken(
         "register",
         token,
@@ -74,6 +74,7 @@ export default async function (fastify: Service) {
       if (!tokenEmail && !request.body.email) {
         throw new BadRequestError("UserRegisterError", "An email is required");
       }
+      await captchaService.validate(captcha, request.ip);
 
       const id = await userService.create(
         name,
@@ -92,6 +93,7 @@ export default async function (fastify: Service) {
           ),
         flags,
       );
+      await identityService.revokeToken(token);
       return {
         data: {
           type: "auth",

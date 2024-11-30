@@ -5,6 +5,15 @@ import { ServiceCradle } from "../index.ts";
 
 type Props = Pick<ServiceCradle, "databaseClient">;
 
+const checkCount =
+  (provider: string) =>
+  ({ count }: { count: string | number }) => {
+    if (count === 0 || count === "0") {
+      return Promise.reject("not exists");
+    }
+    return provider;
+  };
+
 export class UserService {
   private databaseClient: DatabaseClient;
 
@@ -26,27 +35,30 @@ export class UserService {
 
     // Do an invariant check, validate that identities don't already exist
     try {
+      const promises = identities.map(({ provider, provider_id }) =>
+        this.databaseClient
+          .selectFrom("core.user_identity")
+          .select((q) => q.fn.countAll<number>().as("count"))
+          .where("provider", "=", provider)
+          .where("provider_id", "=", provider_id)
+          .executeTakeFirst()
+          .then(checkCount(provider)),
+      );
       const result = await Promise.any(
-        identities.map(({ provider, provider_id }) =>
+        [
           this.databaseClient
-            .selectFrom("core.user_identity")
-            .select(["user_id"])
-            .where("provider", "=", provider)
-            .where("provider_id", "=", provider_id)
+            .selectFrom("core.user")
+            .select(this.databaseClient.fn.countAll().as("count"))
+            .where("name", "=", name)
             .executeTakeFirst()
-            .then((identity) => {
-              if (!identity) {
-                return Promise.reject("not exists");
-              }
-              return true;
-            }),
-        ),
+            .then(checkCount("name")),
+        ].concat(promises),
       );
       if (result) {
         throw new ApplicationError(
           409,
           "IdentityAlreadyExists",
-          "The identity is already bound to a different user",
+          `The identity with type ${result} is already bound to a different user`,
         );
       }
     } catch (e) {

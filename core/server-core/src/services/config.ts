@@ -29,16 +29,18 @@ export class ConfigService {
    * @param namespace namespace
    * @returns configuration map
    */
-  async get(namespace: string): Promise<SerializableMap> {
+  async get<T extends SerializableMap>(namespace: string): Promise<T> {
     if (!this.validators.has(namespace)) {
       throw new ValidationError("Config namespace does not exist");
     }
-    return this.cacheClient.load(`core:config:${namespace}`, () =>
+    return this.cacheClient.load<T>(`core:config:${namespace}`, () =>
       this._queryDb(namespace),
     );
   }
 
-  private async _queryDb(namespace: string): Promise<SerializableMap> {
+  private async _queryDb<T extends SerializableMap>(
+    namespace: string,
+  ): Promise<T> {
     const config = await this.databaseClient
       .selectFrom("core.config")
       .select("data")
@@ -47,7 +49,7 @@ export class ConfigService {
     if (config) {
       return JSON.parse(config.data);
     }
-    return {};
+    return {} as T;
   }
 
   /**

@@ -7,7 +7,7 @@ const Config = Type.Object({
   }),
 });
 
-export default async function (fastify: Service) {
+export async function initServer(fastify: Service) {
   await fastify.container.cradle.configService.register("core.setup", Config, {
     initialized: false,
   });

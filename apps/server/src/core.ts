@@ -1,7 +1,7 @@
 import { Service } from "@noctf/server-core";
 
-import auth from "@noctf/plugin-auth";
-import setup from "@noctf/plugin-setup";
+import { initServer as auth } from "@noctf/plugin-auth";
+import { initServer as setup } from "@noctf/plugin-setup";
 
 export default async function (fastify: Service) {
   fastify.register(auth);

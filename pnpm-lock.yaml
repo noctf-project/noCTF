@@ -110,6 +110,9 @@ importers:
       '@noctf/server-core':
         specifier: workspace:*
         version: link:../../core/server-core
+      '@sinclair/typebox':
+        specifier: 'catalog:'
+        version: 0.33.14
       awilix:
         specifier: 'catalog:'
         version: 12.0.1

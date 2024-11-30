@@ -12,7 +12,7 @@ declare module "fastify" {
   }
 }
 
-export default async function (fastify: Service) {
+export async function initServer(fastify: Service) {
   const { identityService, configService } = fastify.container.cradle;
   await configService.register(CONFIG_NAMESPACE, Config, DEFAULT_CONFIG);
   fastify.register(oauth_routes);

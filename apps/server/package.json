@@ -19,6 +19,7 @@
     "@noctf/plugin-auth": "workspace:*",
     "@noctf/plugin-setup": "workspace:*",
     "@noctf/server-core": "workspace:*",
+    "@sinclair/typebox": "catalog:",
     "awilix": "catalog:",
     "fastify": "catalog:",
     "kysely": "catalog:",

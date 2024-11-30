@@ -27,7 +27,7 @@ export const AuthFinishResponse = Type.Object({
 export type AuthFinishResponse = Static<typeof AuthFinishResponse>;
 
 export const AuthRegisterTokenResponse = Type.Object({
-  data: AuthRegisterToken,
+  data: Type.Omit(AuthRegisterToken, ["type"]),
 });
 export type AuthRegisterTokenResponse = Static<
   typeof AuthRegisterTokenResponse
