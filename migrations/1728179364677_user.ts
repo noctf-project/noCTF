@@ -8,10 +8,9 @@ export async function up(db: Kysely<any>): Promise<void> {
 
   await schema
     .createTable('user')
-    .addColumn('id', 'serial', (col) => col.primaryKey())
+    .addColumn('id', 'integer', (col) => col.primaryKey().generatedByDefaultAsIdentity())
     .addColumn('name', 'varchar(64)', (col) => col.unique())
     .addColumn('bio', 'varchar')
-    .addColumn('tags', sql`varchar(64)[]`, (col) => col.notNull().defaultTo('{}'))
     .addColumn('is_blocked', 'boolean', (col) => col.notNull().defaultTo(false))
     .addColumn('is_hidden', 'boolean', (col) => col.notNull().defaultTo(false))
     .addColumn('created_at', 'timestamp', (col) =>
@@ -20,7 +19,31 @@ export async function up(db: Kysely<any>): Promise<void> {
     .execute();
 
   await schema
-    .createTable('user_auth')
+    .createTable('group')
+    .addColumn('id', 'integer', (col) => col.primaryKey().generatedByDefaultAsIdentity())
+    .addColumn('name', 'varchar(64)', (col) => col.unique())
+    .addColumn('description', 'varchar')
+    .addColumn('created_at', 'timestamp', (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
+    .execute();
+
+  await schema
+    .createTable('user_group')
+    .addColumn('user_id', 'integer', (col) => col.notNull()
+      .references('user.id')
+      .onDelete('cascade'))
+    .addColumn('group_id', 'integer', (col) => col.notNull()
+      .references('group.id')
+      .onDelete('cascade'))
+    .addColumn('created_at', 'timestamp', (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
+    .addPrimaryKeyConstraint('user_role_pkey', ['user_id', 'group_id'])
+    .execute();
+
+  await schema
+    .createTable('user_identity')
     .addColumn('user_id', 'integer', (col) => col.notNull()
       .references('user.id')
       .onDelete('cascade'))
@@ -36,7 +59,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 
   await schema
     .createTable('oauth_provider')
-    .addColumn('id', 'serial', (col) => col.primaryKey())
+    .addColumn('id', 'integer', (col) => col.primaryKey().generatedByDefaultAsIdentity())
     .addColumn('name', 'varchar(56)', (col) => col.notNull().unique())
     .addColumn('is_enabled', 'boolean', (col) => col.notNull().defaultTo(false))
     .addColumn('is_registration_enabled', 'boolean', (col) => col.notNull().defaultTo(false))
@@ -65,7 +88,9 @@ export async function down(db: Kysely<any>): Promise<void> {
 
   await schema.dropIndex('oauth_provider_idx_is_enabled').execute();
   await schema.dropTable('oauth_provider').execute();
-  await schema.dropTable('user_auth').execute();
+  await schema.dropTable('user_identity').execute();
+  await schema.dropTable('user_group').execute();
+  await schema.dropTable('group').execute();
   await schema.dropTable('user').execute();
   await db.schema.dropSchema('core').execute();
 }
