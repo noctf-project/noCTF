@@ -5,9 +5,11 @@ import { FastifyBaseLogger, FastifyInstance } from "fastify";
 import { ConfigService } from "./services/config.ts";
 import { TokenService } from "./services/token.ts";
 import { UserService } from "./services/user.ts";
+import { CacheClient } from "./clients/cache.ts";
 
 export interface ServiceCradle {
   logger: FastifyBaseLogger;
+  cacheClient: CacheClient;
   databaseClient: DatabaseClient;
   tokenService: TokenService;
   configService: ConfigService;

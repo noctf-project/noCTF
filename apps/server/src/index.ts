@@ -1,10 +1,16 @@
 import fastify from "fastify";
-import { DATABASE_URL, HOST, PORT, TOKEN_SECRET } from "./config.ts";
+import { POSTGRES_URL, HOST, PORT, TOKEN_SECRET, REDIS_URL } from "./config.ts";
 import core from "./core.ts";
 import { Service } from "@noctf/server-core";
-import { asClass, asValue, createContainer, Lifetime } from "awilix";
+import {
+  asClass,
+  asValue,
+  createContainer,
+  Lifetime,
+} from "awilix";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
+import { CacheClient } from "@noctf/server-core/clients/cache";
 import { DatabaseClient } from "@noctf/server-core/clients/database";
 import { UserService } from "@noctf/server-core/services/user";
 import { TokenService } from "@noctf/server-core/services/token";
@@ -16,9 +22,13 @@ const server: Service = fastify({
 
 server.register(async () => {
   server.container = createContainer();
+  const cacheClient = new CacheClient(REDIS_URL);
+  await cacheClient.connect();
+
   server.container.register({
     logger: asValue(server.log),
-    databaseClient: asValue(new DatabaseClient(DATABASE_URL)),
+    cacheClient: asValue(cacheClient),
+    databaseClient: asValue(new DatabaseClient(POSTGRES_URL)),
     tokenService: asValue(new TokenService(TOKEN_SECRET)),
     configService: asClass(ConfigService, { lifetime: Lifetime.SINGLETON }),
     identityService: asClass(IdentityService, {

@@ -4,7 +4,7 @@ import { IdentityProvider } from "@noctf/server-core/providers/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
 import { DatabaseClient } from "@noctf/server-core/clients/database";
 import { get } from "@noctf/util";
-import { CONFIG_NAMESPACE, Config } from "./config.ts";
+import { CACHE_NAMESPACE, CONFIG_NAMESPACE, Config } from "./config.ts";
 import {
   AuthProviderNotFound,
   AuthenticationError,
@@ -12,10 +12,11 @@ import {
 import { IdentityService } from "@noctf/server-core/services/identity";
 import { TokenService } from "@noctf/server-core/services/token";
 import { nanoid } from "nanoid";
+import { CacheClient } from "@noctf/server-core/clients/cache";
 
 type StateToken = {
   name: string;
-  nonce: string;
+  jti: string;
 };
 
 export const TOKEN_AUDIENCE = "noctf/auth/oauth/state";
@@ -23,6 +24,7 @@ export const TOKEN_AUDIENCE = "noctf/auth/oauth/state";
 export class OAuthConfigProvider {
   constructor(
     private configService: ConfigService,
+    private cacheClient: CacheClient,
     private databaseClient: DatabaseClient,
   ) {}
 
@@ -35,7 +37,12 @@ export class OAuthConfigProvider {
     if (!(await this.isEnabled())) {
       return [];
     }
+    return await this.cacheClient.get(`${CACHE_NAMESPACE}:oauth:methods`, () =>
+      this._queryMethods(),
+    );
+  }
 
+  private async _queryMethods(): Promise<AuthMethod[]> {
     const methods = await this.databaseClient
       .selectFrom("core.oauth_provider")
       .where("is_enabled", "=", true)
@@ -54,6 +61,13 @@ export class OAuthConfigProvider {
       throw new AuthProviderNotFound();
     }
 
+    return await this.cacheClient.get(
+      `${CACHE_NAMESPACE}:oauth:method:${provider}`,
+      () => this._queryMethod(provider),
+    );
+  }
+
+  private async _queryMethod(provider: string) {
     const data = await this.databaseClient
       .selectFrom("core.oauth_provider")
       .where("is_enabled", "=", true)
@@ -149,10 +163,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
   }
 
   private async validateState(state: string) {
-    const { dat } = this.tokenService.verify(state, TOKEN_AUDIENCE) as {
-      dat: StateToken;
-    };
-    return dat;
+    return this.tokenService.verify(state, TOKEN_AUDIENCE) as StateToken;
   }
 
   async generateAuthoriseUrl(name: string) {
@@ -165,11 +176,9 @@ export class OAuthIdentityProvider implements IdentityProvider {
       "state",
       this.tokenService.sign(
         {
-          dat: {
-            name,
-            nonce: nanoid(),
-          } as StateToken,
-        },
+          jti: nanoid(),
+          name,
+        } as StateToken,
         TOKEN_AUDIENCE,
         5 * 60,
       ),

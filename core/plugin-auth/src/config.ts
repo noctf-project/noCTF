@@ -27,6 +27,7 @@ export const Config = Type.Object({
 export type Config = Static<typeof Config>;
 
 export const CONFIG_NAMESPACE = "core.auth";
+export const CACHE_NAMESPACE = "core:plugin-auth";
 
 export const DEFAULT_CONFIG: Config = {
   enableRegistrationPassword: true,

@@ -4,6 +4,7 @@ import { Value } from "@sinclair/typebox/value";
 import { DatabaseClient } from "../clients/database.ts";
 import { ValidationError } from "../errors.ts";
 import { SerializableMap } from "../types.ts";
+import { CacheClient } from "../clients/cache.ts";
 
 type Validator = (kv: SerializableMap) => Promise<string | null>;
 
@@ -13,17 +14,20 @@ const nullValidator = async (): Promise<null> => {
 
 type Props = {
   logger: FastifyBaseLogger;
+  cacheClient: CacheClient;
   databaseClient: DatabaseClient;
 };
 
 export class ConfigService {
   private logger: Props["logger"];
+  private cacheClient: CacheClient;
   private databaseClient: Props["databaseClient"];
 
   private validators: Map<string, [TSchema, Validator]> = new Map();
 
-  constructor({ logger, databaseClient }: Props) {
+  constructor({ logger, cacheClient, databaseClient }: Props) {
     this.logger = logger;
+    this.cacheClient = cacheClient;
     this.databaseClient = databaseClient;
   }
 
@@ -36,6 +40,12 @@ export class ConfigService {
     if (!this.validators.has(namespace)) {
       throw new ValidationError("Config namespace does not exist");
     }
+    return this.cacheClient.get(`core:config:${namespace}`, () =>
+      this._queryDb(namespace),
+    );
+  }
+
+  private async _queryDb(namespace: string): Promise<SerializableMap> {
     const config = await this.databaseClient
       .selectFrom("core.config")
       .select("data")
