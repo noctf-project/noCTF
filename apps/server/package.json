@@ -14,16 +14,15 @@
   "license": "ISC",
   "dependencies": {
     "@noctf/api": "workspace:*",
-    "@noctf/server-api": "workspace:*",
-    "@noctf/services": "workspace:*",
-    "@noctf/util": "workspace:*",
+    "@noctf/server-core": "workspace:*",
+    "@noctf/plugin-auth": "workspace:*",
+    "@noctf/plugin-setup": "workspace:*",
     "awilix": "catalog:",
     "fastify": "catalog:",
     "kysely": "catalog:",
     "pg": "catalog:",
     "redis": "catalog:",
-    "tsx": "catalog:",
-    "nanoid": "^5.0.7"
+    "tsx": "catalog:"
   },
   "type": "module",
   "devDependencies": {

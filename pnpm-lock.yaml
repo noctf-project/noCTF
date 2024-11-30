@@ -83,15 +83,15 @@ importers:
       '@noctf/api':
         specifier: workspace:*
         version: link:../../core/api
-      '@noctf/server-api':
+      '@noctf/plugin-auth':
         specifier: workspace:*
-        version: link:../../core/server-api
-      '@noctf/services':
+        version: link:../../core/plugin-auth
+      '@noctf/plugin-setup':
+        specifier: workspace:*
+        version: link:../../core/plugin-setup
+      '@noctf/server-core':
         specifier: workspace:*
         version: link:../../core/services
-      '@noctf/util':
-        specifier: workspace:*
-        version: link:../../core/util
       awilix:
         specifier: 'catalog:'
         version: 12.0.1
@@ -101,9 +101,6 @@ importers:
       kysely:
         specifier: 'catalog:'
         version: 0.27.4
-      nanoid:
-        specifier: ^5.0.7
-        version: 5.0.7
       pg:
         specifier: 'catalog:'
         version: 8.13.0
@@ -139,6 +136,59 @@ importers:
         specifier: 'catalog:'
         version: 5.6.2
 
+  core/plugin-auth:
+    dependencies:
+      '@noctf/api':
+        specifier: workspace:*
+        version: link:../api
+      '@noctf/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@noctf/server-core':
+        specifier: workspace:*
+        version: link:../services
+      '@noctf/util':
+        specifier: workspace:*
+        version: link:../util
+      fastify:
+        specifier: 'catalog:'
+        version: 5.0.0
+      kysely:
+        specifier: 'catalog:'
+        version: 0.27.4
+      nanoid:
+        specifier: ^5.0.7
+        version: 5.0.7
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.2
+
+  core/plugin-setup:
+    dependencies:
+      '@noctf/api':
+        specifier: workspace:*
+        version: link:../api
+      '@noctf/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@noctf/server-core':
+        specifier: workspace:*
+        version: link:../services
+      '@noctf/util':
+        specifier: workspace:*
+        version: link:../util
+      fastify:
+        specifier: 'catalog:'
+        version: 5.0.0
+      kysely:
+        specifier: 'catalog:'
+        version: 0.27.4
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.2
+
   core/schema:
     dependencies:
       kysely:
@@ -152,16 +202,6 @@ importers:
         specifier: 'catalog:'
         version: 5.6.2
 
-  core/server-api:
-    dependencies:
-      '@noctf/api':
-        specifier: workspace:*
-        version: link:../api
-    devDependencies:
-      typescript:
-        specifier: 'catalog:'
-        version: 5.6.2
-
   core/services:
     dependencies:
       '@noctf/api':
@@ -170,9 +210,9 @@ importers:
       '@noctf/schema':
         specifier: workspace:*
         version: link:../schema
-      '@noctf/server-api':
+      '@noctf/util':
         specifier: workspace:*
-        version: link:../server-api
+        version: link:../util
       awilix:
         specifier: 'catalog:'
         version: 12.0.1

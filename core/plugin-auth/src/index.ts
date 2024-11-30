@@ -1,4 +1,4 @@
-import { Service } from "@noctf/services";
+import { Service } from "@noctf/server-core";
 import { AuthEmailInitRequest } from "@noctf/api/ts/requests";
 import { AuthEmailInitRequest as AuthEmailInitRequestJson } from "@noctf/api/jsonschema/requests";
 import {

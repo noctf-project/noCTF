@@ -1,4 +1,4 @@
-import { Service } from "@noctf/services";
+import { Service } from "@noctf/server-core";
 import {
   AuthOauthFinishRequest,
   AuthOauthInitRequest,
@@ -53,10 +53,7 @@ export default async function (fastify: Service) {
     },
     async (request, reply) => {
       try {
-        const url = await provider.generateAuthoriseUrl(
-          request.body.name,
-          request.ip,
-        );
+        const url = await provider.generateAuthoriseUrl(request.body.name);
         return {
           data: url,
         };

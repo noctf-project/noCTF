@@ -1,9 +1,12 @@
 import { AuthMethod, AuthTokenType } from "@noctf/api/ts/datatypes";
-import { AuthResult, IdentityProvider } from "@noctf/server-api/identity";
 import { DatabaseService } from "./database.ts";
-import { ApplicationError } from "@noctf/server-api/errors";
+import { ApplicationError } from "../errors.ts";
 import { TokenService } from "./token.ts";
-import { UpdateIdentityData } from "@noctf/server-api/types";
+import {
+  AuthResult,
+  IdentityProvider,
+  UpdateIdentityData,
+} from "../providers/identity.ts";
 
 export class IdentityService {
   private providers: Map<string, IdentityProvider> = new Map();

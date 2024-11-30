@@ -8,10 +8,3 @@ export type Serializable =
 export type SerializableMap = {
   [key: string]: Serializable;
 };
-
-export type UpdateIdentityData = {
-  user_id: number;
-  provider: string;
-  provider_id: string;
-  secret_data?: string;
-};

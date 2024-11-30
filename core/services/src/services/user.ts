@@ -1,6 +1,6 @@
-import { UpdateIdentityData } from "@noctf/server-api/types";
+import { UpdateIdentityData } from "../providers/identity.ts";
 import { DatabaseService } from "./database.ts";
-import { ApplicationError } from "@noctf/server-api/errors";
+import { ApplicationError } from "../errors.ts";
 
 export class UserService {
   constructor(private databaseService: DatabaseService) {}

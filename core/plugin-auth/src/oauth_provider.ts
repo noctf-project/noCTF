@@ -1,15 +1,18 @@
 import { AuthMethod, AuthTokenType } from "@noctf/api/ts/datatypes";
-import { AuthResult, IdentityProvider } from "@noctf/server-api/identity";
-import { ConfigService } from "@noctf/services/config";
-import { DatabaseService } from "@noctf/services/database";
+import {
+  AuthResult,
+  IdentityProvider,
+} from "@noctf/server-core/providers/identity";
+import { ConfigService } from "@noctf/server-core/services/config";
+import { DatabaseService } from "@noctf/server-core/services/database";
 import { get } from "@noctf/util";
 import { CONFIG_NAMESPACE, Config } from "./config.ts";
 import {
   AuthProviderNotFound,
   AuthenticationError,
-} from "@noctf/server-api/errors";
-import { IdentityService } from "@noctf/services/identity";
-import { TokenService } from "@noctf/services/token";
+} from "@noctf/server-core/errors";
+import { IdentityService } from "@noctf/server-core/services/identity";
+import { TokenService } from "@noctf/server-core/services/token";
 import { nanoid } from "nanoid";
 
 type StateToken = {

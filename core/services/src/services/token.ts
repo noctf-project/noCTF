@@ -1,5 +1,5 @@
-import { TokenValidationError } from "@noctf/server-api/errors";
-import { SerializableMap } from "@noctf/server-api/types";
+import { TokenValidationError } from "../errors.ts";
+import { SerializableMap } from "@noctf/util/types";
 import jwt from "jsonwebtoken";
 
 export class TokenService {

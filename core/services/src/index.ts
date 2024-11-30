@@ -1,10 +1,10 @@
 import { AwilixContainer } from "awilix";
-import { IdentityService } from "./identity.ts";
-import { DatabaseService } from "./database.ts";
+import { IdentityService } from "./services/identity.ts";
+import { DatabaseService } from "./services/database.ts";
 import { FastifyBaseLogger, FastifyInstance } from "fastify";
-import { ConfigService } from "./config.ts";
-import { TokenService } from "./token.ts";
-import { UserService } from "./user.ts";
+import { ConfigService } from "./services/config.ts";
+import { TokenService } from "./services/token.ts";
+import { UserService } from "./services/user.ts";
 
 export interface ServiceCradle {
   logger: FastifyBaseLogger;

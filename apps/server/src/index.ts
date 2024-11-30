@@ -1,14 +1,14 @@
 import fastify from "fastify";
 import { DATABASE_URL, HOST, PORT, TOKEN_SECRET } from "./config.ts";
-import core from "./core/index.ts";
-import { Service } from "@noctf/services";
+import core from "./core.ts";
+import { Service } from "@noctf/server-core";
 import { asFunction, asValue, createContainer, Lifetime } from "awilix";
-import { IdentityService } from "@noctf/services/identity";
-import { ConfigService } from "@noctf/services/config";
-import { DatabaseService } from "@noctf/services/database";
-import { UserService } from "@noctf/services/user";
-import { TokenService } from "@noctf/services/token";
-import { ApplicationError } from "@noctf/server-api/errors";
+import { IdentityService } from "@noctf/server-core/services/identity";
+import { ConfigService } from "@noctf/server-core/services/config";
+import { DatabaseService } from "@noctf/server-core/services/database";
+import { UserService } from "@noctf/server-core/services/user";
+import { TokenService } from "@noctf/server-core/services/token";
+import { ApplicationError } from "@noctf/server-core/errors";
 
 const server: Service = fastify({
   logger: true,

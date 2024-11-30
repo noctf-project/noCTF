@@ -1,15 +1,15 @@
 import {
   AuthRegisterResult,
   IdentityProvider,
-} from "@noctf/server-api/identity";
-import { ConfigService } from "@noctf/services/config";
+} from "@noctf/server-core/providers/identity";
+import { ConfigService } from "@noctf/server-core/services/config";
 import { CONFIG_NAMESPACE, Config } from "./config.ts";
 import { AuthMethod } from "@noctf/api/ts/datatypes";
-import { IdentityService } from "@noctf/services/identity";
+import { IdentityService } from "@noctf/server-core/services/identity";
 import {
   AuthProviderNotFound,
   AuthenticationError,
-} from "@noctf/server-api/errors";
+} from "@noctf/server-core/errors";
 
 export class PasswordProvider implements IdentityProvider {
   constructor(

@@ -1,7 +1,7 @@
 {
-  "name": "@noctf/server-core",
+  "name": "@noctf/plugin-setup",
   "version": "0.1.0",
-  "description": "core noCTF internal APIs",
+  "description": "core setup plugin",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
@@ -13,15 +13,12 @@
   "dependencies": {
     "@noctf/api": "workspace:*",
     "@noctf/schema": "workspace:*",
+    "@noctf/server-core": "workspace:*",
     "@noctf/util": "workspace:*",
-    "awilix": "catalog:",
     "fastify": "catalog:",
-    "jsonwebtoken": "^9.0.2",
-    "kysely": "catalog:",
-    "redis": "catalog:"
+    "kysely": "catalog:"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.7",
     "typescript": "catalog:"
   },
   "type": "module",

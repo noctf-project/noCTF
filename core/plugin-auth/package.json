@@ -1,8 +1,7 @@
 {
-  "name": "@noctf/server-api",
+  "name": "@noctf/plugin-auth",
   "version": "0.1.0",
-  "description": "core noCTF server side interfaces",
-  "main": "index.js",
+  "description": "core auth plugin",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
@@ -12,14 +11,20 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@noctf/api": "workspace:*"
+    "@noctf/api": "workspace:*",
+    "@noctf/schema": "workspace:*",
+    "@noctf/server-core": "workspace:*",
+    "@noctf/util": "workspace:*",
+    "fastify": "catalog:",
+    "kysely": "catalog:",
+    "nanoid": "^5.0.7"
   },
   "devDependencies": {
     "typescript": "catalog:"
   },
   "type": "module",
   "exports": {
-    ".": "./src/index.js",
-    "./*": "./src/*.js"
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
   }
 }
