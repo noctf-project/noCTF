@@ -16,7 +16,7 @@ export class UserService {
   async create(
     name: string,
     identities: UpdateIdentityData[],
-    groups?: string[],
+    flags?: string[],
   ) {
     if (!identities || !identities.length) {
       throw new BadRequestError(
@@ -61,6 +61,7 @@ export class UserService {
         .insertInto("core.user")
         .values({
           name,
+          flags: flags || [],
         })
         .returning("id")
         .executeTakeFirstOrThrow();
@@ -73,21 +74,6 @@ export class UserService {
         .insertInto("core.user_identity")
         .values(insertedIdentities)
         .execute();
-
-      if (groups) {
-        await tx
-          .insertInto("core.user_group")
-          .values((eb) =>
-            groups.map((name) => ({
-              user_id: id,
-              group_id: eb
-                .selectFrom("core.group")
-                .select("id")
-                .where("name", "=", name),
-            })),
-          )
-          .execute();
-      }
 
       return id;
     });

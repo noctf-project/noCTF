@@ -16,6 +16,7 @@ import { DatabaseClient } from "@noctf/server-core/clients/database";
 import { UserService } from "@noctf/server-core/services/user";
 import { TokenService } from "@noctf/server-core/services/token";
 import { ApplicationError } from "@noctf/server-core/errors";
+import { TeamService } from "@noctf/server-core/services/team";
 
 const server: Service = fastify({
   logger: true,
@@ -42,6 +43,7 @@ server.register(async () => {
     identityService: asClass(IdentityService, {
       lifetime: Lifetime.SINGLETON,
     }),
+    teamService: asClass(TeamService, { lifetime: Lifetime.SINGLETON }),
     userService: asClass(UserService, { lifetime: Lifetime.SINGLETON }),
   });
 });

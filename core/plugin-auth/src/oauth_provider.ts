@@ -5,10 +5,7 @@ import { ConfigService } from "@noctf/server-core/services/config";
 import { DatabaseClient } from "@noctf/server-core/clients/database";
 import { get } from "@noctf/util";
 import { CACHE_NAMESPACE, CONFIG_NAMESPACE, Config } from "./config.ts";
-import {
-  AuthProviderNotFound,
-  AuthenticationError,
-} from "@noctf/server-core/errors";
+import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import { TokenService } from "@noctf/server-core/services/token";
 import { CacheClient } from "@noctf/server-core/clients/cache";
@@ -57,7 +54,7 @@ export class OAuthConfigProvider {
 
   async getMethod(provider: string) {
     if (!(await this.isEnabled())) {
-      throw new AuthProviderNotFound();
+      throw new NotFoundError("The requested auth provider cannot be found");
     }
 
     return await this.cacheClient.get(
@@ -82,7 +79,7 @@ export class OAuthConfigProvider {
       ])
       .executeTakeFirst();
     if (!data) {
-      throw new AuthProviderNotFound();
+      throw new NotFoundError("The requested auth provider cannot be found");
     }
 
     return data;

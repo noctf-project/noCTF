@@ -6,6 +6,7 @@ import { ConfigService } from "./services/config.ts";
 import { TokenService } from "./services/token.ts";
 import { UserService } from "./services/user.ts";
 import { CacheClient } from "./clients/cache.ts";
+import { TeamService } from "./services/team.ts";
 
 export interface ServiceCradle {
   logger: FastifyBaseLogger;
@@ -14,6 +15,7 @@ export interface ServiceCradle {
   tokenService: TokenService;
   configService: ConfigService;
   identityService: IdentityService;
+  teamService: TeamService;
   userService: UserService;
 }
 

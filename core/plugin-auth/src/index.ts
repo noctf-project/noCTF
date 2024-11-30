@@ -69,7 +69,7 @@ export default async function (fastify: Service) {
     async (request) => {
       // TODO: handle captcha
       const { password, name, token } = request.body;
-      const { group, identity } = (await identityService.validateToken(
+      const { flags, identity } = (await identityService.validateToken(
         "register",
         token,
       )) as AuthRegisterToken;
@@ -105,7 +105,7 @@ export default async function (fastify: Service) {
                   },
                 ],
           ),
-        group,
+        flags,
       );
       return {
         data: {

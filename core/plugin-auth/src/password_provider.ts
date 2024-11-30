@@ -3,10 +3,7 @@ import { ConfigService } from "@noctf/server-core/services/config";
 import { CONFIG_NAMESPACE } from "./config.ts";
 import { AuthMethod } from "@noctf/api/datatypes";
 import { IdentityService } from "@noctf/server-core/services/identity";
-import {
-  AuthProviderNotFound,
-  AuthenticationError,
-} from "@noctf/server-core/errors";
+import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
 import { AuthRegisterToken } from "@noctf/api/token";
 import { FastifyBaseLogger } from "fastify";
 
@@ -50,7 +47,7 @@ export class PasswordProvider implements IdentityProvider {
     const { enablePassword, enableRegistrationPassword, validateEmail } =
       await this.getConfig();
     if (!enablePassword) {
-      throw new AuthProviderNotFound();
+      throw new NotFoundError("The requested auth provider cannot be found");
     }
     const identity = await this.identityService.getIdentityForProvider(
       this.id(),
@@ -71,6 +68,7 @@ export class PasswordProvider implements IdentityProvider {
         ],
       };
       if (validateEmail) {
+        // TODO: create a flag with valid_email
         return "Please check your email for a link to create your account";
       }
 

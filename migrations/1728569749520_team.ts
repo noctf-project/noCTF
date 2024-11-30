@@ -11,9 +11,8 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .addColumn("name", "varchar(64)", (col) => col.unique())
     .addColumn("bio", "varchar", (col) => col.notNull().defaultTo(""))
-    .addColumn("password", "varchar")
-    .addColumn("is_blocked", "boolean", (col) => col.notNull().defaultTo(false))
-    .addColumn("is_hidden", "boolean", (col) => col.notNull().defaultTo(false))
+    .addColumn("join_code", "varchar", (col) => col.unique().nullsNotDistinct())
+    .addColumn("flags", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .addColumn("created_at", "timestamp", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
