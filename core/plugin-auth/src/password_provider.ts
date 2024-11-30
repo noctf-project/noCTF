@@ -8,9 +8,11 @@ import {
   AuthenticationError,
 } from "@noctf/server-core/errors";
 import { AuthRegisterToken } from "@noctf/api/token";
+import { FastifyBaseLogger } from "fastify";
 
 export class PasswordProvider implements IdentityProvider {
   constructor(
+    private log: FastifyBaseLogger,
     private configService: ConfigService,
     private identityService: IdentityService,
   ) {}
@@ -70,7 +72,7 @@ export class PasswordProvider implements IdentityProvider {
     return null;
   }
 
-  private async getConfig() {
+  async getConfig() {
     const { enablePassword, enableRegistrationPassword, validateEmail } =
       await this.configService.get(CONFIG_NAMESPACE);
     return {

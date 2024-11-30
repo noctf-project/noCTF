@@ -20,8 +20,9 @@ export type AuthEmailInitRequest = Static<typeof AuthEmailInitRequest>;
 export const AuthRegisterRequest = Type.Object({
   token: Type.String(),
   captcha: Type.Optional(Type.String()),
+  name: Type.String(),
   email: Type.Optional(Type.String({ format: "email" })),
-  password: Type.Optional(Type.String()),
+  password: Type.Optional(Type.String({ minLength: 8 })),
 });
 export type AuthRegisterRequest = Static<typeof AuthRegisterRequest>;
 

@@ -14,12 +14,18 @@ import { CONFIG_NAMESPACE, Config, DEFAULT_CONFIG } from "./config.ts";
 import { PasswordProvider } from "./password_provider.ts";
 import oauth from "./oauth.ts";
 import { AuthRegisterToken } from "@noctf/api/token";
+import { BadRequestError } from "@noctf/server-core/errors";
 
 export default async function (fastify: Service) {
   fastify.register(oauth);
-  const { identityService, configService } = fastify.container.cradle;
+  const { identityService, configService, userService } =
+    fastify.container.cradle;
   await configService.register(CONFIG_NAMESPACE, Config, DEFAULT_CONFIG);
-  const passwordProvider = new PasswordProvider(configService, identityService);
+  const passwordProvider = new PasswordProvider(
+    fastify.log,
+    configService,
+    identityService,
+  );
   identityService.register(passwordProvider);
 
   fastify.get<{
@@ -31,7 +37,7 @@ export default async function (fastify: Service) {
 
   fastify.post<{
     Body: AuthRegisterTokenRequest;
-    Response: AuthRegisterTokenResponse;
+    Reply: AuthRegisterTokenResponse;
   }>(
     "/auth/register/token",
     {
@@ -44,28 +50,76 @@ export default async function (fastify: Service) {
     },
     async (request) => {
       return {
-        data: identityService.parseToken("register", request.body.token),
+        data: identityService.parseToken(
+          "register",
+          request.body.token,
+        ) as AuthRegisterToken,
       };
     },
   );
 
   fastify.post<{
     Body: AuthRegisterRequest;
+    Reply: AuthFinishResponse;
   }>(
     "/auth/register/finish",
     {
       schema: {
         body: AuthRegisterRequest,
+        response: {
+          200: AuthFinishResponse,
+        },
       },
     },
     async (request) => {
+      // TODO: handle captcha
+      const { password, name, token } = request.body;
       const { group, identity } = identityService.parseToken(
         "register",
-        request.body.token,
+        token,
       ) as AuthRegisterToken;
-      // TODO
-      console.log(group, identity);
-      return {};
+      if (
+        identity.length === 1 &&
+        identity[0].provider === "email" &&
+        !password
+      ) {
+        throw new BadRequestError(
+          "UserRegisterError",
+          "A password is required for email registration",
+        );
+      }
+      const tokenEmail = identity.filter(
+        ({ provider }) => provider === "email",
+      )[0]?.provider_id;
+      if (!tokenEmail && !request.body.email) {
+        throw new BadRequestError("UserRegisterError", "An email is required");
+      }
+
+      const id = await userService.create(
+        name,
+        identity
+          .map((i) => ({ ...i, user_id: 0 }))
+          .concat(
+            tokenEmail
+              ? []
+              : [
+                  {
+                    provider: "email",
+                    provider_id: request.body.email,
+                    user_id: 0,
+                  },
+                ],
+          ),
+        group,
+      );
+      return {
+        data: {
+          type: "auth",
+          token: identityService.generateToken("auth", {
+            user_id: id,
+          }),
+        },
+      };
     },
   );
 
@@ -78,8 +132,8 @@ export default async function (fastify: Service) {
       schema: {
         body: AuthEmailInitRequest,
         response: {
-          200: AuthFinishResponse,
-          201: BaseResponse,
+          200: BaseResponse,
+          201: AuthFinishResponse,
         },
       },
     },
@@ -87,7 +141,7 @@ export default async function (fastify: Service) {
       const email = request.body.email.toLowerCase();
       const result = await passwordProvider.authPreCheck(email);
       if (!result) {
-        return reply.code(201).send({});
+        return {};
       }
 
       if (typeof result === "string") {
@@ -96,12 +150,12 @@ export default async function (fastify: Service) {
         };
       }
 
-      return {
+      return reply.code(201).send({
         data: {
           type: "register",
           token: await identityService.generateToken("register", result),
         },
-      };
+      });
     },
   );
 }

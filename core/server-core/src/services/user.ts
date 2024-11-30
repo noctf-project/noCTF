@@ -1,6 +1,6 @@
 import { UpdateIdentityData } from "../providers/identity.ts";
 import { DatabaseService } from "./database.ts";
-import { ApplicationError } from "../errors.ts";
+import { ApplicationError, BadRequestError } from "../errors.ts";
 
 export class UserService {
   constructor(private databaseService: DatabaseService) {}
@@ -11,8 +11,7 @@ export class UserService {
     groups?: string[],
   ) {
     if (!identities || !identities.length) {
-      throw new ApplicationError(
-        400,
+      throw new BadRequestError(
         "NoIdentitiesForUserError",
         "Cannot create a user with no identities",
       );

@@ -18,6 +18,16 @@ export class AuthProviderNotFound extends ApplicationError {
   }
 }
 
+export class BadRequestError extends ApplicationError {
+  constructor(code: string, message?: string) {
+    if (!message) {
+      super(400, "BadRequestError", code);
+    } else {
+      super(400, code, message);
+    }
+  }
+}
+
 export class TokenValidationError extends ApplicationError {
   constructor(message?: string) {
     super(401, "TokenValidationError", message || "Token Validation Error");
