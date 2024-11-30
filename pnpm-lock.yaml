@@ -9,6 +9,9 @@ catalogs:
     '@eslint/js':
       specifier: ^9.12.0
       version: 9.12.0
+    '@sinclair/typebox':
+      specifier: ^0.33.14
+      version: 0.33.14
     '@types/node':
       specifier: ^22.7.4
       version: 22.7.4
@@ -116,16 +119,11 @@ importers:
         version: 5.6.2
 
   core/api:
-    devDependencies:
+    dependencies:
       '@sinclair/typebox':
-        specifier: ^0.33.14
-        version: 0.33.14
-      '@sinclair/typebox-codegen':
-        specifier: ^0.10.5
-        version: 0.10.5
-      tsx:
         specifier: 'catalog:'
-        version: 4.19.1
+        version: 0.33.14
+    devDependencies:
       typescript:
         specifier: 'catalog:'
         version: 5.6.2
@@ -144,6 +142,9 @@ importers:
       '@noctf/util':
         specifier: workspace:*
         version: link:../util
+      '@sinclair/typebox':
+        specifier: 'catalog:'
+        version: 0.33.14
       fastify:
         specifier: 'catalog:'
         version: 5.0.0
@@ -172,6 +173,9 @@ importers:
       '@noctf/util':
         specifier: workspace:*
         version: link:../util
+      '@sinclair/typebox':
+        specifier: 'catalog:'
+        version: 0.33.14
       fastify:
         specifier: 'catalog:'
         version: 5.0.0
@@ -207,6 +211,9 @@ importers:
       '@noctf/util':
         specifier: workspace:*
         version: link:../util
+      '@sinclair/typebox':
+        specifier: 'catalog:'
+        version: 0.33.14
       awilix:
         specifier: 'catalog:'
         version: 12.0.1
@@ -484,9 +491,6 @@ packages:
     resolution: {integrity: sha512-c1Q99M5ljsIuc4YdaCwfUEXsofakb9c8+Zse2qxTadu8TalLXuAESzLvFAvNVbkmSlvlzIQOLpBCmWI9wTOt+g==}
     peerDependencies:
       '@redis/client': ^1.0.0
-
-  '@sinclair/typebox-codegen@0.10.5':
-    resolution: {integrity: sha512-McGmpMd/UzIes5FElHeZcfir/E+6L6v6hAOtaNX9v6d8lhDfGSMCOqdDTLWJVuo1tladpxCchKTfP+98L0STAQ==}
 
   '@sinclair/typebox@0.33.14':
     resolution: {integrity: sha512-kS30CHXWEPkWNVDvC3m19fG01C6HiiCyZTy+52t4oD/gZqdYTAZUKTCPtMutmkTLHdl6hNzFdDiB01aoaneXDQ==}
@@ -1384,11 +1388,6 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
-  prettier@2.8.8:
-    resolution: {integrity: sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==}
-    engines: {node: '>=10.13.0'}
-    hasBin: true
-
   prettier@3.3.3:
     resolution: {integrity: sha512-i2tDNA0O5IrMO757lfrdQZCc2jPNDVntV0m/+4whiDfWaTKfMNgR7Qz0NAeGz/nRqF4m5/6CLzbP4/liHt12Ew==}
     engines: {node: '>=14'}
@@ -1800,12 +1799,6 @@ snapshots:
   '@redis/time-series@1.1.0(@redis/client@1.6.0)':
     dependencies:
       '@redis/client': 1.6.0
-
-  '@sinclair/typebox-codegen@0.10.5':
-    dependencies:
-      '@sinclair/typebox': 0.33.14
-      prettier: 2.8.8
-      typescript: 5.6.2
 
   '@sinclair/typebox@0.33.14': {}
 
@@ -2754,8 +2747,6 @@ snapshots:
   postgres-range@1.1.4: {}
 
   prelude-ls@1.2.1: {}
-
-  prettier@2.8.8: {}
 
   prettier@3.3.3: {}
 

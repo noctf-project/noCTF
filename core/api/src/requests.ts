@@ -1,11 +1,11 @@
-import { Type } from "@sinclair/typebox";
+import { Static, Type } from "@sinclair/typebox";
 
 export const AuthOauthInitRequest = Type.Object(
   {
     name: Type.String(),
   },
-  { $id: "AuthOauthInitRequest" },
 );
+export type AuthOauthInitRequest = Static<typeof AuthOauthInitRequest>;
 
 export const AuthOauthFinishRequest = Type.Object(
   {
@@ -13,18 +13,12 @@ export const AuthOauthFinishRequest = Type.Object(
     code: Type.String(),
     redirect_uri: Type.String(),
   },
-  { $id: "AuthOauthFinishRequest" },
 );
+export type AuthOauthFinishRequest = Static<typeof AuthOauthFinishRequest>;
 
 export const AuthEmailInitRequest = Type.Object(
   {
     email: Type.String({ format: "email" }),
   },
-  { $id: "AuthEmailInitRequest" },
 );
-
-export default [
-  AuthOauthInitRequest,
-  AuthOauthFinishRequest,
-  AuthEmailInitRequest,
-];
+export type AuthEmailInitRequest = Static<typeof AuthEmailInitRequest>;

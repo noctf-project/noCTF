@@ -1,4 +1,4 @@
-import { AuthMethod } from "@noctf/api/ts/datatypes";
+import { AuthMethod } from "@noctf/api/datatypes";
 
 export interface IdentityProvider {
   id(): string;

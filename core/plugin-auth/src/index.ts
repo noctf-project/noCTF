@@ -1,23 +1,18 @@
 import { Service } from "@noctf/server-core";
-import { AuthEmailInitRequest } from "@noctf/api/ts/requests";
-import { AuthEmailInitRequest as AuthEmailInitRequestJson } from "@noctf/api/jsonschema/requests";
-import {
-  AuthFinishResponse as AuthFinishResponseJson,
-  BaseResponse as BaseResponseJson,
-} from "@noctf/api/jsonschema/responses";
+import { AuthEmailInitRequest } from "@noctf/api/requests";
 import {
   AuthFinishResponse,
   AuthListMethodsResponse,
   BaseResponse,
-} from "@noctf/api/ts/responses";
-import { CONFIG_NAMESPACE, DEFAULT_CONFIG } from "./config.ts";
+} from "@noctf/api/responses";
+import { CONFIG_NAMESPACE, Config, DEFAULT_CONFIG } from "./config.ts";
 import { PasswordProvider } from "./password_provider.ts";
 import oauth from "./oauth.ts";
 
 export default async function (fastify: Service) {
   fastify.register(oauth);
   const { identityService, configService } = fastify.container.cradle;
-  await configService.register(CONFIG_NAMESPACE, DEFAULT_CONFIG);
+  await configService.register(CONFIG_NAMESPACE, Config, DEFAULT_CONFIG);
   const passwordProvider = new PasswordProvider(configService, identityService);
   identityService.register(passwordProvider);
 
@@ -27,7 +22,7 @@ export default async function (fastify: Service) {
     const methods = await identityService.listMethods();
     return { data: methods };
   });
-
+  
   fastify.post<{
     Body: AuthEmailInitRequest;
     Reply: AuthFinishResponse | BaseResponse;
@@ -35,10 +30,10 @@ export default async function (fastify: Service) {
     "/auth/email/init",
     {
       schema: {
-        body: AuthEmailInitRequestJson,
+        body: AuthEmailInitRequest,
         response: {
-          200: AuthFinishResponseJson,
-          201: BaseResponseJson,
+          200: AuthFinishResponse,
+          201: BaseResponse,
         },
       },
     },

@@ -4,7 +4,7 @@ import {
 } from "@noctf/server-core/providers/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
 import { CONFIG_NAMESPACE, Config } from "./config.ts";
-import { AuthMethod } from "@noctf/api/ts/datatypes";
+import { AuthMethod } from "@noctf/api/datatypes";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import {
   AuthProviderNotFound,
@@ -72,7 +72,7 @@ export class PasswordProvider implements IdentityProvider {
 
   private async getConfig() {
     const { enablePassword, enableRegistrationPassword, validateEmail } =
-      await this.configService.get<Config>(CONFIG_NAMESPACE);
+      await this.configService.get(CONFIG_NAMESPACE);
     return {
       enablePassword,
       enableRegistrationPassword,

@@ -1,4 +1,4 @@
-import { AuthMethod, AuthTokenType } from "@noctf/api/ts/datatypes";
+import { AuthMethod, AuthTokenType } from "@noctf/api/datatypes";
 import { DatabaseService } from "./database.ts";
 import { ApplicationError } from "../errors.ts";
 import { TokenService } from "./token.ts";

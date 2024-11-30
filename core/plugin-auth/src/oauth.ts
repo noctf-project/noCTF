@@ -2,21 +2,12 @@ import { Service } from "@noctf/server-core";
 import {
   AuthOauthFinishRequest,
   AuthOauthInitRequest,
-} from "@noctf/api/ts/requests";
-import {
-  AuthOauthFinishRequest as AuthOauthFinishRequestJson,
-  AuthOauthInitRequest as AuthOauthInitRequestJson,
-} from "@noctf/api/jsonschema/requests";
+} from "@noctf/api/requests";
 import {
   AuthFinishResponse,
   AuthOauthInitResponse,
   BaseResponse,
-} from "@noctf/api/ts/responses";
-import {
-  AuthFinishResponse as AuthFinishResponseJson,
-  AuthOauthInitResponse as AuthOauthInitResponseJson,
-  BaseResponse as BaseResponseJson,
-} from "@noctf/api/jsonschema/responses";
+} from "@noctf/api/responses";
 import { NoResultError } from "kysely";
 import {
   OAuthConfigProvider,
@@ -44,10 +35,10 @@ export default async function (fastify: Service) {
     "/auth/oauth/init",
     {
       schema: {
-        body: AuthOauthInitRequestJson,
+        body: AuthOauthInitRequest,
         response: {
-          200: AuthOauthInitResponseJson,
-          404: BaseResponseJson,
+          200: AuthOauthInitResponse,
+          404: BaseResponse,
         },
       },
     },
@@ -75,9 +66,9 @@ export default async function (fastify: Service) {
     "/auth/oauth/finish",
     {
       schema: {
-        body: AuthOauthFinishRequestJson,
+        body: AuthOauthFinishRequest,
         response: {
-          200: AuthFinishResponseJson,
+          200: AuthFinishResponse,
         },
       },
     },

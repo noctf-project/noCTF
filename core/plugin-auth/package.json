@@ -17,6 +17,7 @@
     "@noctf/util": "workspace:*",
     "fastify": "catalog:",
     "kysely": "catalog:",
+    "@sinclair/typebox": "catalog:",
     "nanoid": "^5.0.7"
   },
   "devDependencies": {
