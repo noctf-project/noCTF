@@ -4,8 +4,7 @@ import { AuthProvider } from "@noctf/server-api/auth";
 export class AuthService {
   private providers: Map<string, AuthProvider> = new Map();
 
-  constructor() {
-  }
+  constructor() {}
 
   register(provider: AuthProvider) {
     if (this.providers.has(provider.id())) {
@@ -15,9 +14,9 @@ export class AuthService {
   }
 
   async listMethods(): Promise<AuthMethod[]> {
-    const promises = Array.from(this.providers.values())
-      .map((provider) => provider.listMethods());
-    return (await Promise.all(promises))
-      .flatMap((v) => v);
+    const promises = Array.from(this.providers.values()).map((provider) =>
+      provider.listMethods(),
+    );
+    return (await Promise.all(promises)).flatMap((v) => v);
   }
 }

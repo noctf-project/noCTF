@@ -7,9 +7,9 @@ export class DatabaseService extends Kysely<DB> {
     super({
       dialect: new PostgresDialect({
         pool: new Pool({
-          connectionString
-        })
-      })
+          connectionString,
+        }),
+      }),
     });
   }
 }

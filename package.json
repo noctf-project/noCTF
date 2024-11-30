@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "format": "prettier '**/*.{ts,js,mjs}' --write"
   },
   "keywords": [],
   "author": "",
@@ -14,11 +15,13 @@
   "devDependencies": {
     "@eslint/js": "catalog:",
     "@types/pg": "catalog:",
-    "typescript-eslint": "catalog:",
     "eslint": "catalog:",
+    "eslint-config-prettier": "^9.1.0",
     "globals": "^15.10.0",
     "kysely": "catalog:",
     "kysely-ctl": "^0.9.0",
-    "pg": "catalog:"
+    "pg": "catalog:",
+    "prettier": "^3.3.3",
+    "typescript-eslint": "catalog:"
   }
 }

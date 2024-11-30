@@ -5,19 +5,21 @@ import { CONFIG_NAMESPACE, Config } from "./config";
 import { AuthMethod } from "@noctf/api/ts/datatypes";
 
 export class PasswordAuthProvider implements AuthProvider {
-  constructor(private configService: ConfigService, private databaseService: DatabaseService) {
-  }
+  constructor(
+    private configService: ConfigService,
+    private databaseService: DatabaseService,
+  ) {}
 
   id(): string {
-    return 'email';
+    return "email";
   }
 
   async listMethods(): Promise<AuthMethod[]> {
     if (await this.isEnabled()) {
       return [
         {
-          provider: 'email'
-        }
+          provider: "email",
+        },
       ];
     }
     return [];
@@ -27,5 +29,4 @@ export class PasswordAuthProvider implements AuthProvider {
     return !!(await this.configService.get<Config>(CONFIG_NAMESPACE))
       .enablePassword;
   }
-  
 }

@@ -6,7 +6,10 @@ import { glob } from "node:fs/promises";
 class DevMigrationProvider implements MigrationProvider {
   async getMigrations() {
     const migrations = {};
-    for await (const filename of glob(["migrations/*.ts", "plugins/*/migrations/*.ts"])) {
+    for await (const filename of glob([
+      "migrations/*.ts",
+      "plugins/*/migrations/*.ts",
+    ])) {
       migrations[filename] = await import(`./${filename}`);
     }
     return migrations;
@@ -14,13 +17,13 @@ class DevMigrationProvider implements MigrationProvider {
 }
 
 export default defineConfig({
-  dialect: 'pg',
+  dialect: "pg",
   migrations: {
     provider: new DevMigrationProvider(),
   },
   dialectConfig: {
     pool: new Pool({
-      connectionString: process.env.DATABASE_URL
-    })
-  }
+      connectionString: process.env.DATABASE_URL,
+    }),
+  },
 });
