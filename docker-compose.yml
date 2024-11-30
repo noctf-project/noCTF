@@ -1,0 +1,12 @@
+services:
+  redis:
+    image: valkey/valkey:8-alpine
+  postgres:
+    image: postgres:17-alpine
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./dev/postgres_init.sql:/docker-entrypoint-initdb.d/postgres_init.sql
+    environment:
+      - POSTGRES_PASSWORD=noctf
+volumes:
+  postgres:

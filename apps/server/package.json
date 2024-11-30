@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "dev": "tsx watch src",
+    "dev": "tsx watch --env-file=../../.env src",
     "prod": "tsx src/index.ts"
   },
   "keywords": [],
@@ -20,8 +20,6 @@
     "awilix": "catalog:",
     "fastify": "catalog:",
     "kysely": "catalog:",
-    "pg": "catalog:",
-    "redis": "catalog:",
     "tsx": "catalog:"
   },
   "type": "module",
