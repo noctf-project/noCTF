@@ -5,6 +5,9 @@ export type Serializable =
   | {
       [key: string]: Serializable;
     };
+export type SerializableMap = {
+  [key: string]: Serializable;
+};
 
 export type UpdateIdentityData = {
   user_id: number;

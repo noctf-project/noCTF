@@ -31,15 +31,19 @@ export class IdentityService {
     switch (type) {
       case "auth":
         return this.tokenService.sign(
+          {
+            sub: result,
+          },
           "noctf/identity/auth",
-          result,
           24 * 3600 * 7,
         );
       case "associate":
       case "register":
         return this.tokenService.sign(
+          {
+            dat: result,
+          },
           `noctf/identity/${type}`,
-          result,
           10 * 60,
         );
     }

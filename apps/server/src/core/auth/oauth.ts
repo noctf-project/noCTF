@@ -85,9 +85,9 @@ export default async function (fastify: Service) {
       },
     },
     async (request) => {
-      const { code, redirect_uri } = request.body;
+      const { state, code, redirect_uri } = request.body;
       const [type, result] = await provider.authenticate(
-        "discord",
+        state,
         code,
         redirect_uri,
       );

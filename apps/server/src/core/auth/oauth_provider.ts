@@ -10,13 +10,14 @@ import {
 } from "@noctf/server-api/errors";
 import { IdentityService } from "@noctf/services/identity";
 import { TokenService } from "@noctf/services/token";
+import { nanoid } from "nanoid";
 
-// TODO
-/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 type StateToken = {
-  ip: string;
   name: string;
+  nonce: string;
 };
+
+export const TOKEN_AUDIENCE = "noctf/auth/oauth/state";
 
 export class OAuthConfigProvider {
   constructor(
@@ -90,10 +91,12 @@ export class OAuthIdentityProvider implements IdentityProvider {
   }
 
   async authenticate(
-    name: string,
+    state: string,
     code: string,
     redirect_uri: string,
   ): Promise<[AuthTokenType, AuthResult]> {
+    const { name } = await this.validateState(state);
+
     const method = await this.configProvider.getMethod(name);
     const id = await this.getExternalId(method, code, redirect_uri);
     const identity = await this.identityService.getIdentityForProvider(
@@ -127,10 +130,11 @@ export class OAuthIdentityProvider implements IdentityProvider {
 
   async associate(
     user_id: number,
-    name: string,
+    state: string,
     code: string,
     redirect_uri: string,
   ) {
+    const { name } = await this.validateState(state);
     const method = await this.configProvider.getMethod(name);
     const provider_id = await this.getExternalId(method, code, redirect_uri);
     await this.identityService.associateIdentity({
@@ -141,7 +145,14 @@ export class OAuthIdentityProvider implements IdentityProvider {
     });
   }
 
-  async generateAuthoriseUrl(name: string, ip: string) {
+  private async validateState(state: string) {
+    const { dat } = this.tokenService.verify(state, TOKEN_AUDIENCE) as {
+      dat: StateToken;
+    };
+    return dat;
+  }
+
+  async generateAuthoriseUrl(name: string) {
     const { authorize_url, client_id } =
       await this.configProvider.getMethod(name);
     const url = new URL(authorize_url);
@@ -150,11 +161,13 @@ export class OAuthIdentityProvider implements IdentityProvider {
     url.searchParams.set(
       "state",
       this.tokenService.sign(
-        "noctf/auth/oauth/state",
         {
-          name,
-          ip,
+          dat: {
+            name,
+            nonce: nanoid(),
+          } as StateToken,
         },
+        TOKEN_AUDIENCE,
         5 * 60,
       ),
     );

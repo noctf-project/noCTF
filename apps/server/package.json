@@ -22,7 +22,8 @@
     "kysely": "catalog:",
     "pg": "catalog:",
     "redis": "catalog:",
-    "tsx": "catalog:"
+    "tsx": "catalog:",
+    "nanoid": "^5.0.7"
   },
   "type": "module",
   "devDependencies": {
