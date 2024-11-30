@@ -13,6 +13,8 @@
   "dependencies": {
     "kysely": "catalog:",
     "redis": "catalog:",
+    "awilix": "catalog:",
+    "fastify": "catalog:",
     "@noctf/schema": "workspace:*",
     "@noctf/server-api": "workspace:*",
     "@noctf/api": "workspace:*"

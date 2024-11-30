@@ -1,16 +1,15 @@
 import { sql, type Kysely } from 'kysely'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export async function up(db: Kysely<any>): Promise<void> {
-  await db.schema.createSchema('core').execute();
-  
+export async function up(db: Kysely<any>): Promise<void> {  
   const schema = db.schema.withSchema('core');
+  const schemaData = db.withSchema('core');
 
   await schema
     .createTable('user')
     .addColumn('id', 'integer', (col) => col.primaryKey().generatedByDefaultAsIdentity())
     .addColumn('name', 'varchar(64)', (col) => col.unique())
-    .addColumn('bio', 'varchar')
+    .addColumn('bio', 'varchar', (col) => col.notNull().defaultTo(''))
     .addColumn('is_blocked', 'boolean', (col) => col.notNull().defaultTo(false))
     .addColumn('is_hidden', 'boolean', (col) => col.notNull().defaultTo(false))
     .addColumn('created_at', 'timestamp', (col) =>
@@ -28,6 +27,19 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .execute();
 
+  await schemaData.insertInto('group')
+    .values([
+      {
+        name: 'valid_email',
+        description: 'Users with a validated email address'
+      },
+      {
+        name: 'admin',
+        description: 'Users with full admin privileges'
+      }
+    ])
+    .execute();
+
   await schema
     .createTable('user_group')
     .addColumn('user_id', 'integer', (col) => col.notNull()
@@ -39,7 +51,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn('created_at', 'timestamp', (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
-    .addPrimaryKeyConstraint('user_role_pkey', ['user_id', 'group_id'])
+    .addPrimaryKeyConstraint('user_group_pkey', ['user_id', 'group_id'])
     .execute();
 
   await schema
@@ -92,5 +104,4 @@ export async function down(db: Kysely<any>): Promise<void> {
   await schema.dropTable('user_group').execute();
   await schema.dropTable('group').execute();
   await schema.dropTable('user').execute();
-  await db.schema.dropSchema('core').execute();
 }

@@ -1,8 +1,9 @@
-import { AuthPlugin } from "./auth";
-import { Service } from "../types";
-import { OAuthPlugin } from "./oauth";
+import { Service } from "@noctf/services";
+
+import auth from "./auth";
+import setup from "./setup";
 
 export default async function(fastify: Service) {
-  fastify.register(AuthPlugin);
-  fastify.register(OAuthPlugin);
+  fastify.register(auth);
+  fastify.register(setup);
 }
