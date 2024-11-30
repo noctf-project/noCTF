@@ -40,7 +40,7 @@ export class ConfigService {
     if (!this.validators.has(namespace)) {
       throw new ValidationError("Config namespace does not exist");
     }
-    return this.cacheClient.get(`core:config:${namespace}`, () =>
+    return this.cacheClient.load(`core:config:${namespace}`, () =>
       this._queryDb(namespace),
     );
   }

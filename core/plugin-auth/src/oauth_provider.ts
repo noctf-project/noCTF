@@ -1,5 +1,5 @@
 import { AuthMethod } from "@noctf/api/datatypes";
-import { AuthToken, AuthTokenType } from "@noctf/api/token";
+import { AuthToken } from "@noctf/api/token";
 import { IdentityProvider } from "@noctf/server-core/providers/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
 import { DatabaseClient } from "@noctf/server-core/clients/database";
@@ -33,7 +33,7 @@ export class OAuthConfigProvider {
     if (!(await this.isEnabled())) {
       return [];
     }
-    return await this.cacheClient.get(`${CACHE_NAMESPACE}:oauth:methods`, () =>
+    return await this.cacheClient.load(`${CACHE_NAMESPACE}:oauth:methods`, () =>
       this._queryMethods(),
     );
   }
@@ -57,7 +57,7 @@ export class OAuthConfigProvider {
       throw new NotFoundError("The requested auth provider cannot be found");
     }
 
-    return await this.cacheClient.get(
+    return await this.cacheClient.load(
       `${CACHE_NAMESPACE}:oauth:method:${provider}`,
       () => this._queryMethod(provider),
     );
@@ -105,7 +105,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
     state: string,
     code: string,
     redirect_uri: string,
-  ): Promise<[AuthTokenType, AuthToken]> {
+  ): Promise<AuthToken> {
     const { name } = await this.validateState(state);
 
     const method = await this.configProvider.getMethod(name);
@@ -116,29 +116,25 @@ export class OAuthIdentityProvider implements IdentityProvider {
     );
     if (!identity) {
       if (method.is_registration_enabled) {
-        return [
-          "register",
-          {
-            identity: [
-              {
-                provider: `${this.id()}:${name}`,
-                provider_id: id,
-              },
-            ],
-          },
-        ];
+        return {
+          type: "register",
+          identity: [
+            {
+              provider: `${this.id()}:${name}`,
+              provider_id: id,
+            },
+          ],
+        };
       } else {
         throw new AuthenticationError(
           "New user registration is currently not available through this provider",
         );
       }
     }
-    return [
-      "auth",
-      {
-        sub: identity.user_id,
-      },
-    ];
+    return {
+      type: "auth",
+      sub: identity.user_id,
+    };
   }
 
   async associate(
@@ -195,7 +191,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
     code: string,
     redirect_uri: string,
   ): Promise<string> {
-    const tokenResponse = await await fetch(token_url, {
+    const tokenResponse = await fetch(token_url, {
       method: "POST",
       body: new URLSearchParams({
         client_id,

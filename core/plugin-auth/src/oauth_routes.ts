@@ -82,15 +82,11 @@ export default async function (fastify: Service) {
     },
     async (request) => {
       const { state, code, redirect_uri } = request.body;
-      const [type, result] = await provider.authenticate(
-        state,
-        code,
-        redirect_uri,
-      );
+      const token = await provider.authenticate(state, code, redirect_uri);
       return {
         data: {
-          type,
-          token: identityService.generateToken(result),
+          type: token.type,
+          token: identityService.generateToken(token),
         },
       };
     },

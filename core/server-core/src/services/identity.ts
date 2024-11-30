@@ -80,6 +80,10 @@ export class IdentityService {
     }
   }
 
+  async revokeToken(token: string) {
+    return this.tokenService.revoke(token);
+  }
+
   async associateIdentity(data: UpdateIdentityData) {
     const result = await this.databaseClient
       .selectFrom("core.user_identity")
