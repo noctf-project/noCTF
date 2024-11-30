@@ -1,6 +1,6 @@
 import fastify from "fastify";
-import { DATABASE_URL, HOST, PORT, TOKEN_SECRET } from "./config";
-import core from "./core";
+import { DATABASE_URL, HOST, PORT, TOKEN_SECRET } from "./config.ts";
+import core from "./core/index.ts";
 import { Service } from "@noctf/services";
 import { asFunction, asValue, createContainer, Lifetime } from "awilix";
 import { IdentityService } from "@noctf/services/identity";

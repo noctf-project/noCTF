@@ -9,7 +9,7 @@ export const AuthOauthInitRequest = Type.Object(
 
 export const AuthOauthFinishRequest = Type.Object(
   {
-    name: Type.String(),
+    state: Type.String(),
     code: Type.String(),
     redirect_uri: Type.String(),
   },

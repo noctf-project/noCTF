@@ -7,7 +7,7 @@ import { glob, mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 
 const build = async () => {
-  const dist = join(__dirname, "codegen");
+  const dist = join(__dirname, "dist");
   const src = join(__dirname, "src");
 
   const compile = async (fp: string) => {

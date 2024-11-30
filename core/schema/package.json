@@ -4,7 +4,8 @@
   "description": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "kysely-codegen --out-file dist/index.d.ts"
+    "build": "kysely-codegen --out-file dist/index.d.ts",
+    "dev": "echo 'Nothing to do' && exit"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +17,6 @@
     "kysely-codegen": "^0.16.8",
     "typescript": "catalog:"
   },
-  "main": "",
+  "type": "module",
   "types": "./dist/index.d.ts"
 }

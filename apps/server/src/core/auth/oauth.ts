@@ -3,7 +3,10 @@ import {
   AuthOauthFinishRequest,
   AuthOauthInitRequest,
 } from "@noctf/api/ts/requests";
-import { AuthOauthFinishRequest as AuthOauthFinishRequestJson } from "@noctf/api/jsonschema/requests";
+import {
+  AuthOauthFinishRequest as AuthOauthFinishRequestJson,
+  AuthOauthInitRequest as AuthOauthInitRequestJson,
+} from "@noctf/api/jsonschema/requests";
 import {
   AuthFinishResponse,
   AuthOauthInitResponse,
@@ -15,16 +18,23 @@ import {
   BaseResponse as BaseResponseJson,
 } from "@noctf/api/jsonschema/responses";
 import { NoResultError } from "kysely";
-import { OAuthConfigProvider, OAuthIdentityProvider } from "./oauth_provider";
+import {
+  OAuthConfigProvider,
+  OAuthIdentityProvider,
+} from "./oauth_provider.ts";
 
 export default async function (fastify: Service) {
-  const { identityService, configService, databaseService } =
+  const { identityService, configService, databaseService, tokenService } =
     fastify.container.cradle;
   const configProvider = new OAuthConfigProvider(
     configService,
     databaseService,
   );
-  const provider = new OAuthIdentityProvider(configProvider, identityService);
+  const provider = new OAuthIdentityProvider(
+    configProvider,
+    identityService,
+    tokenService,
+  );
   identityService.register(provider);
 
   fastify.post<{
@@ -34,7 +44,7 @@ export default async function (fastify: Service) {
     "/auth/oauth/init",
     {
       schema: {
-        body: AuthOauthFinishRequestJson,
+        body: AuthOauthInitRequestJson,
         response: {
           200: AuthOauthInitResponseJson,
           404: BaseResponseJson,
@@ -43,13 +53,12 @@ export default async function (fastify: Service) {
     },
     async (request, reply) => {
       try {
-        const { authorize_url, client_id } = await configProvider.getMethod(
+        const url = await provider.generateAuthoriseUrl(
           request.body.name,
+          request.ip,
         );
-        const url = new URL(authorize_url);
-        url.searchParams.set("client_id", client_id);
         return {
-          data: url.toString(),
+          data: url,
         };
       } catch (e) {
         if (e instanceof NoResultError) {
@@ -76,9 +85,9 @@ export default async function (fastify: Service) {
       },
     },
     async (request) => {
-      const { name, code, redirect_uri } = request.body;
+      const { code, redirect_uri } = request.body;
       const [type, result] = await provider.authenticate(
-        name,
+        "discord",
         code,
         redirect_uri,
       );

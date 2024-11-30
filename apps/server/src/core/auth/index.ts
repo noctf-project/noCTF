@@ -10,9 +10,9 @@ import {
   AuthListMethodsResponse,
   BaseResponse,
 } from "@noctf/api/ts/responses";
-import { CONFIG_NAMESPACE, DEFAULT_CONFIG } from "./config";
-import { PasswordProvider } from "./password_provider";
-import oauth from "./oauth";
+import { CONFIG_NAMESPACE, DEFAULT_CONFIG } from "./config.ts";
+import { PasswordProvider } from "./password_provider.ts";
+import oauth from "./oauth.ts";
 
 export default async function (fastify: Service) {
   fastify.register(oauth);

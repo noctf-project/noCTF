@@ -1,8 +1,8 @@
 import { AuthMethod, AuthTokenType } from "@noctf/api/ts/datatypes";
 import { AuthResult, IdentityProvider } from "@noctf/server-api/identity";
-import { DatabaseService } from "./database";
+import { DatabaseService } from "./database.ts";
 import { ApplicationError } from "@noctf/server-api/errors";
-import { TokenService } from "./token";
+import { TokenService } from "./token.ts";
 import { UpdateIdentityData } from "@noctf/server-api/types";
 
 export class IdentityService {

@@ -1,9 +1,9 @@
 import {
-  AuthRegistrationResult,
+  AuthRegisterResult,
   IdentityProvider,
 } from "@noctf/server-api/identity";
 import { ConfigService } from "@noctf/services/config";
-import { CONFIG_NAMESPACE, Config } from "./config";
+import { CONFIG_NAMESPACE, Config } from "./config.ts";
 import { AuthMethod } from "@noctf/api/ts/datatypes";
 import { IdentityService } from "@noctf/services/identity";
 import {
@@ -34,7 +34,7 @@ export class PasswordProvider implements IdentityProvider {
 
   async authPreCheck(
     email: string,
-  ): Promise<string | AuthRegistrationResult | null> {
+  ): Promise<string | AuthRegisterResult | null> {
     const { enablePassword, enableRegistrationPassword, validateEmail } =
       await this.getConfig();
     if (!enablePassword) {
@@ -50,7 +50,7 @@ export class PasswordProvider implements IdentityProvider {
           "New user registration is currently not available through this provider",
         );
       }
-      const subject = [
+      const subject: AuthRegisterResult = [
         {
           provider: "email",
           provider_id: email,

@@ -1,5 +1,5 @@
 {
-  "name": "@noctf/backend",
+  "name": "@noctf/server",
   "version": "0.1.0",
   "description": "",
   "main": "index.js",
@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "dev": "tsx watch src",
-    "prod": "node dist/index.js"
+    "prod": "tsx src/index.ts"
   },
   "keywords": [],
   "author": "",
@@ -21,12 +21,13 @@
     "fastify": "catalog:",
     "kysely": "catalog:",
     "pg": "catalog:",
-    "redis": "catalog:"
+    "redis": "catalog:",
+    "tsx": "catalog:"
   },
+  "type": "module",
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
-    "tsx": "catalog:",
     "typescript": "catalog:"
   }
 }

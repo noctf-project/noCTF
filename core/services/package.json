@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc"
+    "build": "tsc",
+    "dev": "echo 'Nothing to do' && exit"
   },
   "keywords": [],
   "author": "",
@@ -18,14 +19,16 @@
     "fastify": "catalog:",
     "jsonwebtoken": "^9.0.2",
     "kysely": "catalog:",
+    "nanoid": "^5.0.7",
     "redis": "catalog:"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.7",
     "typescript": "catalog:"
   },
+  "type": "module",
   "exports": {
-    ".": "./dist/index.js",
-    "./*": "./dist/*.js"
+    ".": "./src/index.js",
+    "./*": "./src/*.js"
   }
 }

@@ -1,5 +1,5 @@
 import { UpdateIdentityData } from "@noctf/server-api/types";
-import { DatabaseService } from "./database";
+import { DatabaseService } from "./database.ts";
 import { ApplicationError } from "@noctf/server-api/errors";
 
 export class UserService {

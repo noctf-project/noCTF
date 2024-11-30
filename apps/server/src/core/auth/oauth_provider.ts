@@ -3,12 +3,20 @@ import { AuthResult, IdentityProvider } from "@noctf/server-api/identity";
 import { ConfigService } from "@noctf/services/config";
 import { DatabaseService } from "@noctf/services/database";
 import { get } from "@noctf/util";
-import { CONFIG_NAMESPACE, Config } from "./config";
+import { CONFIG_NAMESPACE, Config } from "./config.ts";
 import {
   AuthProviderNotFound,
   AuthenticationError,
 } from "@noctf/server-api/errors";
 import { IdentityService } from "@noctf/services/identity";
+import { TokenService } from "@noctf/services/token";
+
+// TODO
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+type StateToken = {
+  ip: string;
+  name: string;
+};
 
 export class OAuthConfigProvider {
   constructor(
@@ -74,6 +82,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
   constructor(
     private configProvider: OAuthConfigProvider,
     private identityService: IdentityService,
+    private tokenService: TokenService,
   ) {}
 
   async listMethods(): Promise<AuthMethod[]> {
@@ -130,6 +139,26 @@ export class OAuthIdentityProvider implements IdentityProvider {
       provider_id,
       secret_data: null,
     });
+  }
+
+  async generateAuthoriseUrl(name: string, ip: string) {
+    const { authorize_url, client_id } =
+      await this.configProvider.getMethod(name);
+    const url = new URL(authorize_url);
+    url.searchParams.set("client_id", client_id);
+    url.searchParams.set("response_type", "code");
+    url.searchParams.set(
+      "state",
+      this.tokenService.sign(
+        "noctf/auth/oauth/state",
+        {
+          name,
+          ip,
+        },
+        5 * 60,
+      ),
+    );
+    return url.toString();
   }
 
   async getExternalId(

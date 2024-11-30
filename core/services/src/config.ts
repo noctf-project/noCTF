@@ -1,5 +1,5 @@
 import { FastifyBaseLogger } from "fastify";
-import { DatabaseService } from "./database";
+import { DatabaseService } from "./database.ts";
 import { ValidationError } from "@noctf/server-api/errors";
 import { Serializable } from "@noctf/server-api/types";
 
