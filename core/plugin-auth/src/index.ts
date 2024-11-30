@@ -1,5 +1,6 @@
 import { Service } from "@noctf/server-core";
 import {
+  AuthEmailFinishRequest,
   AuthEmailInitRequest,
   AuthRegisterRequest,
   AuthRegisterTokenRequest,
@@ -16,6 +17,13 @@ import oauth from "./oauth.ts";
 import { AuthRegisterToken } from "@noctf/api/token";
 import { BadRequestError } from "@noctf/server-core/errors";
 
+declare module "fastify" {
+  interface FastifySchema {
+    tags?: string[];
+    description?: string;
+  }
+}
+
 export default async function (fastify: Service) {
   fastify.register(oauth);
   const { identityService, configService, userService } =
@@ -25,10 +33,18 @@ export default async function (fastify: Service) {
 
   fastify.get<{
     Reply: AuthListMethodsResponse;
-  }>("/auth/methods", async () => {
-    const methods = await identityService.listMethods();
-    return { data: methods };
-  });
+  }>(
+    "/auth/methods",
+    {
+      schema: {
+        tags: ["auth"],
+      },
+    },
+    async () => {
+      const methods = await identityService.listMethods();
+      return { data: methods };
+    },
+  );
 
   fastify.post<{
     Body: AuthRegisterTokenRequest;
@@ -37,6 +53,7 @@ export default async function (fastify: Service) {
     "/auth/register/token",
     {
       schema: {
+        tags: ["auth"],
         body: AuthRegisterTokenRequest,
         response: {
           200: AuthRegisterTokenResponse,
@@ -60,6 +77,7 @@ export default async function (fastify: Service) {
     "/auth/register/finish",
     {
       schema: {
+        tags: ["auth"],
         body: AuthRegisterRequest,
         response: {
           200: AuthFinishResponse,
@@ -125,6 +143,9 @@ export default async function (fastify: Service) {
     "/auth/email/init",
     {
       schema: {
+        tags: ["auth"],
+        description:
+          "Checks if an email exists, returning a message or registration token if not",
         body: AuthEmailInitRequest,
         response: {
           200: BaseResponse,
@@ -151,6 +172,36 @@ export default async function (fastify: Service) {
           token: await identityService.generateToken("register", result),
         },
       });
+    },
+  );
+
+  fastify.post<{
+    Body: AuthEmailFinishRequest;
+    Reply: AuthFinishResponse | BaseResponse;
+  }>(
+    "/auth/email/finish",
+    {
+      schema: {
+        tags: ["auth"],
+        description: "Log a user in using their email and password",
+        body: AuthEmailFinishRequest,
+        response: {
+          200: AuthFinishResponse,
+          default: BaseResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const email = request.body.email.toLowerCase();
+      const password = request.body.password;
+      const sub = await passwordProvider.authenticate(email, password);
+      
+      return {
+        data: {
+          type: "auth",
+          token: await identityService.generateToken("auth", { sub }),
+        },
+      };
     },
   );
 }

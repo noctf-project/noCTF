@@ -6,17 +6,19 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "dev": "tsx watch --env-file=../../.env src",
+    "dev": "tsx watch --env-file=../../.env src | pino-pretty",
     "prod": "tsx src/index.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@fastify/swagger": "catalog:",
+    "@fastify/swagger-ui": "^5.1.0",
     "@noctf/api": "workspace:*",
-    "@noctf/server-core": "workspace:*",
     "@noctf/plugin-auth": "workspace:*",
     "@noctf/plugin-setup": "workspace:*",
+    "@noctf/server-core": "workspace:*",
     "awilix": "catalog:",
     "fastify": "catalog:",
     "kysely": "catalog:",
@@ -26,6 +28,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "pino-pretty": "catalog:"
   }
 }

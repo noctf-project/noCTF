@@ -17,6 +17,8 @@ import { UserService } from "@noctf/server-core/services/user";
 import { TokenService } from "@noctf/server-core/services/token";
 import { ApplicationError } from "@noctf/server-core/errors";
 import { TeamService } from "@noctf/server-core/services/team";
+import Swagger from "@fastify/swagger";
+import SwaggerUI from "@fastify/swagger-ui";
 
 const server: Service = fastify({
   logger: true,
@@ -46,6 +48,24 @@ server.register(async () => {
     teamService: asClass(TeamService, { lifetime: Lifetime.SINGLETON }),
     userService: asClass(UserService, { lifetime: Lifetime.SINGLETON }),
   });
+});
+
+server.register(Swagger, {
+  openapi: {
+    openapi: "3.0.0",
+    info: {
+      title: "noCTF",
+      description: "noCTF backend API",
+      version: "0.1.0",
+    },
+  },
+});
+
+server.register(SwaggerUI, {
+  routePrefix: "/swagger",
+  uiConfig: {
+    deepLinking: false,
+  },
 });
 
 server.register(core);

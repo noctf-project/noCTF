@@ -6,6 +6,7 @@ import { IdentityService } from "@noctf/server-core/services/identity";
 import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
 import { AuthRegisterToken } from "@noctf/api/token";
 import { FastifyBaseLogger } from "fastify";
+import { Validate } from "./hash_util.ts";
 
 type Props = {
   logger: FastifyBaseLogger;
@@ -80,6 +81,19 @@ export class PasswordProvider implements IdentityProvider {
       );
     }
     return null;
+  }
+
+  async authenticate(email: string, password: string) {
+    const identity = await this.identityService.getIdentityForProvider(
+      this.id(),
+      email,
+    );
+
+    if (!identity || !identity.secret_data || !await Validate(password, identity.secret_data)) {
+      throw new AuthenticationError("Incorrect email or password");
+    }
+
+    return identity.user_id;
   }
 
   async getConfig() {

@@ -41,6 +41,7 @@ export default async function (fastify: Service) {
     "/auth/oauth/init",
     {
       schema: {
+        tags: ["auth"],
         body: AuthOauthInitRequest,
         response: {
           200: AuthOauthInitResponse,
@@ -72,6 +73,7 @@ export default async function (fastify: Service) {
     "/auth/oauth/finish",
     {
       schema: {
+        tags: ["auth"],
         body: AuthOauthFinishRequest,
         response: {
           200: AuthFinishResponse,
