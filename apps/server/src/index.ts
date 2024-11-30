@@ -11,7 +11,6 @@ import {
 } from "awilix";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
-import { CaptchaService } from "@noctf/server-core/services/captcha";
 import { CacheClient } from "@noctf/server-core/clients/cache";
 import { DatabaseClient } from "@noctf/server-core/clients/database";
 import { UserService } from "@noctf/server-core/services/user";
@@ -44,7 +43,6 @@ server.register(async () => {
       { lifetime: Lifetime.SINGLETON },
     ),
     configService: asClass(ConfigService, { lifetime: Lifetime.SINGLETON }),
-    captchaService: asClass(CaptchaService, { lifetime: Lifetime.SINGLETON }),
     identityService: asClass(IdentityService, {
       lifetime: Lifetime.SINGLETON,
     }),

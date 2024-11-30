@@ -18,6 +18,7 @@
     "@noctf/api": "workspace:*",
     "@noctf/plugin-auth": "workspace:*",
     "@noctf/plugin-setup": "workspace:*",
+    "@noctf/plugin-captcha": "workspace:*",
     "@noctf/server-core": "workspace:*",
     "@sinclair/typebox": "catalog:",
     "awilix": "catalog:",

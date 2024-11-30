@@ -1,5 +1,5 @@
 {
-  "name": "@noctf/server-core",
+  "name": "@noctf/plugin-captcha",
   "version": "0.1.0",
   "description": "core noCTF internal APIs",
   "scripts": {
@@ -12,17 +12,12 @@
   "license": "ISC",
   "dependencies": {
     "@noctf/api": "workspace:*",
-    "@noctf/schema": "workspace:*",
+    "@noctf/server-core": "workspace:*",
     "@sinclair/typebox": "catalog:",
-    "awilix": "catalog:",
     "fastify": "catalog:",
-    "jsonwebtoken": "^9.0.2",
-    "kysely": "catalog:",
-    "nanoid": "^5.0.7",
-    "redis": "catalog:"
+    "ky": "catalog:"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.7",
     "typescript": "catalog:"
   },
   "type": "module",

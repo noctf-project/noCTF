@@ -9,10 +9,13 @@ export const BaseResponse = Type.Object({
 export type BaseResponse = Static<typeof BaseResponse>;
 
 export const CaptchaConfigResponse = Type.Object({
-  data: Type.Object({
-    provider: Type.String(),
-    public_key: Type.String(),
-  }),
+  data: Type.Optional(
+    Type.Object({
+      provider: Type.String(),
+      public_key: Type.String(),
+      routes: Type.Array(Type.String()),
+    }),
+  ),
 });
 export type CaptchaConfigResponse = Static<typeof CaptchaConfigResponse>;
 

@@ -7,7 +7,6 @@ import { TokenService } from "./services/token.ts";
 import { UserService } from "./services/user.ts";
 import { CacheClient } from "./clients/cache.ts";
 import { TeamService } from "./services/team.ts";
-import { CaptchaService } from "./services/captcha.ts";
 
 export type ServiceCradle = {
   logger: FastifyBaseLogger;
@@ -15,7 +14,6 @@ export type ServiceCradle = {
   databaseClient: DatabaseClient;
   tokenService: TokenService;
   configService: ConfigService;
-  captchaService: CaptchaService;
   identityService: IdentityService;
   teamService: TeamService;
   userService: UserService;

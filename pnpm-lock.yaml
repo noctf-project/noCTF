@@ -30,6 +30,9 @@ catalogs:
     fastify:
       specifier: ^5.0.0
       version: 5.0.0
+    ky:
+      specifier: ^1.7.2
+      version: 1.7.2
     kysely:
       specifier: ^0.27.4
       version: 0.27.4
@@ -104,6 +107,9 @@ importers:
       '@noctf/plugin-auth':
         specifier: workspace:*
         version: link:../../core/plugin-auth
+      '@noctf/plugin-captcha':
+        specifier: workspace:*
+        version: link:../../core/plugin-captcha
       '@noctf/plugin-setup':
         specifier: workspace:*
         version: link:../../core/plugin-setup
@@ -166,6 +172,9 @@ importers:
       fastify:
         specifier: 'catalog:'
         version: 5.0.0
+      ky:
+        specifier: 'catalog:'
+        version: 1.7.2
       kysely:
         specifier: 'catalog:'
         version: 0.27.4
@@ -176,6 +185,28 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 2.1.5(@types/node@22.7.4)
+
+  core/plugin-captcha:
+    dependencies:
+      '@noctf/api':
+        specifier: workspace:*
+        version: link:../api
+      '@noctf/server-core':
+        specifier: workspace:*
+        version: link:../server-core
+      '@sinclair/typebox':
+        specifier: 'catalog:'
+        version: 0.33.14
+      fastify:
+        specifier: 'catalog:'
+        version: 5.0.0
+      ky:
+        specifier: 'catalog:'
+        version: 1.7.2
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.2
 
   core/plugin-setup:
     dependencies:
@@ -236,7 +267,7 @@ importers:
         specifier: ^9.0.2
         version: 9.0.2
       ky:
-        specifier: ^1.7.2
+        specifier: 'catalog:'
         version: 1.7.2
       kysely:
         specifier: 'catalog:'
