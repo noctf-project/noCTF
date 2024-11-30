@@ -27,6 +27,7 @@ export class TokenService {
         algorithms: ["HS256"],
       });
     } catch (e) {
+      console.error(token);
       if (e instanceof jwt.TokenExpiredError) {
         throw new TokenValidationError("Token has expired");
       } else if (e instanceof jwt.JsonWebTokenError) {

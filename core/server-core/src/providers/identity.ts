@@ -11,16 +11,3 @@ export type UpdateIdentityData = {
   provider_id: string;
   secret_data?: string;
 };
-
-export type AuthSuccessResult = {
-  user_id: number;
-};
-
-export type AuthRegisterResult = [
-  {
-    provider: string;
-    provider_id: string;
-  },
-];
-
-export type AuthResult = AuthSuccessResult | AuthRegisterResult;

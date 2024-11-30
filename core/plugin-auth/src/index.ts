@@ -1,13 +1,19 @@
 import { Service } from "@noctf/server-core";
-import { AuthEmailInitRequest } from "@noctf/api/requests";
+import {
+  AuthEmailInitRequest,
+  AuthRegisterRequest,
+  AuthRegisterTokenRequest,
+} from "@noctf/api/requests";
 import {
   AuthFinishResponse,
   AuthListMethodsResponse,
+  AuthRegisterTokenResponse,
   BaseResponse,
 } from "@noctf/api/responses";
 import { CONFIG_NAMESPACE, Config, DEFAULT_CONFIG } from "./config.ts";
 import { PasswordProvider } from "./password_provider.ts";
 import oauth from "./oauth.ts";
+import { AuthRegisterToken } from "@noctf/api/token";
 
 export default async function (fastify: Service) {
   fastify.register(oauth);
@@ -22,7 +28,47 @@ export default async function (fastify: Service) {
     const methods = await identityService.listMethods();
     return { data: methods };
   });
-  
+
+  fastify.post<{
+    Body: AuthRegisterTokenRequest;
+    Response: AuthRegisterTokenResponse;
+  }>(
+    "/auth/register/token",
+    {
+      schema: {
+        body: AuthRegisterTokenRequest,
+        response: {
+          200: AuthRegisterTokenResponse,
+        },
+      },
+    },
+    async (request) => {
+      return {
+        data: identityService.parseToken("register", request.body.token),
+      };
+    },
+  );
+
+  fastify.post<{
+    Body: AuthRegisterRequest;
+  }>(
+    "/auth/register/finish",
+    {
+      schema: {
+        body: AuthRegisterRequest,
+      },
+    },
+    async (request) => {
+      const { group, identity } = identityService.parseToken(
+        "register",
+        request.body.token,
+      ) as AuthRegisterToken;
+      // TODO
+      console.log(group, identity);
+      return {};
+    },
+  );
+
   fastify.post<{
     Body: AuthEmailInitRequest;
     Reply: AuthFinishResponse | BaseResponse;

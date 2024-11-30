@@ -3,8 +3,8 @@ import { Type } from "@sinclair/typebox";
 
 const Config = Type.Object({
   initialized: Type.Boolean({
-    title: "Initialized (cannot be changed)"
-  })
+    title: "Initialized (cannot be changed)",
+  }),
 });
 
 export default async function (fastify: Service) {

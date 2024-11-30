@@ -1,12 +1,15 @@
-import { AuthMethod, AuthTokenType } from "@noctf/api/datatypes";
-import { DatabaseService } from "./database.ts";
-import { ApplicationError } from "../errors.ts";
-import { TokenService } from "./token.ts";
+import { AuthMethod } from "@noctf/api/datatypes";
 import {
-  AuthResult,
-  IdentityProvider,
-  UpdateIdentityData,
-} from "../providers/identity.ts";
+  AuthRegisterToken,
+  AuthToken,
+  AuthTokenType,
+  AuthUserToken,
+} from "@noctf/api/token";
+
+import { DatabaseService } from "./database.ts";
+import { ApplicationError, ValidationError } from "../errors.ts";
+import { TokenService } from "./token.ts";
+import { IdentityProvider, UpdateIdentityData } from "../providers/identity.ts";
 
 export class IdentityService {
   private providers: Map<string, IdentityProvider> = new Map();
@@ -30,7 +33,7 @@ export class IdentityService {
     return (await Promise.all(promises)).flatMap((v) => v);
   }
 
-  generateToken(type: AuthTokenType, result: AuthResult): string {
+  generateToken(type: AuthTokenType, result: AuthToken): string {
     switch (type) {
       case "auth":
         return this.tokenService.sign(
@@ -43,12 +46,30 @@ export class IdentityService {
       case "associate":
       case "register":
         return this.tokenService.sign(
-          {
-            dat: result,
-          },
+          result,
           `noctf/identity/${type}`,
-          10 * 60,
+          30 * 60,
         );
+      default:
+        throw new ValidationError("invalid token type");
+    }
+  }
+
+  parseToken(type: AuthTokenType, token: string) {
+    switch (type) {
+      case "auth":
+        return this.tokenService.verify(
+          token,
+          `noctf/identity/auth`,
+        ) as AuthUserToken;
+      case "associate":
+      case "register":
+        return this.tokenService.verify(
+          token,
+          `noctf/identity/${type}`,
+        ) as AuthRegisterToken;
+      default:
+        throw new ValidationError("invalid token type");
     }
   }
 

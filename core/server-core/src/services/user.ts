@@ -8,7 +8,7 @@ export class UserService {
   async create(
     name: string,
     identities: UpdateIdentityData[],
-    groups?: number[],
+    groups?: string[],
   ) {
     if (!identities || !identities.length) {
       throw new ApplicationError(
@@ -27,7 +27,7 @@ export class UserService {
             .select(["user_id"])
             .where("provider", "=", provider)
             .where("provider_id", "=", provider_id)
-            .execute()
+            .executeTakeFirst()
             .then((identity) => {
               if (!identity) {
                 return Promise.reject("not exists");
@@ -70,10 +70,13 @@ export class UserService {
       if (groups) {
         await tx
           .insertInto("core.user_group")
-          .values(
-            groups.map((group) => ({
+          .values((eb) =>
+            groups.map((name) => ({
               user_id: id,
-              group_id: group,
+              group_id: eb
+                .selectFrom("core.group")
+                .select("id")
+                .where("name", "=", name),
             })),
           )
           .execute();

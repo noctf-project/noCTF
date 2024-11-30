@@ -1,8 +1,6 @@
-import { AuthMethod, AuthTokenType } from "@noctf/api/datatypes";
-import {
-  AuthResult,
-  IdentityProvider,
-} from "@noctf/server-core/providers/identity";
+import { AuthMethod } from "@noctf/api/datatypes";
+import { AuthToken, AuthTokenType } from "@noctf/api/token";
+import { IdentityProvider } from "@noctf/server-core/providers/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
 import { DatabaseService } from "@noctf/server-core/services/database";
 import { get } from "@noctf/util";
@@ -29,7 +27,7 @@ export class OAuthConfigProvider {
   ) {}
 
   private async isEnabled(): Promise<boolean> {
-    return !!(await this.configService.get(CONFIG_NAMESPACE) as Config)
+    return !!((await this.configService.get(CONFIG_NAMESPACE)) as Config)
       .enableOauth;
   }
 
@@ -97,7 +95,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
     state: string,
     code: string,
     redirect_uri: string,
-  ): Promise<[AuthTokenType, AuthResult]> {
+  ): Promise<[AuthTokenType, AuthToken]> {
     const { name } = await this.validateState(state);
 
     const method = await this.configProvider.getMethod(name);
@@ -110,12 +108,14 @@ export class OAuthIdentityProvider implements IdentityProvider {
       if (method.is_registration_enabled) {
         return [
           "register",
-          [
-            {
-              provider: `${this.id()}:${name}`,
-              provider_id: id,
-            },
-          ],
+          {
+            identity: [
+              {
+                provider: `${this.id()}:${name}`,
+                provider_id: id,
+              },
+            ],
+          },
         ];
       } else {
         throw new AuthenticationError(

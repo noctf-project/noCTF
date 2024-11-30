@@ -1,15 +1,13 @@
-import {
-  AuthRegisterResult,
-  IdentityProvider,
-} from "@noctf/server-core/providers/identity";
+import { IdentityProvider } from "@noctf/server-core/providers/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
-import { CONFIG_NAMESPACE, Config } from "./config.ts";
+import { CONFIG_NAMESPACE } from "./config.ts";
 import { AuthMethod } from "@noctf/api/datatypes";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import {
   AuthProviderNotFound,
   AuthenticationError,
 } from "@noctf/server-core/errors";
+import { AuthRegisterToken } from "@noctf/api/token";
 
 export class PasswordProvider implements IdentityProvider {
   constructor(
@@ -34,7 +32,7 @@ export class PasswordProvider implements IdentityProvider {
 
   async authPreCheck(
     email: string,
-  ): Promise<string | AuthRegisterResult | null> {
+  ): Promise<string | AuthRegisterToken | null> {
     const { enablePassword, enableRegistrationPassword, validateEmail } =
       await this.getConfig();
     if (!enablePassword) {
@@ -50,12 +48,14 @@ export class PasswordProvider implements IdentityProvider {
           "New user registration is currently not available through this provider",
         );
       }
-      const subject: AuthRegisterResult = [
-        {
-          provider: "email",
-          provider_id: email,
-        },
-      ];
+      const subject: AuthRegisterToken = {
+        identity: [
+          {
+            provider: "email",
+            provider_id: email,
+          },
+        ],
+      };
       if (validateEmail) {
         return "Please check your email for a link to create your account";
       }
