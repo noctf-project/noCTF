@@ -4,7 +4,7 @@ import { CONFIG_NAMESPACE } from "./config.ts";
 import { AuthMethod } from "@noctf/api/datatypes";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
-import { AuthRegisterToken } from "@noctf/api/token";
+import { AuthToken } from "@noctf/api/token";
 import { FastifyBaseLogger } from "fastify";
 import { Validate } from "./hash_util.ts";
 
@@ -42,10 +42,8 @@ export class PasswordProvider implements IdentityProvider {
     return [];
   }
 
-  async authPreCheck(
-    email: string,
-  ): Promise<string | AuthRegisterToken | null> {
-    const { enablePassword, enableRegistrationPassword, validateEmail } =
+  async authPreCheck(email: string): Promise<AuthToken | null> {
+    const { enablePassword, enableRegistrationPassword } =
       await this.getConfig();
     if (!enablePassword) {
       throw new NotFoundError("The requested auth provider cannot be found");
@@ -60,7 +58,8 @@ export class PasswordProvider implements IdentityProvider {
           "New user registration is currently not available through this provider",
         );
       }
-      const subject: AuthRegisterToken = {
+      return {
+        type: "register",
         identity: [
           {
             provider: "email",
@@ -68,12 +67,6 @@ export class PasswordProvider implements IdentityProvider {
           },
         ],
       };
-      if (validateEmail) {
-        // TODO: create a flag with valid_email
-        return "Please check your email for a link to create your account";
-      }
-
-      return subject;
     }
     if (identity.secret_data) {
       throw new AuthenticationError(
@@ -83,17 +76,24 @@ export class PasswordProvider implements IdentityProvider {
     return null;
   }
 
-  async authenticate(email: string, password: string) {
+  async authenticate(email: string, password: string): Promise<AuthToken> {
     const identity = await this.identityService.getIdentityForProvider(
       this.id(),
       email,
     );
 
-    if (!identity || !identity.secret_data || !await Validate(password, identity.secret_data)) {
+    if (
+      !identity ||
+      !identity.secret_data ||
+      !(await Validate(password, identity.secret_data))
+    ) {
       throw new AuthenticationError("Incorrect email or password");
     }
 
-    return identity.user_id;
+    return {
+      type: "auth",
+      sub: identity.user_id,
+    };
   }
 
   async getConfig() {

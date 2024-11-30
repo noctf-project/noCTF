@@ -1,5 +1,6 @@
 import { AuthMethod } from "@noctf/api/datatypes";
 import {
+  AuthAssociateToken,
   AuthRegisterToken,
   AuthToken,
   AuthTokenType,
@@ -41,19 +42,19 @@ export class IdentityService {
     return (await Promise.all(promises)).flatMap((v) => v);
   }
 
-  generateToken(type: AuthTokenType, result: AuthToken): string {
-    switch (type) {
+  generateToken(result: AuthToken): string {
+    switch (result.type) {
       case "auth":
         return this.tokenService.sign(
-          result,
+          { sub: result.sub },
           "noctf/identity/auth",
           24 * 3600 * 7,
         );
       case "associate":
       case "register":
         return this.tokenService.sign(
-          result,
-          `noctf/identity/${type}`,
+          { flags: result.flags, identity: result.identity },
+          `noctf/identity/${result.type}`,
           30 * 60,
         );
       default:
@@ -73,7 +74,7 @@ export class IdentityService {
         return this.tokenService.validate(
           token,
           `noctf/identity/${type}`,
-        ) as unknown as Promise<AuthRegisterToken>;
+        ) as unknown as Promise<AuthAssociateToken | AuthRegisterToken>;
       default:
         throw new ValidationError("invalid token type");
     }

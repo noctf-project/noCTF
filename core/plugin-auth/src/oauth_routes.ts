@@ -90,7 +90,7 @@ export default async function (fastify: Service) {
       return {
         data: {
           type,
-          token: identityService.generateToken(type, result),
+          token: identityService.generateToken(result),
         },
       };
     },
