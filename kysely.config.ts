@@ -23,7 +23,7 @@ export default defineConfig({
   },
   dialectConfig: {
     pool: new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: process.env.POSTGRES_URL,
     }),
   },
 });

@@ -9,7 +9,12 @@ You can skip the rest of the sections for now, but I promise that it is a good r
 can understand how the app is laid out. Currently the docker-compose is only used to set up
 dependencies such as PostgreSQL and Redis. The development applications will not be dockerised.
 
-```
+**NOTE:** You will need to have node >=22.0 installed as we rely on `fs.glob()`
+
+```sh
+# Install the dependencies
+pnpm i
+
 # Start the docker dependencides
 ./dev.sh start
 
@@ -29,13 +34,13 @@ pnpm dev
 ## Creating Database Migrations
 You can run the below command to create a new migration file.
 
-```
+```sh
 pnpm kysely migrate make <migration_name>
 ```
 
 If you make changes to the database schema or migration files, you will need to re-run the schema builder in order to have the correct types for the database.
 
-```
+```sh
 # from core/schema
 pnpm build --env-file ../../.env
 ```

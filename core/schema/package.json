@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "kysely-codegen --out-file dist/index.d.ts",
+    "build": "kysely-codegen --url 'env(POSTGRES_URL)' --out-file dist/index.d.ts",
     "dev": "echo 'Nothing to do' && exit"
   },
   "keywords": [],
