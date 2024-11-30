@@ -1,10 +1,8 @@
-import { FastifyBaseLogger } from "fastify";
 import { Static, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
-import { DatabaseClient } from "../clients/database.ts";
+import type { ServiceCradle } from "../index.ts";
 import { ValidationError } from "../errors.ts";
 import { SerializableMap } from "../types.ts";
-import { CacheClient } from "../clients/cache.ts";
 
 type Validator = (kv: SerializableMap) => Promise<string | null>;
 
@@ -12,18 +10,13 @@ const nullValidator = async (): Promise<null> => {
   return null;
 };
 
-type Props = {
-  logger: FastifyBaseLogger;
-  cacheClient: CacheClient;
-  databaseClient: DatabaseClient;
-};
+type Props = Pick<ServiceCradle, "logger" | "cacheClient" | "databaseClient">;
 
 export class ConfigService {
-  private logger: Props["logger"];
-  private cacheClient: CacheClient;
-  private databaseClient: Props["databaseClient"];
-
-  private validators: Map<string, [TSchema, Validator]> = new Map();
+  private readonly logger: Props["logger"];
+  private readonly cacheClient: Props["cacheClient"];
+  private readonly databaseClient: Props["databaseClient"];
+  private readonly validators: Map<string, [TSchema, Validator]> = new Map();
 
   constructor({ logger, cacheClient, databaseClient }: Props) {
     this.logger = logger;

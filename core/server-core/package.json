@@ -13,7 +13,6 @@
   "dependencies": {
     "@noctf/api": "workspace:*",
     "@noctf/schema": "workspace:*",
-    "@noctf/util": "workspace:*",
     "@sinclair/typebox": "catalog:",
     "awilix": "catalog:",
     "fastify": "catalog:",

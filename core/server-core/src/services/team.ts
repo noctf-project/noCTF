@@ -1,17 +1,13 @@
-import { CacheClient } from "../clients/cache.ts";
-import { DatabaseClient } from "../clients/database.ts";
 import { NotFoundError } from "../errors.ts";
 import { TeamFlag } from "../enums.ts";
 import { CoreTeamMemberRole } from "@noctf/schema";
+import type { ServiceCradle } from "../index.ts";
 
-type Props = {
-  databaseClient: DatabaseClient;
-  cacheClient: CacheClient;
-};
+type Props = Pick<ServiceCradle, "databaseClient" | "cacheClient">;
 
 export class TeamService {
-  private cacheClient: CacheClient;
-  private databaseClient: DatabaseClient;
+  private readonly cacheClient: Props["cacheClient"];
+  private readonly databaseClient: Props["databaseClient"];
 
   constructor({ databaseClient, cacheClient }: Props) {
     this.cacheClient = cacheClient;
@@ -44,10 +40,13 @@ export class TeamService {
     teamId: number,
     role: CoreTeamMemberRole = "member",
   ) {
-    await this.databaseClient.insertInto("core.team_member").values({
-      user_id: userId,
-      team_id: teamId,
-      role,
-    });
+    await this.databaseClient
+      .insertInto("core.team_member")
+      .values({
+        user_id: userId,
+        team_id: teamId,
+        role,
+      })
+      .execute();
   }
 }

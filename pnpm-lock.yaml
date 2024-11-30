@@ -157,9 +157,6 @@ importers:
       '@noctf/server-core':
         specifier: workspace:*
         version: link:../server-core
-      '@noctf/util':
-        specifier: workspace:*
-        version: link:../util
       '@sinclair/typebox':
         specifier: 'catalog:'
         version: 0.33.14
@@ -188,9 +185,6 @@ importers:
       '@noctf/server-core':
         specifier: workspace:*
         version: link:../server-core
-      '@noctf/util':
-        specifier: workspace:*
-        version: link:../util
       '@sinclair/typebox':
         specifier: 'catalog:'
         version: 0.33.14
@@ -226,9 +220,6 @@ importers:
       '@noctf/schema':
         specifier: workspace:*
         version: link:../schema
-      '@noctf/util':
-        specifier: workspace:*
-        version: link:../util
       '@sinclair/typebox':
         specifier: 'catalog:'
         version: 0.33.14
@@ -254,12 +245,6 @@ importers:
       '@types/jsonwebtoken':
         specifier: ^9.0.7
         version: 9.0.7
-      typescript:
-        specifier: 'catalog:'
-        version: 5.6.2
-
-  core/util:
-    devDependencies:
       typescript:
         specifier: 'catalog:'
         version: 5.6.2

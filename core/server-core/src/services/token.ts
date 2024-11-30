@@ -1,14 +1,11 @@
 import { TokenValidationError } from "../errors.ts";
-import { SerializableMap } from "@noctf/util/types";
+import { SerializableMap } from "../util/types.ts";
 import jwt from "jsonwebtoken";
-import { CacheClient } from "../clients/cache.ts";
 import { nanoid } from "nanoid";
-import { FastifyBaseLogger } from "fastify";
+import type { ServiceCradle } from "../index.ts";
 
-type Props = {
+type Props = Pick<ServiceCradle, "cacheClient" | "logger"> & {
   secret: string;
-  cacheClient: CacheClient;
-  logger: FastifyBaseLogger;
 };
 
 export class TokenService {

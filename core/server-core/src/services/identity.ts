@@ -7,15 +7,11 @@ import {
   AuthUserToken,
 } from "@noctf/api/token";
 
-import { DatabaseClient } from "../clients/database.ts";
 import { ApplicationError, ValidationError } from "../errors.ts";
-import { TokenService } from "./token.ts";
 import { IdentityProvider, UpdateIdentityData } from "../providers/identity.ts";
+import type { ServiceCradle } from "../index.ts";
 
-type Props = {
-  databaseClient: DatabaseClient;
-  tokenService: TokenService;
-};
+type Props = Pick<ServiceCradle, "databaseClient" | "tokenService">;
 
 export class IdentityService {
   private databaseClient: Props["databaseClient"];

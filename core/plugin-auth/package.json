@@ -14,7 +14,6 @@
     "@noctf/api": "workspace:*",
     "@noctf/schema": "workspace:*",
     "@noctf/server-core": "workspace:*",
-    "@noctf/util": "workspace:*",
     "fastify": "catalog:",
     "kysely": "catalog:",
     "@sinclair/typebox": "catalog:"

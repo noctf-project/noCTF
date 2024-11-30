@@ -8,7 +8,7 @@ import { UserService } from "./services/user.ts";
 import { CacheClient } from "./clients/cache.ts";
 import { TeamService } from "./services/team.ts";
 
-export interface ServiceCradle {
+export type ServiceCradle = {
   logger: FastifyBaseLogger;
   cacheClient: CacheClient;
   databaseClient: DatabaseClient;
@@ -17,7 +17,7 @@ export interface ServiceCradle {
   identityService: IdentityService;
   teamService: TeamService;
   userService: UserService;
-}
+};
 
 export interface Service extends FastifyInstance {
   container: AwilixContainer<ServiceCradle>;

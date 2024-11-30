@@ -1,10 +1,9 @@
 import { UpdateIdentityData } from "../providers/identity.ts";
 import { DatabaseClient } from "../clients/database.ts";
 import { ApplicationError, BadRequestError } from "../errors.ts";
+import { ServiceCradle } from "../index.ts";
 
-type Props = {
-  databaseClient: DatabaseClient;
-};
+type Props = Pick<ServiceCradle, "databaseClient">;
 
 export class UserService {
   private databaseClient: DatabaseClient;

@@ -3,12 +3,12 @@ import { AuthToken } from "@noctf/api/token";
 import { IdentityProvider } from "@noctf/server-core/providers/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
 import { DatabaseClient } from "@noctf/server-core/clients/database";
-import { get } from "@noctf/util";
 import { CACHE_NAMESPACE, CONFIG_NAMESPACE, Config } from "./config.ts";
 import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import { TokenService } from "@noctf/server-core/services/token";
 import { CacheClient } from "@noctf/server-core/clients/cache";
+import { get } from "@noctf/server-core/util/object";
 
 type StateToken = {
   name: string;
