@@ -1,10 +1,24 @@
-import { FastifyInstance } from "fastify";
 import { Service } from "../types";
+import { ProviderInfo } from "@noctf/api/ts/datatypes";
 
 export async function AuthPlugin(fastify: Service) {
-  const { authService } = fastify.container.cradle;
-  fastify.get('/auth/providers', async () => {
-    return await authService.getProviders();
+  const { authService, databaseService } = fastify.container.cradle;
+
+  const listOAuthProviders = async () => {
+    return databaseService
+      .selectFrom('core.oauth_provider')
+      .where('is_enabled', '=', true)
+      .select(['name', 'is_registration_enabled'])
+      .execute();
+  };
+
+  fastify.get<{Reply: ProviderInfo[]}>('/auth/providers', async () => {
+    return await listOAuthProviders()
+      .then((providers) => providers.map(({ name, is_registration_enabled }) => ({
+        type: 'oauth',
+        name,
+        is_registration_enabled
+      })));
   });
   
 

@@ -1,0 +1,22 @@
+{
+  "name": "@noctf/api",
+  "version": "0.1.0",
+  "description": "API requests/responses",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsx build.ts && tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@sinclair/typebox": "^0.33.14",
+    "@sinclair/typebox-codegen": "^0.10.5",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  },
+  "exports": {
+    "./*": "./dist/*.js"
+  }
+}
