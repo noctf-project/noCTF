@@ -10,12 +10,24 @@ import {
 import { AuthRegisterToken } from "@noctf/api/token";
 import { FastifyBaseLogger } from "fastify";
 
+type Props = {
+  logger: FastifyBaseLogger;
+  configService: ConfigService;
+  identityService: IdentityService;
+};
+
 export class PasswordProvider implements IdentityProvider {
-  constructor(
-    private log: FastifyBaseLogger,
-    private configService: ConfigService,
-    private identityService: IdentityService,
-  ) {}
+  private logger: FastifyBaseLogger;
+  private configService: ConfigService;
+  private identityService: IdentityService;
+
+  constructor({ logger, configService, identityService }: Props) {
+    this.logger = logger;
+    this.configService = configService;
+    this.identityService = identityService;
+
+    this.identityService.register(this);
+  }
 
   id(): string {
     return "email";

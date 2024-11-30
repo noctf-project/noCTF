@@ -15,12 +15,9 @@ import {
 } from "./oauth_provider.ts";
 
 export default async function (fastify: Service) {
-  const { identityService, configService, databaseService, tokenService } =
+  const { identityService, configService, databaseClient, tokenService } =
     fastify.container.cradle;
-  const configProvider = new OAuthConfigProvider(
-    configService,
-    databaseService,
-  );
+  const configProvider = new OAuthConfigProvider(configService, databaseClient);
   const provider = new OAuthIdentityProvider(
     configProvider,
     identityService,

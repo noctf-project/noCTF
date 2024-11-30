@@ -6,18 +6,26 @@ import {
   AuthUserToken,
 } from "@noctf/api/token";
 
-import { DatabaseService } from "./database.ts";
+import { DatabaseClient } from "../clients/database.ts";
 import { ApplicationError, ValidationError } from "../errors.ts";
 import { TokenService } from "./token.ts";
 import { IdentityProvider, UpdateIdentityData } from "../providers/identity.ts";
 
+type Props = {
+  databaseClient: DatabaseClient;
+  tokenService: TokenService;
+};
+
 export class IdentityService {
+  private databaseClient: Props["databaseClient"];
+  private tokenService: Props["tokenService"];
+
   private providers: Map<string, IdentityProvider> = new Map();
 
-  constructor(
-    private databaseService: DatabaseService,
-    private tokenService: TokenService,
-  ) {}
+  constructor({ databaseClient, tokenService }: Props) {
+    this.databaseClient = databaseClient;
+    this.tokenService = tokenService;
+  }
 
   register(provider: IdentityProvider) {
     if (this.providers.has(provider.id())) {
@@ -74,14 +82,14 @@ export class IdentityService {
   }
 
   async associateIdentity(data: UpdateIdentityData) {
-    const result = await this.databaseService
+    const result = await this.databaseClient
       .selectFrom("core.user_identity")
       .select(["user_id"])
       .where("provider", "=", data.provider)
       .where("provider_id", "=", data.provider_id)
       .executeTakeFirst();
     if (!result) {
-      await this.databaseService
+      await this.databaseClient
         .insertInto("core.user_identity")
         .values([data])
         .executeTakeFirst();
@@ -94,7 +102,7 @@ export class IdentityService {
       );
     }
 
-    await this.databaseService
+    await this.databaseClient
       .updateTable("core.user_identity")
       .where("user_id", "=", data.user_id)
       .where("provider", "=", data.provider)
@@ -103,7 +111,7 @@ export class IdentityService {
   }
 
   async removeIdentity(userId: number, provider: string) {
-    await this.databaseService
+    await this.databaseClient
       .deleteFrom("core.user_identity")
       .where("user_id", "=", userId)
       .where("provider", "=", provider)
@@ -111,7 +119,7 @@ export class IdentityService {
   }
 
   async listProvidersForUser(id: number) {
-    return await this.databaseService
+    return await this.databaseClient
       .selectFrom("core.user_identity")
       .select(["provider", "provider_id"])
       .where("user_id", "=", id)
@@ -120,7 +128,7 @@ export class IdentityService {
 
   async getProviderIdForUser(name: string, id: number) {
     return (
-      await this.databaseService
+      await this.databaseClient
         .selectFrom("core.user_identity")
         .select(["provider_id"])
         .where("provider", "=", name)
@@ -130,7 +138,7 @@ export class IdentityService {
   }
 
   async getIdentityForProvider(name: string, id: string) {
-    return await this.databaseService
+    return await this.databaseClient
       .selectFrom("core.user_identity")
       .select([
         "user_id",

@@ -2,10 +2,10 @@ import fastify from "fastify";
 import { DATABASE_URL, HOST, PORT, TOKEN_SECRET } from "./config.ts";
 import core from "./core.ts";
 import { Service } from "@noctf/server-core";
-import { asFunction, asValue, createContainer, Lifetime } from "awilix";
+import { asClass, asValue, createContainer, Lifetime } from "awilix";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
-import { DatabaseService } from "@noctf/server-core/services/database";
+import { DatabaseClient } from "@noctf/server-core/clients/database";
 import { UserService } from "@noctf/server-core/services/user";
 import { TokenService } from "@noctf/server-core/services/token";
 import { ApplicationError } from "@noctf/server-core/errors";
@@ -18,26 +18,13 @@ server.register(async () => {
   server.container = createContainer();
   server.container.register({
     logger: asValue(server.log),
+    databaseClient: asValue(new DatabaseClient(DATABASE_URL)),
     tokenService: asValue(new TokenService(TOKEN_SECRET)),
-    identityService: asFunction(
-      ({ databaseService, tokenService }) =>
-        new IdentityService(databaseService, tokenService),
-      {
-        lifetime: Lifetime.SINGLETON,
-      },
-    ),
-    configService: asFunction(
-      ({ logger, databaseService }) =>
-        new ConfigService(logger, databaseService),
-      { lifetime: Lifetime.SINGLETON },
-    ),
-    databaseService: asFunction(() => new DatabaseService(DATABASE_URL), {
+    configService: asClass(ConfigService, { lifetime: Lifetime.SINGLETON }),
+    identityService: asClass(IdentityService, {
       lifetime: Lifetime.SINGLETON,
     }),
-    userService: asFunction(
-      ({ databaseService }) => new UserService(databaseService),
-      { lifetime: Lifetime.SINGLETON },
-    ),
+    userService: asClass(UserService, { lifetime: Lifetime.SINGLETON }),
   });
 });
 

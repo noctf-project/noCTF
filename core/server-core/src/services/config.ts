@@ -1,7 +1,7 @@
 import { FastifyBaseLogger } from "fastify";
 import { Static, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
-import { DatabaseService } from "./database.ts";
+import { DatabaseClient } from "../clients/database.ts";
 import { ValidationError } from "../errors.ts";
 import { SerializableMap } from "../types.ts";
 
@@ -11,13 +11,21 @@ const nullValidator = async (): Promise<null> => {
   return null;
 };
 
+type Props = {
+  logger: FastifyBaseLogger;
+  databaseClient: DatabaseClient;
+};
+
 export class ConfigService {
+  private logger: Props["logger"];
+  private databaseClient: Props["databaseClient"];
+
   private validators: Map<string, [TSchema, Validator]> = new Map();
 
-  constructor(
-    private logger: FastifyBaseLogger,
-    private databaseService: DatabaseService,
-  ) {}
+  constructor({ logger, databaseClient }: Props) {
+    this.logger = logger;
+    this.databaseClient = databaseClient;
+  }
 
   /**
    * Get config from config storage
@@ -28,7 +36,7 @@ export class ConfigService {
     if (!this.validators.has(namespace)) {
       throw new ValidationError("Config namespace does not exist");
     }
-    const config = await this.databaseService
+    const config = await this.databaseClient
       .selectFrom("core.config")
       .select("data")
       .where("namespace", "=", namespace)
@@ -71,7 +79,7 @@ export class ConfigService {
       }
     }
 
-    this.databaseService
+    this.databaseClient
       .updateTable("core.config")
       .set({
         data: JSON.stringify(data),
@@ -101,7 +109,7 @@ export class ConfigService {
     }
     this.validators.set(namespace, [schema, validator || nullValidator]);
     this.logger.info("Registering config namespace %s", namespace);
-    const result = await this.databaseService
+    const result = await this.databaseClient
       .insertInto("core.config")
       .values({
         namespace,

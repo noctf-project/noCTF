@@ -21,12 +21,7 @@ export default async function (fastify: Service) {
   const { identityService, configService, userService } =
     fastify.container.cradle;
   await configService.register(CONFIG_NAMESPACE, Config, DEFAULT_CONFIG);
-  const passwordProvider = new PasswordProvider(
-    fastify.log,
-    configService,
-    identityService,
-  );
-  identityService.register(passwordProvider);
+  const passwordProvider = new PasswordProvider(fastify.container.cradle);
 
   fastify.get<{
     Reply: AuthListMethodsResponse;

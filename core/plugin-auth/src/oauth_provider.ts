@@ -2,7 +2,7 @@ import { AuthMethod } from "@noctf/api/datatypes";
 import { AuthToken, AuthTokenType } from "@noctf/api/token";
 import { IdentityProvider } from "@noctf/server-core/providers/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
-import { DatabaseService } from "@noctf/server-core/services/database";
+import { DatabaseClient } from "@noctf/server-core/clients/database";
 import { get } from "@noctf/util";
 import { CONFIG_NAMESPACE, Config } from "./config.ts";
 import {
@@ -23,7 +23,7 @@ export const TOKEN_AUDIENCE = "noctf/auth/oauth/state";
 export class OAuthConfigProvider {
   constructor(
     private configService: ConfigService,
-    private databaseService: DatabaseService,
+    private databaseClient: DatabaseClient,
   ) {}
 
   private async isEnabled(): Promise<boolean> {
@@ -36,7 +36,7 @@ export class OAuthConfigProvider {
       return [];
     }
 
-    const methods = await this.databaseService
+    const methods = await this.databaseClient
       .selectFrom("core.oauth_provider")
       .where("is_enabled", "=", true)
       .select(["name", "image_src"])
@@ -54,7 +54,7 @@ export class OAuthConfigProvider {
       throw new AuthProviderNotFound();
     }
 
-    const data = await this.databaseService
+    const data = await this.databaseClient
       .selectFrom("core.oauth_provider")
       .where("is_enabled", "=", true)
       .where("name", "=", provider)

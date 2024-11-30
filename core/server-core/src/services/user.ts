@@ -1,9 +1,17 @@
 import { UpdateIdentityData } from "../providers/identity.ts";
-import { DatabaseService } from "./database.ts";
+import { DatabaseClient } from "../clients/database.ts";
 import { ApplicationError, BadRequestError } from "../errors.ts";
 
+type Props = {
+  databaseClient: DatabaseClient;
+};
+
 export class UserService {
-  constructor(private databaseService: DatabaseService) {}
+  private databaseClient: DatabaseClient;
+
+  constructor({ databaseClient }: Props) {
+    this.databaseClient = databaseClient;
+  }
 
   async create(
     name: string,
@@ -21,7 +29,7 @@ export class UserService {
     try {
       const result = await Promise.any(
         identities.map(({ provider, provider_id }) =>
-          this.databaseService
+          this.databaseClient
             .selectFrom("core.user_identity")
             .select(["user_id"])
             .where("provider", "=", provider)
@@ -48,7 +56,7 @@ export class UserService {
       }
     }
 
-    return await this.databaseService.transaction().execute(async (tx) => {
+    return await this.databaseClient.transaction().execute(async (tx) => {
       const { id } = await tx
         .insertInto("core.user")
         .values({
