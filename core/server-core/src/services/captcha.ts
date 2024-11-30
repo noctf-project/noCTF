@@ -1,6 +1,7 @@
 import type { ServiceCradle } from "../index.ts";
 import { CaptchaProvider } from "../providers/captcha.ts";
 import { ValidationError } from "../errors.ts";
+import ky from "ky";
 import { Static, Type } from "@sinclair/typebox";
 
 const CONFIG_NAMESPACE = "core.service.captcha";
@@ -19,8 +20,13 @@ export class CaptchaService {
 
   constructor({ configService }: Props) {
     this.configService = configService;
-    void configService.register(CONFIG_NAMESPACE, CaptchaServiceConfig, {});
-    this.register(new DefaultCaptchaProvider("hcaptcha"));
+    void configService.register(
+      CONFIG_NAMESPACE,
+      CaptchaServiceConfig,
+      {},
+      this.validateConfig.bind(this),
+    );
+    this.register(new HCaptchaProvider());
   }
 
   register(provider: CaptchaProvider) {
@@ -28,6 +34,13 @@ export class CaptchaService {
       throw new Error(`Provider ${provider.id()} has already been registered`);
     }
     this.providers.set(provider.id(), provider);
+  }
+
+  private validateConfig({ provider }: CaptchaServiceConfig) {
+    if (!this.providers.has(provider)) {
+      return `Captcha provider ${provider} does not exist`;
+    }
+    return null;
   }
 
   async getProviderData(): Promise<{
@@ -61,18 +74,25 @@ export class CaptchaService {
   }
 }
 
-export class DefaultCaptchaProvider implements CaptchaProvider {
-  constructor(private readonly _id: string) {}
-
+export class HCaptchaProvider implements CaptchaProvider {
   async validate(
     privateKey: string,
     response: string,
     clientIp: string,
   ): Promise<[boolean, number]> {
-    throw new ValidationError("Method not implemented.");
+    const result = await ky
+      .post("https://api.hcaptcha.com/siteverify", {
+        body: new URLSearchParams({
+          response,
+          remoteip: clientIp,
+          secret: privateKey,
+        }),
+      })
+      .json<{ success: boolean; challenge_ts: string }>();
+    return [result.success, new Date(result.challenge_ts).valueOf()];
   }
 
   id() {
-    return this._id;
+    return "hcaptcha";
   }
 }

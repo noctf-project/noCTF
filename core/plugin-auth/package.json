@@ -16,6 +16,7 @@
     "@noctf/server-core": "workspace:*",
     "fastify": "catalog:",
     "kysely": "catalog:",
+    "ky": "catalog:",
     "@sinclair/typebox": "catalog:"
   },
   "devDependencies": {

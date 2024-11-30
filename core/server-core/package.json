@@ -17,9 +17,10 @@
     "awilix": "catalog:",
     "fastify": "catalog:",
     "jsonwebtoken": "^9.0.2",
+    "ky": "catalog:",
     "kysely": "catalog:",
-    "redis": "catalog:",
-    "nanoid": "^5.0.7"
+    "nanoid": "^5.0.7",
+    "redis": "catalog:"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.7",

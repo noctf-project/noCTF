@@ -235,6 +235,9 @@ importers:
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
+      ky:
+        specifier: ^1.7.2
+        version: 1.7.2
       kysely:
         specifier: 'catalog:'
         version: 0.27.4
@@ -1464,6 +1467,10 @@ packages:
 
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
+
+  ky@1.7.2:
+    resolution: {integrity: sha512-OzIvbHKKDpi60TnF9t7UUVAF1B4mcqc02z5PIvrm08Wyb+yOcz63GRvEuVxNT18a9E1SrNouhB4W2NNLeD7Ykg==}
+    engines: {node: '>=18'}
 
   kysely-codegen@0.16.8:
     resolution: {integrity: sha512-+N4SDdI9akUWug0i/3UvlktpfPiCt1mtDQ+pVCqI5E98xcGWpdfVXb4CD7CGGNg+QMXqpiR3bVKd0LgCJQtrPA==}
@@ -3396,6 +3403,8 @@ snapshots:
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
+
+  ky@1.7.2: {}
 
   kysely-codegen@0.16.8(kysely@0.27.4)(pg@8.13.0):
     dependencies:

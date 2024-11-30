@@ -8,6 +8,14 @@ export const BaseResponse = Type.Object({
 });
 export type BaseResponse = Static<typeof BaseResponse>;
 
+export const CaptchaConfigResponse = Type.Object({
+  data: Type.Object({
+    provider: Type.String(),
+    public_key: Type.String(),
+  }),
+});
+export type CaptchaConfigResponse = Static<typeof CaptchaConfigResponse>;
+
 export const AuthListMethodsResponse = Type.Object({
   data: Type.Array(AuthMethod),
 });
