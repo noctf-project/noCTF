@@ -6,7 +6,10 @@ import { asFunction, createContainer, Lifetime } from 'awilix';
 import { AuthService } from '@noctf/services/auth';
 import { DatabaseService } from '@noctf/services/database';
 
-const server: Service = fastify() as unknown as Service;
+const server: Service = fastify({
+  logger: true
+}) as unknown as Service;
+
 server.register(async () => {
   server.container = createContainer();
   server.container.register({
@@ -19,9 +22,7 @@ server.get('/ping', async (request, reply) => {
   return 'pong\n';
 });
 
-server.register(core, {
-  prefix: "/api"
-});
+server.register(core, { prefix: "/api" });
 
 server.listen({
   port: PORT,
@@ -31,5 +32,5 @@ server.listen({
     console.error(err);
     process.exit(1);
   }
-  console.log(`Server listening at ${address}`);
+  server.log.info(`Server listening at ${address}`);
 })

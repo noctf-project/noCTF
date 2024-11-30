@@ -6,7 +6,7 @@ import { glob } from "node:fs/promises";
 class DevMigrationProvider implements MigrationProvider {
   async getMigrations() {
     const migrations = {};
-    for await (const filename of glob(["apps/backend/migrations/*.ts", "plugins/*/migrations/*.ts"])) {
+    for await (const filename of glob(["migrations/*.ts", "plugins/*/migrations/*.ts"])) {
       migrations[filename] = await import(`./${filename}`);
     }
     return migrations;

@@ -10,6 +10,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn('id', 'serial', (col) => col.primaryKey())
     .addColumn('name', 'varchar(64)', (col) => col.unique())
     .addColumn('bio', 'varchar')
+    .addColumn('tags', sql`varchar(64)[]`, (col) => col.notNull().defaultTo('{}'))
     .addColumn('is_blocked', 'boolean', (col) => col.notNull().defaultTo(false))
     .addColumn('is_hidden', 'boolean', (col) => col.notNull().defaultTo(false))
     .addColumn('created_at', 'timestamp', (col) =>
@@ -41,7 +42,6 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn('client_id', 'varchar', (col) => col.notNull())
     .addColumn('client_secret', 'varchar', (col) => col.notNull())
     .addColumn('image_src', 'varchar')
-    .addColumn('redirect_uri', 'varchar', (col) => col.notNull())
     .addColumn('authorize_url', 'varchar', (col) => col.notNull())
     .addColumn('token_url', 'varchar', (col) => col.notNull())
     .addColumn('info_url', 'varchar', (col) => col.notNull())

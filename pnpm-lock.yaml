@@ -42,11 +42,14 @@ importers:
         specifier: 'catalog:'
         version: 8.13.0
 
-  apps/backend:
+  apps/server:
     dependencies:
       '@noctf/api':
         specifier: workspace:*
         version: link:../../core/api
+      '@noctf/server-api':
+        specifier: workspace:*
+        version: link:../../core/server-api
       '@noctf/services':
         specifier: workspace:*
         version: link:../../core/services
@@ -91,12 +94,6 @@ importers:
         specifier: 'catalog:'
         version: 5.6.2
 
-  core/interfaces:
-    devDependencies:
-      typescript:
-        specifier: 'catalog:'
-        version: 5.6.2
-
   core/schema:
     dependencies:
       kysely:
@@ -110,11 +107,27 @@ importers:
         specifier: 'catalog:'
         version: 5.6.2
 
+  core/server-api:
+    dependencies:
+      '@noctf/api':
+        specifier: workspace:*
+        version: link:../api
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.2
+
   core/services:
     dependencies:
+      '@noctf/api':
+        specifier: workspace:*
+        version: link:../api
       '@noctf/schema':
         specifier: workspace:*
         version: link:../schema
+      '@noctf/server-api':
+        specifier: workspace:*
+        version: link:../server-api
       kysely:
         specifier: 'catalog:'
         version: 0.27.4

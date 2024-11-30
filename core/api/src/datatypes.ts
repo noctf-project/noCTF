@@ -1,11 +1,9 @@
 import { Type } from "@sinclair/typebox";
-import { ModelToJsonSchema, ModelToTypeScript } from "@sinclair/typebox-codegen";
 
-export const ProviderInfo = Type.Object({
-  type: Type.String(),
+export const AuthMethod = Type.Object({
+  provider: Type.String(),
   name: Type.Optional(Type.String()),
   image_src: Type.Optional(Type.String()),
-  is_registration_enabled: Type.Boolean()
-}, { $id: 'ProviderInfo' });
+}, { $id: 'AuthMethod' });
 
-export default [ProviderInfo];
+export default [AuthMethod];

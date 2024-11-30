@@ -1,5 +1,5 @@
 {
-  "name": "@noctf/interfaces",
+  "name": "@noctf/server-api",
   "version": "0.1.0",
   "description": "core noCTF server side interfaces",
   "main": "index.js",
@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@noctf/api": "workspace:*"
   },
   "devDependencies": {
     "typescript": "catalog:"

@@ -12,7 +12,9 @@
   "license": "ISC",
   "dependencies": {
     "kysely": "catalog:",
-    "@noctf/schema": "workspace:*"
+    "@noctf/schema": "workspace:*",
+    "@noctf/server-api": "workspace:*",
+    "@noctf/api": "workspace:*"
   },
   "devDependencies": {
     "typescript": "catalog:"
