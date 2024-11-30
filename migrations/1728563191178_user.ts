@@ -43,10 +43,10 @@ export async function up(db: Kysely<any>): Promise<void> {
   await schema
     .createTable('user_group')
     .addColumn('user_id', 'integer', (col) => col.notNull()
-      .references('user.id')
+      .references('core.user.id')
       .onDelete('cascade'))
     .addColumn('group_id', 'integer', (col) => col.notNull()
-      .references('group.id')
+      .references('core.group.id')
       .onDelete('cascade'))
     .addColumn('created_at', 'timestamp', (col) =>
       col.defaultTo(sql`now()`).notNull(),
@@ -57,7 +57,7 @@ export async function up(db: Kysely<any>): Promise<void> {
   await schema
     .createTable('user_identity')
     .addColumn('user_id', 'integer', (col) => col.notNull()
-      .references('user.id')
+      .references('core.user.id')
       .onDelete('cascade'))
     .addColumn('provider', 'varchar(64)', (col) => col.notNull())
     .addColumn('provider_id', 'varchar', (col) => col.notNull())
@@ -88,7 +88,6 @@ export async function up(db: Kysely<any>): Promise<void> {
     .execute();
 
   await schema
-    .withSchema('core')
     .createIndex('oauth_provider_idx_is_enabled')
     .on('oauth_provider')
     .column('is_enabled')
