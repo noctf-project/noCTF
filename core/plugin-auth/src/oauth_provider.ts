@@ -11,7 +11,6 @@ import {
 } from "@noctf/server-core/errors";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import { TokenService } from "@noctf/server-core/services/token";
-import { nanoid } from "nanoid";
 import { CacheClient } from "@noctf/server-core/clients/cache";
 
 type StateToken = {
@@ -140,7 +139,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
     return [
       "auth",
       {
-        user_id: identity.user_id,
+        sub: identity.user_id,
       },
     ];
   }
@@ -163,7 +162,10 @@ export class OAuthIdentityProvider implements IdentityProvider {
   }
 
   private async validateState(state: string) {
-    return this.tokenService.verify(state, TOKEN_AUDIENCE) as StateToken;
+    return this.tokenService.validate(
+      state,
+      TOKEN_AUDIENCE,
+    ) as Promise<StateToken>;
   }
 
   async generateAuthoriseUrl(name: string) {
@@ -176,7 +178,6 @@ export class OAuthIdentityProvider implements IdentityProvider {
       "state",
       this.tokenService.sign(
         {
-          jti: nanoid(),
           name,
         } as StateToken,
         TOKEN_AUDIENCE,

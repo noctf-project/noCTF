@@ -19,7 +19,8 @@
     "fastify": "catalog:",
     "jsonwebtoken": "^9.0.2",
     "kysely": "catalog:",
-    "redis": "catalog:"
+    "redis": "catalog:",
+    "nanoid": "^5.0.7"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.7",

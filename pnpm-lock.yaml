@@ -151,9 +151,6 @@ importers:
       kysely:
         specifier: 'catalog:'
         version: 0.27.4
-      nanoid:
-        specifier: ^5.0.7
-        version: 5.0.7
     devDependencies:
       typescript:
         specifier: 'catalog:'
@@ -226,6 +223,9 @@ importers:
       kysely:
         specifier: 'catalog:'
         version: 0.27.4
+      nanoid:
+        specifier: ^5.0.7
+        version: 5.0.7
       redis:
         specifier: 'catalog:'
         version: 4.7.0

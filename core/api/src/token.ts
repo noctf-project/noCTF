@@ -8,7 +8,7 @@ export const AuthTokenType = Type.Enum({
 export type AuthTokenType = Static<typeof AuthTokenType>;
 
 export const AuthUserToken = Type.Object({
-  user_id: Type.Integer(),
+  sub: Type.Integer(),
 });
 export type AuthUserToken = Static<typeof AuthUserToken>;
 

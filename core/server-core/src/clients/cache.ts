@@ -23,6 +23,10 @@ export class CacheClient {
     return result;
   }
 
+  async getTtl(key: string) {
+    return await this.client.ttl(key);
+  }
+
   async ttl(key: string) {
     await this.client.ttl(key);
   }

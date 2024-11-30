@@ -45,9 +45,7 @@ export class IdentityService {
     switch (type) {
       case "auth":
         return this.tokenService.sign(
-          {
-            sub: result,
-          },
+          result,
           "noctf/identity/auth",
           24 * 3600 * 7,
         );
@@ -63,19 +61,19 @@ export class IdentityService {
     }
   }
 
-  parseToken(type: AuthTokenType, token: string) {
+  async validateToken(type: AuthTokenType, token: string) {
     switch (type) {
       case "auth":
-        return this.tokenService.verify(
+        return this.tokenService.validate(
           token,
           `noctf/identity/auth`,
-        ) as AuthUserToken;
+        ) as unknown as Promise<AuthUserToken>;
       case "associate":
       case "register":
-        return this.tokenService.verify(
+        return this.tokenService.validate(
           token,
           `noctf/identity/${type}`,
-        ) as AuthRegisterToken;
+        ) as unknown as Promise<AuthRegisterToken>;
       default:
         throw new ValidationError("invalid token type");
     }

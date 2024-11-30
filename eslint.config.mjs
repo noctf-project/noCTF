@@ -14,4 +14,9 @@ export default [
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
   eslintConfigPrettier,
+  {
+    rules: {
+      "no-case-declarations": "off",
+    },
+  },
 ];

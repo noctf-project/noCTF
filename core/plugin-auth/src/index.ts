@@ -45,10 +45,10 @@ export default async function (fastify: Service) {
     },
     async (request) => {
       return {
-        data: identityService.parseToken(
+        data: (await identityService.validateToken(
           "register",
           request.body.token,
-        ) as AuthRegisterToken,
+        )) as AuthRegisterToken,
       };
     },
   );
@@ -69,10 +69,10 @@ export default async function (fastify: Service) {
     async (request) => {
       // TODO: handle captcha
       const { password, name, token } = request.body;
-      const { group, identity } = identityService.parseToken(
+      const { group, identity } = (await identityService.validateToken(
         "register",
         token,
-      ) as AuthRegisterToken;
+      )) as AuthRegisterToken;
       if (
         identity.length === 1 &&
         identity[0].provider === "email" &&
@@ -111,7 +111,7 @@ export default async function (fastify: Service) {
         data: {
           type: "auth",
           token: identityService.generateToken("auth", {
-            user_id: id,
+            sub: id,
           }),
         },
       };

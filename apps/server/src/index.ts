@@ -4,6 +4,7 @@ import core from "./core.ts";
 import { Service } from "@noctf/server-core";
 import {
   asClass,
+  asFunction,
   asValue,
   createContainer,
   Lifetime,
@@ -29,7 +30,14 @@ server.register(async () => {
     logger: asValue(server.log),
     cacheClient: asValue(cacheClient),
     databaseClient: asValue(new DatabaseClient(POSTGRES_URL)),
-    tokenService: asValue(new TokenService(TOKEN_SECRET)),
+    tokenService: asFunction(
+      ({ cacheClient }) =>
+        new TokenService({
+          cacheClient,
+          secret: TOKEN_SECRET,
+        }),
+      { lifetime: Lifetime.SINGLETON },
+    ),
     configService: asClass(ConfigService, { lifetime: Lifetime.SINGLETON }),
     identityService: asClass(IdentityService, {
       lifetime: Lifetime.SINGLETON,
@@ -47,14 +55,26 @@ server.setErrorHandler((error, request, reply) => {
       .send({ error: error.code, message: error.message });
     return;
   }
-  if (error.validation) {
-    const messages = error.validation.map(
-      ({ instancePath, message }) => `${instancePath.substring(1)} ${message}`,
-    );
-    reply
-      .status(400)
-      .send({ error: "ValidationError", message: messages.join("; ") });
-    return;
+  if (error.code) {
+    switch (error.code) {
+      case "FST_ERR_VALIDATION":
+        const messages = error.validation.map(
+          ({ instancePath, message }) =>
+            `${instancePath.substring(1)} ${message}`,
+        );
+        return reply
+          .status(400)
+          .send({ error: "ValidationError", message: messages.join("; ") });
+      case "FST_ERR_CTP_INVALID_MEDIA_TYPE":
+        return reply
+          .status(400)
+          .send({ error: "UnsupportedMediaTypeError", message: error.message });
+      default:
+        server.log.warn(
+          "unexpected possibly fastify error code: %s",
+          error.code,
+        );
+    }
   }
   server.log.error("request threw unexpected error: %s", error.stack);
   reply
