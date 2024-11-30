@@ -13,11 +13,11 @@ import { NoResultError } from "kysely";
 import { OAuthProvider } from "./oauth_provider";
 
 export default async function (fastify: Service) {
-  const { authService, configService, databaseService } =
+  const { identityService, configService, databaseService } =
     fastify.container.cradle;
 
   const provider = new OAuthProvider(configService, databaseService);
-  authService.register(provider);
+  identityService.register(provider);
 
   fastify.get<{
     Params: AuthOauthInitRequest;

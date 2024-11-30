@@ -1,10 +1,10 @@
-import { AuthProvider } from "@noctf/server-api/auth";
+import { IdentityProvider } from "@noctf/server-api/identity";
 import { ConfigService } from "@noctf/services/config";
 import { DatabaseService } from "@noctf/services/database";
 import { CONFIG_NAMESPACE, Config } from "./config";
 import { AuthMethod } from "@noctf/api/ts/datatypes";
 
-export class PasswordAuthProvider implements AuthProvider {
+export class PasswordProvider implements IdentityProvider {
   constructor(
     private configService: ConfigService,
     private databaseService: DatabaseService,

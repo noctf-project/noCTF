@@ -1,12 +1,12 @@
 import { AuthMethod } from "@noctf/api/ts/datatypes";
-import { AuthProvider } from "@noctf/server-api/auth";
+import { IdentityProvider } from "@noctf/server-api/identity";
 
-export class AuthService {
-  private providers: Map<string, AuthProvider> = new Map();
+export class IdentityService {
+  private providers: Map<string, IdentityProvider> = new Map();
 
   constructor() {}
 
-  register(provider: AuthProvider) {
+  register(provider: IdentityProvider) {
     if (this.providers.has(provider.id())) {
       throw new Error(`Provider ${provider.id()} has already been registered`);
     }

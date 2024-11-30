@@ -1,6 +1,6 @@
 import { AuthMethod } from "@noctf/api/ts/datatypes";
 
-export interface AuthProvider {
+export interface IdentityProvider {
   id(): string;
   listMethods(): Promise<AuthMethod[]>;
 }

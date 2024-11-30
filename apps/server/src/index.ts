@@ -3,7 +3,7 @@ import { DATABASE_URL, HOST, PORT } from "./config";
 import core from "./core";
 import { Service } from "@noctf/services";
 import { asFunction, asValue, createContainer, Lifetime } from "awilix";
-import { AuthService } from "@noctf/services/auth";
+import { IdentityService } from "@noctf/services/identity";
 import { ConfigService } from "@noctf/services/config";
 import { DatabaseService } from "@noctf/services/database";
 
@@ -15,7 +15,7 @@ server.register(async () => {
   server.container = createContainer();
   server.container.register({
     logger: asValue(server.log),
-    authService: asFunction(() => new AuthService(), {
+    identityService: asFunction(() => new IdentityService(), {
       lifetime: Lifetime.SINGLETON,
     }),
     configService: asFunction(
