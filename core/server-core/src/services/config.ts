@@ -2,15 +2,17 @@ import { FastifyBaseLogger } from "fastify";
 import { DatabaseService } from "./database.ts";
 import { ValidationError } from "../errors.ts";
 import { Serializable } from "@noctf/util/types";
+import { SerializableMap } from "../types.ts";
 
-type Validator = (kv: Serializable) => Promise<string | null>;
+type Validator = (kv: SerializableMap) => Promise<string | null>;
+type Help = {[key: string]: string};
 
 const nullValidator = async (): Promise<null> => {
   return null;
 };
 
 export class ConfigService {
-  private validators: Map<string, Validator> = new Map();
+  private validators: Map<string, [Help, Validator]> = new Map();
 
   constructor(
     private logger: FastifyBaseLogger,
@@ -22,7 +24,7 @@ export class ConfigService {
    * @param namespace namespace
    * @returns configuration map
    */
-  async get<T extends Serializable>(namespace: string): Promise<T> {
+  async get<T extends SerializableMap>(namespace: string): Promise<T> {
     const config = await this.databaseService
       .selectFrom("core.config")
       .select("data")
@@ -39,11 +41,11 @@ export class ConfigService {
    * @param namespace namespace
    * @param data config data, an object of primitive values + object + array
    */
-  async update(namespace: string, data: Serializable) {
+  async update(namespace: string, data: SerializableMap) {
     if (!this.validators.has(namespace)) {
       throw new ValidationError("Config namespace does not exist");
     }
-    const result = await this.validators.get(namespace)(data);
+    const result = await this.validators.get(namespace)[1](data);
 
     if (result) {
       throw new ValidationError(
@@ -68,7 +70,8 @@ export class ConfigService {
    */
   async register(
     namespace: string,
-    defaultCfg: Serializable,
+    defaultCfg: SerializableMap,
+    help: Help={},
     validator?: Validator,
   ) {
     if (this.validators.has(namespace)) {
@@ -76,7 +79,7 @@ export class ConfigService {
         `Config with namespace ${namespace} has already been registered`,
       );
     }
-    this.validators.set(namespace, validator || nullValidator);
+    this.validators.set(namespace, [help, validator || nullValidator]);
     this.logger.info("Registering config namespace %s", namespace);
     const result = await this.databaseService
       .insertInto("core.config")
