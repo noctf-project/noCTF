@@ -1,11 +1,12 @@
 import { Type } from "@sinclair/typebox";
-import { AuthMethod } from "./datatypes";
+import { AuthMethod, AuthTokenType } from "./datatypes";
 
-export const ErrorResponse = Type.Object(
+export const BaseResponse = Type.Object(
   {
-    error: Type.String(),
+    error: Type.Optional(Type.String()),
+    message: Type.Optional(Type.String()),
   },
-  { $id: "ErrorResponse" },
+  { $id: "BaseResponse" },
 );
 
 export const AuthListMethodsResponse = Type.Object(
@@ -22,4 +23,19 @@ export const AuthOauthInitResponse = Type.Object(
   { $id: "AuthOauthInitResponse" },
 );
 
-export default [ErrorResponse, AuthListMethodsResponse, AuthOauthInitResponse];
+export const AuthFinishResponse = Type.Object(
+  {
+    data: Type.Object({
+      type: AuthTokenType,
+      token: Type.String(),
+    }),
+  },
+  { $id: "AuthFinishResponse" },
+);
+
+export default [
+  BaseResponse,
+  AuthListMethodsResponse,
+  AuthOauthInitResponse,
+  AuthFinishResponse,
+];

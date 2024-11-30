@@ -11,15 +11,17 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "kysely": "catalog:",
-    "redis": "catalog:",
-    "awilix": "catalog:",
-    "fastify": "catalog:",
+    "@noctf/api": "workspace:*",
     "@noctf/schema": "workspace:*",
     "@noctf/server-api": "workspace:*",
-    "@noctf/api": "workspace:*"
+    "awilix": "catalog:",
+    "fastify": "catalog:",
+    "jsonwebtoken": "^9.0.2",
+    "kysely": "catalog:",
+    "redis": "catalog:"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.7",
     "typescript": "catalog:"
   },
   "exports": {

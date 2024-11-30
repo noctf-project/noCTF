@@ -1,17 +1,16 @@
 import { FastifyBaseLogger } from "fastify";
 import { DatabaseService } from "./database";
 import { ValidationError } from "@noctf/server-api/errors";
+import { Serializable } from "@noctf/server-api/types";
 
-type Primitive = string | boolean | number | null | readonly Primitive[];
-type ConfigMap = { [key: string]: Primitive | ConfigMap };
-type Validator = (kv: ConfigMap) => Promise<string | null>;
+type Validator = (kv: Serializable) => Promise<string | null>;
 
 const nullValidator = async (): Promise<null> => {
   return null;
 };
 
 export class ConfigService {
-  private validators: Map<String, Validator> = new Map();
+  private validators: Map<string, Validator> = new Map();
 
   constructor(
     private logger: FastifyBaseLogger,
@@ -23,7 +22,7 @@ export class ConfigService {
    * @param namespace namespace
    * @returns configuration map
    */
-  async get<T extends ConfigMap>(namespace: string): Promise<T> {
+  async get<T extends Serializable>(namespace: string): Promise<T> {
     const config = await this.databaseService
       .selectFrom("core.config")
       .select("data")
@@ -40,7 +39,7 @@ export class ConfigService {
    * @param namespace namespace
    * @param data config data, an object of primitive values + object + array
    */
-  async update(namespace: string, data: ConfigMap) {
+  async update(namespace: string, data: Serializable) {
     if (!this.validators.has(namespace)) {
       throw new ValidationError("Config namespace does not exist");
     }
@@ -69,7 +68,7 @@ export class ConfigService {
    */
   async register(
     namespace: string,
-    defaultCfg: ConfigMap,
+    defaultCfg: Serializable,
     validator?: Validator,
   ) {
     if (this.validators.has(namespace)) {

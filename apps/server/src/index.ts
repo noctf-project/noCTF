@@ -1,11 +1,14 @@
 import fastify from "fastify";
-import { DATABASE_URL, HOST, PORT } from "./config";
+import { DATABASE_URL, HOST, PORT, TOKEN_SECRET } from "./config";
 import core from "./core";
 import { Service } from "@noctf/services";
 import { asFunction, asValue, createContainer, Lifetime } from "awilix";
 import { IdentityService } from "@noctf/services/identity";
 import { ConfigService } from "@noctf/services/config";
 import { DatabaseService } from "@noctf/services/database";
+import { UserService } from "@noctf/services/user";
+import { TokenService } from "@noctf/services/token";
+import { ApplicationError } from "@noctf/server-api/errors";
 
 const server: Service = fastify({
   logger: true,
@@ -15,9 +18,14 @@ server.register(async () => {
   server.container = createContainer();
   server.container.register({
     logger: asValue(server.log),
-    identityService: asFunction(() => new IdentityService(), {
-      lifetime: Lifetime.SINGLETON,
-    }),
+    tokenService: asValue(new TokenService(TOKEN_SECRET)),
+    identityService: asFunction(
+      ({ databaseService, tokenService }) =>
+        new IdentityService(databaseService, tokenService),
+      {
+        lifetime: Lifetime.SINGLETON,
+      },
+    ),
     configService: asFunction(
       ({ logger, databaseService }) =>
         new ConfigService(logger, databaseService),
@@ -26,17 +34,43 @@ server.register(async () => {
     databaseService: asFunction(() => new DatabaseService(DATABASE_URL), {
       lifetime: Lifetime.SINGLETON,
     }),
+    userService: asFunction(
+      ({ databaseService }) => new UserService(databaseService),
+      { lifetime: Lifetime.SINGLETON },
+    ),
   });
 });
 
 server.register(core);
+
+server.setErrorHandler((error, request, reply) => {
+  if (error instanceof ApplicationError) {
+    reply
+      .status(error.status)
+      .send({ error: error.code, message: error.message });
+    return;
+  }
+  if (error.validation) {
+    const messages = error.validation.map(
+      ({ instancePath, message }) => `${instancePath.substring(1)} ${message}`,
+    );
+    reply
+      .status(400)
+      .send({ error: "ValidationError", message: messages.join("; ") });
+    return;
+  }
+  server.log.error("request threw unexpected error: %s", error.stack);
+  reply
+    .status(500)
+    .send({ error: "InternalServerError", message: "Internal Server Error" });
+});
 
 server.listen(
   {
     port: PORT,
     host: HOST,
   },
-  (err, _address) => {
+  (err) => {
     if (err) {
       console.error(err);
       process.exit(1);

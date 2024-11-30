@@ -18,6 +18,12 @@ export class AuthProviderNotFound extends ApplicationError {
   }
 }
 
+export class AuthenticationError extends ApplicationError {
+  constructor(message?: string) {
+    super(401, "AuthenticationError", message || "Authentication Error");
+  }
+}
+
 export class ValidationError extends ApplicationError {
   constructor(message?: string) {
     super(400, "ValidationError", message || "Validation Error");

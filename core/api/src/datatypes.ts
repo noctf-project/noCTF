@@ -9,4 +9,13 @@ export const AuthMethod = Type.Object(
   { $id: "AuthMethod" },
 );
 
-export default [AuthMethod];
+export const AuthTokenType = Type.Enum(
+  {
+    Auth: "auth",
+    Register: "register",
+    Associate: "associate",
+  },
+  { $id: "AuthTokenType" },
+);
+
+export default [AuthMethod, AuthTokenType];

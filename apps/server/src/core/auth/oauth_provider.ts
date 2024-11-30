@@ -1,16 +1,25 @@
-import { AuthMethod } from "@noctf/api/ts/datatypes";
-import { IdentityProvider } from "@noctf/server-api/identity";
+import { AuthMethod, AuthTokenType } from "@noctf/api/ts/datatypes";
+import { AuthResult, IdentityProvider } from "@noctf/server-api/identity";
 import { ConfigService } from "@noctf/services/config";
 import { DatabaseService } from "@noctf/services/database";
 import { get } from "@noctf/util";
 import { CONFIG_NAMESPACE, Config } from "./config";
-import { AuthProviderNotFound } from "@noctf/server-api/errors";
+import {
+  AuthProviderNotFound,
+  AuthenticationError,
+} from "@noctf/server-api/errors";
+import { IdentityService } from "@noctf/services/identity";
 
-export class OAuthProvider implements IdentityProvider {
+export class OAuthConfigProvider {
   constructor(
     private configService: ConfigService,
     private databaseService: DatabaseService,
   ) {}
+
+  private async isEnabled(): Promise<boolean> {
+    return !!(await this.configService.get<Config>(CONFIG_NAMESPACE))
+      .enableOauth;
+  }
 
   async listMethods(): Promise<AuthMethod[]> {
     if (!(await this.isEnabled())) {
@@ -56,9 +65,71 @@ export class OAuthProvider implements IdentityProvider {
     return data;
   }
 
-  async authenticate(name: string, code: string, redirect_uri: string) {
-    const method = await this.getMethod(name);
-    return await this.getExternalId(method, code, redirect_uri);
+  id() {
+    return "oauth";
+  }
+}
+
+export class OAuthIdentityProvider implements IdentityProvider {
+  constructor(
+    private configProvider: OAuthConfigProvider,
+    private identityService: IdentityService,
+  ) {}
+
+  async listMethods(): Promise<AuthMethod[]> {
+    return this.configProvider.listMethods();
+  }
+
+  async authenticate(
+    name: string,
+    code: string,
+    redirect_uri: string,
+  ): Promise<[AuthTokenType, AuthResult]> {
+    const method = await this.configProvider.getMethod(name);
+    const id = await this.getExternalId(method, code, redirect_uri);
+    const identity = await this.identityService.getIdentityForProvider(
+      `${this.id()}:${name}`,
+      id,
+    );
+    if (!identity) {
+      if (method.is_registration_enabled) {
+        return [
+          "register",
+          [
+            {
+              provider: `${this.id()}:${name}`,
+              provider_id: id,
+            },
+          ],
+        ];
+      } else {
+        throw new AuthenticationError(
+          "New user registration is currently not available through this provider",
+        );
+      }
+    }
+    return [
+      "auth",
+      {
+        user_id: identity.user_id,
+      },
+    ];
+  }
+
+  async associate(
+    user_id: number,
+    name: string,
+    code: string,
+    redirect_uri: string,
+  ) {
+    const method = await this.configProvider.getMethod(name);
+    const provider_id = await this.getExternalId(method, code, redirect_uri);
+    await this.identityService.associateIdentity({
+      user_id,
+      provider: `${this.id()}:${name}`,
+      provider_id,
+      secret_data: null,
+    });
   }
 
   async getExternalId(
@@ -68,7 +139,7 @@ export class OAuthProvider implements IdentityProvider {
       token_url,
       info_url,
       info_id_property,
-    }: Awaited<ReturnType<OAuthProvider["getMethod"]>>,
+    }: Awaited<ReturnType<OAuthConfigProvider["getMethod"]>>,
     code: string,
     redirect_uri: string,
   ): Promise<string> {
@@ -83,7 +154,7 @@ export class OAuthProvider implements IdentityProvider {
       }),
     });
     if (!tokenResponse.ok) {
-      throw new Error("Could not exchange code for access_token");
+      throw new AuthenticationError("Could not exchange code for access_token");
     }
     const token = (await tokenResponse.json()).access_token;
 
@@ -93,19 +164,16 @@ export class OAuthProvider implements IdentityProvider {
       },
     });
     if (!infoResponse.ok) {
-      throw new Error("Could not get user information from provider");
+      throw new AuthenticationError(
+        "Could not get user information from provider",
+      );
     }
 
     const info = await infoResponse.json();
     return get(info, info_id_property || "id");
   }
 
-  private async isEnabled(): Promise<Boolean> {
-    return !!(await this.configService.get<Config>(CONFIG_NAMESPACE))
-      .enableOauth;
-  }
-
   id() {
-    return "oauth";
+    return this.configProvider.id();
   }
 }

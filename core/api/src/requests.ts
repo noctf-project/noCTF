@@ -16,4 +16,15 @@ export const AuthOauthFinishRequest = Type.Object(
   { $id: "AuthOauthFinishRequest" },
 );
 
-export default [AuthOauthInitRequest, AuthOauthFinishRequest];
+export const AuthEmailInitRequest = Type.Object(
+  {
+    email: Type.String({ format: "email" }),
+  },
+  { $id: "AuthEmailInitRequest" },
+);
+
+export default [
+  AuthOauthInitRequest,
+  AuthOauthFinishRequest,
+  AuthEmailInitRequest,
+];

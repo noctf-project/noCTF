@@ -21,8 +21,11 @@ const build = async () => {
     const models = (await import(fp)).default as unknown as TSchema[];
     const types = { types: models };
 
-    const outputTs = ModelToTypeScript.Generate(types);
-    await writeFile(destTs, outputTs);
+    const outputTypes: string[] = [];
+    for (const model of models) {
+      outputTypes.push(ModelToTypeScript.GenerateType(types, model.$id!));
+    }
+    await writeFile(destTs, outputTypes.join("\n"));
 
     const outputJsonSchema = ModelToJsonSchema.Generate(types);
     await writeFile(destJsonSchema, outputJsonSchema);
