@@ -1,0 +1,15 @@
+packages:
+  # core libs
+  - 'core/*'
+  # user plugins
+  - 'plugins/*'
+  # deployable applications
+  - 'apps/*'
+
+catalog:
+  '@types/node': ^22.7.4
+  'typescript': ^5.6.2
+  'ts-node': ^10.9.2
+  'kysely': ^0.27.4
+  'pg': ^8.13.0
+  '@types/pg': ^8.11.10

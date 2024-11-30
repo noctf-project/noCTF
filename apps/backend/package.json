@@ -1,0 +1,29 @@
+{
+  "name": "@noctf/backend",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon --watch src src/index.ts",
+    "prod": "node dist/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@9.5.0-beta.1+sha512.5ffe23e95a4d4876d8885d4dea4c804d85495425140911b06c6c96a319e8c94bf9c6dad920b7d8e69a31ca291656b1c779aa6adc9b105f1a4fb5232487f99bf1",
+  "dependencies": {
+    "@noctf/services": "workspace:*",
+    "awilix": "^12.0.1",
+    "fastify": "^5.0.0",
+    "kysely": "catalog:",
+    "pg": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/pg": "catalog:",
+    "nodemon": "^3.1.7",
+    "ts-node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

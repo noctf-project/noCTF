@@ -1,0 +1,24 @@
+{
+  "name": "@noctf/services",
+  "version": "0.1.0",
+  "description": "core noCTF internal APIs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "kysely": "catalog:",
+    "@noctf/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./*": "./dist/*.js"
+  }
+}

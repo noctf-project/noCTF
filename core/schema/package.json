@@ -1,0 +1,21 @@
+{
+  "name": "@noctf/schema",
+  "version": "0.1.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "kysely-codegen --out-file dist/index.d.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "kysely": "catalog:"
+  },
+  "devDependencies": {
+    "kysely-codegen": "^0.16.8",
+    "typescript": "catalog:"
+  },
+  "main": "",
+  "types": "./dist/index.d.ts"
+}
