@@ -18,10 +18,6 @@ server.register(async () => {
   });
 });
 
-server.get('/ping', async (request, reply) => {
-  return 'pong\n';
-});
-
 server.register(core, { prefix: "/api" });
 
 server.listen({

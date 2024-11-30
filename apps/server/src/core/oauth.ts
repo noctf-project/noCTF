@@ -12,16 +12,7 @@ import {
 } from "@noctf/api/jsonschema/responses";
 import { NoResultError } from "kysely";
 import { AuthProvider } from "@noctf/server-api/auth";
-
-const get = (obj: any, path: string, defaultValue?: any) => {
-  const travel = (regexp: RegExp) =>
-    String.prototype.split
-      .call(path, regexp)
-      .filter(Boolean)
-      .reduce((res: any, key: string) => (res !== null && res !== undefined ? res[key] : res), obj);
-  const result = travel(/[,[\]]+?/) || travel(/[,[\].]+?/);
-  return result === undefined || result === obj ? defaultValue : result;
-};
+import { get } from "@noctf/util";
 
 export class OAuthProvider implements AuthProvider {
   constructor(private databaseService: DatabaseService) {
@@ -151,7 +142,7 @@ export async function OAuthPlugin(fastify: Service) {
     schema: {
       body: AuthOauthFinishRequestJson
     }
-  }, async (request, reply) => {
+  }, async (request) => {
     const { name, code, redirect_uri } = request.body;
     return await provider.authenticate(name, code, redirect_uri);
   });

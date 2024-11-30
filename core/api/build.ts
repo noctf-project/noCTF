@@ -1,6 +1,6 @@
 import { TSchema } from "@sinclair/typebox";
 import { ModelToTypeScript, ModelToJsonSchema } from "@sinclair/typebox-codegen";
-import { glob, mkdir, rm, writeFile } from "node:fs/promises";
+import { glob, mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 
 
@@ -27,7 +27,7 @@ const build = async () => {
     await writeFile(destJsonSchema, outputJsonSchema);
   };
 
-  const promises: Promise<any>[] = [];
+  const promises: Promise<unknown>[] = [];
 
   for await (const filename of glob([join(src, "/**/*.ts")])) {
     promises.push(compile(filename));
