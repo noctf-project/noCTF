@@ -1,13 +1,20 @@
 import { AuthMethod } from "@noctf/api/ts/datatypes";
 import { AuthProvider } from "@noctf/server-api/auth";
+import { ConfigService } from "@noctf/services/config";
 import { DatabaseService } from "@noctf/services/database";
 import { get } from "@noctf/util";
+import { CONFIG_NAMESPACE, Config } from "./config";
+import { AuthProviderNotFound } from "@noctf/server-api/errors";
 
 export class OAuthProvider implements AuthProvider {
-  constructor(private databaseService: DatabaseService) {
+  constructor(private configService: ConfigService, private databaseService: DatabaseService) {
   }
 
   async listMethods(): Promise<AuthMethod[]> {
+    if (!await this.isEnabled()) {
+      return [];
+    }
+
     const methods = await this.databaseService
       .selectFrom('core.oauth_provider')
       .where('is_enabled', '=', true)
@@ -22,7 +29,11 @@ export class OAuthProvider implements AuthProvider {
   }
 
   async getMethod(provider: string) {
-    return await this.databaseService
+    if (!await this.isEnabled()) {
+      throw new AuthProviderNotFound();
+    }
+
+    const data = await this.databaseService
       .selectFrom('core.oauth_provider')
       .where('is_enabled', '=', true)
       .where('name', '=', provider)
@@ -35,7 +46,12 @@ export class OAuthProvider implements AuthProvider {
         'info_url',
         'info_id_property'
       ])
-      .executeTakeFirstOrThrow();
+      .executeTakeFirst();
+    if (!data) {
+      throw new AuthProviderNotFound();
+    }
+    
+    return data;
   };
 
   async authenticate(name: string, code: string, redirect_uri: string) {
@@ -82,6 +98,11 @@ export class OAuthProvider implements AuthProvider {
 
     const info = await infoResponse.json();
     return get(info, info_id_property || 'id');
+  }
+
+  private async isEnabled(): Promise<Boolean> {
+    return !!(await this.configService.get<Config>(CONFIG_NAMESPACE))
+      .enableOauth;
   }
 
   id() {

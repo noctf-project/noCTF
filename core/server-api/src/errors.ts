@@ -4,6 +4,12 @@ export class ApplicationError extends Error {
   }
 }
 
+export class AuthProviderNotFound extends ApplicationError {
+  constructor() {
+    super(404, 'AuthProviderNotFound', 'The requested identity provider could not be found');
+  }
+}
+
 export class ValidationError extends ApplicationError {
   constructor(message?: string) {
     super(400, 'ValidationError', message || 'Validation Error');

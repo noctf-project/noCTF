@@ -15,9 +15,9 @@ import { OAuthProvider } from "./oauth_provider";
 
 
 export default async function(fastify: Service) {
-  const { authService, databaseService } = fastify.container.cradle;
+  const { authService, configService, databaseService } = fastify.container.cradle;
 
-  const provider = new OAuthProvider(databaseService);
+  const provider = new OAuthProvider(configService, databaseService);
   authService.register(provider);
 
   fastify.get<{
