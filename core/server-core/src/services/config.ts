@@ -47,10 +47,11 @@ export class ConfigService {
       const [promise, exp] = this.cache.get(namespace);
       if (exp > now) {
         try {
-          return this.cache.get(namespace)[0] as Promise<T>;
-        } catch (e) {
-          this.logger.debug("failed to retrieve config value %s", {
+          return promise as Promise<T>;
+        } catch (error) {
+          this.logger.debug("failed to retrieve config value", {
             namespace,
+            error,
           });
         }
       }

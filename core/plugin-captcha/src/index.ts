@@ -33,10 +33,10 @@ export async function initServer(fastify: Service) {
   );
 
   fastify.addHook<{
-    Body: {
-      captcha: string;
+    Headers: {
+      "x-noctf-captcha": string;
     };
-  }>("preHandler", async (request, reply) => {
+  }>("preHandler", async (request) => {
     if (!RESTRICTED_METHODS.has(request.method)) {
       return;
     }
@@ -51,10 +51,11 @@ export async function initServer(fastify: Service) {
     ) {
       return;
     }
-    if (typeof request.body.captcha !== "string") {
+    const captcha = request.headers["x-noctf-captcha"];
+    if (typeof captcha !== "string") {
       throw new ValidationError("CAPTCHA response is not a string");
     }
-    await service.validate(request.body.captcha, request.ip);
+    await service.validate(captcha, request.ip);
   });
 }
 

@@ -30,7 +30,7 @@ export class TeamService {
       flags.includes(TeamFlag.FROZEN) ||
       flags.includes(TeamFlag.BLOCKED)
     ) {
-      throw new NotFoundError("Cannot find joining code");
+      throw new NotFoundError("Invalid joining code");
     }
     await this.assignTeam(userId, teamId);
   }

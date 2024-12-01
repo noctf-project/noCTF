@@ -1,5 +1,12 @@
 import fastify from "fastify";
-import { POSTGRES_URL, HOST, PORT, TOKEN_SECRET, REDIS_URL } from "./config.ts";
+import {
+  POSTGRES_URL,
+  HOST,
+  PORT,
+  TOKEN_SECRET,
+  REDIS_URL,
+  ENABLE_HTTP2,
+} from "./config.ts";
 import core from "./core.ts";
 import { Service } from "@noctf/server-core";
 import {
@@ -19,10 +26,14 @@ import { ApplicationError } from "@noctf/server-core/errors";
 import { TeamService } from "@noctf/server-core/services/team";
 import Swagger from "@fastify/swagger";
 import SwaggerUI from "@fastify/swagger-ui";
+import { fastifyCompress } from "@fastify/compress";
 
 const server: Service = fastify({
   logger: true,
+  ...{ http2: ENABLE_HTTP2 }, // typescript is being funny
 }) as unknown as Service;
+
+server.register(fastifyCompress);
 
 server.register(async () => {
   server.container = createContainer();
