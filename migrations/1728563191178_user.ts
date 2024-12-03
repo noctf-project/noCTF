@@ -34,10 +34,6 @@ export async function up(db: Kysely<any>): Promise<void> {
     .insertInto("group")
     .values([
       {
-        name: "valid_email",
-        description: "Users with a validated email address",
-      },
-      {
         name: "admin",
         description: "Users with full admin privileges",
       },

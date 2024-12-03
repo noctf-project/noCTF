@@ -30,8 +30,8 @@ export default async function (fastify: Service) {
     async (request) => {
       return {
         data: (await identityService.validateToken(
-          "register",
           request.body.token,
+          "register",
         )) as AuthRegisterToken,
       };
     },
@@ -54,8 +54,8 @@ export default async function (fastify: Service) {
     async (request) => {
       const { password, name, token } = request.body;
       const { flags, identity } = (await identityService.validateToken(
-        "register",
         token,
+        "register",
       )) as AuthRegisterToken;
       if (
         identity.length === 1 &&
@@ -94,9 +94,9 @@ export default async function (fastify: Service) {
       await identityService.revokeToken(token);
       return {
         data: {
-          type: "auth",
+          type: "session",
           token: identityService.generateToken({
-            type: "auth",
+            type: "session",
             sub: id,
           }),
         },

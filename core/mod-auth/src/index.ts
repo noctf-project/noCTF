@@ -13,7 +13,7 @@ declare module "fastify" {
 }
 
 export async function initServer(fastify: Service) {
-  const { identityService, configService } = fastify.container.cradle;
+  const { identityService, configService, logger } = fastify.container.cradle;
   await configService.register(CONFIG_NAMESPACE, Config, DEFAULT_CONFIG);
   fastify.register(oauth_routes);
   fastify.register(password_routes);
@@ -33,4 +33,13 @@ export async function initServer(fastify: Service) {
       return { data: methods };
     },
   );
+
+  fastify.post("/auth/logout", async () => {
+    try {
+      await identityService.revokeToken("auth", "session");
+    } catch (e) {
+      logger.debug("failed to revoke session token", e);
+    }
+    return {};
+  });
 }

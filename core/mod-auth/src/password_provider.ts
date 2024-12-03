@@ -92,7 +92,7 @@ export class PasswordProvider implements IdentityProvider {
     }
 
     return {
-      type: "auth",
+      type: "session",
       sub: identity.user_id,
     };
   }

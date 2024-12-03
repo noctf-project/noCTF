@@ -1,7 +1,7 @@
 {
-  "name": "@noctf/plugin-auth",
+  "name": "@noctf/mod-setup",
   "version": "0.1.0",
-  "description": "core auth plugin",
+  "description": "core setup plugin",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
@@ -14,14 +14,12 @@
     "@noctf/api": "workspace:*",
     "@noctf/schema": "workspace:*",
     "@noctf/server-core": "workspace:*",
+    "@sinclair/typebox": "catalog:",
     "fastify": "catalog:",
-    "kysely": "catalog:",
-    "ky": "catalog:",
-    "@sinclair/typebox": "catalog:"
+    "kysely": "catalog:"
   },
   "devDependencies": {
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "typescript": "catalog:"
   },
   "type": "module",
   "exports": {

@@ -1,7 +1,7 @@
 {
-  "name": "@noctf/plugin-captcha",
+  "name": "@noctf/mod-team",
   "version": "0.1.0",
-  "description": "core noCTF internal APIs",
+  "description": "team plugin",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
@@ -12,10 +12,11 @@
   "license": "ISC",
   "dependencies": {
     "@noctf/api": "workspace:*",
+    "@noctf/schema": "workspace:*",
     "@noctf/server-core": "workspace:*",
     "@sinclair/typebox": "catalog:",
     "fastify": "catalog:",
-    "ky": "catalog:"
+    "kysely": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:"

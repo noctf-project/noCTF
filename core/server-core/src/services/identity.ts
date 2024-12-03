@@ -1,11 +1,5 @@
 import { AuthMethod } from "@noctf/api/datatypes";
-import {
-  AuthAssociateToken,
-  AuthRegisterToken,
-  AuthToken,
-  AuthTokenType,
-  AuthUserToken,
-} from "@noctf/api/token";
+import { AuthToken, AuthTokenType } from "@noctf/api/token";
 
 import { ApplicationError, ValidationError } from "../errors.ts";
 import { IdentityProvider, UpdateIdentityData } from "../providers/identity.ts";
@@ -40,11 +34,17 @@ export class IdentityService {
 
   generateToken(result: AuthToken): string {
     switch (result.type) {
-      case "auth":
+      case "session":
         return this.tokenService.sign(
           { sub: result.sub },
-          "noctf/identity/auth",
+          "noctf/identity/session",
           24 * 3600 * 7,
+        );
+      case "scoped":
+        return this.tokenService.sign(
+          { sub: result.sub },
+          "noctf/identity/scoped",
+          2 * 3600,
         );
       case "associate":
       case "register":
@@ -58,26 +58,20 @@ export class IdentityService {
     }
   }
 
-  async validateToken(type: AuthTokenType, token: string) {
-    switch (type) {
-      case "auth":
-        return this.tokenService.validate(
-          token,
-          `noctf/identity/auth`,
-        ) as unknown as Promise<AuthUserToken>;
-      case "associate":
-      case "register":
-        return this.tokenService.validate(
-          token,
-          `noctf/identity/${type}`,
-        ) as unknown as Promise<AuthAssociateToken | AuthRegisterToken>;
-      default:
-        throw new ValidationError("invalid token type");
-    }
+  async validateToken<T extends AuthToken>(
+    token: string,
+    types: AuthTokenType | AuthTokenType[],
+  ) {
+    return this.tokenService.validate(
+      token,
+      (Array.isArray(types) ? types : [types]).map(
+        (t) => `noctf/identity/${t}`,
+      ),
+    ) as unknown as Promise<T>;
   }
 
-  async revokeToken(token: string) {
-    return this.tokenService.revoke(token);
+  async revokeToken(token: string, audience?: AuthTokenType | AuthTokenType[]) {
+    return this.tokenService.revoke(token, audience);
   }
 
   async associateIdentity(data: UpdateIdentityData) {

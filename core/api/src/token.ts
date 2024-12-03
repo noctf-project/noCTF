@@ -1,17 +1,25 @@
 import { Static, Type } from "@sinclair/typebox";
 
 export const AuthTokenType = Type.Enum({
-  Auth: "auth",
+  Session: "session",
+  Scoped: "scoped",
   Register: "register",
   Associate: "associate",
 });
 export type AuthTokenType = Static<typeof AuthTokenType>;
 
-export const AuthUserToken = Type.Object({
-  type: Type.Literal("auth"),
+export const AuthSessionToken = Type.Object({
+  type: Type.Literal("session"),
   sub: Type.Integer(),
 });
-export type AuthUserToken = Static<typeof AuthUserToken>;
+export type AuthSessionToken = Static<typeof AuthSessionToken>;
+
+export const AuthScopedToken = Type.Object({
+  type: Type.Literal("scoped"),
+  sub: Type.Integer(),
+  scopes: Type.Array(Type.String())
+});
+export type AuthScopedToken = Static<typeof AuthScopedToken>;
 
 export const AuthRegisterToken = Type.Object({
   type: Type.Union([Type.Literal("register"), Type.Literal("associate")]),
@@ -28,5 +36,5 @@ export type AuthRegisterToken = Static<typeof AuthRegisterToken>;
 export const AuthAssociateToken = AuthRegisterToken;
 export type AuthAssociateToken = Static<typeof AuthRegisterToken>;
 
-export const AuthToken = Type.Union([AuthUserToken, AuthRegisterToken]);
+export const AuthToken = Type.Union([AuthSessionToken, AuthRegisterToken, AuthScopedToken]);
 export type AuthToken = Static<typeof AuthToken>;

@@ -35,10 +35,11 @@ export class TokenService {
     );
   }
 
-  async revoke(token: string) {
+  async revoke(token: string, audience?: string | string[]) {
     try {
       const data = jwt.verify(token, this.secret, {
         algorithms: ["HS256"],
+        audience
       }) as { jti: string; exp: number };
 
       // Set a record in the cache with an extra 60 second buffer to account for clock skew
@@ -58,7 +59,7 @@ export class TokenService {
 
   async validate<T extends { jti: string }>(
     token: string,
-    audience?: string,
+    audience?: string | string[],
     verifyRevocation = true,
   ): Promise<T> {
     try {
