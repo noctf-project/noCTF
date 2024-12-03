@@ -1,24 +1,24 @@
 import { Static, Type } from "@sinclair/typebox";
 
 export const Config = Type.Object({
-  enableRegistrationPassword: Type.Optional(
+  enable_register_password: Type.Optional(
     Type.Boolean({
       title: "Enable registration with password",
     }),
   ),
-  enablePassword: Type.Optional(
+  enable_login_password: Type.Optional(
     Type.Boolean({
       title: "Enable login with password",
     }),
   ),
-  enableOauth: Type.Optional(
+  enable_oauth: Type.Optional(
     Type.Boolean({
-      title: "Enable login/registration with OAuth",
+      title: "Enable OAuth Integration",
       description:
         "Login and registation with specific providers can be disabled per provider.",
     }),
   ),
-  validateEmail: Type.Optional(
+  validate_email: Type.Optional(
     Type.Boolean({
       title: "Require validation of email",
     }),
@@ -30,8 +30,8 @@ export const CONFIG_NAMESPACE = "core.auth";
 export const CACHE_NAMESPACE = "core:plugin-auth";
 
 export const DEFAULT_CONFIG: Config = {
-  enableRegistrationPassword: true,
-  enablePassword: true,
-  enableOauth: true,
-  validateEmail: false,
+  enable_register_password: true,
+  enable_login_password: true,
+  enable_oauth: true,
+  validate_email: false,
 };

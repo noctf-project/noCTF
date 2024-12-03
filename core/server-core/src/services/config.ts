@@ -1,10 +1,10 @@
-import { Static, TSchema } from "@sinclair/typebox";
+import { TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import type { ServiceCradle } from "../index.ts";
 import { ValidationError } from "../errors.ts";
 import { SerializableMap } from "../types.ts";
 
-type Validator = (kv: SerializableMap) => Promise<string | null>;
+type Validator<T> = (kv: T) => Promise<string | null> | string | null;
 
 const nullValidator = async (): Promise<null> => {
   return null;
@@ -20,7 +20,8 @@ export class ConfigService {
     new Map();
   private readonly logger: Props["logger"];
   private readonly databaseClient: Props["databaseClient"];
-  private readonly validators: Map<string, [TSchema, Validator]> = new Map();
+  private readonly validators: Map<string, [TSchema, Validator<unknown>]> =
+    new Map();
 
   constructor({ logger, databaseClient }: Props) {
     this.logger = logger;
@@ -34,12 +35,12 @@ export class ConfigService {
    */
   async get<T extends SerializableMap>(
     namespace: string,
-    cache = true,
+    cached = true,
   ): Promise<T> {
     if (!this.validators.has(namespace)) {
       throw new ValidationError("Config namespace does not exist");
     }
-    if (!cache) {
+    if (!cached) {
       return this._queryDb(namespace);
     }
     const now = Date.now();
@@ -81,13 +82,13 @@ export class ConfigService {
   /**
    * Get schema for config.
    * @param namespace namespace
-   * @returns config map
+   * @returns array of configuration namespaces and schemas
    */
-  getSchema(namespace: string) {
-    if (!this.validators.has(namespace)) {
-      throw new ValidationError("Config namespace does not exist");
-    }
-    return this.validators.get(namespace)[0];
+  getSchemas() {
+    return [...this.validators].map(([namespace, [schema]]) => ({
+      namespace,
+      schema,
+    }));
   }
 
   /**
@@ -122,16 +123,17 @@ export class ConfigService {
 
   /**
    * Register default config values. This hook is run once on plugin startup.
-   * @param namespace namespace
+   * @param namespace Namespace
+   * @param name Friendly name to display in the admin panel
    * @param schema JSON Schema definition
    * @param defaultCfg default config
    * @param validator config validator, this is run when config is updated
    */
-  async register(
+  async register<T>(
     namespace: string,
     schema: TSchema,
-    defaultCfg: Static<typeof schema>,
-    validator?: Validator,
+    defaultCfg: T,
+    validator?: Validator<T>,
   ) {
     if (this.validators.has(namespace)) {
       throw new Error(

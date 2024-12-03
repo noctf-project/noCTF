@@ -1,14 +1,25 @@
 import { Service } from "@noctf/server-core";
-import { Type } from "@sinclair/typebox";
+import { Static, Type } from "@sinclair/typebox";
 
 const Config = Type.Object({
-  initialized: Type.Boolean({
-    title: "Initialized (cannot be changed)",
+  allow_registration: Type.Boolean({
+    title: "Allow self-service team registration",
+  }),
+  allow_joining: Type.Boolean({
+    title:
+      "Allow self-service team joining using join code. Will also allow users" +
+      " to leave teams as long as there are no solves (WIP)",
+  }),
+  restrict_valid_email: Type.Boolean({
+    title: "Only allow users with validated emails to register or join.",
   }),
 });
 
 export async function initServer(fastify: Service) {
-  await fastify.container.cradle.configService.register("core.setup", Config, {
-    initialized: false,
+  const { configService } = fastify.container.cradle;
+  await configService.register<Static<typeof Config>>("core.team", Config, {
+    allow_registration: true,
+    allow_joining: true,
+    restrict_valid_email: false,
   });
 }

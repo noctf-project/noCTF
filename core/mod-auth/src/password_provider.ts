@@ -1,6 +1,6 @@
 import { IdentityProvider } from "@noctf/server-core/providers/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
-import { CONFIG_NAMESPACE } from "./config.ts";
+import { Config, CONFIG_NAMESPACE } from "./config.ts";
 import { AuthMethod } from "@noctf/api/datatypes";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
@@ -32,7 +32,7 @@ export class PasswordProvider implements IdentityProvider {
   }
 
   async listMethods(): Promise<AuthMethod[]> {
-    if ((await this.getConfig()).enablePassword) {
+    if ((await this.getConfig()).enable_login_password) {
       return [
         {
           provider: "email",
@@ -43,9 +43,9 @@ export class PasswordProvider implements IdentityProvider {
   }
 
   async authPreCheck(email: string): Promise<AuthToken | null> {
-    const { enablePassword, enableRegistrationPassword, validateEmail } =
+    const { enable_login_password, enable_register_password, validate_email } =
       await this.getConfig();
-    if (!enablePassword) {
+    if (!enable_login_password) {
       throw new NotFoundError("The requested auth provider cannot be found");
     }
     const identity = await this.identityService.getIdentityForProvider(
@@ -53,7 +53,7 @@ export class PasswordProvider implements IdentityProvider {
       email,
     );
     if (!identity) {
-      if (!enableRegistrationPassword) {
+      if (!enable_register_password) {
         throw new AuthenticationError(
           "New user registration is currently not available through this provider",
         );
@@ -66,7 +66,7 @@ export class PasswordProvider implements IdentityProvider {
             provider_id: email,
           },
         ],
-        flags: validateEmail ? ["valid_email"] : [],
+        flags: validate_email ? ["valid_email"] : [],
       };
     }
     if (identity.secret_data) {
@@ -98,12 +98,12 @@ export class PasswordProvider implements IdentityProvider {
   }
 
   async getConfig() {
-    const { enablePassword, enableRegistrationPassword, validateEmail } =
-      await this.configService.get(CONFIG_NAMESPACE);
+    const { enable_login_password, enable_register_password, validate_email } =
+      await this.configService.get<Config>(CONFIG_NAMESPACE);
     return {
-      enablePassword,
-      enableRegistrationPassword,
-      validateEmail,
+      enable_login_password,
+      enable_register_password,
+      validate_email,
     };
   }
 }

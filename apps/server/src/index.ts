@@ -37,13 +37,13 @@ server.register(fastifyCompress);
 
 server.register(async () => {
   server.container = createContainer();
-  const cacheClient = new CacheClient(REDIS_URL);
+  const cacheClient = new CacheClient(REDIS_URL, server.log);
   await cacheClient.connect();
 
   server.container.register({
     logger: asValue(server.log),
     cacheClient: asValue(cacheClient),
-    databaseClient: asValue(new DatabaseClient(POSTGRES_URL)),
+    databaseClient: asValue(new DatabaseClient(POSTGRES_URL, server.log)),
     tokenService: asFunction(
       ({ cacheClient, logger }) =>
         new TokenService({

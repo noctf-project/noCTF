@@ -26,7 +26,7 @@ export class OAuthConfigProvider {
 
   private async isEnabled(): Promise<boolean> {
     return !!((await this.configService.get(CONFIG_NAMESPACE)) as Config)
-      .enableOauth;
+      .enable_oauth;
   }
 
   async listMethods(): Promise<AuthMethod[]> {
@@ -132,7 +132,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
       }
     }
     return {
-      type: "auth",
+      type: "session",
       sub: identity.user_id,
     };
   }

@@ -1,4 +1,5 @@
 import { createClient } from "redis";
+import { Logger } from "../types.ts";
 
 type Data = string | number | Buffer;
 type LoadParams<T> = {
@@ -14,16 +15,24 @@ const DEFAULT_LOAD_PARAMS: LoadParams<unknown> = {
 };
 
 export class CacheClient {
-  private client;
+  private readonly client;
+  private readonly url;
+  private readonly logger: Logger | null;
 
-  constructor(redisUrl: string) {
+  constructor(url: string, logger?: Logger) {
+    this.url = url;
     this.client = createClient({
-      url: redisUrl,
+      url,
     });
+    this.logger = logger;
   }
 
   async connect() {
     await this.client.connect();
+    if (this.logger) {
+      const url = new URL(this.url);
+      this.logger.info(`Connecting to redis at ${url.host}`);
+    }
   }
 
   async load<T>(

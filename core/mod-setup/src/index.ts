@@ -1,5 +1,5 @@
 import { Service } from "@noctf/server-core";
-import { Type } from "@sinclair/typebox";
+import { Static, Type } from "@sinclair/typebox";
 
 const Config = Type.Object({
   initialized: Type.Boolean({
@@ -8,7 +8,17 @@ const Config = Type.Object({
 });
 
 export async function initServer(fastify: Service) {
-  await fastify.container.cradle.configService.register("core.setup", Config, {
-    initialized: false,
-  });
+  const { configService } = fastify.container.cradle;
+  await configService.register<Static<typeof Config>>(
+    "core.setup",
+    Config,
+    {
+      initialized: false,
+    },
+    ({ initialized }) => {
+      if (!initialized) {
+        return "cannot set intialized to false";
+      }
+    },
+  );
 }
