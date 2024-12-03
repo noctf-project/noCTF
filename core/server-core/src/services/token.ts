@@ -39,7 +39,7 @@ export class TokenService {
     try {
       const data = jwt.verify(token, this.secret, {
         algorithms: ["HS256"],
-        audience
+        audience,
       }) as { jti: string; exp: number };
 
       // Set a record in the cache with an extra 60 second buffer to account for clock skew

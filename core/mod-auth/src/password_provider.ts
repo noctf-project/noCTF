@@ -99,7 +99,7 @@ export class PasswordProvider implements IdentityProvider {
 
   async getConfig() {
     const { enable_login_password, enable_register_password, validate_email } =
-      await this.configService.get<Config>(CONFIG_NAMESPACE);
+      (await this.configService.get<Config>(CONFIG_NAMESPACE)).value;
     return {
       enable_login_password,
       enable_register_password,

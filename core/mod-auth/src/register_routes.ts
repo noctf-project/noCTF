@@ -1,10 +1,10 @@
 import {
-  AuthRegisterRequest,
-  AuthRegisterTokenRequest,
+  RegisterAuthRequest,
+  RegisterAuthTokenRequest,
 } from "@noctf/api/requests";
 import {
-  AuthFinishResponse,
-  AuthRegisterTokenResponse,
+  FinishAuthResponse,
+  RegisterAuthTokenResponse,
 } from "@noctf/api/responses";
 import { AuthRegisterToken } from "@noctf/api/token";
 import { Service } from "@noctf/server-core";
@@ -14,16 +14,16 @@ export default async function (fastify: Service) {
   const { identityService, userService } = fastify.container.cradle;
 
   fastify.post<{
-    Body: AuthRegisterTokenRequest;
-    Reply: AuthRegisterTokenResponse;
+    Body: RegisterAuthTokenRequest;
+    Reply: RegisterAuthTokenResponse;
   }>(
     "/auth/register/token",
     {
       schema: {
         tags: ["auth"],
-        body: AuthRegisterTokenRequest,
+        body: RegisterAuthTokenRequest,
         response: {
-          200: AuthRegisterTokenResponse,
+          200: RegisterAuthTokenResponse,
         },
       },
     },
@@ -38,16 +38,16 @@ export default async function (fastify: Service) {
   );
 
   fastify.post<{
-    Body: AuthRegisterRequest;
-    Reply: AuthFinishResponse;
+    Body: RegisterAuthRequest;
+    Reply: FinishAuthResponse;
   }>(
     "/auth/register/finish",
     {
       schema: {
         tags: ["auth"],
-        body: AuthRegisterRequest,
+        body: RegisterAuthRequest,
         response: {
-          200: AuthFinishResponse,
+          200: FinishAuthResponse,
         },
       },
     },

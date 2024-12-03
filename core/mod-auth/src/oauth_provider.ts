@@ -25,7 +25,7 @@ export class OAuthConfigProvider {
   ) {}
 
   private async isEnabled(): Promise<boolean> {
-    return !!((await this.configService.get(CONFIG_NAMESPACE)) as Config)
+    return !!(await this.configService.get<Config>(CONFIG_NAMESPACE)).value
       .enable_oauth;
   }
 

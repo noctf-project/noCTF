@@ -1,8 +1,8 @@
 import {
-  AuthEmailFinishRequest,
-  AuthEmailInitRequest,
+  FinishAuthEmailRequest,
+  InitAuthEmailRequest,
 } from "@noctf/api/requests";
-import { AuthFinishResponse, BaseResponse } from "@noctf/api/responses";
+import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
 import { Service } from "@noctf/server-core";
 import { PasswordProvider } from "./password_provider.ts";
 
@@ -11,8 +11,8 @@ export default async function (fastify: Service) {
   const passwordProvider = new PasswordProvider(fastify.container.cradle);
 
   fastify.post<{
-    Body: AuthEmailInitRequest;
-    Reply: AuthFinishResponse | BaseResponse;
+    Body: InitAuthEmailRequest;
+    Reply: FinishAuthResponse | BaseResponse;
   }>(
     "/auth/email/init",
     {
@@ -20,10 +20,10 @@ export default async function (fastify: Service) {
         tags: ["auth"],
         description:
           "Checks if an email exists, returning a message or registration token if not",
-        body: AuthEmailInitRequest,
+        body: InitAuthEmailRequest,
         response: {
           200: BaseResponse,
-          201: AuthFinishResponse,
+          201: FinishAuthResponse,
         },
       },
     },
@@ -53,17 +53,17 @@ export default async function (fastify: Service) {
   );
 
   fastify.post<{
-    Body: AuthEmailFinishRequest;
-    Reply: AuthFinishResponse | BaseResponse;
+    Body: FinishAuthEmailRequest;
+    Reply: FinishAuthResponse | BaseResponse;
   }>(
     "/auth/email/finish",
     {
       schema: {
         tags: ["auth"],
         description: "Log a user in using their email and password",
-        body: AuthEmailFinishRequest,
+        body: FinishAuthEmailRequest,
         response: {
-          200: AuthFinishResponse,
+          200: FinishAuthResponse,
           default: BaseResponse,
         },
       },

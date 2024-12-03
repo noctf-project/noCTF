@@ -8,7 +8,7 @@ export const BaseResponse = Type.Object({
 });
 export type BaseResponse = Static<typeof BaseResponse>;
 
-export const CaptchaConfigResponse = Type.Object({
+export const GetCaptchaConfigResponse = Type.Object({
   data: Type.Optional(
     Type.Object({
       provider: Type.String(),
@@ -17,29 +17,39 @@ export const CaptchaConfigResponse = Type.Object({
     }),
   ),
 });
-export type CaptchaConfigResponse = Static<typeof CaptchaConfigResponse>;
+export type GetCaptchaConfigResponse = Static<typeof GetCaptchaConfigResponse>;
 
-export const AuthListMethodsResponse = Type.Object({
+export const ListAuthMethodsResponse = Type.Object({
   data: Type.Array(AuthMethod),
 });
-export type AuthListMethodsResponse = Static<typeof AuthListMethodsResponse>;
+export type ListAuthMethodsResponse = Static<typeof ListAuthMethodsResponse>;
 
-export const AuthOauthInitResponse = Type.Object({
+export const InitAuthOauthResponse = Type.Object({
   data: Type.String(),
 });
-export type AuthOauthInitResponse = Static<typeof AuthOauthInitResponse>;
+export type InitAuthOauthResponse = Static<typeof InitAuthOauthResponse>;
 
-export const AuthFinishResponse = Type.Object({
+export const FinishAuthResponse = Type.Object({
   data: Type.Object({
     type: AuthTokenType,
     token: Type.String(),
   }),
 });
-export type AuthFinishResponse = Static<typeof AuthFinishResponse>;
+export type FinishAuthResponse = Static<typeof FinishAuthResponse>;
 
-export const AuthRegisterTokenResponse = Type.Object({
+export const RegisterAuthTokenResponse = Type.Object({
   data: Type.Omit(AuthRegisterToken, ["type"]),
 });
-export type AuthRegisterTokenResponse = Static<
-  typeof AuthRegisterTokenResponse
+export type RegisterAuthTokenResponse = Static<
+  typeof RegisterAuthTokenResponse
+>;
+
+export const GetAdminConfigValueResponse = Type.Object({
+  data: Type.Object({
+    value: Type.Any(),
+    version: Type.Number(),
+  }),
+});
+export type GetAdminConfigValueResponse = Static<
+  typeof GetAdminConfigValueResponse
 >;

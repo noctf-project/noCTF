@@ -1,18 +1,20 @@
-import { CaptchaConfigResponse } from "@noctf/api/responses";
+import { GetCaptchaConfigResponse } from "@noctf/api/responses";
 import { Service } from "@noctf/server-core";
 import { CaptchaService } from "./service.ts";
 import { RESTRICTED_METHODS } from "./config.ts";
 import { ValidationError } from "@noctf/server-core/errors";
+import { HCaptchaProvider } from "./provider.ts";
 
 export async function initServer(fastify: Service) {
   const service = new CaptchaService(fastify.container.cradle);
+  service.register(new HCaptchaProvider());
 
-  fastify.get<{ Reply: CaptchaConfigResponse }>(
+  fastify.get<{ Reply: GetCaptchaConfigResponse }>(
     "/captcha",
     {
       schema: {
         response: {
-          200: CaptchaConfigResponse,
+          200: GetCaptchaConfigResponse,
         },
       },
     },

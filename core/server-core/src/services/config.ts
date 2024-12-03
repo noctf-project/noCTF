@@ -1,7 +1,7 @@
 import { TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import type { ServiceCradle } from "../index.ts";
-import { ValidationError } from "../errors.ts";
+import { BadRequestError, ValidationError } from "../errors.ts";
 import { SerializableMap } from "../types.ts";
 
 type Validator<T> = (kv: T) => Promise<string | null> | string | null;
@@ -11,13 +11,20 @@ const nullValidator = async (): Promise<null> => {
 };
 
 type Props = Pick<ServiceCradle, "logger" | "cacheClient" | "databaseClient">;
+export type ConfigValue<T extends SerializableMap> = {
+  version: number;
+  value: T;
+};
+
 const EXPIRY_MS = 3000;
 
 export class ConfigService {
   // A simple map-based cache is good enough, we want low latency and don't really need
   // to evict stuff, all the config keys are static and there shouldn't be too many.
-  private readonly cache: Map<string, [Promise<SerializableMap>, number]> =
-    new Map();
+  private readonly cache: Map<
+    string,
+    [Promise<ConfigValue<SerializableMap>>, number]
+  > = new Map();
   private readonly logger: Props["logger"];
   private readonly databaseClient: Props["databaseClient"];
   private readonly validators: Map<string, [TSchema, Validator<unknown>]> =
@@ -35,12 +42,12 @@ export class ConfigService {
    */
   async get<T extends SerializableMap>(
     namespace: string,
-    cached = true,
-  ): Promise<T> {
+    noCache?: boolean,
+  ): Promise<ConfigValue<T>> {
     if (!this.validators.has(namespace)) {
       throw new ValidationError("Config namespace does not exist");
     }
-    if (!cached) {
+    if (noCache) {
       return this._queryDb(namespace);
     }
     const now = Date.now();
@@ -48,7 +55,7 @@ export class ConfigService {
       const [promise, exp] = this.cache.get(namespace);
       if (exp > now) {
         try {
-          return promise as Promise<T>;
+          return promise as Promise<ConfigValue<T>>;
         } catch (error) {
           this.logger.debug("failed to retrieve config value", {
             namespace,
@@ -67,16 +74,22 @@ export class ConfigService {
 
   private async _queryDb<T extends SerializableMap>(
     namespace: string,
-  ): Promise<T> {
+  ): Promise<ConfigValue<T>> {
     const config = await this.databaseClient
       .selectFrom("core.config")
-      .select("data")
+      .select(["version", "value"])
       .where("namespace", "=", namespace)
       .executeTakeFirst();
     if (config) {
-      return JSON.parse(config.data);
+      return {
+        version: config.version,
+        value: JSON.parse(config.value),
+      };
     }
-    return {} as T;
+    return {
+      version: 0,
+      value: {} as T,
+    };
   }
 
   /**
@@ -94,16 +107,25 @@ export class ConfigService {
   /**
    * Update config and run validator
    * @param namespace namespace
-   * @param data config data, an object of primitive values + object + array
+   * @param value config data
+   * @param version current version ID
+   * @param noValidate skip the custom validation function
    */
-  async update(namespace: string, data: SerializableMap, noValidate?: boolean) {
+  async update<T extends SerializableMap>(
+    namespace: string,
+    value: T,
+    version?: number,
+    noValidate?: boolean,
+  ): Promise<ConfigValue<T>> {
     if (!this.validators.has(namespace)) {
       throw new ValidationError("Config namespace does not exist");
     }
     const [schema, validator] = this.validators.get(namespace);
-    Value.Check(schema, data);
+    if (!Value.Check(schema, value)) {
+      throw new ValidationError("Config failed JSONSchema validation");
+    }
     if (!noValidate) {
-      const result = await validator(data);
+      const result = await validator(value);
       if (result) {
         throw new ValidationError(
           `Config validation failed with error: ${result}`,
@@ -111,14 +133,28 @@ export class ConfigService {
       }
     }
 
-    this.databaseClient
+    let query = this.databaseClient
       .updateTable("core.config")
-      .set({
-        data: JSON.stringify(data),
+      .set((eb) => ({
+        value: JSON.stringify(value),
         updated_at: new Date(),
-      })
+        version: eb("version", "+", 1),
+      }))
       .where("namespace", "=", namespace)
-      .execute();
+      .returning(["version"]);
+    if (version || version === 0) {
+      query = query.where("version", "=", version);
+    }
+    const result = await query.executeTakeFirst();
+    if (!result) {
+      throw new BadRequestError("config version mismatch");
+    }
+    const promise = Promise.resolve({
+      version: result.version,
+      value,
+    });
+    this.cache.set(namespace, [promise, Date.now() + EXPIRY_MS]);
+    return promise;
   }
 
   /**
@@ -146,7 +182,7 @@ export class ConfigService {
       .insertInto("core.config")
       .values({
         namespace,
-        data: JSON.stringify(defaultCfg),
+        value: JSON.stringify(defaultCfg),
       })
       .onConflict((c) => c.doNothing())
       .executeTakeFirst();

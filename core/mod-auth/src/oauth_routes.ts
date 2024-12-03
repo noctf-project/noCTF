@@ -1,11 +1,11 @@
 import { Service } from "@noctf/server-core";
 import {
-  AuthOauthFinishRequest,
-  AuthOauthInitRequest,
+  FinishAuthOauthRequest,
+  InitAuthOauthRequest,
 } from "@noctf/api/requests";
 import {
-  AuthFinishResponse,
-  AuthOauthInitResponse,
+  FinishAuthResponse,
+  InitAuthOauthResponse,
   BaseResponse,
 } from "@noctf/api/responses";
 import { NoResultError } from "kysely";
@@ -35,16 +35,16 @@ export default async function (fastify: Service) {
   identityService.register(provider);
 
   fastify.post<{
-    Body: AuthOauthInitRequest;
-    Reply: AuthOauthInitResponse | BaseResponse;
+    Body: InitAuthOauthRequest;
+    Reply: InitAuthOauthResponse | BaseResponse;
   }>(
     "/auth/oauth/init",
     {
       schema: {
         tags: ["auth"],
-        body: AuthOauthInitRequest,
+        body: InitAuthOauthRequest,
         response: {
-          200: AuthOauthInitResponse,
+          200: InitAuthOauthResponse,
           404: BaseResponse,
         },
       },
@@ -67,16 +67,16 @@ export default async function (fastify: Service) {
   );
 
   fastify.post<{
-    Body: AuthOauthFinishRequest;
-    Response: AuthFinishResponse;
+    Body: FinishAuthOauthRequest;
+    Response: FinishAuthResponse;
   }>(
     "/auth/oauth/finish",
     {
       schema: {
         tags: ["auth"],
-        body: AuthOauthFinishRequest,
+        body: FinishAuthOauthRequest,
         response: {
-          200: AuthFinishResponse,
+          200: FinishAuthResponse,
         },
       },
     },

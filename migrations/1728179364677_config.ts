@@ -9,7 +9,8 @@ export async function up(db: Kysely<any>): Promise<void> {
   await schema
     .createTable("config")
     .addColumn("namespace", "varchar", (col) => col.primaryKey())
-    .addColumn("data", "varchar", (col) => col.notNull().defaultTo("{}"))
+    .addColumn("value", "varchar", (col) => col.notNull().defaultTo("{}"))
+    .addColumn("version", "integer", (col) => col.notNull().defaultTo(1))
     .addColumn("created_at", "timestamp", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )

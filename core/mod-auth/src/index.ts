@@ -1,5 +1,5 @@
 import { Service } from "@noctf/server-core";
-import { AuthListMethodsResponse } from "@noctf/api/responses";
+import { ListAuthMethodsResponse } from "@noctf/api/responses";
 import { CONFIG_NAMESPACE, Config, DEFAULT_CONFIG } from "./config.ts";
 import password_routes from "./password_routes.ts";
 import oauth_routes from "./oauth_routes.ts";
@@ -20,7 +20,7 @@ export async function initServer(fastify: Service) {
   fastify.register(register_routes);
 
   fastify.get<{
-    Reply: AuthListMethodsResponse;
+    Reply: ListAuthMethodsResponse;
   }>(
     "/auth/methods",
     {

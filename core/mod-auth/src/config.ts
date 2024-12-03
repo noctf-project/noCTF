@@ -1,28 +1,20 @@
 import { Static, Type } from "@sinclair/typebox";
 
 export const Config = Type.Object({
-  enable_register_password: Type.Optional(
-    Type.Boolean({
-      title: "Enable registration with password",
-    }),
-  ),
-  enable_login_password: Type.Optional(
-    Type.Boolean({
-      title: "Enable login with password",
-    }),
-  ),
-  enable_oauth: Type.Optional(
-    Type.Boolean({
-      title: "Enable OAuth Integration",
-      description:
-        "Login and registation with specific providers can be disabled per provider.",
-    }),
-  ),
-  validate_email: Type.Optional(
-    Type.Boolean({
-      title: "Require validation of email",
-    }),
-  ),
+  enable_register_password: Type.Boolean({
+    title: "Enable registration with password",
+  }),
+  enable_login_password: Type.Boolean({
+    title: "Enable login with password",
+  }),
+  enable_oauth: Type.Boolean({
+    title: "Enable OAuth Integration",
+    description:
+      "Login and registation with specific providers can be disabled per provider.",
+  }),
+  validate_email: Type.Boolean({
+    title: "Require validation of email",
+  }),
 });
 export type Config = Static<typeof Config>;
 

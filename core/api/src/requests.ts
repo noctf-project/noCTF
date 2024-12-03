@@ -1,37 +1,45 @@
 import { Static, Type } from "@sinclair/typebox";
 
-export const AuthOauthInitRequest = Type.Object({
+export const InitAuthOauthRequest = Type.Object({
   name: Type.String(),
 });
-export type AuthOauthInitRequest = Static<typeof AuthOauthInitRequest>;
+export type InitAuthOauthRequest = Static<typeof InitAuthOauthRequest>;
 
-export const AuthOauthFinishRequest = Type.Object({
+export const FinishAuthOauthRequest = Type.Object({
   state: Type.String(),
   code: Type.String(),
   redirect_uri: Type.String(),
 });
-export type AuthOauthFinishRequest = Static<typeof AuthOauthFinishRequest>;
+export type FinishAuthOauthRequest = Static<typeof FinishAuthOauthRequest>;
 
-export const AuthEmailInitRequest = Type.Object({
+export const InitAuthEmailRequest = Type.Object({
   email: Type.String({ format: "email" }),
 });
-export type AuthEmailInitRequest = Static<typeof AuthEmailInitRequest>;
+export type InitAuthEmailRequest = Static<typeof InitAuthEmailRequest>;
 
-export const AuthEmailFinishRequest = Type.Object({
+export const FinishAuthEmailRequest = Type.Object({
   email: Type.String({ format: "email" }),
   password: Type.String(),
 });
-export type AuthEmailFinishRequest = Static<typeof AuthEmailFinishRequest>;
+export type FinishAuthEmailRequest = Static<typeof FinishAuthEmailRequest>;
 
-export const AuthRegisterRequest = Type.Object({
+export const RegisterAuthRequest = Type.Object({
   token: Type.String(),
   name: Type.String(),
   email: Type.Optional(Type.String({ format: "email" })),
   password: Type.Optional(Type.String({ minLength: 8 })),
 });
-export type AuthRegisterRequest = Static<typeof AuthRegisterRequest>;
+export type RegisterAuthRequest = Static<typeof RegisterAuthRequest>;
 
-export const AuthRegisterTokenRequest = Type.Object({
+export const RegisterAuthTokenRequest = Type.Object({
   token: Type.String(),
 });
-export type AuthRegisterTokenRequest = Static<typeof AuthRegisterTokenRequest>;
+export type RegisterAuthTokenRequest = Static<typeof RegisterAuthTokenRequest>;
+
+export const UpdateAdminConfigValueRequest = Type.Object({
+  value: Type.Any(),
+  version: Type.Number(),
+});
+export type UpdateAdminConfigValueRequest = Static<
+  typeof UpdateAdminConfigValueRequest
+>;

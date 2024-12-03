@@ -17,7 +17,7 @@ export type AuthSessionToken = Static<typeof AuthSessionToken>;
 export const AuthScopedToken = Type.Object({
   type: Type.Literal("scoped"),
   sub: Type.Integer(),
-  scopes: Type.Array(Type.String())
+  scopes: Type.Array(Type.String()),
 });
 export type AuthScopedToken = Static<typeof AuthScopedToken>;
 
@@ -36,5 +36,9 @@ export type AuthRegisterToken = Static<typeof AuthRegisterToken>;
 export const AuthAssociateToken = AuthRegisterToken;
 export type AuthAssociateToken = Static<typeof AuthRegisterToken>;
 
-export const AuthToken = Type.Union([AuthSessionToken, AuthRegisterToken, AuthScopedToken]);
+export const AuthToken = Type.Union([
+  AuthSessionToken,
+  AuthRegisterToken,
+  AuthScopedToken,
+]);
 export type AuthToken = Static<typeof AuthToken>;

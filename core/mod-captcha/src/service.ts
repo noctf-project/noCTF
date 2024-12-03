@@ -1,4 +1,4 @@
-import { CaptchaProvider, HCaptchaProvider } from "./provider.ts";
+import { CaptchaProvider } from "./provider.ts";
 import { ServiceCradle } from "@noctf/server-core";
 import { CaptchaServiceConfig, CONFIG_NAMESPACE } from "./config.ts";
 
@@ -16,7 +16,6 @@ export class CaptchaService {
       { routes: [] },
       this.validateConfig.bind(this),
     );
-    this.register(new HCaptchaProvider());
   }
 
   register(provider: CaptchaProvider) {
@@ -27,14 +26,16 @@ export class CaptchaService {
   }
 
   private validateConfig({ provider }: CaptchaServiceConfig) {
-    if (!this.providers.has(provider)) {
+    if (provider && !this.providers.has(provider)) {
       return `Captcha provider ${provider} does not exist`;
     }
     return null;
   }
 
   async getConfig(): Promise<CaptchaServiceConfig> {
-    return this.configService.get<CaptchaServiceConfig>(CONFIG_NAMESPACE);
+    return (
+      await this.configService.get<CaptchaServiceConfig>(CONFIG_NAMESPACE)
+    ).value;
   }
 
   async validate(response: string, clientIp: string): Promise<number> {
@@ -44,7 +45,7 @@ export class CaptchaService {
       return Date.now();
     }
     if (!this.providers.has(provider) || !private_key) {
-      throw new Error(`Captcha provider ${provider} is not configured.`);
+      throw new Error(`Captcha provider ${provider} is not configured`);
     }
     await this.providers
       .get(provider)
