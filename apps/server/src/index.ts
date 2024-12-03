@@ -1,4 +1,4 @@
-import fastify from "fastify";
+import fastify, { FastifyRequest } from "fastify";
 import {
   POSTGRES_URL,
   HOST,
@@ -27,9 +27,12 @@ import { TeamService } from "@noctf/server-core/services/team";
 import Swagger from "@fastify/swagger";
 import SwaggerUI from "@fastify/swagger-ui";
 import { fastifyCompress } from "@fastify/compress";
+import { nanoid } from "nanoid/non-secure";
 
 const server: Service = fastify({
   logger: true,
+  disableRequestLogging: true,
+  genReqId: () => nanoid(),
   ...{ http2: ENABLE_HTTP2 }, // typescript is being funny
 }) as unknown as Service;
 
@@ -81,6 +84,34 @@ server.register(SwaggerUI, {
 });
 
 server.register(core);
+
+const logRequest = async (
+  request: FastifyRequest,
+  reply: { elapsedTime?: number; statusCode?: number },
+  flag?: string,
+) => {
+  server.log.info(
+    {
+      elpased: Math.floor(reply.elapsedTime),
+      reqId: request.id,
+      status: reply.statusCode,
+      path: request.originalUrl,
+      method: request.method,
+      ...(flag && { [flag]: true }),
+    },
+    "request",
+  );
+};
+
+server.addHook("onResponse", async (request, reply) => {
+  await logRequest(request, reply);
+});
+server.addHook("onTimeout", async (request, reply) => {
+  await logRequest(request, reply, "timeout");
+});
+server.addHook("onRequestAbort", async (request) => {
+  await logRequest(request, {}, "abort");
+});
 
 server.setErrorHandler((error, request, reply) => {
   if (error instanceof ApplicationError) {

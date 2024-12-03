@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "dev": "tsx watch --env-file=../../.env src | pino-pretty",
+    "dev": "pnpm watch | pino-pretty",
+    "watch": "tsx watch --env-file=../../.env src",
     "prod": "tsx src/index.ts"
   },
   "keywords": [],
@@ -25,6 +26,7 @@
     "awilix": "catalog:",
     "fastify": "catalog:",
     "kysely": "catalog:",
+    "nanoid": "^5.0.7",
     "tsx": "catalog:"
   },
   "type": "module",
