@@ -8,7 +8,6 @@ import {
   ENABLE_HTTP2,
 } from "./config.ts";
 import core from "./core.ts";
-import { Service } from "@noctf/server-core";
 import {
   asClass,
   asFunction,
@@ -28,13 +27,14 @@ import Swagger from "@fastify/swagger";
 import SwaggerUI from "@fastify/swagger-ui";
 import { fastifyCompress } from "@fastify/compress";
 import { nanoid } from "nanoid/non-secure";
+import { AuditLogService } from "@noctf/server-core/services/audit_log";
 
-const server: Service = fastify({
+const server = fastify({
   logger: true,
   disableRequestLogging: true,
   genReqId: () => nanoid(),
   ...{ http2: ENABLE_HTTP2 }, // typescript is being funny
-}) as unknown as Service;
+});
 
 server.register(fastifyCompress);
 
@@ -47,6 +47,7 @@ server.register(async () => {
     logger: asValue(server.log),
     cacheClient: asValue(cacheClient),
     databaseClient: asValue(new DatabaseClient(POSTGRES_URL, server.log)),
+    auditLogService: asClass(AuditLogService, { lifetime: Lifetime.SINGLETON }),
     tokenService: asFunction(
       ({ cacheClient, logger }) =>
         new TokenService({
@@ -72,6 +73,14 @@ server.register(Swagger, {
       title: "noCTF",
       description: "noCTF backend API",
       version: "0.1.0",
+    },
+    components: {
+      securitySchemes: {
+        bearer: {
+          type: "http",
+          scheme: "bearer",
+        },
+      },
     },
   },
 });

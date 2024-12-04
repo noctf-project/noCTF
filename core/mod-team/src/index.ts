@@ -1,5 +1,6 @@
-import { Service } from "@noctf/server-core";
+import { ServiceCradle } from "@noctf/server-core";
 import { Static, Type } from "@sinclair/typebox";
+import { FastifyInstance } from "fastify";
 
 const Config = Type.Object({
   allow_registration: Type.Boolean({
@@ -15,8 +16,8 @@ const Config = Type.Object({
   }),
 });
 
-export async function initServer(fastify: Service) {
-  const { configService } = fastify.container.cradle;
+export async function initServer(fastify: FastifyInstance) {
+  const { configService } = fastify.container.cradle as ServiceCradle;
   await configService.register<Static<typeof Config>>("core.team", Config, {
     allow_registration: true,
     allow_joining: true,

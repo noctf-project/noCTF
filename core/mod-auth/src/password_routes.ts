@@ -3,10 +3,10 @@ import {
   InitAuthEmailRequest,
 } from "@noctf/api/requests";
 import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
-import { Service } from "@noctf/server-core";
 import { PasswordProvider } from "./password_provider.ts";
+import { FastifyInstance } from "fastify";
 
-export default async function (fastify: Service) {
+export default async function (fastify: FastifyInstance) {
   const { identityService } = fastify.container.cradle;
   const passwordProvider = new PasswordProvider(fastify.container.cradle);
 
@@ -30,13 +30,13 @@ export default async function (fastify: Service) {
     async (request, reply) => {
       const email = request.body.email.toLowerCase();
       const result = await passwordProvider.authPreCheck(email);
-      const { validateEmail } = await passwordProvider.getConfig();
+      const { validate_email } = await passwordProvider.getConfig();
       if (!result) {
         return {};
       }
 
       const token = identityService.generateToken(result);
-      if (validateEmail) {
+      if (validate_email) {
         // TODO: send registration email
         return {
           message: "Please check your email for a link to create your account",
@@ -75,7 +75,7 @@ export default async function (fastify: Service) {
 
       return {
         data: {
-          type: "auth",
+          type: "session",
           token: identityService.generateToken(token),
         },
       };

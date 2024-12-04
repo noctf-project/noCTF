@@ -36,10 +36,19 @@ export const RegisterAuthTokenRequest = Type.Object({
 });
 export type RegisterAuthTokenRequest = Static<typeof RegisterAuthTokenRequest>;
 
-export const UpdateAdminConfigValueRequest = Type.Object({
+export const UpdateConfigValueRequest = Type.Object({
   value: Type.Any(),
   version: Type.Number(),
 });
-export type UpdateAdminConfigValueRequest = Static<
-  typeof UpdateAdminConfigValueRequest
->;
+export type UpdateConfigValueRequest = Static<typeof UpdateConfigValueRequest>;
+
+export const QueryAuditLogRequest = Type.Object({
+  start_time: Type.Optional(Type.Number()),
+  end_time: Type.Optional(Type.Number()),
+  actor: Type.Optional(Type.String()),
+  entity: Type.Optional(Type.String()),
+  operation: Type.Optional(Type.String()),
+  offset: Type.Optional(Type.Number()),
+  limit: Type.Optional(Type.Number()),
+});
+export type QueryAuditLogRequest = Static<typeof QueryAuditLogRequest>;

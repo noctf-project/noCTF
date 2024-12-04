@@ -1,8 +1,9 @@
+import { hrtime } from "node:process";
 import { TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import type { ServiceCradle } from "../index.ts";
 import { BadRequestError, ValidationError } from "../errors.ts";
-import { SerializableMap } from "../types.ts";
+import { SerializableMap } from "../types/primitives.ts";
 
 type Validator<T> = (kv: T) => Promise<string | null> | string | null;
 
@@ -16,14 +17,15 @@ export type ConfigValue<T extends SerializableMap> = {
   value: T;
 };
 
-const EXPIRY_MS = 3000;
+const EXPIRY_NS = 2000n * 1000000n;
+const ctime = hrtime.bigint;
 
 export class ConfigService {
   // A simple map-based cache is good enough, we want low latency and don't really need
   // to evict stuff, all the config keys are static and there shouldn't be too many.
   private readonly cache: Map<
     string,
-    [Promise<ConfigValue<SerializableMap>>, number]
+    [Promise<ConfigValue<SerializableMap>>, bigint]
   > = new Map();
   private readonly logger: Props["logger"];
   private readonly databaseClient: Props["databaseClient"];
@@ -50,7 +52,7 @@ export class ConfigService {
     if (noCache) {
       return this._queryDb(namespace);
     }
-    const now = Date.now();
+    const now = ctime();
     if (this.cache.has(namespace)) {
       const [promise, exp] = this.cache.get(namespace);
       if (exp > now) {
@@ -65,10 +67,10 @@ export class ConfigService {
       }
     }
     const newPromise = this._queryDb<T>(namespace);
-    this.cache.set(namespace, [newPromise, now + EXPIRY_MS]);
+    this.cache.set(namespace, [newPromise, now + EXPIRY_NS]);
     const result = await newPromise;
     // Update expiry time since we just fetched the object
-    this.cache.set(namespace, [newPromise, Date.now() + EXPIRY_MS]);
+    this.cache.set(namespace, [newPromise, ctime() + EXPIRY_NS]);
     return result;
   }
 
@@ -153,7 +155,7 @@ export class ConfigService {
       version: result.version,
       value,
     });
-    this.cache.set(namespace, [promise, Date.now() + EXPIRY_MS]);
+    this.cache.set(namespace, [promise, ctime() + EXPIRY_NS]);
     return promise;
   }
 
@@ -177,7 +179,7 @@ export class ConfigService {
       );
     }
     this.validators.set(namespace, [schema, validator || nullValidator]);
-    this.logger.info("Registering config namespace %s", namespace);
+    this.logger.info("Registered config namespace %s", namespace);
     const result = await this.databaseClient
       .insertInto("core.config")
       .values({

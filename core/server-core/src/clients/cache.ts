@@ -1,5 +1,5 @@
 import { createClient } from "redis";
-import { Logger } from "../types.ts";
+import { Logger } from "../types/primitives.ts";
 
 type Data = string | number | Buffer;
 type LoadParams<T> = {
@@ -9,7 +9,7 @@ type LoadParams<T> = {
 };
 export type LoadOptions<T> = Partial<LoadParams<T>>;
 const DEFAULT_LOAD_PARAMS: LoadParams<unknown> = {
-  expireSeconds: 60,
+  expireSeconds: 30,
   serializer: JSON.stringify,
   deserializer: JSON.parse,
 };

@@ -3,7 +3,6 @@ import { sql, type Kysely } from "kysely";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema.withSchema("core");
-  const schemaData = db.withSchema("core");
 
   await schema
     .createTable("user")
@@ -28,16 +27,6 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("created_at", "timestamp", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
-    .execute();
-
-  await schemaData
-    .insertInto("group")
-    .values([
-      {
-        name: "admin",
-        description: "Users with full admin privileges",
-      },
-    ])
     .execute();
 
   await schema
@@ -99,12 +88,41 @@ export async function up(db: Kysely<any>): Promise<void> {
     .on("oauth_provider")
     .column("is_enabled")
     .execute();
+
+  await schema
+    .createTable("audit_log")
+    .addColumn("actor", "varchar(64)", (col) => col.notNull())
+    .addColumn("operation", "varchar(64)", (col) => col.notNull())
+    .addColumn("entity", "varchar")
+    .addColumn("data", "text")
+    .addColumn("created_at", "timestamp", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
+    .execute();
+
+  await schema
+    .createIndex("schema_idx_created_at_actor")
+    .on("audit_log")
+    .columns(["created_at", "actor"])
+    .execute();
+
+  await schema
+    .createIndex("schema_idx_created_at_operation")
+    .on("audit_log")
+    .columns(["created_at", "operation"])
+    .execute();
+
+  await schema
+    .createIndex("schema_idx_created_at_entity")
+    .on("audit_log")
+    .columns(["created_at", "entity"])
+    .execute();
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
   const schema = db.schema.withSchema("core");
 
-  await schema.dropIndex("oauth_provider_idx_is_enabled").execute();
+  await schema.dropTable("audit_log").execute();
   await schema.dropTable("oauth_provider").execute();
   await schema.dropTable("user_identity").execute();
   await schema.dropTable("user_group").execute();

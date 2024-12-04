@@ -9,20 +9,20 @@ export const AuthTokenType = Type.Enum({
 export type AuthTokenType = Static<typeof AuthTokenType>;
 
 export const AuthSessionToken = Type.Object({
-  type: Type.Literal("session"),
+  aud: Type.Literal("session"),
   sub: Type.Integer(),
 });
 export type AuthSessionToken = Static<typeof AuthSessionToken>;
 
 export const AuthScopedToken = Type.Object({
-  type: Type.Literal("scoped"),
+  aud: Type.Literal("scoped"),
   sub: Type.Integer(),
   scopes: Type.Array(Type.String()),
 });
 export type AuthScopedToken = Static<typeof AuthScopedToken>;
 
 export const AuthRegisterToken = Type.Object({
-  type: Type.Union([Type.Literal("register"), Type.Literal("associate")]),
+  aud: Type.Union([Type.Literal("register"), Type.Literal("associate")]),
   identity: Type.Array(
     Type.Object({
       provider: Type.String(),

@@ -2,7 +2,7 @@ import { AuthMethod } from "@noctf/api/datatypes";
 import { AuthToken, AuthTokenType } from "@noctf/api/token";
 
 import { ApplicationError, ValidationError } from "../errors.ts";
-import { IdentityProvider, UpdateIdentityData } from "../providers/identity.ts";
+import { IdentityProvider, UpdateIdentityData } from "../types/identity.ts";
 import type { ServiceCradle } from "../index.ts";
 
 type Props = Pick<ServiceCradle, "databaseClient" | "tokenService">;
@@ -33,24 +33,20 @@ export class IdentityService {
   }
 
   generateToken(result: AuthToken): string {
-    switch (result.type) {
+    switch (result.aud) {
       case "session":
         return this.tokenService.sign(
           { sub: result.sub },
-          "noctf/identity/session",
+          "session",
           24 * 3600 * 7,
         );
       case "scoped":
-        return this.tokenService.sign(
-          { sub: result.sub },
-          "noctf/identity/scoped",
-          2 * 3600,
-        );
+        return this.tokenService.sign({ sub: result.sub }, "scoped", 2 * 3600);
       case "associate":
       case "register":
         return this.tokenService.sign(
           { flags: result.flags, identity: result.identity },
-          `noctf/identity/${result.type}`,
+          result.aud,
           30 * 60,
         );
       default:
@@ -64,9 +60,7 @@ export class IdentityService {
   ) {
     return this.tokenService.validate(
       token,
-      (Array.isArray(types) ? types : [types]).map(
-        (t) => `noctf/identity/${t}`,
-      ),
+      Array.isArray(types) ? types : [types],
     ) as unknown as Promise<T>;
   }
 

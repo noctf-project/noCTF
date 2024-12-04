@@ -1,9 +1,9 @@
-import { Service } from "@noctf/server-core";
 import { ListAuthMethodsResponse } from "@noctf/api/responses";
 import { CONFIG_NAMESPACE, Config, DEFAULT_CONFIG } from "./config.ts";
 import password_routes from "./password_routes.ts";
 import oauth_routes from "./oauth_routes.ts";
 import register_routes from "./register_routes.ts";
+import { FastifyInstance } from "fastify/types/instance.js";
 
 declare module "fastify" {
   interface FastifySchema {
@@ -12,7 +12,7 @@ declare module "fastify" {
   }
 }
 
-export async function initServer(fastify: Service) {
+export async function initServer(fastify: FastifyInstance) {
   const { identityService, configService, logger } = fastify.container.cradle;
   await configService.register(CONFIG_NAMESPACE, Config, DEFAULT_CONFIG);
   fastify.register(oauth_routes);

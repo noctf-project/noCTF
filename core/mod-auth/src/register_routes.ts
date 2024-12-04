@@ -7,11 +7,15 @@ import {
   RegisterAuthTokenResponse,
 } from "@noctf/api/responses";
 import { AuthRegisterToken } from "@noctf/api/token";
-import { Service } from "@noctf/server-core";
 import { BadRequestError } from "@noctf/server-core/errors";
+import { AuditLogOperation } from "@noctf/server-core/types/audit_log";
+import { FastifyInstance } from "fastify";
+import { Generate } from "./hash_util.ts";
+import { UpdateIdentityData } from "@noctf/server-core/types/identity";
 
-export default async function (fastify: Service) {
-  const { identityService, userService } = fastify.container.cradle;
+export default async function (fastify: FastifyInstance) {
+  const { identityService, userService, auditLogService } =
+    fastify.container.cradle;
 
   fastify.post<{
     Body: RegisterAuthTokenRequest;
@@ -53,10 +57,12 @@ export default async function (fastify: Service) {
     },
     async (request) => {
       const { password, name, token } = request.body;
-      const { flags, identity } = (await identityService.validateToken(
+      const parsed = (await identityService.validateToken(
         token,
         "register",
       )) as AuthRegisterToken;
+      const flags = parsed.flags;
+      let identity = parsed.identity as UpdateIdentityData[];
       if (
         identity.length === 1 &&
         identity[0].provider === "email" &&
@@ -74,29 +80,42 @@ export default async function (fastify: Service) {
         throw new BadRequestError("UserRegisterError", "An email is required");
       }
 
+      const hashed = password && (await Generate(password));
+      identity = identity.map((i) => ({
+        ...i,
+        secret_data: i.provider === "email" && hashed,
+        user_id: 0,
+      }));
+
       const id = await userService.create(
         name,
-        identity
-          .map((i) => ({ ...i, user_id: 0 }))
-          .concat(
-            tokenEmail
-              ? []
-              : [
-                  {
-                    provider: "email",
-                    provider_id: request.body.email,
-                    user_id: 0,
-                  },
-                ],
-          ),
+        identity.concat(
+          tokenEmail
+            ? []
+            : [
+                {
+                  provider: "email",
+                  provider_id: request.body.email,
+                  user_id: 0,
+                },
+              ],
+        ),
         flags,
       );
+
+      await auditLogService.logUser(
+        AuditLogOperation.UserCreate,
+        id,
+        `user:${id}`,
+      );
+
       await identityService.revokeToken(token);
+      // TODO: set as cookie
       return {
         data: {
           type: "session",
           token: identityService.generateToken({
-            type: "session",
+            aud: "session",
             sub: id,
           }),
         },

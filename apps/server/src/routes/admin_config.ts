@@ -1,11 +1,26 @@
-import { UpdateAdminConfigValueRequest } from "@noctf/api/requests";
+import { UpdateConfigValueRequest } from "@noctf/api/requests";
 import { GetAdminConfigValueResponse } from "@noctf/api/responses";
-import { Service } from "@noctf/server-core";
+import { AuthHook } from "@noctf/server-core/hooks/auth";
+import { AuthzFlagHook } from "@noctf/server-core/hooks/authz";
+import { AuditLogOperation } from "@noctf/server-core/types/audit_log";
+import { FastifyInstance } from "fastify";
 
-export async function routes(fastify: Service) {
-  const { configService } = fastify.container.cradle;
+export async function routes(fastify: FastifyInstance) {
+  const { configService, auditLogService } = fastify.container.cradle;
 
-  fastify.get("/admin/config", () => ({ data: configService.getSchemas() }));
+  fastify.addHook("preHandler", AuthHook("admin"));
+  fastify.addHook("preHandler", AuthzFlagHook("admin"));
+
+  fastify.get(
+    "/admin/config",
+    {
+      schema: {
+        tags: ["admin"],
+        security: [{ bearer: [] }],
+      },
+    },
+    () => ({ data: configService.getSchemas() }),
+  );
   fastify.get<{
     Params: {
       namespace: string;
@@ -16,6 +31,7 @@ export async function routes(fastify: Service) {
     {
       schema: {
         tags: ["admin"],
+        security: [{ bearer: [] }],
         response: {
           200: GetAdminConfigValueResponse,
         },
@@ -31,22 +47,30 @@ export async function routes(fastify: Service) {
     Params: {
       namespace: string;
     };
-    Body: UpdateAdminConfigValueRequest;
+    Body: UpdateConfigValueRequest;
   }>(
     "/admin/config/:namespace",
     {
       schema: {
         tags: ["admin"],
-        body: UpdateAdminConfigValueRequest,
+        security: [{ bearer: [] }],
+        body: UpdateConfigValueRequest,
       },
     },
     async (request) => {
+      const data = await configService.update(
+        request.params.namespace,
+        request.body.value,
+        request.body.version,
+      );
+      await auditLogService.logUser(
+        AuditLogOperation.ConfigUpdate,
+        request.user,
+        request.params.namespace,
+        JSON.stringify(data.value),
+      );
       return {
-        data: await configService.update(
-          request.params.namespace,
-          request.body.value,
-          request.body.version,
-        ),
+        data,
       };
     },
   );

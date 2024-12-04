@@ -1,4 +1,3 @@
-import { Service } from "@noctf/server-core";
 import {
   FinishAuthOauthRequest,
   InitAuthOauthRequest,
@@ -13,8 +12,9 @@ import {
   OAuthConfigProvider,
   OAuthIdentityProvider,
 } from "./oauth_provider.ts";
+import { FastifyInstance } from "fastify";
 
-export default async function (fastify: Service) {
+export default async function (fastify: FastifyInstance) {
   const {
     identityService,
     configService,
@@ -85,7 +85,7 @@ export default async function (fastify: Service) {
       const token = await provider.authenticate(state, code, redirect_uri);
       return {
         data: {
-          type: token.type,
+          type: token.aud,
           token: identityService.generateToken(token),
         },
       };

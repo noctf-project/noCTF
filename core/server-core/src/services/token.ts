@@ -79,7 +79,7 @@ export class TokenService {
       if (e instanceof jwt.TokenExpiredError) {
         throw new TokenValidationError("Token has expired");
       } else if (e instanceof jwt.JsonWebTokenError) {
-        throw new TokenValidationError("Token has invalid properties");
+        throw new TokenValidationError("Token is invalid");
       }
       throw e;
     }

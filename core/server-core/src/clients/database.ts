@@ -1,7 +1,7 @@
 import { Kysely, PostgresDialect } from "kysely";
 import pg from "pg";
 import { DB } from "@noctf/schema";
-import { Logger } from "../types.ts";
+import { Logger } from "../types/primitives.ts";
 
 export class DatabaseClient extends Kysely<DB> {
   constructor(connectionString: string, logger?: Logger) {

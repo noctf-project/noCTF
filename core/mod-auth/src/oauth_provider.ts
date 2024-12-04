@@ -1,6 +1,6 @@
 import { AuthMethod } from "@noctf/api/datatypes";
 import { AuthToken } from "@noctf/api/token";
-import { IdentityProvider } from "@noctf/server-core/providers/identity";
+import { IdentityProvider } from "@noctf/server-core/types/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
 import { DatabaseClient } from "@noctf/server-core/clients/database";
 import { CACHE_NAMESPACE, CONFIG_NAMESPACE, Config } from "./config.ts";
@@ -117,7 +117,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
     if (!identity) {
       if (method.is_registration_enabled) {
         return {
-          type: "register",
+          aud: "register",
           identity: [
             {
               provider: `${this.id()}:${name}`,
@@ -132,7 +132,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
       }
     }
     return {
-      type: "session",
+      aud: "session",
       sub: identity.user_id,
     };
   }

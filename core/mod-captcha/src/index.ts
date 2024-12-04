@@ -1,11 +1,11 @@
 import { GetCaptchaConfigResponse } from "@noctf/api/responses";
-import { Service } from "@noctf/server-core";
 import { CaptchaService } from "./service.ts";
 import { RESTRICTED_METHODS } from "./config.ts";
 import { ValidationError } from "@noctf/server-core/errors";
 import { HCaptchaProvider } from "./provider.ts";
+import { FastifyInstance } from "fastify";
 
-export async function initServer(fastify: Service) {
+export async function initServer(fastify: FastifyInstance) {
   const service = new CaptchaService(fastify.container.cradle);
   service.register(new HCaptchaProvider());
 

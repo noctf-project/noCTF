@@ -116,6 +116,9 @@ importers:
       '@noctf/mod-setup':
         specifier: workspace:*
         version: link:../../core/mod-setup
+      '@noctf/mod-team':
+        specifier: workspace:*
+        version: link:../../core/mod-team
       '@noctf/server-core':
         specifier: workspace:*
         version: link:../../core/server-core

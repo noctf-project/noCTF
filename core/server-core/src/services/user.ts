@@ -1,9 +1,12 @@
-import { UpdateIdentityData } from "../providers/identity.ts";
+import { UpdateIdentityData } from "../types/identity.ts";
 import { DatabaseClient } from "../clients/database.ts";
 import { ApplicationError, BadRequestError } from "../errors.ts";
 import { ServiceCradle } from "../index.ts";
+import { CacheClient } from "../clients/cache.ts";
 
-type Props = Pick<ServiceCradle, "databaseClient">;
+type Props = Pick<ServiceCradle, "databaseClient" | "cacheClient">;
+
+export const CACHE_NAMESPACE = "core:svc:user";
 
 const checkCount =
   (provider: string) =>
@@ -16,9 +19,25 @@ const checkCount =
 
 export class UserService {
   private databaseClient: DatabaseClient;
+  private cacheClient: CacheClient;
 
-  constructor({ databaseClient }: Props) {
+  constructor({ databaseClient, cacheClient }: Props) {
     this.databaseClient = databaseClient;
+    this.cacheClient = cacheClient;
+  }
+
+  async getFlags(id: number) {
+    return this.cacheClient.load(
+      `${CACHE_NAMESPACE}:${id}:flag`,
+      async () =>
+        (
+          await this.databaseClient
+            .selectFrom("core.user")
+            .select("flags")
+            .where("id", "=", id)
+            .executeTakeFirst()
+        ).flags,
+    );
   }
 
   async create(

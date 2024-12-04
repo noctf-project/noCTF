@@ -12,6 +12,8 @@ export type SerializableMap = {
   [key: string]: Serializable;
 };
 
+export type StringOrSet = string | Set<string>;
+
 export interface LogFn {
   /* eslint-disable @typescript-eslint/no-explicit-any */
   <T extends object>(obj: T, msg?: string, ...args: any[]): void;

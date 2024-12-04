@@ -1,16 +1,17 @@
-import { AwilixContainer } from "awilix";
-import { IdentityService } from "./services/identity.ts";
-import { DatabaseClient } from "./clients/database.ts";
-import { FastifyInstance } from "fastify";
-import { ConfigService } from "./services/config.ts";
-import { TokenService } from "./services/token.ts";
-import { UserService } from "./services/user.ts";
-import { CacheClient } from "./clients/cache.ts";
-import { TeamService } from "./services/team.ts";
-import { Logger } from "./types.ts";
+import type { AwilixContainer } from "awilix";
+import type { AuditLogService } from "./services/audit_log.ts";
+import type { IdentityService } from "./services/identity.ts";
+import type { DatabaseClient } from "./clients/database.ts";
+import type { ConfigService } from "./services/config.ts";
+import type { TokenService } from "./services/token.ts";
+import type { UserService } from "./services/user.ts";
+import type { CacheClient } from "./clients/cache.ts";
+import type { TeamService } from "./services/team.ts";
+import type { Logger } from "./types/primitives.ts";
 
 export type ServiceCradle = {
   logger: Logger;
+  auditLogService: AuditLogService;
   cacheClient: CacheClient;
   databaseClient: DatabaseClient;
   tokenService: TokenService;
@@ -20,6 +21,8 @@ export type ServiceCradle = {
   userService: UserService;
 };
 
-export interface Service extends FastifyInstance {
-  container: AwilixContainer<ServiceCradle>;
+declare module "fastify" {
+  interface FastifyInstance {
+    container: AwilixContainer<ServiceCradle>;
+  }
 }

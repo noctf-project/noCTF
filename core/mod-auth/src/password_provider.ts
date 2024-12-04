@@ -1,21 +1,21 @@
-import { IdentityProvider } from "@noctf/server-core/providers/identity";
+import { IdentityProvider } from "@noctf/server-core/types/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
 import { Config, CONFIG_NAMESPACE } from "./config.ts";
 import { AuthMethod } from "@noctf/api/datatypes";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
 import { AuthToken } from "@noctf/api/token";
-import { FastifyBaseLogger } from "fastify";
 import { Validate } from "./hash_util.ts";
+import { Logger } from "@noctf/server-core/types/primitives";
+import { ServiceCradle } from "@noctf/server-core";
 
-type Props = {
-  logger: FastifyBaseLogger;
-  configService: ConfigService;
-  identityService: IdentityService;
-};
+type Props = Pick<
+  ServiceCradle,
+  "logger" | "configService" | "identityService"
+>;
 
 export class PasswordProvider implements IdentityProvider {
-  private logger: FastifyBaseLogger;
+  private logger: Logger;
   private configService: ConfigService;
   private identityService: IdentityService;
 
@@ -59,7 +59,7 @@ export class PasswordProvider implements IdentityProvider {
         );
       }
       return {
-        type: "register",
+        aud: "register",
         identity: [
           {
             provider: "email",
@@ -92,7 +92,7 @@ export class PasswordProvider implements IdentityProvider {
     }
 
     return {
-      type: "session",
+      aud: "session",
       sub: identity.user_id,
     };
   }
