@@ -1,18 +1,11 @@
 import { ServiceCradle } from "@noctf/server-core";
-import { Static, Type } from "@sinclair/typebox";
+import { SetupConfig } from "@noctf/api/config";
 import { FastifyInstance } from "fastify";
-
-const Config = Type.Object({
-  initialized: Type.Boolean({
-    title: "Initialized (cannot be changed)",
-  }),
-});
 
 export async function initServer(fastify: FastifyInstance) {
   const { configService } = fastify.container.cradle as ServiceCradle;
-  await configService.register<Static<typeof Config>>(
-    "core.setup",
-    Config,
+  await configService.register<SetupConfig>(
+    SetupConfig,
     {
       initialized: false,
     },

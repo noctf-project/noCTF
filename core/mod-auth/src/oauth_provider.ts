@@ -3,12 +3,13 @@ import { AuthToken } from "@noctf/api/token";
 import { IdentityProvider } from "@noctf/server-core/types/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
 import { DatabaseClient } from "@noctf/server-core/clients/database";
-import { CACHE_NAMESPACE, CONFIG_NAMESPACE, Config } from "./config.ts";
 import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import { TokenService } from "@noctf/server-core/services/token";
 import { CacheClient } from "@noctf/server-core/clients/cache";
 import { get } from "@noctf/server-core/util/object";
+import { AuthConfig } from "@noctf/api/config";
+import { CACHE_NAMESPACE } from "./const.ts";
 
 type StateToken = {
   name: string;
@@ -25,7 +26,7 @@ export class OAuthConfigProvider {
   ) {}
 
   private async isEnabled(): Promise<boolean> {
-    return !!(await this.configService.get<Config>(CONFIG_NAMESPACE)).value
+    return !!(await this.configService.get<AuthConfig>(AuthConfig.$id)).value
       .enable_oauth;
   }
 

@@ -162,17 +162,12 @@ export class ConfigService {
   /**
    * Register default config values. This hook is run once on plugin startup.
    * @param namespace Namespace
-   * @param name Friendly name to display in the admin panel
    * @param schema JSON Schema definition
    * @param defaultCfg default config
    * @param validator config validator, this is run when config is updated
    */
-  async register<T>(
-    namespace: string,
-    schema: TSchema,
-    defaultCfg: T,
-    validator?: Validator<T>,
-  ) {
+  async register<T>(schema: TSchema, defaultCfg: T, validator?: Validator<T>) {
+    const namespace = schema.$id;
     if (this.validators.has(namespace)) {
       throw new Error(
         `Config with namespace ${namespace} has already been registered`,

@@ -1,6 +1,5 @@
 import { IdentityProvider } from "@noctf/server-core/types/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
-import { Config, CONFIG_NAMESPACE } from "./config.ts";
 import { AuthMethod } from "@noctf/api/datatypes";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
@@ -8,6 +7,7 @@ import { AuthToken } from "@noctf/api/token";
 import { Validate } from "./hash_util.ts";
 import { Logger } from "@noctf/server-core/types/primitives";
 import { ServiceCradle } from "@noctf/server-core";
+import { AuthConfig } from "@noctf/api/config";
 
 type Props = Pick<
   ServiceCradle,
@@ -99,7 +99,7 @@ export class PasswordProvider implements IdentityProvider {
 
   async getConfig() {
     const { enable_login_password, enable_register_password, validate_email } =
-      (await this.configService.get<Config>(CONFIG_NAMESPACE)).value;
+      (await this.configService.get<AuthConfig>(AuthConfig.$id)).value;
     return {
       enable_login_password,
       enable_register_password,

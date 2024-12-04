@@ -1,6 +1,6 @@
 import { CaptchaProvider } from "./provider.ts";
 import { ServiceCradle } from "@noctf/server-core";
-import { CaptchaServiceConfig, CONFIG_NAMESPACE } from "./config.ts";
+import { CaptchaConfig } from "@noctf/api/config";
 
 type Props = Pick<ServiceCradle, "configService">;
 
@@ -11,8 +11,7 @@ export class CaptchaService {
   constructor({ configService }: Props) {
     this.configService = configService;
     void configService.register(
-      CONFIG_NAMESPACE,
-      CaptchaServiceConfig,
+      CaptchaConfig,
       { routes: [] },
       this.validateConfig.bind(this),
     );
@@ -25,17 +24,16 @@ export class CaptchaService {
     this.providers.set(provider.id(), provider);
   }
 
-  private validateConfig({ provider }: CaptchaServiceConfig) {
+  private validateConfig({ provider }: CaptchaConfig) {
     if (provider && !this.providers.has(provider)) {
       return `Captcha provider ${provider} does not exist`;
     }
     return null;
   }
 
-  async getConfig(): Promise<CaptchaServiceConfig> {
-    return (
-      await this.configService.get<CaptchaServiceConfig>(CONFIG_NAMESPACE)
-    ).value;
+  async getConfig(): Promise<CaptchaConfig> {
+    return (await this.configService.get<CaptchaConfig>(CaptchaConfig.$id))
+      .value;
   }
 
   async validate(response: string, clientIp: string): Promise<number> {
