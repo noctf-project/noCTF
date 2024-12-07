@@ -1,8 +1,8 @@
 import { TokenValidationError } from "../errors.ts";
-import { SerializableMap } from "../util/types.ts";
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import type { ServiceCradle } from "../index.ts";
+import { SerializableMap } from "../types/primitives.ts";
 
 type Props = Pick<ServiceCradle, "cacheClient" | "logger"> & {
   secret: string;

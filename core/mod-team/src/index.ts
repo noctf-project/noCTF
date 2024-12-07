@@ -31,7 +31,6 @@ export async function initServer(fastify: FastifyInstance) {
     ),
   );
 
-  // TODO
   fastify.post(
     "/team",
     {

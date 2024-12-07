@@ -10,7 +10,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
     .addColumn("name", "varchar(64)", (col) => col.unique())
-    .addColumn("bio", "varchar", (col) => col.notNull().defaultTo(""))
+    .addColumn("bio", "text", (col) => col.notNull().defaultTo(""))
     .addColumn("flags", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .addColumn("created_at", "timestamp", (col) =>
       col.defaultTo(sql`now()`).notNull(),
@@ -23,7 +23,8 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
     .addColumn("name", "varchar(64)", (col) => col.unique())
-    .addColumn("description", "varchar")
+    .addColumn("description", "text", (col) => col.notNull().defaultTo(""))
+    .addColumn("is_joinable", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("created_at", "timestamp", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
@@ -82,47 +83,60 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.defaultTo(sql`now()`).notNull(),
     )
     .execute();
-
   await schema
-    .createIndex("oauth_provider_idx_is_enabled")
+    .createIndex("idx_is_enabled")
     .on("oauth_provider")
     .column("is_enabled")
     .execute();
 
-  await schema
-    .createTable("audit_log")
-    .addColumn("actor", "varchar(64)", (col) => col.notNull())
-    .addColumn("operation", "varchar(64)", (col) => col.notNull())
-    .addColumn("entity", "varchar")
-    .addColumn("data", "text")
+  await schema.createTable("role")
+    .addColumn("id", "integer", (col) =>
+      col.primaryKey().generatedByDefaultAsIdentity(),
+    )
+    .addColumn("name", "varchar(64)", (col) => col.unique())
+    .addColumn("description", "text", (col) => col.notNull().defaultTo(""))
+    .addColumn("permissions", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
+    .execute();
+  await db.withSchema("core")
+    .insertInto("role")
+    .values([
+      {
+        name: "public",
+        description: "users who are not logged in",
+        permissions: [":r", "!user.me", "!admin"]
+      },
+      {
+        name: "user",
+        description: "logged in users",
+        permissions: ["", "!admin"]
+      },
+      {
+        name: "admin",
+        description: "admin users",
+        permissions: ["", "admin"]
+      }
+    ])
+    .execute();
+
+  await schema.createTable("user_role")
+    .addColumn("user_id", "integer", (col) =>
+      col.notNull().references("core.user.id").onDelete("cascade"),
+    )
+    .addColumn("role_id", "integer", (col) =>
+      col.notNull().references("core.role.id").onDelete("cascade"),
+    )
     .addColumn("created_at", "timestamp", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
-    .execute();
-
-  await schema
-    .createIndex("schema_idx_created_at_actor")
-    .on("audit_log")
-    .columns(["created_at", "actor"])
-    .execute();
-
-  await schema
-    .createIndex("schema_idx_created_at_operation")
-    .on("audit_log")
-    .columns(["created_at", "operation"])
-    .execute();
-
-  await schema
-    .createIndex("schema_idx_created_at_entity")
-    .on("audit_log")
-    .columns(["created_at", "entity"])
+    .addPrimaryKeyConstraint("user_role_pkey", ["user_id", "role_id"])
     .execute();
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
   const schema = db.schema.withSchema("core");
 
-  await schema.dropTable("audit_log").execute();
+  await schema.dropTable("user_role").execute();
+  await schema.dropTable("role").execute();
   await schema.dropTable("oauth_provider").execute();
   await schema.dropTable("user_identity").execute();
   await schema.dropTable("user_group").execute();

@@ -316,6 +316,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.6.2
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.5(@types/node@22.7.4)
 
 packages:
 

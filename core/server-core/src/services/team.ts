@@ -26,7 +26,7 @@ export class TeamService {
     name,
     flags = [],
     generateJoinCode,
-    audit: { actor, message },
+    audit: { actor, message } = {},
   }: {
     name: string;
     flags: string[];
@@ -145,15 +145,29 @@ export class TeamService {
     });
   }
 
-  async unassignUser(
+  async unassignUser({
+    userId,
+    teamId,
+    checkOwner,
+    audit: { actor, message } = {}
+  }: {
     userId: number,
     teamId: number,
-    { actor, message }: AuditParams = {}) {
-    const {numDeletedRows} = await this.databaseClient
+    checkOwner?: boolean,
+    audit?: AuditParams
+  }) {
+    let query = await this.databaseClient
       .deleteFrom("core.team_member")
       .where("user_id", "=", userId)
-      .where("team_id", "=", teamId)
-      .executeTakeFirst();
+      .where("team_id", "=", teamId);
+    if (checkOwner) {
+      query = query.where((op) => op.selectFrom("core.team_member")
+        .select((o) => o.fn.countAll().as("cnt"))
+        .where("team_id", "=", teamId)
+        .where("user_id", "!=", userId)
+        .where("role", "=", "owner"), "!=", 0);
+    }
+    const { numDeletedRows } = await query.executeTakeFirst();
     if (numDeletedRows === 0n) {
       throw new NotFoundError("User's membership does not exist.");
     }

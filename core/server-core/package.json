@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "core noCTF internal APIs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:unit": "vitest",
     "build": "tsc",
     "dev": "echo 'Nothing to do' && exit"
   },
@@ -23,7 +23,8 @@
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.7",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "type": "module",
   "exports": {
