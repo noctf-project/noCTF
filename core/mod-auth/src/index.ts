@@ -5,6 +5,7 @@ import oauth_routes from "./oauth_routes.ts";
 import register_routes from "./register_routes.ts";
 import { FastifyInstance } from "fastify/types/instance.js";
 import { AuthConfig } from "@noctf/api/config";
+import { AuthHook } from "@noctf/server-core/hooks/auth";
 
 declare module "fastify" {
   interface FastifySchema {
@@ -35,12 +36,22 @@ export async function initServer(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post("/auth/logout", async () => {
-    try {
-      await identityService.revokeToken("auth", "session");
-    } catch (e) {
-      logger.debug("failed to revoke session token", e);
-    }
-    return {};
-  });
+  fastify.post(
+    "/auth/logout",
+    {
+      schema: {
+        tags: ["auth"],
+        security: [{ bearer: [] }],
+      },
+      preHandler: AuthHook(),
+    },
+    async (request) => {
+      try {
+        await identityService.revokeToken(request.token, "session");
+      } catch (e) {
+        logger.debug("failed to revoke session token", e);
+      }
+      return {};
+    },
+  );
 }

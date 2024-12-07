@@ -8,14 +8,12 @@ import {
 } from "@noctf/api/responses";
 import { AuthRegisterToken } from "@noctf/api/token";
 import { BadRequestError } from "@noctf/server-core/errors";
-import { AuditLogOperation } from "@noctf/server-core/types/audit_log";
 import { FastifyInstance } from "fastify";
 import { Generate } from "./hash_util.ts";
 import { UpdateIdentityData } from "@noctf/server-core/types/identity";
 
 export default async function (fastify: FastifyInstance) {
-  const { identityService, userService, auditLogService } =
-    fastify.container.cradle;
+  const { identityService, userService } = fastify.container.cradle;
 
   fastify.post<{
     Body: RegisterAuthTokenRequest;
@@ -87,9 +85,9 @@ export default async function (fastify: FastifyInstance) {
         user_id: 0,
       }));
 
-      const id = await userService.create(
+      const id = await userService.create({
         name,
-        identity.concat(
+        identities: identity.concat(
           tokenEmail
             ? []
             : [
@@ -101,13 +99,7 @@ export default async function (fastify: FastifyInstance) {
               ],
         ),
         flags,
-      );
-
-      await auditLogService.logUser(
-        AuditLogOperation.UserCreate,
-        id,
-        `user:${id}`,
-      );
+      });
 
       await identityService.revokeToken(token);
       // TODO: set as cookie

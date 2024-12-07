@@ -2,14 +2,15 @@ import { UpdateConfigValueRequest } from "@noctf/api/requests";
 import { GetAdminConfigValueResponse } from "@noctf/api/responses";
 import { AuthHook } from "@noctf/server-core/hooks/auth";
 import { AuthzFlagHook } from "@noctf/server-core/hooks/authz";
-import { AuditLogOperation } from "@noctf/server-core/types/audit_log";
+import { UserFlag } from "@noctf/server-core/types/enums";
+import { ActorType } from "@noctf/server-core/types/enums";
 import { FastifyInstance } from "fastify";
 
 export async function routes(fastify: FastifyInstance) {
-  const { configService, auditLogService } = fastify.container.cradle;
+  const { configService } = fastify.container.cradle;
 
-  fastify.addHook("preHandler", AuthHook("admin"));
-  fastify.addHook("preHandler", AuthzFlagHook("admin"));
+  fastify.addHook("preHandler", AuthHook(UserFlag.ADMIN));
+  fastify.addHook("preHandler", AuthzFlagHook(UserFlag.ADMIN));
 
   fastify.get(
     "/admin/config",
@@ -58,17 +59,16 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const data = await configService.update(
-        request.params.namespace,
-        request.body.value,
-        request.body.version,
-      );
-      await auditLogService.logUser(
-        AuditLogOperation.ConfigUpdate,
-        request.user,
-        request.params.namespace,
-        JSON.stringify(data.value),
-      );
+      const { value, version } = request.body;
+      const data = await configService.update({
+        namespace: request.params.namespace,
+        value,
+        version,
+        actor: {
+          type: ActorType.USER,
+          id: request.user,
+        },
+      });
       return {
         data,
       };

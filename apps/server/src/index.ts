@@ -29,7 +29,7 @@ import { fastifyCompress } from "@fastify/compress";
 import { nanoid } from "nanoid/non-secure";
 import { AuditLogService } from "@noctf/server-core/services/audit_log";
 
-const server = fastify({
+export const server = fastify({
   logger: true,
   disableRequestLogging: true,
   genReqId: () => nanoid(),

@@ -1,7 +1,7 @@
 import type { AuditLogEntry } from "@noctf/api/datatypes";
 import type { QueryAuditLogRequest } from "@noctf/api/requests";
 import { ServiceCradle } from "../index.ts";
-import { AuditLogOperation } from "../types/audit_log.ts";
+import { AuditLogActor } from "../types/audit_log.ts";
 
 const MAX_QUERY_LIMIT = 100;
 type Props = Pick<ServiceCradle, "databaseClient">;
@@ -13,33 +13,21 @@ export class AuditLogService {
     this.databaseClient = databaseClient;
   }
 
-  async logUser(
-    operation: AuditLogOperation | string,
-    userId: number,
-    entity?: string,
-    data?: string,
-  ) {
+  async log({
+    operation,
+    actor: { type, id },
+    entity,
+    data,
+  }: {
+    operation: string;
+    actor: AuditLogActor;
+    entity?: string;
+    data?: string;
+  }) {
     await this.databaseClient
       .insertInto("core.audit_log")
       .values({
-        actor: `user:${userId}`,
-        operation,
-        entity,
-        data,
-      })
-      .execute();
-  }
-
-  async logSystem(
-    operation: AuditLogOperation | string,
-    module?: string,
-    entity?: string,
-    data?: string,
-  ) {
-    await this.databaseClient
-      .insertInto("core.audit_log")
-      .values({
-        actor: module ? `sys:${module}` : "sys",
+        actor: id ? `${type}:${id}` : type,
         operation,
         entity,
         data,

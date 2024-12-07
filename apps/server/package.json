@@ -6,8 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "dev": "pnpm watch | pino-pretty",
-    "watch": "tsx watch --env-file=../../.env src",
+    "dev": "tsx watch --env-file=../../.env src | pino-pretty",
+    "dev:shell": "tsx -i --env-file=../../.env src/shell.ts",
     "prod": "tsx src/index.ts"
   },
   "keywords": [],

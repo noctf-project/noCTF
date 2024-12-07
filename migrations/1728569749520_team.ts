@@ -26,10 +26,10 @@ export async function up(db: Kysely<any>): Promise<void> {
   await schema
     .createTable("team_member")
     .addColumn("user_id", "integer", (col) =>
-      col.primaryKey().references("core.user.id"),
+      col.primaryKey().references("core.user.id").onDelete("cascade"),
     )
     .addColumn("team_id", "integer", (col) =>
-      col.notNull().references("core.team.id"),
+      col.notNull().references("core.team.id").onDelete("cascade"),
     )
     .addColumn("role", sql`core.team_member_role`, (col) =>
       col.notNull().defaultTo("member"),

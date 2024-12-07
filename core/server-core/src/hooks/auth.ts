@@ -18,6 +18,7 @@ const parseCookie = (str: string) =>
 declare module "fastify" {
   interface FastifyRequest {
     user: number;
+    token: string;
   }
 }
 
@@ -44,16 +45,25 @@ export const AuthHook =
       AuthSessionToken | AuthScopedToken
     >(token, ["scoped", "session"]);
     request.user = tokenData.sub;
+    request.token = token;
 
     if (!scope || tokenData.aud === "session") {
       return;
     }
     const data = typeof scope === "function" ? await scope() : scope;
+    if (!data) return;
     const { scopes } = tokenData as AuthScopedToken;
-    if (typeof data === "string" && scopes.includes(data)) {
-      return;
+    if (!data) return;
+    if (typeof data === "string") {
+      if (scopes.includes(data as string)) return;
+      throw new AuthenticationError(
+        `scoped token does not have a required scope: ${data}`,
+      );
     }
-    if (scopes.some((s) => (data as Set<string>).has(s))) {
+    if (
+      !(data as Set<string>).size ||
+      scopes.some((s) => (data as Set<string>).has(s))
+    ) {
       return;
     }
     throw new AuthenticationError(

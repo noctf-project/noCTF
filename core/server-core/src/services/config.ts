@@ -4,6 +4,7 @@ import { Value } from "@sinclair/typebox/value";
 import type { ServiceCradle } from "../index.ts";
 import { BadRequestError, ValidationError } from "../errors.ts";
 import { SerializableMap } from "../types/primitives.ts";
+import { AuditLogActor } from "../types/audit_log.ts";
 
 type Validator<T> = (kv: T) => Promise<string | null> | string | null;
 
@@ -11,7 +12,10 @@ const nullValidator = async (): Promise<null> => {
   return null;
 };
 
-type Props = Pick<ServiceCradle, "logger" | "cacheClient" | "databaseClient">;
+type Props = Pick<
+  ServiceCradle,
+  "logger" | "cacheClient" | "databaseClient" | "auditLogService"
+>;
 export type ConfigValue<T extends SerializableMap> = {
   version: number;
   value: T;
@@ -29,12 +33,14 @@ export class ConfigService {
   > = new Map();
   private readonly logger: Props["logger"];
   private readonly databaseClient: Props["databaseClient"];
+  private readonly auditLogService: Props["auditLogService"];
   private readonly validators: Map<string, [TSchema, Validator<unknown>]> =
     new Map();
 
-  constructor({ logger, databaseClient }: Props) {
+  constructor({ logger, databaseClient, auditLogService }: Props) {
     this.logger = logger;
     this.databaseClient = databaseClient;
+    this.auditLogService = auditLogService;
   }
 
   /**
@@ -113,12 +119,19 @@ export class ConfigService {
    * @param version current version ID
    * @param noValidate skip the custom validation function
    */
-  async update<T extends SerializableMap>(
-    namespace: string,
-    value: T,
-    version?: number,
-    noValidate?: boolean,
-  ): Promise<ConfigValue<T>> {
+  async update<T extends SerializableMap>({
+    namespace,
+    value,
+    version,
+    noValidate,
+    actor,
+  }: {
+    namespace: string;
+    value: T;
+    version?: number;
+    noValidate?: boolean;
+    actor?: AuditLogActor;
+  }): Promise<ConfigValue<T>> {
     if (!this.validators.has(namespace)) {
       throw new ValidationError("Config namespace does not exist");
     }
@@ -135,10 +148,11 @@ export class ConfigService {
       }
     }
 
+    const data = JSON.stringify(value);
     let query = this.databaseClient
       .updateTable("core.config")
       .set((eb) => ({
-        value: JSON.stringify(value),
+        value: data,
         updated_at: new Date(),
         version: eb("version", "+", 1),
       }))
@@ -151,6 +165,12 @@ export class ConfigService {
     if (!result) {
       throw new BadRequestError("config version mismatch");
     }
+    void this.auditLogService.log({
+      actor,
+      operation: "config.update",
+      entity: namespace,
+      data,
+    });
     const promise = Promise.resolve({
       version: result.version,
       value,

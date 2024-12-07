@@ -1,19 +1,11 @@
-// Common audit log operations
-export enum AuditLogOperation {
-  UserCreate = "user.create",
-  UserUpdate = "user.update",
-  UserDelete = "user.delete",
-  UserPasswordSet = "user.password.set",
+import { ActorType } from "./enums.ts";
 
-  ConfigUpdate = "config.update",
+export type AuditLogActor = {
+  type: ActorType;
+  id?: string | number;
+};
 
-  ChallengeCreate = "challenge.create",
-  ChallengeUpdate = "challenge.update",
-  ChallengeDelete = "challenge.delete",
-
-  TeamCreate = "team.create",
-  TeamUpdate = "team.update",
-  TeamDelete = "team.delete",
-  TeamJoin = "team.join",
-  TeamFreeze = "team.freeze",
-}
+export type AuditParams = {
+  actor?: AuditLogActor;
+  message?: string;
+};

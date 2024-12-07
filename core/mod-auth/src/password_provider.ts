@@ -8,6 +8,7 @@ import { Validate } from "./hash_util.ts";
 import { Logger } from "@noctf/server-core/types/primitives";
 import { ServiceCradle } from "@noctf/server-core";
 import { AuthConfig } from "@noctf/api/config";
+import { UserFlag } from "@noctf/server-core/types/enums";
 
 type Props = Pick<
   ServiceCradle,
@@ -66,7 +67,7 @@ export class PasswordProvider implements IdentityProvider {
             provider_id: email,
           },
         ],
-        flags: validate_email ? ["valid_email"] : [],
+        flags: validate_email ? [UserFlag.VALID_EMAIL] : [],
       };
     }
     if (identity.secret_data) {
