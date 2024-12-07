@@ -68,7 +68,6 @@ const EvaluateScalar = (policy: string, permissions: Map<string, Set<string>>) =
   const check = (p: string) => {
     const neg = permissions.get(`!${p}`);
     const pos = permissions.get(p);
-    console.log(neg, pos);
     if (neg && !pos) {
       return false;
     } else if (pos && !neg) {

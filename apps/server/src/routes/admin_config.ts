@@ -1,16 +1,20 @@
 import { UpdateConfigValueRequest } from "@noctf/api/requests";
 import { GetAdminConfigValueResponse } from "@noctf/api/responses";
-import { AuthHook } from "@noctf/server-core/hooks/auth";
-import { AuthzFlagHook } from "@noctf/server-core/hooks/authz";
-import { UserFlag } from "@noctf/server-core/types/enums";
+import { AuthHook } from "@noctf/server-core/hooks/authn";
 import { ActorType } from "@noctf/server-core/types/enums";
 import { FastifyInstance } from "fastify";
+import "@noctf/server-core/types/fastify";
+
 
 export async function routes(fastify: FastifyInstance) {
   const { configService } = fastify.container.cradle;
 
-  fastify.addHook("preHandler", AuthHook(UserFlag.ADMIN));
-  fastify.addHook("preHandler", AuthzFlagHook(UserFlag.ADMIN));
+  const auth = {
+    require: true,
+    scopes: new Set(["admin"])
+  };
+
+  fastify.addHook("preHandler", AuthHook);
 
   fastify.get(
     "/admin/config",
@@ -18,6 +22,7 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["admin"],
         security: [{ bearer: [] }],
+        auth
       },
     },
     () => ({ data: configService.getSchemas() }),
@@ -33,6 +38,7 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["admin"],
         security: [{ bearer: [] }],
+        auth,
         response: {
           200: GetAdminConfigValueResponse,
         },
@@ -56,6 +62,7 @@ export async function routes(fastify: FastifyInstance) {
         tags: ["admin"],
         security: [{ bearer: [] }],
         body: UpdateConfigValueRequest,
+        auth,
       },
     },
     async (request) => {
@@ -66,7 +73,7 @@ export async function routes(fastify: FastifyInstance) {
         version,
         actor: {
           type: ActorType.USER,
-          id: request.user,
+          id: request.user?.id,
         },
       });
       return {

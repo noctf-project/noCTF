@@ -28,6 +28,7 @@ import SwaggerUI from "@fastify/swagger-ui";
 import { fastifyCompress } from "@fastify/compress";
 import { nanoid } from "nanoid/non-secure";
 import { AuditLogService } from "@noctf/server-core/services/audit_log";
+import { RoleService } from "@noctf/server-core/services/role";
 
 export const server = fastify({
   logger: true,
@@ -61,6 +62,7 @@ server.register(async () => {
     identityService: asClass(IdentityService, {
       lifetime: Lifetime.SINGLETON,
     }),
+    roleService: asClass(RoleService, { lifetime: Lifetime.SINGLETON }),
     teamService: asClass(TeamService, { lifetime: Lifetime.SINGLETON }),
     userService: asClass(UserService, { lifetime: Lifetime.SINGLETON }),
   });
@@ -106,6 +108,7 @@ const logRequest = async (
       status: reply.statusCode,
       path: request.originalUrl,
       method: request.method,
+      ip: request.ip,
       ...(flag && { [flag]: true }),
     },
     "request",

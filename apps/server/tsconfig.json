@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "noImplicitAny": true
   },
-  "include": ["src/**/*", "../../core/plugin-setup/src"]
+  "include": ["src/**/*"]
 }

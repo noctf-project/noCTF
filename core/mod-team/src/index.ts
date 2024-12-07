@@ -1,8 +1,8 @@
 import { ServiceCradle } from "@noctf/server-core";
 import { FastifyInstance } from "fastify";
-import { AuthConfig, TeamConfig } from "@noctf/api/config";
-import { AuthHook } from "@noctf/server-core/hooks/auth";
-import { AuthzFlagHook } from "@noctf/server-core/hooks/authz";
+import { TeamConfig } from "@noctf/api/config";
+import { AuthHook } from "@noctf/server-core/hooks/authn";
+import "@noctf/server-core/types/fastify";
 
 declare module "fastify" {
   interface FastifySchema {
@@ -19,17 +19,7 @@ export async function initServer(fastify: FastifyInstance) {
     restrict_valid_email: false,
   });
 
-  fastify.addHook("preHandler", AuthHook());
-  fastify.addHook(
-    "preHandler",
-    AuthzFlagHook(() =>
-      configService
-        .get<AuthConfig>(AuthConfig.$id)
-        .then(
-          ({ value: { validate_email } }) => validate_email && "valid_email",
-        ),
-    ),
-  );
+  fastify.addHook("preHandler", AuthHook);
 
   fastify.post(
     "/team",
@@ -37,6 +27,9 @@ export async function initServer(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["team"],
+        auth: {
+          require: true
+        }
       },
     },
     async () => {

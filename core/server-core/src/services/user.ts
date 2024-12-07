@@ -43,7 +43,7 @@ export class UserService {
             .selectFrom("core.user")
             .select("flags")
             .where("id", "=", id)
-            .executeTakeFirst()
+            .executeTakeFirstOrThrow()
         ).flags,
     );
   }

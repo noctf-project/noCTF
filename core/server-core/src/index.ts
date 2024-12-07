@@ -8,6 +8,7 @@ import type { UserService } from "./services/user.ts";
 import type { CacheClient } from "./clients/cache.ts";
 import type { TeamService } from "./services/team.ts";
 import type { Logger } from "./types/primitives.ts";
+import { RoleService } from "./services/role.ts";
 
 export type ServiceCradle = {
   logger: Logger;
@@ -17,6 +18,7 @@ export type ServiceCradle = {
   tokenService: TokenService;
   configService: ConfigService;
   identityService: IdentityService;
+  roleService: RoleService;
   teamService: TeamService;
   userService: UserService;
 };
