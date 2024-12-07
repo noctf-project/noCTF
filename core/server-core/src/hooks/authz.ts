@@ -1,28 +1,41 @@
 import { FastifyRequest } from "fastify";
 import { ForbiddenError } from "../errors.ts";
-import { StringOrSet } from "../types/primitives.ts";
 
-export const AuthzFlagHook =
-  (flag?: StringOrSet | (() => StringOrSet | Promise<StringOrSet>)) =>
-  async (request: FastifyRequest) => {
-    const { userService } = request.server.container.cradle;
-    const uFlags = await userService.getFlags(request.user);
-    if (uFlags.some((f) => f === "blocked")) {
-      throw new ForbiddenError("you have been blocked");
-    }
+const CACHE_NAMESPACE = "core:hook:authz";
 
-    if (!flag) return;
-    const data = typeof flag === "function" ? await flag() : flag;
-    if (!data) return;
-    if (typeof data === "string") {
-      if (uFlags.includes(data as string)) return;
-      throw new ForbiddenError(`user does not have flag(s): ${data}`);
-    }
-    if (
-      !(data as Set<string>).size ||
-      uFlags.some((f) => (data as Set<string>).has(f))
-    ) {
-      return;
-    }
-    throw new ForbiddenError(`user does not have flag(s): ${data}`);
+
+export const AuthzHook = async (request: FastifyRequest) => {
+  const { userService, roleService, cacheClient } = request.server.container.cradle;
+  
+  const policy = request.routeOptions.schema?.auth?.policy;
+  if (!policy) {
+    return;
+  }
+  const expanded = typeof policy === 'function' ? await policy() : policy;
+
+  const routeKey = `${request.routeOptions.method}:${request.routeOptions.url}`;
+  const evaluateCached = async (roleId: number) => {
+    return await cacheClient.load(`${CACHE_NAMESPACE}:r:${roleId}:${routeKey}`,
+      () => roleService.evaluate(roleId, expanded));
   };
+
+  // Run the public policy
+  if (!request.user) {
+    if (!await evaluateCached((await roleService.getStaticRoleIds()).public)) {
+      throw new ForbiddenError("Access denied by policy");
+    }
+    return;
+  }
+
+  const uFlags = await userService.getFlags(request.user.id);
+  if (uFlags.some((f) => f === "blocked")) {
+    throw new ForbiddenError("you have been blocked");
+  }
+
+  try {
+    await Promise.any((await roleService.getUserRoleIds(request.user.id))
+      .map((role) => evaluateCached(role).then((r) => r ? Promise.resolve() : Promise.reject())));
+  } catch {
+    throw new ForbiddenError("Access denied by policy");
+  }
+};

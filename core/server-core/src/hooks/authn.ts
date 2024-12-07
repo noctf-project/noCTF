@@ -14,7 +14,7 @@ const parseCookie = (str: string) =>
       {} as { [key: string]: string },
     );
 
-export const AuthHook = async (request: FastifyRequest) => {
+export const AuthnHook = async (request: FastifyRequest) => {
   const { require, scopes } = request.routeOptions.schema?.auth || {};
   let token = "";
   if (

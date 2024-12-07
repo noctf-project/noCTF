@@ -1,7 +1,7 @@
 import { ServiceCradle } from "@noctf/server-core";
 import { FastifyInstance } from "fastify";
 import { TeamConfig } from "@noctf/api/config";
-import { AuthHook } from "@noctf/server-core/hooks/authn";
+import { AuthnHook } from "@noctf/server-core/hooks/authn";
 import "@noctf/server-core/types/fastify";
 
 declare module "fastify" {
@@ -19,7 +19,7 @@ export async function initServer(fastify: FastifyInstance) {
     restrict_valid_email: false,
   });
 
-  fastify.addHook("preHandler", AuthHook);
+  fastify.addHook("preHandler", AuthnHook);
 
   fastify.post(
     "/team",

@@ -26,16 +26,32 @@ export class RoleService {
     this.databaseClient = databaseClient;
   }
 
-  async getPermissions(id: number) {
+  async getPermissions(roleId: number) {
     return this.cacheClient.load(
-      `${CACHE_NAMESPACE}:permission:${id}`,
+      `${CACHE_NAMESPACE}:permission:${roleId}`,
       async () =>
         (
           await this.databaseClient.selectFrom("core.role")
           .select("permissions")
-          .where("id", "=", id)
+          .where("id", "=", roleId)
           .executeTakeFirstOrThrow()
         ).permissions,
+    );
+  }
+
+  async getUserRoleIds(userId: number) {
+    return this.cacheClient.load(
+      `${CACHE_NAMESPACE}:user:${userId}`,
+      async () =>
+        (
+          await this.databaseClient.selectFrom("core.user_role")
+          .select("role_id")
+          .where("user_id", "=", userId)
+          .execute()
+        ).map(({ role_id }) => role_id),
+      {
+        expireSeconds: 10
+      }
     );
   }
 
@@ -55,15 +71,8 @@ export class RoleService {
     return this.staticRoleIds;
   }
 
-  async evaluate(policy: Policy, roleIds: number[]) {
-    try {
-      return await Promise.any(roleIds.map(async (id) => {
-        const permissions = await this.getPermissions(id);
-        return Evaluate(policy, permissions) ? Promise.resolve(id)
-          : Promise.reject(id);
-      }));
-    } catch {
-      throw new ForbiddenError("Access denied by role policies");
-    }
+  async evaluate(roleId: number, policy: Policy) {
+    const permissions = await this.getPermissions(roleId);
+    return Evaluate(policy, permissions);
   }
 }

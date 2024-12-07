@@ -70,7 +70,7 @@ export class PasswordProvider implements IdentityProvider {
         flags: validate_email ? [UserFlag.VALID_EMAIL] : [],
       };
     }
-    if (identity.secret_data) {
+    if (!identity.secret_data) {
       throw new AuthenticationError(
         "Password sign-in has not been configured for this user.",
       );
