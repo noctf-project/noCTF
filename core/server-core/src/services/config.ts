@@ -168,7 +168,7 @@ export class ConfigService {
     void this.auditLogService.log({
       actor,
       operation: "config.update",
-      entity: namespace,
+      entities: [namespace],
       data,
     });
     const promise = Promise.resolve({

@@ -12,6 +12,7 @@ export enum TeamFlag {
 }
 export enum ActorType {
   USER = "user",
+  ROLE = "role",
   SYSTEM = "sys",
   TEAM = "team"
 }

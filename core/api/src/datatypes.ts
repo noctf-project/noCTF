@@ -10,7 +10,7 @@ export type AuthMethod = Static<typeof AuthMethod>;
 export const AuditLogEntry = Type.Object({
   actor: Type.String(),
   operation: Type.String(),
-  entity: Type.String(),
+  entities: Type.Array(Type.String()),
   data: Type.String(),
   created_at: Type.Number(),
 });

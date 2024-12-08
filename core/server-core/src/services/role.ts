@@ -1,5 +1,7 @@
 import { ForbiddenError } from "../errors.ts";
 import { ServiceCradle } from "../index.ts";
+import { AuditParams } from "../types/audit_log.ts";
+import { ActorType } from "../types/enums.ts";
 import { Evaluate, Policy } from "../util/policy.ts";
 
 type Props = Pick<ServiceCradle, "auditLogService" | "cacheClient" | "databaseClient">;
@@ -53,6 +55,36 @@ export class RoleService {
         expireSeconds: 10
       }
     );
+  }
+
+  async addMember(roleId: number, userId: number, { actor, message }: AuditParams = {}) {
+    await this.databaseClient.insertInto("core.user_role")
+      .values({
+        role_id: roleId,
+        user_id: userId
+      })
+      .execute();
+    await this.auditLogService.log({
+      operation: "role.member.add",
+      actor: actor || { type: ActorType.SYSTEM },
+      entities: [`${ActorType.ROLE}:${roleId}`, `${ActorType.USER}:${userId}`],
+      data: message
+    });
+  }
+
+  async removeMember(roleId: number, userId: number, { actor, message }: AuditParams = {}) {
+    const { numDeletedRows } = await this.databaseClient.deleteFrom("core.user_role")
+      .where("role_id", "=", roleId)
+      .where("user_id", "=", userId)
+      .executeTakeFirst();
+    if (numDeletedRows) {
+      await this.auditLogService.log({
+        operation: "role.member.remove",
+        actor: actor || { type: ActorType.SYSTEM },
+        entities: [`${ActorType.ROLE}:${roleId}`, `${ActorType.USER}:${userId}`],
+        data: message
+      });
+    }
   }
 
   async getStaticRoleIds() {

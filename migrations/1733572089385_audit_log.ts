@@ -7,7 +7,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .createTable("audit_log")
     .addColumn("actor", "varchar(64)", (col) => col.notNull())
     .addColumn("operation", "varchar(64)", (col) => col.notNull())
-    .addColumn("entity", "varchar")
+    .addColumn("entities", sql`text[]`, (col) => col.notNull())
     .addColumn("data", "text")
     .addColumn("created_at", "timestamp", (col) =>
       col.defaultTo(sql`now()`).notNull(),
@@ -16,17 +16,17 @@ export async function up(db: Kysely<any>): Promise<void> {
   await schema
     .createIndex("idx_created_at_actor")
     .on("audit_log")
-    .columns(["created_at", "actor"])
+    .expression(sql`created_at DESC, actor`)
     .execute();
   await schema
     .createIndex("idx_created_at_operation")
     .on("audit_log")
-    .columns(["created_at", "operation"])
+    .expression(sql`created_at DESC, operation`)
     .execute();
   await schema
     .createIndex("idx_created_at_entity")
     .on("audit_log")
-    .columns(["created_at", "entity"])
+    .expression(sql`created_at DESC, entities`)
     .execute();
 }
 

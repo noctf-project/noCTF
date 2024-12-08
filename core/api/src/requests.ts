@@ -46,7 +46,7 @@ export const QueryAuditLogRequest = Type.Object({
   start_time: Type.Optional(Type.Number()),
   end_time: Type.Optional(Type.Number()),
   actor: Type.Optional(Type.String()),
-  entity: Type.Optional(Type.String()),
+  entities: Type.Optional(Type.Array(Type.String())),
   operation: Type.Optional(Type.String()),
   offset: Type.Optional(Type.Number()),
   limit: Type.Optional(Type.Number()),

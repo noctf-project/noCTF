@@ -1,3 +1,4 @@
+import { routes as adminAuditLog } from "./routes/admin_audit_log.ts";
 import { routes as adminConfig } from "./routes/admin_config.ts";
 
 import { initServer as auth } from "@noctf/mod-auth";
@@ -7,6 +8,7 @@ import { initServer as team } from "@noctf/mod-team";
 import { FastifyInstance } from "fastify";
 
 export default async function (fastify: FastifyInstance) {
+  fastify.register(adminAuditLog);
   fastify.register(adminConfig);
 
   fastify.register(auth);

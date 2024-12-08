@@ -125,7 +125,7 @@ export class UserService {
           type: ActorType.USER,
           id: id,
         },
-        entity: `${ActorType.USER}:${id}`,
+        entities: [`${ActorType.USER}:${id}`],
       });
 
       return id;

@@ -1,5 +1,5 @@
 import { Static, Type } from "@sinclair/typebox";
-import { AuthMethod } from "./datatypes.ts";
+import { AuditLogEntry, AuthMethod } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 
 export const BaseResponse = Type.Object({
@@ -52,4 +52,11 @@ export const GetAdminConfigValueResponse = Type.Object({
 });
 export type GetAdminConfigValueResponse = Static<
   typeof GetAdminConfigValueResponse
+>;
+
+export const QueryAuditLogResponse = Type.Object({
+  data: Type.Array(AuditLogEntry),
+});
+export type QueryAuditLogResponse = Static<
+  typeof QueryAuditLogResponse
 >;

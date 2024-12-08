@@ -48,7 +48,7 @@ export class TeamService {
         type: ActorType.SYSTEM,
       },
       data: message,
-      entity: `${ActorType.TEAM}:${id}`,
+      entities: [`${ActorType.TEAM}:${id}`],
     });
     return id;
   }
@@ -72,7 +72,7 @@ export class TeamService {
         type: ActorType.SYSTEM,
       },
       operation: "team.delete",
-      entity: `${ActorType.TEAM}:${id}`,
+      entities: [`${ActorType.TEAM}:${id}`],
       data: message,
     });
   }
@@ -95,7 +95,7 @@ export class TeamService {
     ) {
       throw new NotFoundError("Invalid joining code");
     }
-    await this.assignUser({
+    await this.assignMember({
       userId,
       teamId,
       audit: {
@@ -108,7 +108,7 @@ export class TeamService {
     });
   }
 
-  async assignUser({
+  async assignMember({
     userId,
     teamId,
     role = "member",
@@ -140,12 +140,12 @@ export class TeamService {
         type: ActorType.SYSTEM,
       },
       operation: "team.member.assign",
-      entity: `${ActorType.TEAM}:${teamId}`,
+      entities: [`${ActorType.TEAM}:${teamId}`,`${ActorType.USER}:${userId}`],
       data: message,
     });
   }
 
-  async unassignUser({
+  async removeMember({
     userId,
     teamId,
     checkOwner,
@@ -156,27 +156,32 @@ export class TeamService {
     checkOwner?: boolean,
     audit?: AuditParams
   }) {
-    let query = await this.databaseClient
+    let query = this.databaseClient
       .deleteFrom("core.team_member")
       .where("user_id", "=", userId)
       .where("team_id", "=", teamId);
     if (checkOwner) {
-      query = query.where((op) => op.selectFrom("core.team_member")
-        .select((o) => o.fn.countAll().as("cnt"))
-        .where("team_id", "=", teamId)
-        .where("user_id", "!=", userId)
-        .where("role", "=", "owner"), "!=", 0);
+      query = query.where((op) => op.or([
+        op(op.selectFrom("core.team_member")
+          .select((o) => o.fn.countAll().as("cnt"))
+          .where("team_id", "=", teamId)
+          .where("user_id", "!=", userId)
+          .where("role", "=", "owner"), "!=", 0),
+        op(op.selectFrom("core.team_member")
+          .select((o) => o.fn.countAll().as("cnt"))
+          .where("team_id", "=", teamId), "=", 1)
+      ]));
     }
     const { numDeletedRows } = await query.executeTakeFirst();
-    if (numDeletedRows === 0n) {
+    if (!numDeletedRows) {
       throw new NotFoundError("User's membership does not exist.");
     }
     void this.auditLogService.log({
       actor: actor || {
         type: ActorType.SYSTEM,
       },
-      operation: "team.member.unassign",
-      entity: `${ActorType.TEAM}:${teamId}`,
+      operation: "team.member.remove",
+      entities: [`${ActorType.TEAM}:${teamId}`,`${ActorType.USER}:${userId}`],
       data: message,
     });
   }
