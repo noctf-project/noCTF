@@ -91,7 +91,7 @@ export class ConfigService {
     if (config) {
       return {
         version: config.version,
-        value: JSON.parse(config.value),
+        value: config.value as T,
       };
     }
     return {
@@ -148,11 +148,10 @@ export class ConfigService {
       }
     }
 
-    const data = JSON.stringify(value);
     let query = this.databaseClient
       .updateTable("core.config")
       .set((eb) => ({
-        value: data,
+        value,
         updated_at: new Date(),
         version: eb("version", "+", 1),
       }))
@@ -169,7 +168,7 @@ export class ConfigService {
       actor,
       operation: "config.update",
       entities: [namespace],
-      data,
+      data: JSON.stringify(value),
     });
     const promise = Promise.resolve({
       version: result.version,
@@ -186,7 +185,7 @@ export class ConfigService {
    * @param defaultCfg default config
    * @param validator config validator, this is run when config is updated
    */
-  async register<T>(schema: TSchema, defaultCfg: T, validator?: Validator<T>) {
+  async register<T extends SerializableMap>(schema: TSchema, defaultCfg: T, validator?: Validator<T>) {
     const namespace = schema.$id;
     if (this.validators.has(namespace)) {
       throw new Error(
@@ -199,7 +198,7 @@ export class ConfigService {
       .insertInto("core.config")
       .values({
         namespace,
-        value: JSON.stringify(defaultCfg),
+        value: defaultCfg,
       })
       .onConflict((c) => c.doNothing())
       .executeTakeFirst();

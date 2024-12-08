@@ -18,33 +18,6 @@ export async function up(db: Kysely<any>): Promise<void> {
     .execute();
 
   await schema
-    .createTable("group")
-    .addColumn("id", "integer", (col) =>
-      col.primaryKey().generatedByDefaultAsIdentity(),
-    )
-    .addColumn("name", "varchar(64)", (col) => col.unique())
-    .addColumn("description", "text", (col) => col.notNull().defaultTo(""))
-    .addColumn("is_joinable", "boolean", (col) => col.notNull().defaultTo(false))
-    .addColumn("created_at", "timestamp", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
-    .execute();
-
-  await schema
-    .createTable("user_group")
-    .addColumn("user_id", "integer", (col) =>
-      col.notNull().references("core.user.id").onDelete("cascade"),
-    )
-    .addColumn("group_id", "integer", (col) =>
-      col.notNull().references("core.group.id").onDelete("cascade"),
-    )
-    .addColumn("created_at", "timestamp", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
-    .addPrimaryKeyConstraint("user_group_pkey", ["user_id", "group_id"])
-    .execute();
-
-  await schema
     .createTable("user_identity")
     .addColumn("user_id", "integer", (col) =>
       col.notNull().references("core.user.id").onDelete("cascade"),
@@ -139,7 +112,5 @@ export async function down(db: Kysely<any>): Promise<void> {
   await schema.dropTable("role").execute();
   await schema.dropTable("oauth_provider").execute();
   await schema.dropTable("user_identity").execute();
-  await schema.dropTable("user_group").execute();
-  await schema.dropTable("group").execute();
   await schema.dropTable("user").execute();
 }
