@@ -1,4 +1,4 @@
-import { Queue, Worker } from "bullmq";
+import { DefaultJobOptions, Queue, Worker } from "bullmq";
 import { ServiceCradle } from "../index.ts";
 import { RedisUrlType as RedisUrlType } from "../clients/redis_factory.ts";
 
@@ -7,11 +7,13 @@ type Props = Pick<ServiceCradle, "redisClientFactory" | "logger">;
 export type EventItem<T> = {
   id: string;
   type: string;
+  timestamp: number;
   attempt: number;
   data: T;
 };
 export type EventPublishOptions = {
   delay?: number;
+  attempts?: number;
 };
 export type EventSubscriberHandle<T> = {
   _type: string;
@@ -21,6 +23,7 @@ type EventHandlerFn<T> = (e: EventItem<T>) => Promise<void>;
 
 const ACTIVE_REMOTE_QUEUES_KEY = "core:eventbus:activequeues";
 const ACTIVE_QUEUE_HEARTBEAT_EXPIRE = 30;
+
 
 export class EventBusService {
   private readonly logger;
@@ -90,6 +93,7 @@ export class EventBusService {
         async (job) => {
           handler({
             id: job.id,
+            timestamp: job.timestamp,
             type,
             attempt: job.attemptsMade,
             data: job.data,
@@ -133,7 +137,7 @@ export class EventBusService {
   async publish(
     type: string,
     data: unknown,
-    { delay }: EventPublishOptions = {},
+    { delay, attempts }: DefaultJobOptions = {},
   ) {
     if (this.localQueues[type]) {
       const id = (++this.localQueues[type].id).toString();
@@ -143,6 +147,7 @@ export class EventBusService {
           try {
             fn({
               id,
+              timestamp: Date.now(),
               type,
               attempt: 0,
               data,
@@ -162,7 +167,10 @@ export class EventBusService {
     if (this.remoteQueues[type]) {
       for (const qualifier of this.remoteQueues[type]) {
         this.logger.debug({ qualifier }, "publishing message to remote queue");
-        await this.bullQueues.get(qualifier).add("", data);
+        await this.bullQueues.get(qualifier).add("", data, {
+          delay,
+          attempts: attempts || 10,
+        });
       }
     }
   }
