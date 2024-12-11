@@ -25,8 +25,8 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("provider", "varchar(64)", (col) => col.notNull())
     .addColumn("provider_id", "varchar", (col) => col.notNull())
     .addColumn("secret_data", "varchar")
-    .addUniqueConstraint("uidx_user_id_provider_idx", ["user_id", "provider"])
-    .addUniqueConstraint("uidx_provider_provider_id_idx", [
+    .addUniqueConstraint("user_identity_uidx_user_id_provider", ["user_id", "provider"])
+    .addUniqueConstraint("user_identity_uidx_provider_provider_id", [
       "provider",
       "provider_id",
     ])
@@ -57,7 +57,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .execute();
   await schema
-    .createIndex("idx_is_enabled")
+    .createIndex("oauth_provider_idx_is_enabled")
     .on("oauth_provider")
     .column("is_enabled")
     .execute();

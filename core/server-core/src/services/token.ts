@@ -4,18 +4,18 @@ import { nanoid } from "nanoid";
 import type { ServiceCradle } from "../index.ts";
 import { SerializableMap } from "../types/primitives.ts";
 
-type Props = Pick<ServiceCradle, "cacheClient" | "logger"> & {
+type Props = Pick<ServiceCradle, "cacheService" | "logger"> & {
   secret: string;
 };
 
 export class TokenService {
   private secret: Props["secret"];
-  private cacheClient: Props["cacheClient"];
+  private cacheService: Props["cacheService"];
   private logger: Props["logger"];
 
-  constructor({ secret, cacheClient, logger }: Props) {
+  constructor({ secret, cacheService: cacheService, logger }: Props) {
     this.secret = secret;
-    this.cacheClient = cacheClient;
+    this.cacheService = cacheService;
     this.logger = logger;
   }
 
@@ -43,7 +43,7 @@ export class TokenService {
       }) as { jti: string; exp: number };
 
       // Set a record in the cache with an extra 60 second buffer to account for clock skew
-      await this.cacheClient.put(
+      await this.cacheService.put(
         `core:token:rev:${data.jti}`,
         1,
         data.exp - Math.floor(Date.now() / 1000) + 60 || 60,
@@ -70,7 +70,7 @@ export class TokenService {
       if (!verifyRevocation) {
         return data;
       }
-      const ttl = await this.cacheClient.getTtl(`core:token:rev:${data.jti}`);
+      const ttl = await this.cacheService.getTtl(`core:token:rev:${data.jti}`);
       if (ttl === -1 || ttl > 0) {
         throw new TokenValidationError("Token has been revoked");
       }

@@ -2,7 +2,6 @@ import { sql, type Kysely } from "kysely";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
-  await sql`CREATE EXTENSION IF NOT EXISTS hstore`.execute(db);
   await db.schema.createSchema("core").execute();
 
   const schema = db.schema.withSchema("core");
@@ -10,7 +9,7 @@ export async function up(db: Kysely<any>): Promise<void> {
   await schema
     .createTable("config")
     .addColumn("namespace", "varchar", (col) => col.primaryKey())
-    .addColumn("value", "json", (col) => col.notNull().defaultTo("{}"))
+    .addColumn("value", "jsonb", (col) => col.notNull().defaultTo("{}"))
     .addColumn("version", "integer", (col) => col.notNull().defaultTo(1))
     .addColumn("created_at", "timestamp", (col) =>
       col.defaultTo(sql`now()`).notNull(),
@@ -31,19 +30,14 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .execute();
   await schema
-    .createIndex("idx_created_at_actor")
+    .createIndex("audit_log_idx_created_at_actor")
     .on("audit_log")
     .expression(sql`created_at DESC, actor`)
     .execute();
   await schema
-    .createIndex("idx_created_at_operation")
+    .createIndex("audit_log_idx_created_at_operation")
     .on("audit_log")
     .expression(sql`created_at DESC, operation`)
-    .execute();
-  await schema
-    .createIndex("idx_created_at_entity")
-    .on("audit_log")
-    .expression(sql`created_at DESC, entities`)
     .execute();
 }
 
@@ -54,5 +48,4 @@ export async function down(db: Kysely<any>): Promise<void> {
   await schema.dropTable("config").execute();
 
   await db.schema.dropSchema("core").execute();
-  await sql`DROP EXTENSION hstore`.execute(db);
 }

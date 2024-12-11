@@ -1,5 +1,4 @@
-import { createClient } from "redis";
-import { Logger } from "../types/primitives.ts";
+import { ServiceCradle } from "../index.ts";
 
 type Data = string | number | Buffer;
 type LoadParams<T> = {
@@ -14,26 +13,16 @@ const DEFAULT_LOAD_PARAMS: LoadParams<unknown> = {
   deserializer: JSON.parse,
 };
 
-export class CacheClient {
-  private readonly client;
-  private readonly url;
-  private readonly logger: Logger | null;
+type Props = Pick<ServiceCradle, "redisClientFactory">;
 
-  constructor(url: string, logger?: Logger) {
-    this.url = url;
-    this.client = createClient({
-      url,
-    });
-    this.logger = logger;
+
+export class CacheService {
+  private readonly redisClient;
+
+  constructor({ redisClientFactory }: Props) {
+    this.redisClient = redisClientFactory.createClient();
   }
 
-  async connect() {
-    await this.client.connect();
-    if (this.logger) {
-      const url = new URL(this.url);
-      this.logger.info(`Connecting to redis at ${url.host}`);
-    }
-  }
 
   async load<T>(
     key: string,
@@ -44,7 +33,7 @@ export class CacheClient {
       ...DEFAULT_LOAD_PARAMS,
       ...options,
     };
-    const data = await this.client.get(key);
+    const data = await this.redisClient.get(key);
     if (data) {
       return deserializer(data) as T;
     }
@@ -54,16 +43,18 @@ export class CacheClient {
   }
 
   async put(key: string, value: Data, expireSeconds = 0) {
-    await this.client.set(key, value, {
-      EX: expireSeconds || null,
-    });
+    if (expireSeconds) {
+      return await this.redisClient.set(key, value, 'EX', expireSeconds);
+    }
+    
+    await this.redisClient.set(key, value);
   }
 
   async getTtl(key: string) {
-    return await this.client.ttl(key);
+    return await this.redisClient.ttl(key);
   }
 
   async ttl(key: string) {
-    await this.client.ttl(key);
+    await this.redisClient.ttl(key);
   }
 }

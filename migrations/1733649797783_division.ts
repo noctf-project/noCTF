@@ -1,6 +1,7 @@
 import { sql, type Kysely } from 'kysely'
 
 /** Divisions are custom scoreboards */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema.withSchema("core");
 

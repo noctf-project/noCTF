@@ -18,13 +18,13 @@ export default async function (fastify: FastifyInstance) {
   const {
     identityService,
     configService,
-    cacheClient,
+    cacheService: cacheService,
     databaseClient,
     tokenService,
   } = fastify.container.cradle;
   const configProvider = new OAuthConfigProvider(
     configService,
-    cacheClient,
+    cacheService,
     databaseClient,
   );
   const provider = new OAuthIdentityProvider(

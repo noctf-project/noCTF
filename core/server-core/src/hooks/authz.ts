@@ -5,7 +5,7 @@ const CACHE_NAMESPACE = "core:hook:authz";
 
 
 export const AuthzHook = async (request: FastifyRequest) => {
-  const { userService, roleService, cacheClient } = request.server.container.cradle;
+  const { userService, roleService, cacheService: cacheService } = request.server.container.cradle;
   
   const policy = request.routeOptions.schema?.auth?.policy;
   if (!policy) {
@@ -15,7 +15,7 @@ export const AuthzHook = async (request: FastifyRequest) => {
 
   const routeKey = `${request.routeOptions.method}:${request.routeOptions.url}`;
   const evaluateCached = async (roleId: number) => {
-    return await cacheClient.load(`${CACHE_NAMESPACE}:r:${roleId}:${routeKey}`,
+    return await cacheService.load(`${CACHE_NAMESPACE}:r:${roleId}:${routeKey}`,
       () => roleService.evaluate(roleId, expanded));
   };
 

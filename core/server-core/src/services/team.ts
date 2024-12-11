@@ -3,21 +3,21 @@ import { TeamFlag } from "../types/enums.ts";
 import { CoreTeamMemberRole } from "@noctf/schema";
 import type { ServiceCradle } from "../index.ts";
 import { nanoid } from "nanoid";
-import { AuditLogActor, AuditParams } from "../types/audit_log.ts";
+import { AuditParams } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 
 type Props = Pick<
   ServiceCradle,
-  "databaseClient" | "cacheClient" | "auditLogService"
+  "databaseClient" | "cacheService" | "auditLogService"
 >;
 
 export class TeamService {
-  private readonly cacheClient: Props["cacheClient"];
+  private readonly cacheService: Props["cacheService"];
   private readonly databaseClient: Props["databaseClient"];
   private readonly auditLogService: Props["auditLogService"];
 
-  constructor({ databaseClient, cacheClient, auditLogService }: Props) {
-    this.cacheClient = cacheClient;
+  constructor({ databaseClient, cacheService: cacheService, auditLogService }: Props) {
+    this.cacheService = cacheService;
     this.databaseClient = databaseClient;
     this.auditLogService = auditLogService;
   }

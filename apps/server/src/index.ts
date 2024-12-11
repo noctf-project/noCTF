@@ -17,18 +17,20 @@ import {
 } from "awilix";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
-import { CacheClient } from "@noctf/server-core/clients/cache";
 import { DatabaseClient } from "@noctf/server-core/clients/database";
 import { UserService } from "@noctf/server-core/services/user";
 import { TokenService } from "@noctf/server-core/services/token";
 import { ApplicationError } from "@noctf/server-core/errors";
 import { TeamService } from "@noctf/server-core/services/team";
+import { CacheService } from "@noctf/server-core/services/cache";
 import Swagger from "@fastify/swagger";
 import SwaggerUI from "@fastify/swagger-ui";
 import { fastifyCompress } from "@fastify/compress";
 import { nanoid } from "nanoid/non-secure";
 import { AuditLogService } from "@noctf/server-core/services/audit_log";
 import { RoleService } from "@noctf/server-core/services/role";
+import { RedisClientFactory } from "@noctf/server-core/clients/redis_factory";
+import { EventBusService } from "@noctf/server-core/services/event_bus";
 
 export const server = fastify({
   logger: true,
@@ -41,18 +43,21 @@ server.register(fastifyCompress);
 
 server.register(async () => {
   server.container = createContainer();
-  const cacheClient = new CacheClient(REDIS_URL, server.log);
-  await cacheClient.connect();
 
   server.container.register({
     logger: asValue(server.log),
-    cacheClient: asValue(cacheClient),
+    redisClientFactory: asFunction(({ logger }) => new RedisClientFactory(
+      REDIS_URL,
+      logger
+    ), { lifetime: Lifetime.SINGLETON }),
+    cacheService: asClass(CacheService, { lifetime: Lifetime.SINGLETON }),
     databaseClient: asValue(new DatabaseClient(POSTGRES_URL, server.log)),
     auditLogService: asClass(AuditLogService, { lifetime: Lifetime.SINGLETON }),
+    eventBusService: asClass(EventBusService, { lifetime: Lifetime.SINGLETON }),
     tokenService: asFunction(
-      ({ cacheClient, logger }) =>
+      ({ cacheService, logger }) =>
         new TokenService({
-          cacheClient,
+          cacheService: cacheService,
           logger,
           secret: TOKEN_SECRET,
         }),

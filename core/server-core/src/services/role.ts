@@ -1,10 +1,9 @@
-import { ForbiddenError } from "../errors.ts";
 import { ServiceCradle } from "../index.ts";
 import { AuditParams } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 import { Evaluate, Policy } from "../util/policy.ts";
 
-type Props = Pick<ServiceCradle, "auditLogService" | "cacheClient" | "databaseClient">;
+type Props = Pick<ServiceCradle, "auditLogService" | "cacheService" | "databaseClient">;
 
 
 export const CACHE_NAMESPACE = "core:svc:role";
@@ -17,19 +16,19 @@ export enum StaticRole {
 
 export class RoleService {
   private readonly auditLogService: Props["auditLogService"];
-  private readonly cacheClient: Props["cacheClient"];
+  private readonly cacheService: Props["cacheService"];
   private readonly databaseClient: Props["databaseClient"];
 
   private staticRoleIds: Record<StaticRole, number> = null;
 
-  constructor({ auditLogService, cacheClient, databaseClient }: Props) {
+  constructor({ auditLogService, cacheService: cacheService, databaseClient }: Props) {
     this.auditLogService = auditLogService;
-    this.cacheClient = cacheClient;
+    this.cacheService = cacheService;
     this.databaseClient = databaseClient;
   }
 
   async getPermissions(roleId: number) {
-    return this.cacheClient.load(
+    return this.cacheService.load(
       `${CACHE_NAMESPACE}:permission:${roleId}`,
       async () =>
         (
@@ -42,7 +41,7 @@ export class RoleService {
   }
 
   async getUserRoleIds(userId: number) {
-    return this.cacheClient.load(
+    return this.cacheService.load(
       `${CACHE_NAMESPACE}:user:${userId}`,
       async () =>
         (

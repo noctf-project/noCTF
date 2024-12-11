@@ -14,7 +14,7 @@ const nullValidator = async (): Promise<null> => {
 
 type Props = Pick<
   ServiceCradle,
-  "logger" | "cacheClient" | "databaseClient" | "auditLogService"
+  "logger" | "cacheService" | "databaseClient" | "auditLogService"
 >;
 export type ConfigValue<T extends SerializableMap> = {
   version: number;

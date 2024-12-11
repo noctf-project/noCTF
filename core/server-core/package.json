@@ -15,11 +15,12 @@
     "@noctf/schema": "workspace:*",
     "@sinclair/typebox": "catalog:",
     "awilix": "catalog:",
+    "bullmq": "^5.34.0",
     "fastify": "catalog:",
+    "ioredis": "^5.7.1",
     "jsonwebtoken": "^9.0.2",
     "kysely": "catalog:",
-    "nanoid": "^5.0.7",
-    "redis": "catalog:"
+    "nanoid": "^5.0.7"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.7",

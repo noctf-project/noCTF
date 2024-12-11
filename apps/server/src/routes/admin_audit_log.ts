@@ -1,7 +1,6 @@
-import { QueryAuditLogRequest, UpdateConfigValueRequest } from "@noctf/api/requests";
-import { GetAdminConfigValueResponse, QueryAuditLogResponse } from "@noctf/api/responses";
+import { QueryAuditLogRequest } from "@noctf/api/requests";
+import { QueryAuditLogResponse } from "@noctf/api/responses";
 import { AuthnHook } from "@noctf/server-core/hooks/authn";
-import { ActorType } from "@noctf/server-core/types/enums";
 import { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
 import { AuthzHook } from "@noctf/server-core/hooks/authz";

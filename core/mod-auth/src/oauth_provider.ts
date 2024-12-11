@@ -1,15 +1,11 @@
 import { AuthMethod } from "@noctf/api/datatypes";
 import { AuthToken } from "@noctf/api/token";
 import { IdentityProvider } from "@noctf/server-core/types/identity";
-import { ConfigService } from "@noctf/server-core/services/config";
-import { DatabaseClient } from "@noctf/server-core/clients/database";
 import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
-import { IdentityService } from "@noctf/server-core/services/identity";
-import { TokenService } from "@noctf/server-core/services/token";
-import { CacheClient } from "@noctf/server-core/clients/cache";
 import { get } from "@noctf/server-core/util/object";
 import { AuthConfig } from "@noctf/api/config";
 import { CACHE_NAMESPACE } from "./const.ts";
+import { ServiceCradle } from "@noctf/server-core";
 
 type StateToken = {
   name: string;
@@ -20,9 +16,9 @@ export const TOKEN_AUDIENCE = "noctf/auth/oauth/state";
 
 export class OAuthConfigProvider {
   constructor(
-    private configService: ConfigService,
-    private cacheClient: CacheClient,
-    private databaseClient: DatabaseClient,
+    private configService: ServiceCradle["configService"],
+    private cacheService: ServiceCradle["cacheService"],
+    private databaseClient: ServiceCradle["databaseClient"],
   ) {}
 
   private async isEnabled(): Promise<boolean> {
@@ -34,7 +30,7 @@ export class OAuthConfigProvider {
     if (!(await this.isEnabled())) {
       return [];
     }
-    return await this.cacheClient.load(`${CACHE_NAMESPACE}:oauth:methods`, () =>
+    return await this.cacheService.load(`${CACHE_NAMESPACE}:oauth:methods`, () =>
       this._queryMethods(),
     );
   }
@@ -58,7 +54,7 @@ export class OAuthConfigProvider {
       throw new NotFoundError("The requested auth provider cannot be found");
     }
 
-    return await this.cacheClient.load(
+    return await this.cacheService.load(
       `${CACHE_NAMESPACE}:oauth:method:${provider}`,
       () => this._queryMethod(provider),
     );
@@ -94,8 +90,8 @@ export class OAuthConfigProvider {
 export class OAuthIdentityProvider implements IdentityProvider {
   constructor(
     private configProvider: OAuthConfigProvider,
-    private identityService: IdentityService,
-    private tokenService: TokenService,
+    private identityService: ServiceCradle["identityService"],
+    private tokenService: ServiceCradle["tokenService"],
   ) {}
 
   async listMethods(): Promise<AuthMethod[]> {

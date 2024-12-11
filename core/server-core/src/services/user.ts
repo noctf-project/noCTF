@@ -2,14 +2,14 @@ import { UpdateIdentityData } from "../types/identity.ts";
 import { DatabaseClient } from "../clients/database.ts";
 import { ApplicationError, BadRequestError } from "../errors.ts";
 import { ServiceCradle } from "../index.ts";
-import { CacheClient } from "../clients/cache.ts";
+import { CacheService } from "./cache.ts";
 import { AuditLogService } from "./audit_log.ts";
 import { AuditLogActor } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 
 type Props = Pick<
   ServiceCradle,
-  "databaseClient" | "cacheClient" | "auditLogService"
+  "databaseClient" | "cacheService" | "auditLogService"
 >;
 
 export const CACHE_NAMESPACE = "core:svc:user";
@@ -25,17 +25,17 @@ const checkCount =
 
 export class UserService {
   private databaseClient: DatabaseClient;
-  private cacheClient: CacheClient;
+  private cacheService: CacheService;
   private auditLogService: AuditLogService;
 
-  constructor({ databaseClient, cacheClient, auditLogService }: Props) {
+  constructor({ databaseClient, cacheService: cacheService, auditLogService }: Props) {
     this.databaseClient = databaseClient;
-    this.cacheClient = cacheClient;
+    this.cacheService = cacheService;
     this.auditLogService = auditLogService;
   }
 
   async getFlags(id: number) {
-    return this.cacheClient.load(
+    return this.cacheService.load(
       `${CACHE_NAMESPACE}:${id}:flag`,
       async () =>
         (
