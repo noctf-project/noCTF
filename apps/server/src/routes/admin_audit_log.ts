@@ -6,7 +6,6 @@ import "@noctf/server-core/types/fastify";
 import { AuthzHook } from "@noctf/server-core/hooks/authz";
 import { Policy } from "@noctf/server-core/util/policy";
 
-
 export async function routes(fastify: FastifyInstance) {
   const { auditLogService } = fastify.container.cradle;
 
@@ -28,8 +27,8 @@ export async function routes(fastify: FastifyInstance) {
         auth,
         body: QueryAuditLogRequest,
         response: {
-          200: QueryAuditLogResponse
-        }
+          200: QueryAuditLogResponse,
+        },
       },
     },
     async (request) => ({ data: await auditLogService.query(request.body) }),

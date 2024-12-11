@@ -3,15 +3,17 @@ import { AuditParams } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 import { Evaluate, Policy } from "../util/policy.ts";
 
-type Props = Pick<ServiceCradle, "auditLogService" | "cacheService" | "databaseClient">;
-
+type Props = Pick<
+  ServiceCradle,
+  "auditLogService" | "cacheService" | "databaseClient"
+>;
 
 export const CACHE_NAMESPACE = "core:svc:role";
 
 export enum StaticRole {
   PUBLIC = "public",
   USER = "user",
-  ADMIN = "admin"
+  ADMIN = "admin",
 }
 
 export class RoleService {
@@ -21,7 +23,11 @@ export class RoleService {
 
   private staticRoleIds: Record<StaticRole, number> = null;
 
-  constructor({ auditLogService, cacheService: cacheService, databaseClient }: Props) {
+  constructor({
+    auditLogService,
+    cacheService: cacheService,
+    databaseClient,
+  }: Props) {
     this.auditLogService = auditLogService;
     this.cacheService = cacheService;
     this.databaseClient = databaseClient;
@@ -32,10 +38,11 @@ export class RoleService {
       `${CACHE_NAMESPACE}:permission:${roleId}`,
       async () =>
         (
-          await this.databaseClient.selectFrom("core.role")
-          .select("permissions")
-          .where("id", "=", roleId)
-          .executeTakeFirstOrThrow()
+          await this.databaseClient
+            .selectFrom("core.role")
+            .select("permissions")
+            .where("id", "=", roleId)
+            .executeTakeFirstOrThrow()
         ).permissions,
     );
   }
@@ -45,34 +52,45 @@ export class RoleService {
       `${CACHE_NAMESPACE}:user:${userId}`,
       async () =>
         (
-          await this.databaseClient.selectFrom("core.user_role")
-          .select("role_id")
-          .where("user_id", "=", userId)
-          .execute()
+          await this.databaseClient
+            .selectFrom("core.user_role")
+            .select("role_id")
+            .where("user_id", "=", userId)
+            .execute()
         ).map(({ role_id }) => role_id),
       {
-        expireSeconds: 10
-      }
+        expireSeconds: 10,
+      },
     );
   }
 
-  async addMember(roleId: number, userId: number, { actor, message }: AuditParams = {}) {
-    await this.databaseClient.insertInto("core.user_role")
+  async addMember(
+    roleId: number,
+    userId: number,
+    { actor, message }: AuditParams = {},
+  ) {
+    await this.databaseClient
+      .insertInto("core.user_role")
       .values({
         role_id: roleId,
-        user_id: userId
+        user_id: userId,
       })
       .execute();
     await this.auditLogService.log({
       operation: "role.member.add",
       actor: actor || { type: ActorType.SYSTEM },
       entities: [`${ActorType.ROLE}:${roleId}`, `${ActorType.USER}:${userId}`],
-      data: message
+      data: message,
     });
   }
 
-  async removeMember(roleId: number, userId: number, { actor, message }: AuditParams = {}) {
-    const { numDeletedRows } = await this.databaseClient.deleteFrom("core.user_role")
+  async removeMember(
+    roleId: number,
+    userId: number,
+    { actor, message }: AuditParams = {},
+  ) {
+    const { numDeletedRows } = await this.databaseClient
+      .deleteFrom("core.user_role")
       .where("role_id", "=", roleId)
       .where("user_id", "=", userId)
       .executeTakeFirst();
@@ -80,8 +98,11 @@ export class RoleService {
       await this.auditLogService.log({
         operation: "role.member.remove",
         actor: actor || { type: ActorType.SYSTEM },
-        entities: [`${ActorType.ROLE}:${roleId}`, `${ActorType.USER}:${userId}`],
-        data: message
+        entities: [
+          `${ActorType.ROLE}:${roleId}`,
+          `${ActorType.USER}:${userId}`,
+        ],
+        data: message,
       });
     }
   }
@@ -95,10 +116,13 @@ export class RoleService {
       .select(["name", "id"])
       .where("name", "in", ["public", "user", "admin"])
       .execute();
-    this.staticRoleIds = results.reduce((prev, cur) => {
-      prev[cur.name as StaticRole] = cur.id;
-      return prev;
-    }, {} as RoleService["staticRoleIds"]);
+    this.staticRoleIds = results.reduce(
+      (prev, cur) => {
+        prev[cur.name as StaticRole] = cur.id;
+        return prev;
+      },
+      {} as RoleService["staticRoleIds"],
+    );
     return this.staticRoleIds;
   }
 

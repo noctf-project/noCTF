@@ -1,3 +1,4 @@
+import { RedisUrlType } from "../clients/redis_factory.ts";
 import { ServiceCradle } from "../index.ts";
 
 type Data = string | number | Buffer;
@@ -15,14 +16,12 @@ const DEFAULT_LOAD_PARAMS: LoadParams<unknown> = {
 
 type Props = Pick<ServiceCradle, "redisClientFactory">;
 
-
 export class CacheService {
   private readonly redisClient;
 
   constructor({ redisClientFactory }: Props) {
-    this.redisClient = redisClientFactory.createClient();
+    this.redisClient = redisClientFactory.createClient(RedisUrlType.Cache);
   }
-
 
   async load<T>(
     key: string,
@@ -44,9 +43,9 @@ export class CacheService {
 
   async put(key: string, value: Data, expireSeconds = 0) {
     if (expireSeconds) {
-      return await this.redisClient.set(key, value, 'EX', expireSeconds);
+      return await this.redisClient.set(key, value, "EX", expireSeconds);
     }
-    
+
     await this.redisClient.set(key, value);
   }
 

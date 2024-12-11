@@ -17,7 +17,7 @@ export class AuditLogService {
   async log({
     operation,
     actor: { type, id },
-    entities=[],
+    entities = [],
     data,
   }: {
     operation: string;
@@ -59,7 +59,11 @@ export class AuditLogService {
       query = query.where("actor", "=", actor);
     }
     if (entities && entities.length) {
-      query = query.where("entities", "&&", sql<string[]>`ARRAY[${sql.join(entities)}]`);
+      query = query.where(
+        "entities",
+        "&&",
+        sql<string[]>`ARRAY[${sql.join(entities)}]`,
+      );
     }
     if (operation) {
       query = query.where("operation", "like", operation);

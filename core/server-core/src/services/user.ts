@@ -28,7 +28,11 @@ export class UserService {
   private cacheService: CacheService;
   private auditLogService: AuditLogService;
 
-  constructor({ databaseClient, cacheService: cacheService, auditLogService }: Props) {
+  constructor({
+    databaseClient,
+    cacheService: cacheService,
+    auditLogService,
+  }: Props) {
     this.databaseClient = databaseClient;
     this.cacheService = cacheService;
     this.auditLogService = auditLogService;

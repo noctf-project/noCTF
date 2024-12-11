@@ -7,7 +7,6 @@ import "@noctf/server-core/types/fastify";
 import { AuthzHook } from "@noctf/server-core/hooks/authz";
 import { Policy } from "@noctf/server-core/util/policy";
 
-
 export async function routes(fastify: FastifyInstance) {
   const { configService } = fastify.container.cradle;
 
@@ -26,7 +25,7 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["admin"],
         security: [{ bearer: [] }],
-        auth
+        auth,
       },
     },
     () => ({ data: configService.getSchemas() }),

@@ -1,11 +1,12 @@
-import { sql, type Kysely } from 'kysely'
+import { sql, type Kysely } from "kysely";
 
 /** Divisions are custom scoreboards */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema.withSchema("core");
 
-  await schema.createTable("division")
+  await schema
+    .createTable("division")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
@@ -14,8 +15,9 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("description", "text", (col) => col.notNull())
     .addColumn("flags", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .execute();
-  
-  await schema.createTable("team_division")
+
+  await schema
+    .createTable("team_division")
     .addColumn("team_id", "integer", (col) =>
       col.notNull().references("core.team.id").onDelete("cascade"),
     )

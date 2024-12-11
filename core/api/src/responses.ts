@@ -57,6 +57,4 @@ export type GetAdminConfigValueResponse = Static<
 export const QueryAuditLogResponse = Type.Object({
   data: Type.Array(AuditLogEntry),
 });
-export type QueryAuditLogResponse = Static<
-  typeof QueryAuditLogResponse
->;
+export type QueryAuditLogResponse = Static<typeof QueryAuditLogResponse>;

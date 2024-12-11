@@ -25,7 +25,10 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("provider", "varchar(64)", (col) => col.notNull())
     .addColumn("provider_id", "varchar", (col) => col.notNull())
     .addColumn("secret_data", "varchar")
-    .addUniqueConstraint("user_identity_uidx_user_id_provider", ["user_id", "provider"])
+    .addUniqueConstraint("user_identity_uidx_user_id_provider", [
+      "user_id",
+      "provider",
+    ])
     .addUniqueConstraint("user_identity_uidx_provider_provider_id", [
       "provider",
       "provider_id",
@@ -62,36 +65,41 @@ export async function up(db: Kysely<any>): Promise<void> {
     .column("is_enabled")
     .execute();
 
-  await schema.createTable("role")
+  await schema
+    .createTable("role")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
     .addColumn("name", "varchar(64)", (col) => col.unique())
     .addColumn("description", "text", (col) => col.notNull().defaultTo(""))
-    .addColumn("permissions", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
+    .addColumn("permissions", sql`varchar[]`, (col) =>
+      col.notNull().defaultTo("{}"),
+    )
     .execute();
-  await db.withSchema("core")
+  await db
+    .withSchema("core")
     .insertInto("role")
     .values([
       {
         name: "public",
         description: "users who are not logged in",
-        permissions: [":r", "!user.me", "!admin"]
+        permissions: [":r", "!user.me", "!admin"],
       },
       {
         name: "user",
         description: "logged in users",
-        permissions: ["", "!admin"]
+        permissions: ["", "!admin"],
       },
       {
         name: "admin",
         description: "admin users",
-        permissions: ["", "admin"]
-      }
+        permissions: ["", "admin"],
+      },
     ])
     .execute();
 
-  await schema.createTable("user_role")
+  await schema
+    .createTable("user_role")
     .addColumn("user_id", "integer", (col) =>
       col.notNull().references("core.user.id").onDelete("cascade"),
     )

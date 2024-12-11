@@ -1,4 +1,3 @@
-import { hrtime } from "node:process";
 import { TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import type { ServiceCradle } from "../index.ts";
@@ -21,15 +20,14 @@ export type ConfigValue<T extends SerializableMap> = {
   value: T;
 };
 
-const EXPIRY_NS = 2000n * 1000000n;
-const ctime = hrtime.bigint;
+const EXPIRY_MS = 2000;
 
 export class ConfigService {
   // A simple map-based cache is good enough, we want low latency and don't really need
   // to evict stuff, all the config keys are static and there shouldn't be too many.
   private readonly cache: Map<
     string,
-    [Promise<ConfigValue<SerializableMap>>, bigint]
+    [Promise<ConfigValue<SerializableMap>>, number]
   > = new Map();
   private readonly logger: Props["logger"];
   private readonly databaseClient: Props["databaseClient"];
@@ -58,25 +56,26 @@ export class ConfigService {
     if (noCache) {
       return this._queryDb(namespace);
     }
-    const now = ctime();
+    const now = performance.now();
     if (this.cache.has(namespace)) {
       const [promise, exp] = this.cache.get(namespace);
       if (exp > now) {
         try {
           return promise as Promise<ConfigValue<T>>;
         } catch (error) {
-          this.logger.debug("failed to retrieve config value", {
-            namespace,
+          this.logger.debug(
+            { namespace },
+            "failed to retrieve config value",
             error,
-          });
+          );
         }
       }
     }
     const newPromise = this._queryDb<T>(namespace);
-    this.cache.set(namespace, [newPromise, now + EXPIRY_NS]);
+    this.cache.set(namespace, [newPromise, now + EXPIRY_MS]);
     const result = await newPromise;
     // Update expiry time since we just fetched the object
-    this.cache.set(namespace, [newPromise, ctime() + EXPIRY_NS]);
+    this.cache.set(namespace, [newPromise, performance.now() + EXPIRY_MS]);
     return result;
   }
 
@@ -174,7 +173,7 @@ export class ConfigService {
       version: result.version,
       value,
     });
-    this.cache.set(namespace, [promise, ctime() + EXPIRY_NS]);
+    this.cache.set(namespace, [promise, performance.now() + EXPIRY_MS]);
     return promise;
   }
 
@@ -185,7 +184,11 @@ export class ConfigService {
    * @param defaultCfg default config
    * @param validator config validator, this is run when config is updated
    */
-  async register<T extends SerializableMap>(schema: TSchema, defaultCfg: T, validator?: Validator<T>) {
+  async register<T extends SerializableMap>(
+    schema: TSchema,
+    defaultCfg: T,
+    validator?: Validator<T>,
+  ) {
     const namespace = schema.$id;
     if (this.validators.has(namespace)) {
       throw new Error(

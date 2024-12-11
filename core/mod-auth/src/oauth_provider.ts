@@ -30,8 +30,9 @@ export class OAuthConfigProvider {
     if (!(await this.isEnabled())) {
       return [];
     }
-    return await this.cacheService.load(`${CACHE_NAMESPACE}:oauth:methods`, () =>
-      this._queryMethods(),
+    return await this.cacheService.load(
+      `${CACHE_NAMESPACE}:oauth:methods`,
+      () => this._queryMethods(),
     );
   }
 

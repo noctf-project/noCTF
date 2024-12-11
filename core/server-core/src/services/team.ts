@@ -16,7 +16,11 @@ export class TeamService {
   private readonly databaseClient: Props["databaseClient"];
   private readonly auditLogService: Props["auditLogService"];
 
-  constructor({ databaseClient, cacheService: cacheService, auditLogService }: Props) {
+  constructor({
+    databaseClient,
+    cacheService: cacheService,
+    auditLogService,
+  }: Props) {
     this.cacheService = cacheService;
     this.databaseClient = databaseClient;
     this.auditLogService = auditLogService;
@@ -53,13 +57,7 @@ export class TeamService {
     return id;
   }
 
-  async delete(
-    id: number,
-    {
-      actor,
-      message,
-    }: AuditParams = {},
-  ) {
+  async delete(id: number, { actor, message }: AuditParams = {}) {
     const { numDeletedRows } = await this.databaseClient
       .deleteFrom("core.team")
       .where("id", "=", id)
@@ -83,11 +81,12 @@ export class TeamService {
    * @param code
    */
   async join(userId: number, code: string) {
-    const { id: teamId, flags } = await this.databaseClient
-      .selectFrom("core.team")
-      .select(["id", "flags"])
-      .where("join_code", "=", code)
-      .executeTakeFirst() || {};
+    const { id: teamId, flags } =
+      (await this.databaseClient
+        .selectFrom("core.team")
+        .select(["id", "flags"])
+        .where("join_code", "=", code)
+        .executeTakeFirst()) || {};
     if (
       !teamId ||
       flags.includes(TeamFlag.FROZEN) ||
@@ -127,9 +126,11 @@ export class TeamService {
         role,
       })
       .onConflict((b) =>
-        b.column("user_id").doUpdateSet({ role })
-        .where("core.team_member.team_id", "=", teamId)
-        .where("core.team_member.role", "!=", role),
+        b
+          .column("user_id")
+          .doUpdateSet({ role })
+          .where("core.team_member.team_id", "=", teamId)
+          .where("core.team_member.role", "!=", role),
       )
       .executeTakeFirst();
     if (numInsertedOrUpdatedRows === 0n) {
@@ -140,7 +141,7 @@ export class TeamService {
         type: ActorType.SYSTEM,
       },
       operation: "team.member.assign",
-      entities: [`${ActorType.TEAM}:${teamId}`,`${ActorType.USER}:${userId}`],
+      entities: [`${ActorType.TEAM}:${teamId}`, `${ActorType.USER}:${userId}`],
       data: message,
     });
   }
@@ -149,28 +150,40 @@ export class TeamService {
     userId,
     teamId,
     checkOwner,
-    audit: { actor, message } = {}
+    audit: { actor, message } = {},
   }: {
-    userId: number,
-    teamId: number,
-    checkOwner?: boolean,
-    audit?: AuditParams
+    userId: number;
+    teamId: number;
+    checkOwner?: boolean;
+    audit?: AuditParams;
   }) {
     let query = this.databaseClient
       .deleteFrom("core.team_member")
       .where("user_id", "=", userId)
       .where("team_id", "=", teamId);
     if (checkOwner) {
-      query = query.where((op) => op.or([
-        op(op.selectFrom("core.team_member")
-          .select((o) => o.fn.countAll().as("cnt"))
-          .where("team_id", "=", teamId)
-          .where("user_id", "!=", userId)
-          .where("role", "=", "owner"), "!=", 0),
-        op(op.selectFrom("core.team_member")
-          .select((o) => o.fn.countAll().as("cnt"))
-          .where("team_id", "=", teamId), "=", 1)
-      ]));
+      query = query.where((op) =>
+        op.or([
+          op(
+            op
+              .selectFrom("core.team_member")
+              .select((o) => o.fn.countAll().as("cnt"))
+              .where("team_id", "=", teamId)
+              .where("user_id", "!=", userId)
+              .where("role", "=", "owner"),
+            "!=",
+            0,
+          ),
+          op(
+            op
+              .selectFrom("core.team_member")
+              .select((o) => o.fn.countAll().as("cnt"))
+              .where("team_id", "=", teamId),
+            "=",
+            1,
+          ),
+        ]),
+      );
     }
     const { numDeletedRows } = await query.executeTakeFirst();
     if (!numDeletedRows) {
@@ -181,7 +194,7 @@ export class TeamService {
         type: ActorType.SYSTEM,
       },
       operation: "team.member.remove",
-      entities: [`${ActorType.TEAM}:${teamId}`,`${ActorType.USER}:${userId}`],
+      entities: [`${ActorType.TEAM}:${teamId}`, `${ActorType.USER}:${userId}`],
       data: message,
     });
   }

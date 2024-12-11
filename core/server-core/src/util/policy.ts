@@ -1,26 +1,27 @@
-export type Policy = ["OR"|"AND",...(string|Policy)[]];
+export type Policy = ["OR" | "AND", ...(string | Policy)[]];
 
 const MODIFIERS_SET = new Set("abcdefghijklmnopqrstuvwxyz");
 
 /**
  * Evaluate a policy expression
- * @param policy 
- * @param permissions 
+ * @param policy
+ * @param permissions
  * @param _ttl safeguard to make sure policy won't evaluate forever
  */
-export const Evaluate = (policy: Policy, permissions: string[], _ttl=64) => {
+export const Evaluate = (policy: Policy, permissions: string[], _ttl = 64) => {
   if (_ttl === 0) {
     return false;
   }
-  const permissionsMap = new Map(permissions.map((p) => {
-    const [base, modifiers] = p.split(":");
-    return [base, new Set(modifiers)];
-  }));
-  const [op, ...expressions] = policy;
-  const evaluate = (expr: string | Policy) => (
-    (Array.isArray(expr) && Evaluate(expr, permissions, _ttl-1)) ||
-    typeof expr === 'string' && EvaluateScalar(expr, permissionsMap)
+  const permissionsMap = new Map(
+    permissions.map((p) => {
+      const [base, modifiers] = p.split(":");
+      return [base, new Set(modifiers)];
+    }),
   );
+  const [op, ...expressions] = policy;
+  const evaluate = (expr: string | Policy) =>
+    (Array.isArray(expr) && Evaluate(expr, permissions, _ttl - 1)) ||
+    (typeof expr === "string" && EvaluateScalar(expr, permissionsMap));
   if (op.toUpperCase() === "OR") {
     if (!expressions.length) return true;
     for (const expr of expressions) {
@@ -45,21 +46,24 @@ export const Evaluate = (policy: Policy, permissions: string[], _ttl=64) => {
 };
 
 /**
- * Evaluates a scalar policy (e.g., "admin.user.get") against a set of permissions 
+ * Evaluates a scalar policy (e.g., "admin.user.get") against a set of permissions
  * (e.g., ["admin.user", "!admin", "admin.challenges"]).
- * 
+ *
  * Evaluation process:
- * 1. Check for the negation of the longest matching prefix (e.g., "!admin.user.get"). 
+ * 1. Check for the negation of the longest matching prefix (e.g., "!admin.user.get").
  *    - If a match is found, return `false`.
  * 2. If no negation is found, check for the positive case (e.g., "admin.user.get").
  *    - If a match is found, return `true`.
  * 3. Gradually shorten the prefix (e.g., "admin.user", "admin") and repeat the above checks.
  * 4. Stop the evaluation when an empty prefix ("") is reached.
- * 
+ *
  * @param policy A string representing the policy to evaluate.
  * @param permissions An array of strings representing the available permissions.
  */
-const EvaluateScalar = (policy: string, permissions: Map<string, Set<string>>) => {
+const EvaluateScalar = (
+  policy: string,
+  permissions: Map<string, Set<string>>,
+) => {
   const [basePolicy, modifiers] = policy.split(":");
 
   let currentPolicy = basePolicy;
@@ -86,7 +90,8 @@ const EvaluateScalar = (policy: string, permissions: Map<string, Set<string>>) =
       return result;
     }
     const lastDotIndex = currentPolicy.lastIndexOf(".");
-    currentPolicy = lastDotIndex !== -1 ? currentPolicy.slice(0, lastDotIndex) : "";
+    currentPolicy =
+      lastDotIndex !== -1 ? currentPolicy.slice(0, lastDotIndex) : "";
   }
   return !!check("");
 };

@@ -8,7 +8,6 @@ import { AuthConfig } from "@noctf/api/config";
 import { AuthnHook } from "@noctf/server-core/hooks/authn";
 import "@noctf/server-core/types/fastify";
 
-
 declare module "fastify" {
   interface FastifySchema {
     tags?: string[];
@@ -46,7 +45,7 @@ export async function initServer(fastify: FastifyInstance) {
         security: [{ bearer: [] }],
         auth: {
           require: true,
-        }
+        },
       },
       preHandler: AuthnHook,
     },

@@ -4,8 +4,10 @@ import {
   HOST,
   PORT,
   TOKEN_SECRET,
-  REDIS_URL,
   ENABLE_HTTP2,
+  REDIS_EVENT_URL,
+  REDIS_CACHE_URL,
+  LOG_LEVEL,
 } from "./config.ts";
 import core from "./core.ts";
 import {
@@ -29,11 +31,16 @@ import { fastifyCompress } from "@fastify/compress";
 import { nanoid } from "nanoid/non-secure";
 import { AuditLogService } from "@noctf/server-core/services/audit_log";
 import { RoleService } from "@noctf/server-core/services/role";
-import { RedisClientFactory } from "@noctf/server-core/clients/redis_factory";
+import {
+  RedisClientFactory,
+  RedisUrlType,
+} from "@noctf/server-core/clients/redis_factory";
 import { EventBusService } from "@noctf/server-core/services/event_bus";
 
 export const server = fastify({
-  logger: true,
+  logger: {
+    level: LOG_LEVEL,
+  },
   disableRequestLogging: true,
   genReqId: () => nanoid(),
   ...{ http2: ENABLE_HTTP2 }, // typescript is being funny
@@ -46,12 +53,19 @@ server.register(async () => {
 
   server.container.register({
     logger: asValue(server.log),
-    redisClientFactory: asFunction(({ logger }) => new RedisClientFactory(
-      REDIS_URL,
-      logger
-    ), { lifetime: Lifetime.SINGLETON }),
-    cacheService: asClass(CacheService, { lifetime: Lifetime.SINGLETON }),
+    redisClientFactory: asFunction(
+      ({ logger }) =>
+        new RedisClientFactory(
+          {
+            [RedisUrlType.Cache]: REDIS_CACHE_URL,
+            [RedisUrlType.Event]: REDIS_EVENT_URL,
+          },
+          logger,
+        ),
+      { lifetime: Lifetime.SINGLETON },
+    ),
     databaseClient: asValue(new DatabaseClient(POSTGRES_URL, server.log)),
+    cacheService: asClass(CacheService, { lifetime: Lifetime.SINGLETON }),
     auditLogService: asClass(AuditLogService, { lifetime: Lifetime.SINGLETON }),
     eventBusService: asClass(EventBusService, { lifetime: Lifetime.SINGLETON }),
     tokenService: asFunction(
@@ -71,6 +85,7 @@ server.register(async () => {
     teamService: asClass(TeamService, { lifetime: Lifetime.SINGLETON }),
     userService: asClass(UserService, { lifetime: Lifetime.SINGLETON }),
   });
+  server.container.cradle.eventBusService.start();
 });
 
 server.register(Swagger, {

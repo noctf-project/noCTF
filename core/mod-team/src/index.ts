@@ -28,8 +28,8 @@ export async function initServer(fastify: FastifyInstance) {
         security: [{ bearer: [] }],
         tags: ["team"],
         auth: {
-          require: true
-        }
+          require: true,
+        },
       },
     },
     async () => {

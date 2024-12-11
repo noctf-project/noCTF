@@ -26,9 +26,7 @@ export const AuthnHook = async (request: FastifyRequest) => {
     token = parseCookie(request.headers["cookie"])["noctf-session"];
   }
   if (!token && require) {
-    throw new AuthenticationError(
-      "no cookie or authorization header supplied",
-    );
+    throw new AuthenticationError("no cookie or authorization header supplied");
   } else if (!require) {
     return;
   }
@@ -39,9 +37,8 @@ export const AuthnHook = async (request: FastifyRequest) => {
   >(token, ["scoped", "session"]);
   request.user = {
     id: tokenData.sub,
-    token
+    token,
   };
-
 
   if (!scopes || !scopes.size || tokenData.aud === "session") {
     return;
