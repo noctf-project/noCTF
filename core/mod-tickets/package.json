@@ -1,7 +1,7 @@
 {
-  "name": "@noctf/mod-team",
+  "name": "@noctf/mod-tickets",
   "version": "0.1.0",
-  "description": "team plugin",
+  "description": "tickets module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
@@ -15,7 +15,8 @@
     "@noctf/schema": "workspace:*",
     "@noctf/server-core": "workspace:*",
     "@sinclair/typebox": "catalog:",
-    "fastify": "catalog:"
+    "fastify": "catalog:",
+    "ky": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:"

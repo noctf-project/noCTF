@@ -88,6 +88,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 export async function down(db: Kysely<any>): Promise<void> {
   const schema = db.schema.withSchema("core");
 
+  await schema.dropTable("solve").execute();
   await schema.dropTable("submission").execute();
   await schema.dropTable("challenge").execute();
 }

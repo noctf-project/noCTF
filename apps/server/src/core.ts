@@ -5,6 +5,8 @@ import { initServer as auth } from "@noctf/mod-auth";
 import { initServer as setup } from "@noctf/mod-setup";
 import { initServer as captcha } from "@noctf/mod-captcha";
 import { initServer as team } from "@noctf/mod-team";
+import { initServer as tickets } from "@noctf/mod-tickets";
+
 import { FastifyInstance } from "fastify";
 
 export default async function (fastify: FastifyInstance) {
@@ -15,4 +17,5 @@ export default async function (fastify: FastifyInstance) {
   fastify.register(setup);
   fastify.register(captcha);
   fastify.register(team);
+  fastify.register(tickets);
 }

@@ -8,13 +8,6 @@ import { AuthConfig } from "@noctf/api/config";
 import { AuthnHook } from "@noctf/server-core/hooks/authn";
 import "@noctf/server-core/types/fastify";
 
-declare module "fastify" {
-  interface FastifySchema {
-    tags?: string[];
-    description?: string;
-  }
-}
-
 export async function initServer(fastify: FastifyInstance) {
   const { identityService, configService, logger } = fastify.container.cradle;
   await configService.register(AuthConfig, DEFAULT_CONFIG);

@@ -2,6 +2,9 @@ import type { Policy } from "../util/policy.ts";
 
 declare module "fastify" {
   interface FastifySchema {
+    tags?: string[];
+    description?: string;
+    security?: [{ [key: string]: unknown }];
     auth?: {
       require?: boolean;
       scopes?: Set<string>;

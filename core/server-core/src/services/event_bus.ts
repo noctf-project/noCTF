@@ -24,7 +24,6 @@ type EventHandlerFn<T> = (e: EventItem<T>) => Promise<void>;
 const ACTIVE_REMOTE_QUEUES_KEY = "core:eventbus:activequeues";
 const ACTIVE_QUEUE_HEARTBEAT_EXPIRE = 30;
 
-
 export class EventBusService {
   private readonly logger;
   private readonly queueClient;
@@ -170,6 +169,8 @@ export class EventBusService {
         await this.bullQueues.get(qualifier).add("", data, {
           delay,
           attempts: attempts || 10,
+          removeOnFail: true,
+          removeOnComplete: true,
         });
       }
     }
