@@ -19,7 +19,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("support_id", "varchar")
     .addColumn("dedupe_id", "varchar")
     .addColumn("provider", "varchar(64)", (col) => col.notNull())
-    .addColumn("provider_data", "jsonb", (col) => col.notNull().defaultTo("{}"))
+    .addColumn("provider_id", "varchar(64)")
     .addColumn("created_at", "timestamp", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
@@ -43,15 +43,18 @@ export async function up(db: Kysely<any>): Promise<void> {
     .column("user_id")
     .execute();
   await schema
+    .createIndex("ticket_uidx_provider")
+    .on("ticket")
+    .unique()
+    .columns(["provider", "provider_id"])
+    .nullsNotDistinct()
+    .execute();
+  await schema
     .createIndex("ticket_uidx_thread")
     .unique()
     .on("core.ticket")
-    .columns([
-      "team_id",
-      "user_id",
-      "dedupe_id",
-    ])
-    .where(sql`dedupe_id`, 'is not', null)
+    .columns(["team_id", "user_id", "dedupe_id"])
+    .where(sql`dedupe_id`, "is not", null)
     .execute();
 
   await schema

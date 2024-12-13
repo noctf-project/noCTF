@@ -39,7 +39,10 @@ export const TicketConfig = Type.Object(
     discord: Type.Optional(
       Type.Object(
         {
-          token: Type.String(),
+          bot_token: Type.String({ title: "Bot Token" }),
+          public_key: Type.String({
+            title: "Public Key for interactions webhook",
+          }),
           tickets_channel_id: Type.String({
             title: "Discord Channel ID where tickets are created.",
             pattern: "^\\d+",

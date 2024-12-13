@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "description": "tickets module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:unit": "vitest --coverage",
     "build": "tsc",
+    "release": "pnpm run build && pnpm run test:unit --run",
     "dev": "echo 'Nothing to do' && exit"
   },
   "keywords": [],
@@ -15,11 +16,15 @@
     "@noctf/schema": "workspace:*",
     "@noctf/server-core": "workspace:*",
     "@sinclair/typebox": "catalog:",
+    "discord-api-types": "^0.37.111",
     "fastify": "catalog:",
     "ky": "catalog:"
   },
   "devDependencies": {
-    "typescript": "catalog:"
+    "@vitest/coverage-v8": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "vitest-mock-extended": "catalog:"
   },
   "type": "module",
   "exports": {

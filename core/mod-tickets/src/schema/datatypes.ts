@@ -9,10 +9,8 @@ export const Ticket = Type.Object({
   challenge_id: Type.Optional(Type.Number()),
   support_id: Type.Optional(Type.String()),
   dedupe_id: Type.Optional(Type.String()),
-  requesting_user_id: Type.Number(),
   provider: Type.String(),
-  provider_state: Type.String(),
-  provider_data: Type.Any(),
+  provider_id: Type.Optional(Type.String()),
   created_at: Type.Date(),
 });
 export type Ticket = Static<typeof Ticket>;

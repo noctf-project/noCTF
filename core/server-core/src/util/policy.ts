@@ -72,14 +72,15 @@ const EvaluateScalar = (
   const check = (p: string) => {
     const neg = permissions.get(`!${p}`);
     const pos = permissions.get(p);
+    console.log(p, pos, neg);
     if (neg && !pos) {
       return false;
     } else if (pos && !neg) {
       return pos.size === 0 || modifierSet.isSubsetOf(pos);
     } else if (pos && neg) {
       const pSet = pos.size > 0 ? pos : MODIFIERS_SET;
-      const nSet = neg.size > 0 ? MODIFIERS_SET.difference(neg) : MODIFIERS_SET;
-      return modifierSet.isSubsetOf(pSet.intersection(nSet));
+      const nSet = neg.size > 0 ? neg : MODIFIERS_SET;
+      return modifierSet.isSubsetOf(pSet.difference(nSet));
     }
     return null;
   };

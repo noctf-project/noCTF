@@ -1,0 +1,479 @@
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { mock } from "vitest-mock-extended";
+import { DiscordProvider, EmbedColor } from "./discord.ts";
+import { ConfigService } from "@noctf/server-core/services/config";
+import { IdentityService } from "@noctf/server-core/services/identity";
+import { TeamService } from "@noctf/server-core/services/team";
+import { Logger } from "@noctf/server-core/types/primitives";
+import { TicketConfig } from "../schema/config.ts";
+import ky, { KyResponse } from "ky";
+import { APIThreadChannel, ChannelType } from "discord-api-types/v10";
+
+vi.mock("ky");
+const mockKy = vi.mocked(ky, true);
+
+const date = new Date("1970-01-01T00:00:00Z");
+
+describe("Discord Tickets Provider", async () => {
+  const configService = mock<ConfigService>();
+  const identityService = mock<IdentityService>();
+  const teamService = mock<TeamService>();
+  const logger = mock<Logger>();
+
+  beforeEach(() => {
+    mockKy.create.mockReturnValue(ky);
+  });
+
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
+  test("Fails to open if discord config is not present", async () => {
+    const provider = new DiscordProvider({
+      configService,
+      identityService,
+      teamService,
+      logger,
+    });
+    configService.get.mockResolvedValue({ version: 1, value: {} });
+    await expect(() =>
+      provider.open(1, {
+        id: 1,
+        open: true,
+        description: "",
+        provider: "discord",
+        created_at: new Date("1970-01-01T00:00:00Z"),
+      }),
+    ).rejects.toThrowError("discord config is not present");
+  });
+
+  test("Fails to close if discord config is not present", async () => {
+    const provider = new DiscordProvider({
+      configService,
+      identityService,
+      teamService,
+      logger,
+    });
+    configService.get.mockResolvedValue({ version: 1, value: {} });
+    await expect(() =>
+      provider.open(1, {
+        id: 1,
+        open: false,
+        description: "",
+        provider: "discord",
+        created_at: new Date("1970-01-01T00:00:00Z"),
+      }),
+    ).rejects.toThrowError("discord config is not present");
+  });
+
+  test("Open a new ticket on behalf of a team", async () => {
+    const provider = new DiscordProvider({
+      configService,
+      identityService,
+      teamService,
+      logger,
+    });
+    configService.get.mockResolvedValue({
+      version: 1,
+      value: {
+        discord: {
+          bot_token: "bot-token",
+          tickets_channel_id: "0000",
+          notifications_channel_id: "1111",
+        },
+      } as TicketConfig,
+    });
+    const res = mock<KyResponse<APIThreadChannel>>();
+    res.json.mockResolvedValue({
+      id: "2222",
+    });
+    vi.mocked(teamService).getMembers.mockResolvedValue([
+      { user_id: 1, role: "member" },
+      { user_id: 2, role: "member" },
+      { user_id: 3, role: "member" },
+    ]);
+    vi.mocked(identityService).getProviderForUser.mockImplementation(
+      (name, id) =>
+        Promise.resolve({
+          provider_id: (id * 10).toString(),
+          provider: name,
+          user_id: id,
+          created_at: date,
+          secret_data: null,
+        }),
+    );
+    mockKy.post.mockResolvedValueOnce(res);
+    await provider.open(1, {
+      id: 42,
+      open: true,
+      description: "",
+      challenge_id: 1,
+      team_id: 1,
+      provider: "discord",
+      created_at: date,
+    });
+    expect(mockKy.post).toHaveBeenCalledTimes(3);
+    expect(mockKy.post).toHaveBeenCalledWith("channels/0000/threads", {
+      json: {
+        name: "ticket-42",
+        type: ChannelType.PrivateThread,
+        invitable: false,
+        auto_archive_duration: 60,
+      },
+    });
+    expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
+      json: {
+        embeds: [
+          {
+            title: "Ticket Opened",
+            color: EmbedColor.Opened,
+            fields: expect.arrayContaining([
+              {
+                name: "Ticket Type",
+                value: "Challenge",
+                inline: true,
+              },
+              {
+                name: "Requester Type",
+                value: "Team",
+                inline: true,
+              },
+              {
+                name: "Actor",
+                value: "<@10>",
+                inline: true,
+              },
+            ]),
+          },
+        ],
+      },
+    });
+    expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
+      json: {
+        content: "Ticket opened by <@10>.",
+      },
+    });
+    expect(mockKy.put).toHaveBeenCalledTimes(3);
+    expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/10");
+    expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/20");
+    expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/30");
+  });
+
+  test("Open a new ticket on behalf of a user", async () => {
+    const provider = new DiscordProvider({
+      configService,
+      identityService,
+      teamService,
+      logger,
+    });
+    configService.get.mockResolvedValue({
+      version: 1,
+      value: {
+        discord: {
+          bot_token: "bot-token",
+          tickets_channel_id: "0000",
+          notifications_channel_id: "1111",
+        },
+      } as TicketConfig,
+    });
+    const res = mock<KyResponse<APIThreadChannel>>();
+    res.json.mockResolvedValue({
+      id: "2222",
+    });
+    vi.mocked(identityService).getProviderForUser.mockImplementation(
+      (name, id) =>
+        Promise.resolve({
+          provider_id: (id * 10).toString(),
+          provider: name,
+          user_id: id,
+          created_at: date,
+          secret_data: null,
+        }),
+    );
+    mockKy.post.mockResolvedValueOnce(res);
+    await provider.open(1, {
+      id: 42,
+      open: true,
+      description: "",
+      support_id: "u-general",
+      user_id: 1,
+      provider: "discord",
+      created_at: date,
+    });
+    expect(mockKy.post).toHaveBeenCalledTimes(3);
+    expect(mockKy.post).toHaveBeenCalledWith("channels/0000/threads", {
+      json: {
+        name: "ticket-42",
+        type: ChannelType.PrivateThread,
+        invitable: false,
+        auto_archive_duration: 60,
+      },
+    });
+    expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
+      json: {
+        embeds: [
+          {
+            title: "Ticket Opened",
+            color: EmbedColor.Opened,
+            fields: expect.arrayContaining([
+              {
+                name: "Ticket Type",
+                value: "Support",
+                inline: true,
+              },
+              {
+                name: "Requester Type",
+                value: "User",
+                inline: true,
+              },
+              {
+                name: "Actor",
+                value: "<@10>",
+                inline: true,
+              },
+            ]),
+          },
+        ],
+      },
+    });
+    expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
+      json: {
+        content: "Ticket opened by <@10>.",
+      },
+    });
+    expect(mockKy.put).toHaveBeenCalledTimes(1);
+    expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/10");
+  });
+
+  test("Open a new ticket for a user without a linked discord account.", async () => {
+    const provider = new DiscordProvider({
+      configService,
+      identityService,
+      teamService,
+      logger,
+    });
+    configService.get.mockResolvedValue({
+      version: 1,
+      value: {
+        discord: {
+          bot_token: "bot-token",
+          tickets_channel_id: "0000",
+          notifications_channel_id: "1111",
+        },
+      } as TicketConfig,
+    });
+    const res = mock<KyResponse<APIThreadChannel>>();
+    res.json.mockResolvedValue({
+      id: "2222",
+    });
+    mockKy.post.mockResolvedValueOnce(res);
+    await provider.open(1, {
+      id: 42,
+      open: true,
+      description: "",
+      challenge_id: 1,
+      user_id: 1,
+      provider: "discord",
+      created_at: date,
+    });
+    expect(mockKy.post).toHaveBeenCalledTimes(3);
+    expect(mockKy.post).toHaveBeenCalledWith("channels/0000/threads", {
+      json: {
+        name: "ticket-42",
+        type: ChannelType.PrivateThread,
+        invitable: false,
+        auto_archive_duration: 60,
+      },
+    });
+    expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
+      json: {
+        embeds: [
+          {
+            title: "Ticket Opened",
+            color: EmbedColor.Opened,
+            fields: expect.arrayContaining([
+              {
+                name: "Ticket Type",
+                value: "Challenge",
+                inline: true,
+              },
+              {
+                name: "Requester Type",
+                value: "User",
+                inline: true,
+              },
+              {
+                name: "Actor",
+                value: "user:1",
+                inline: true,
+              },
+            ]),
+          },
+        ],
+      },
+    });
+    expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
+      json: {
+        content: "Ticket opened by user:1.",
+      },
+    });
+  });
+
+
+  test("Re-open an existing ticket", async () => {
+    const provider = new DiscordProvider({
+      configService,
+      identityService,
+      teamService,
+      logger,
+    });
+    configService.get.mockResolvedValue({
+      version: 1,
+      value: {
+        discord: {
+          bot_token: "bot-token",
+          tickets_channel_id: "0000",
+          notifications_channel_id: "1111",
+        },
+      } as TicketConfig,
+    });
+    vi.mocked(identityService).getProviderForUser.mockImplementation(
+      (name, id) =>
+        Promise.resolve({
+          provider_id: (id * 10).toString(),
+          provider: name,
+          user_id: id,
+          created_at: date,
+          secret_data: null,
+        }),
+    );
+    await provider.open(1, {
+      id: 42,
+      open: true,
+      description: "",
+      challenge_id: 1,
+      team_id: 1,
+      provider: "discord",
+      provider_id: "2222",
+      created_at: date,
+    });
+    expect(mockKy.patch).toHaveBeenCalledWith("channels/2222", {
+      json: {
+        locked: false,
+        archived: false,
+      },
+    });
+    expect(mockKy.post).toHaveBeenCalledTimes(2);
+    expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
+      json: {
+        embeds: [
+          {
+            title: "Ticket Re-Opened",
+            color: EmbedColor["Re-Opened"],
+            fields: expect.arrayContaining([
+              {
+                name: "Ticket Type",
+                value: "Challenge",
+                inline: true,
+              },
+              {
+                name: "Requester Type",
+                value: "Team",
+                inline: true,
+              },
+              {
+                name: "Actor",
+                value: "<@10>",
+                inline: true,
+              },
+            ]),
+          },
+        ],
+      },
+    });
+    expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
+      json: {
+        content: "Ticket re-opened by <@10>.",
+      },
+    });
+    expect(mockKy.put).toHaveBeenCalledTimes(0);
+  });
+
+  test("Closing a ticket", async () => {
+    const provider = new DiscordProvider({
+      configService,
+      identityService,
+      teamService,
+      logger,
+    });
+    configService.get.mockResolvedValue({
+      version: 1,
+      value: {
+        discord: {
+          bot_token: "bot-token",
+          tickets_channel_id: "0000",
+          notifications_channel_id: "1111",
+        },
+      } as TicketConfig,
+    });
+    vi.mocked(identityService).getIdentityForProvider.mockImplementation(
+      (name, id) =>
+        Promise.resolve({
+          provider_id: id,
+          provider: name,
+          user_id: Math.floor(parseInt(id) / 10),
+          created_at: date,
+          secret_data: null,
+        }),
+    );
+    await provider.close("10", {
+      id: 42,
+      open: false,
+      description: "",
+      challenge_id: 1,
+      team_id: 1,
+      provider: "discord",
+      provider_id: "2222",
+      created_at: date,
+    });
+
+    expect(mockKy.patch).toHaveBeenCalledWith("channels/2222", {
+      json: {
+        locked: true,
+        archived: true,
+      },
+    });
+    expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
+      json: {
+        content: expect.stringContaining("Ticket closed by <@10>"),
+      },
+    });
+    expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
+      json: {
+        embeds: [
+          {
+            title: "Ticket Closed",
+            color: EmbedColor.Closed,
+            fields: expect.arrayContaining([
+              {
+                name: "Ticket Type",
+                value: "Challenge",
+                inline: true,
+              },
+              {
+                name: "Requester Type",
+                value: "Team",
+                inline: true,
+              },
+              {
+                name: "Actor",
+                value: "<@10>",
+                inline: true,
+              },
+            ]),
+          },
+        ],
+      },
+    });
+  });
+});

@@ -1,9 +1,10 @@
 import { expect, it } from "vitest";
-import { Evaluate } from "./policy.ts";
+import { Evaluate, Policy } from "./policy.ts";
 
 it("Evaluates single scalar policies", () => {
   const permissions = ["admin.user", "!admin", "admin.challenges"];
 
+  expect(Evaluate(["OR"], permissions)).toBe(true);
   expect(Evaluate(["OR", "admin.user"], permissions)).toBe(true);
   expect(Evaluate(["AND", "admin.user"], permissions)).toBe(true);
   expect(Evaluate(["OR", "admin.config"], permissions)).toBe(false);
@@ -68,6 +69,13 @@ it("Fails to evaluate deeply nested policies according to TTL", () => {
   ).toBe(false);
 });
 
+it("Fails to evaluate incorrect policies", () => {
+  const permissions = ["admin.user", "!admin", "admin.challenges"];
+
+  expect(() => Evaluate(["NO", "admin.user"] as unknown as Policy, permissions))
+    .toThrowError("Invalid policy expression");
+});
+
 it("Evaluates policies with modifiers", () => {
   const permissions = [
     "admin.user:r",
@@ -77,6 +85,8 @@ it("Evaluates policies with modifiers", () => {
     "!admin.score:w",
     "admin.score2",
     "!admin.score2:w",
+    "admin.score3",
+    "!admin.score3",
     "!admin",
     ":r",
   ];
@@ -92,6 +102,8 @@ it("Evaluates policies with modifiers", () => {
   expect(Evaluate(["OR", "admin.score:r"], permissions)).toBe(true);
   expect(Evaluate(["OR", "admin.score2:w"], permissions)).toBe(false);
   expect(Evaluate(["OR", "admin.score2:r"], permissions)).toBe(true);
+  expect(Evaluate(["OR", "admin.score3"], permissions)).toBe(false);
+  expect(Evaluate(["OR", "admin.score3:r"], permissions)).toBe(false);
   expect(Evaluate(["OR", "admin.me"], permissions)).toBe(false);
   expect(Evaluate(["OR", "user.me"], permissions)).toBe(false);
 });

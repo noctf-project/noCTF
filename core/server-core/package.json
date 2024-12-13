@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "description": "core noCTF internal APIs",
   "scripts": {
-    "test:unit": "vitest",
+    "test:unit": "vitest --coverage",
     "build": "tsc",
+    "release": "pnpm run build && pnpm run test:unit --run",
     "dev": "echo 'Nothing to do' && exit"
   },
   "keywords": [],
@@ -25,7 +26,9 @@
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.7",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "vitest-mock-extended": "catalog:"
   },
   "type": "module",
   "exports": {

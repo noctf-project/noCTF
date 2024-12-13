@@ -22,4 +22,6 @@ catalog:
   "@fastify/swagger": ^9.3.0
   "pino-pretty": ^13.0.0
   "@sinclair/typebox": ^0.33.14
-  "vitest": ^2.1.5
+  "vitest": ^2.1.8
+  "@vitest/coverage-v8": ^2.1.8
+  "vitest-mock-extended": "^2.0.2"

@@ -5,17 +5,22 @@ import { ApplicationError, ValidationError } from "../errors.ts";
 import { IdentityProvider, UpdateIdentityData } from "../types/identity.ts";
 import type { ServiceCradle } from "../index.ts";
 
-type Props = Pick<ServiceCradle, "databaseClient" | "tokenService">;
+type Props = Pick<
+  ServiceCradle,
+  "databaseClient" | "tokenService" | "cacheService"
+>;
 
 export class IdentityService {
-  private databaseClient: Props["databaseClient"];
-  private tokenService: Props["tokenService"];
+  private readonly databaseClient;
+  private readonly tokenService;
+  private readonly cacheService;
 
   private providers: Map<string, IdentityProvider> = new Map();
 
-  constructor({ databaseClient, tokenService }: Props) {
+  constructor({ databaseClient, tokenService, cacheService }: Props) {
     this.databaseClient = databaseClient;
     this.tokenService = tokenService;
+    this.cacheService = cacheService;
   }
 
   register(provider: IdentityProvider) {
@@ -113,29 +118,41 @@ export class IdentityService {
       .execute();
   }
 
-  async getProviderIdForUser(name: string, id: number) {
-    return (
-      await this.databaseClient
-        .selectFrom("core.user_identity")
-        .select(["provider_id"])
-        .where("provider", "=", name)
-        .where("user_id", "=", id)
-        .executeTakeFirst()
-    )?.provider_id;
+  async getProviderForUser(name: string, id: number) {
+    return this.cacheService.load(
+      `core:svc:identity:pid_usr:${id}:${name}`,
+      async () =>
+        await this.databaseClient
+          .selectFrom("core.user_identity")
+          .select([
+            "user_id",
+            "provider",
+            "provider_id",
+            "secret_data",
+            "created_at",
+          ])
+          .where("provider", "=", name)
+          .where("user_id", "=", id)
+          .executeTakeFirst(),
+    );
   }
 
   async getIdentityForProvider(name: string, id: string) {
-    return await this.databaseClient
-      .selectFrom("core.user_identity")
-      .select([
-        "user_id",
-        "provider",
-        "provider_id",
-        "secret_data",
-        "created_at",
-      ])
-      .where("provider", "=", name)
-      .where("provider_id", "=", id)
-      .executeTakeFirst();
+    return this.cacheService.load(
+      `core:svc:identity:uid_pvd:${id}:${name}`,
+      async () =>
+        await this.databaseClient
+          .selectFrom("core.user_identity")
+          .select([
+            "user_id",
+            "provider",
+            "provider_id",
+            "secret_data",
+            "created_at",
+          ])
+          .where("provider", "=", name)
+          .where("provider_id", "=", id)
+          .executeTakeFirst(),
+    );
   }
 }
