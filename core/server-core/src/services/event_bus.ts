@@ -1,6 +1,10 @@
 import { DefaultJobOptions, Queue, Worker } from "bullmq";
 import { ServiceCradle } from "../index.ts";
 import { RedisUrlType as RedisUrlType } from "../clients/redis_factory.ts";
+import { decode, encode } from "cbor2";
+import { EvaluateFilter, EventFilter } from "../util/filter.ts";
+import { TSchema } from "@sinclair/typebox";
+import { Value } from "@sinclair/typebox/value";
 
 type Props = Pick<ServiceCradle, "redisClientFactory" | "logger">;
 
@@ -11,6 +15,10 @@ export type EventItem<T> = {
   attempt: number;
   data: T;
 };
+export type EventSubscribeOptions = {
+  name?: string;
+  filter?: any;
+};
 export type EventPublishOptions = {
   delay?: number;
   attempts?: number;
@@ -19,7 +27,11 @@ export type EventSubscriberHandle<T> = {
   _type: string;
   _data: string | EventHandlerFn<T>;
 };
-type EventHandlerFn<T> = (e: EventItem<T>) => Promise<void>;
+
+type RemoteSpec = [string, EventFilter];
+type SerializedSpec = Buffer;
+
+type EventHandlerFn<T> = (e: EventItem<T>) => Promise<void> | void;
 
 const ACTIVE_REMOTE_QUEUES_KEY = "core:eventbus:activequeues";
 const ACTIVE_QUEUE_HEARTBEAT_EXPIRE = 30;
@@ -31,14 +43,15 @@ export class EventBusService {
 
   // These values do leak but the number of queues is not expected to grow over time.
   // Will implement GC at later
-  private readonly bullWorkers: Map<string, Worker> = new Map();
+  private readonly bullWorkers: Map<string, [SerializedSpec, Worker]> =
+    new Map();
   private readonly bullQueues: Map<string, Queue> = new Map();
 
   private remoteInterval?: NodeJS.Timeout;
   private localQueues: {
     [key: string]: { id: number; fn: Set<EventHandlerFn<unknown>> };
   } = {};
-  private remoteQueues: { [key: string]: Set<string> } = {};
+  private remoteQueues: { [key: string]: Map<string, EventFilter> } = {};
 
   constructor({ redisClientFactory, logger }: Props) {
     this.logger = logger;
@@ -74,8 +87,9 @@ export class EventBusService {
    */
   subscribe<T>(
     handler: EventHandlerFn<T>,
+    schema: TSchema,
     type: string,
-    name?: string,
+    { name, filter }: EventSubscribeOptions = {},
   ): EventSubscriberHandle<T> {
     if (name.includes("|")) {
       throw new Error("message type cannot contain a pipe character");
@@ -90,19 +104,25 @@ export class EventBusService {
       const worker = new Worker(
         qualifier,
         async (job) => {
-          handler({
-            id: job.id,
-            timestamp: job.timestamp,
-            type,
-            attempt: job.attemptsMade,
-            data: job.data,
-          });
+          try {
+            await handler({
+              id: job.id,
+              timestamp: job.timestamp,
+              type,
+              attempt: job.attemptsMade,
+              data: Value.Convert(schema, job.data) as T,
+            });
+          } catch (e) {
+            this.logger.error({ error: e, name }, "Unepected error running worker");
+            throw e;
+          }
         },
         {
           connection: this.queueClient,
         },
       );
-      this.bullWorkers.set(qualifier, worker);
+      const spec = encode([qualifier, filter || null]);
+      this.bullWorkers.set(qualifier, [Buffer.from(spec), worker]);
       return {
         _type: type,
         _data: qualifier,
@@ -164,9 +184,11 @@ export class EventBusService {
     }
 
     if (this.remoteQueues[type]) {
-      for (const qualifier of this.remoteQueues[type]) {
+      for (const [qualifier, filter] of this.remoteQueues[type]) {
         this.logger.debug({ qualifier }, "publishing message to remote queue");
-        await this.bullQueues.get(qualifier).add("", data, {
+        if (!EvaluateFilter(filter, data)) continue;
+        const queue = this.bullQueues.get(qualifier);
+        await queue.add("", data, {
           delay,
           attempts: attempts || 10,
           removeOnFail: true,
@@ -184,33 +206,40 @@ export class EventBusService {
     const args: (string | Buffer | number)[] = [];
     for (const i of this.bullWorkers.keys()) {
       args.push(now + ACTIVE_QUEUE_HEARTBEAT_EXPIRE * 2);
-      args.push(i);
+      args.push(this.bullWorkers.get(i)[0]);
     }
     if (args.length) {
       await this.queueClient.zadd(ACTIVE_REMOTE_QUEUES_KEY, ...args);
     }
-    const remotes = await this.queueClient.zrangebyscore(
+    const remotes = await this.queueClient.zrangebyscoreBuffer(
       ACTIVE_REMOTE_QUEUES_KEY,
       now,
       Number.MAX_SAFE_INTEGER,
     );
     const workers: EventBusService["remoteQueues"] = {};
+
     for (let i = 0; i < remotes.length; i++) {
-      const qualifier = remotes[i];
+      const spec = decode(
+        Buffer.from(remotes[remotes.length - i - 1]),
+      ) as RemoteSpec;
+      const [qualifier, filter] = spec;
+
       const sp = qualifier.indexOf("|");
       if (sp === -1) {
         throw new Error("invalid queue name spec on remote");
       }
       const type = qualifier.substring(0, sp);
       if (!workers[type]) {
-        workers[type] = new Set();
+        workers[type] = new Map();
       }
-      workers[type].add(qualifier);
-      if (!this.bullQueues.has(qualifier)) {
-        this.bullQueues.set(
-          qualifier,
-          new Queue(qualifier, { connection: this.queueClient }),
-        );
+      if (!workers[type].has(qualifier)) {
+        workers[type].set(qualifier, filter);
+        if (!this.bullQueues.has(qualifier)) {
+          this.bullQueues.set(
+            qualifier,
+            new Queue(qualifier, { connection: this.queueClient }),
+          );
+        }
       }
     }
     this.remoteQueues = workers;

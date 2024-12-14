@@ -3,7 +3,6 @@ import { Static, Type } from "@sinclair/typebox";
 export const Ticket = Type.Object({
   id: Type.Number(),
   open: Type.Boolean(),
-  description: Type.String(),
   team_id: Type.Optional(Type.Number()),
   user_id: Type.Optional(Type.Number()),
   category: Type.String(),

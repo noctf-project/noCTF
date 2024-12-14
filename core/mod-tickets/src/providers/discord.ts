@@ -10,6 +10,7 @@ import {
   RESTPostAPIChannelMessageJSONBody,
   RESTPostAPIChannelThreadsJSONBody,
 } from "discord-api-types/v10";
+import { TicketService } from "../service.ts";
 
 export const DiscordProviderData = Type.Object({
   channel: Type.String(),
@@ -25,23 +26,33 @@ export enum EmbedColor {
 
 export const API_ENDPOINT = "https://discord.com/api/v10";
 
+const USER_REGEX = /^(user|discord):(\d+)$/;
+
 type Props = Pick<
   ServiceCradle,
   "configService" | "identityService" | "teamService" | "logger"
->;
+> & { ticketService: TicketService };
 export class DiscordProvider {
   private readonly configService;
   private readonly teamService;
   private readonly identityService;
+  private readonly ticketService;
   private readonly logger;
 
   private client: KyInstance;
   private clientConfigVersion: number;
 
-  constructor({ configService, identityService, teamService, logger }: Props) {
+  constructor({
+    configService,
+    identityService,
+    teamService,
+    logger,
+    ticketService,
+  }: Props) {
     this.configService = configService;
     this.identityService = identityService;
     this.teamService = teamService;
+    this.ticketService = ticketService;
     this.logger = logger;
   }
 
@@ -142,11 +153,6 @@ export class DiscordProvider {
                 value: `<#${ticket.provider_id}>`,
                 inline: true,
               },
-              {
-                name: "Description",
-                value: ticket.description,
-                inline: true,
-              },
             ].filter((x) => x),
           },
         ],
@@ -154,8 +160,9 @@ export class DiscordProvider {
     });
   }
 
-  async open(actingUserId: number, ticket: Ticket) {
-    const { notifications_channel_id, tickets_channel_id } = await this.getConfig();
+  async open(actor: string, ticket: Ticket) {
+    const { notifications_channel_id, tickets_channel_id } =
+      await this.getConfig();
     const client = await this.getClient();
 
     const newTicket = !ticket.provider_id;
@@ -173,6 +180,7 @@ export class DiscordProvider {
       );
       const json = await res.json();
       ticket.provider_id = json.id;
+      await this.ticketService.setProviderId(ticket.id, "discord", json.id);
     } else {
       await client.patch<APIThreadChannel>(`channels/${ticket.provider_id}`, {
         json: {
@@ -181,20 +189,29 @@ export class DiscordProvider {
         } as RESTPatchAPIChannelJSONBody,
       });
     }
+    const match = actor.match(USER_REGEX);
+    let actingDiscordId: string;
+    if (match && match[1] === "user") {
+      actingDiscordId = (
+        await this.identityService.getProviderForUser(
+          "discord",
+          parseInt(match[2]),
+        )
+      )?.provider_id;
+    } else if (match && match[1] === "discord") {
+      actingDiscordId = match[2];
+    }
     // TODO: commit to db here
-    const actingDiscordId = (
-      await this.identityService.getProviderForUser("discord", actingUserId)
-    )?.provider_id;
-    const actor = actingDiscordId ? `<@${actingDiscordId}>` : `user:${actingUserId}`;
+    const actorStr = actingDiscordId ? `<@${actingDiscordId}>` : actor;
     await this.postNotification(
       notifications_channel_id,
-      actor,
+      actorStr,
       ticket,
       newTicket ? "Opened" : "Re-Opened",
     );
     await this.postNotification(
       ticket.provider_id,
-      actor,
+      actorStr,
       ticket,
       newTicket ? "Opened" : "Re-Opened",
     );
@@ -211,12 +228,24 @@ export class DiscordProvider {
     }
   }
 
-  async close(actingDiscordId: string, ticket: Ticket) {
+  async close(actor: string, ticket: Ticket) {
     const { notifications_channel_id } = await this.getConfig();
     const client = await this.getClient();
+    const match = actor.match(USER_REGEX);
+    let actingDiscordId: string;
+    if (match && match[1] === "user") {
+      actingDiscordId = (
+        await this.identityService.getProviderForUser(
+          "discord",
+          parseInt(match[2]),
+        )
+      )?.provider_id;
+    } else if (match && match[1] === "discord") {
+      actingDiscordId = match[2];
+    }
     await this.postNotification(
       ticket.provider_id,
-      `<@${actingDiscordId}>`,
+      actingDiscordId ? `<@${actingDiscordId}>` : actor,
       ticket,
       "Closed",
     );
@@ -237,6 +266,11 @@ export class DiscordProvider {
       "Matched Discord ID with existing user",
     );
     // TODO: commit to db here
-    await this.postNotification(notifications_channel_id, `<@${actingDiscordId}>`, ticket, "Closed");
+    await this.postNotification(
+      notifications_channel_id,
+      actingDiscordId ? `<@${actingDiscordId}>` : actor,
+      ticket,
+      "Closed",
+    );
   }
 }

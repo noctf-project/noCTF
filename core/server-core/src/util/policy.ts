@@ -72,7 +72,6 @@ const EvaluateScalar = (
   const check = (p: string) => {
     const neg = permissions.get(`!${p}`);
     const pos = permissions.get(p);
-    console.log(p, pos, neg);
     if (neg && !pos) {
       return false;
     } else if (pos && !neg) {

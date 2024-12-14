@@ -8,6 +8,7 @@ import { Logger } from "@noctf/server-core/types/primitives";
 import { TicketConfig } from "../schema/config.ts";
 import ky, { KyResponse } from "ky";
 import { APIThreadChannel, ChannelType } from "discord-api-types/v10";
+import { TicketService } from "../service.ts";
 
 vi.mock("ky");
 const mockKy = vi.mocked(ky, true);
@@ -18,6 +19,7 @@ describe("Discord Tickets Provider", async () => {
   const configService = mock<ConfigService>();
   const identityService = mock<IdentityService>();
   const teamService = mock<TeamService>();
+  const ticketService = mock<TicketService>();
   const logger = mock<Logger>();
 
   beforeEach(() => {
@@ -33,14 +35,14 @@ describe("Discord Tickets Provider", async () => {
       configService,
       identityService,
       teamService,
+      ticketService,
       logger,
     });
     configService.get.mockResolvedValue({ version: 1, value: {} });
     await expect(() =>
-      provider.open(1, {
+      provider.open("user:1", {
         id: 1,
         open: true,
-        description: "",
         category: "challenge",
         item: "pwn-hello",
         provider: "discord",
@@ -54,14 +56,14 @@ describe("Discord Tickets Provider", async () => {
       configService,
       identityService,
       teamService,
+      ticketService,
       logger,
     });
     configService.get.mockResolvedValue({ version: 1, value: {} });
     await expect(() =>
-      provider.open(1, {
+      provider.open("user:1", {
         id: 1,
         open: false,
-        description: "",
         category: "challenge",
         item: "pwn-hello",
         provider: "discord",
@@ -75,6 +77,7 @@ describe("Discord Tickets Provider", async () => {
       configService,
       identityService,
       teamService,
+      ticketService,
       logger,
     });
     configService.get.mockResolvedValue({
@@ -107,10 +110,9 @@ describe("Discord Tickets Provider", async () => {
         }),
     );
     mockKy.post.mockResolvedValueOnce(res);
-    await provider.open(1, {
+    await provider.open("user:1", {
       id: 42,
       open: true,
-      description: "",
       team_id: 1,
       category: "challenge",
       item: "pwn-hello",
@@ -154,13 +156,13 @@ describe("Discord Tickets Provider", async () => {
     };
     expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
       json: {
-        embeds: [embed]
-      }
+        embeds: [embed],
+      },
     });
     expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
       json: {
-        embeds: [embed]
-      }
+        embeds: [embed],
+      },
     });
     expect(mockKy.put).toHaveBeenCalledTimes(3);
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/10");
@@ -173,6 +175,7 @@ describe("Discord Tickets Provider", async () => {
       configService,
       identityService,
       teamService,
+      ticketService,
       logger,
     });
     configService.get.mockResolvedValue({
@@ -200,10 +203,9 @@ describe("Discord Tickets Provider", async () => {
         }),
     );
     mockKy.post.mockResolvedValueOnce(res);
-    await provider.open(1, {
+    await provider.open("user:1", {
       id: 42,
       open: true,
-      description: "",
       category: "challenge",
       item: "pwn-hello",
       user_id: 1,
@@ -247,13 +249,13 @@ describe("Discord Tickets Provider", async () => {
     };
     expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
       json: {
-        embeds: [embed]
-      }
+        embeds: [embed],
+      },
     });
     expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
       json: {
-        embeds: [embed]
-      }
+        embeds: [embed],
+      },
     });
     expect(mockKy.put).toHaveBeenCalledTimes(1);
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/10");
@@ -264,6 +266,7 @@ describe("Discord Tickets Provider", async () => {
       configService,
       identityService,
       teamService,
+      ticketService,
       logger,
     });
     configService.get.mockResolvedValue({
@@ -281,10 +284,9 @@ describe("Discord Tickets Provider", async () => {
       id: "2222",
     });
     mockKy.post.mockResolvedValueOnce(res);
-    await provider.open(1, {
+    await provider.open("user:1", {
       id: 42,
       open: true,
-      description: "",
       user_id: 1,
       category: "challenge",
       item: "pwn-hello",
@@ -328,22 +330,22 @@ describe("Discord Tickets Provider", async () => {
     };
     expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
       json: {
-        embeds: [embed]
-      }
+        embeds: [embed],
+      },
     });
     expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
       json: {
-        embeds: [embed]
-      }
+        embeds: [embed],
+      },
     });
   });
-
 
   test("Re-open an existing ticket", async () => {
     const provider = new DiscordProvider({
       configService,
       identityService,
       teamService,
+      ticketService,
       logger,
     });
     configService.get.mockResolvedValue({
@@ -366,10 +368,9 @@ describe("Discord Tickets Provider", async () => {
           secret_data: null,
         }),
     );
-    await provider.open(1, {
+    await provider.open("user:1", {
       id: 42,
       open: true,
-      description: "",
       category: "challenge",
       item: "pwn-hello",
       team_id: 1,
@@ -412,13 +413,13 @@ describe("Discord Tickets Provider", async () => {
     };
     expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
       json: {
-        embeds: [embed]
-      }
+        embeds: [embed],
+      },
     });
     expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
       json: {
-        embeds: [embed]
-      }
+        embeds: [embed],
+      },
     });
     expect(mockKy.put).toHaveBeenCalledTimes(0);
   });
@@ -428,6 +429,7 @@ describe("Discord Tickets Provider", async () => {
       configService,
       identityService,
       teamService,
+      ticketService,
       logger,
     });
     configService.get.mockResolvedValue({
@@ -450,10 +452,9 @@ describe("Discord Tickets Provider", async () => {
           secret_data: null,
         }),
     );
-    await provider.close("10", {
+    await provider.close("discord:10", {
       id: 42,
       open: false,
-      description: "",
       category: "challenge",
       item: "pwn-hello",
       team_id: 1,
@@ -496,13 +497,13 @@ describe("Discord Tickets Provider", async () => {
     };
     expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
       json: {
-        embeds: [embed]
-      }
+        embeds: [embed],
+      },
     });
     expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
       json: {
-        embeds: [embed]
-      }
+        embeds: [embed],
+      },
     });
   });
 });

@@ -72,8 +72,9 @@ it("Fails to evaluate deeply nested policies according to TTL", () => {
 it("Fails to evaluate incorrect policies", () => {
   const permissions = ["admin.user", "!admin", "admin.challenges"];
 
-  expect(() => Evaluate(["NO", "admin.user"] as unknown as Policy, permissions))
-    .toThrowError("Invalid policy expression");
+  expect(() =>
+    Evaluate(["NO", "admin.user"] as unknown as Policy, permissions),
+  ).toThrowError("Invalid policy expression");
 });
 
 it("Evaluates policies with modifiers", () => {

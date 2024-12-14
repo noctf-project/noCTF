@@ -10,7 +10,6 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
     .addColumn("open", "boolean", (col) => col.notNull().defaultTo(true))
-    .addColumn("description", "text", (col) => col.notNull())
     .addColumn("team_id", "integer", (col) => col.references("core.team.id"))
     .addColumn("user_id", "integer", (col) => col.references("core.user.id"))
     .addColumn("category", "varchar(64)")
@@ -40,13 +39,13 @@ export async function up(db: Kysely<any>): Promise<void> {
     .on("ticket")
     .unique()
     .columns(["provider", "provider_id"])
-    .nullsNotDistinct()
     .execute();
   await schema
     .createIndex("ticket_uidx_thread")
     .unique()
     .on("core.ticket")
     .columns(["category", "item", "team_id", "user_id"])
+    .nullsNotDistinct()
     .execute();
 
   await schema
@@ -63,11 +62,24 @@ export async function up(db: Kysely<any>): Promise<void> {
       sql`(team_id IS NULL OR user_id IS NULL) AND NOT (team_id IS NULL AND user_id IS NULL)`,
     )
     .execute();
+
+  await schema
+    .createTable("ticket_event")
+    .addColumn("ticket_id", "integer", (col) =>
+      col.notNull().references("core.ticket.id").onDelete("cascade"),
+    )
+    .addColumn("operation", "varchar(64)", (col) => col.notNull())
+    .addColumn("actor", "varchar(64)", (col) => col.notNull())
+    .addColumn("created_at", "timestamp", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
+    .execute();
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
   const schema = db.schema.withSchema("core");
 
+  await schema.dropTable("ticket_event").execute();
   await schema.dropTable("ticket_ban").execute();
   await schema.dropTable("ticket").execute();
 }

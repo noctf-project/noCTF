@@ -3,7 +3,7 @@ import { Static, Type } from "@sinclair/typebox";
 export const OpenTicketRequest = Type.Object({
   description: Type.String(),
   type: Type.String(),
-  item: Type.String()
+  item: Type.String(),
 });
 export type OpenTicketRequest = Static<typeof OpenTicketRequest>;
 

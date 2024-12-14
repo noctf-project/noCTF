@@ -337,6 +337,9 @@ importers:
       bullmq:
         specifier: ^5.34.0
         version: 5.34.0
+      cbor2:
+        specifier: ^1.8.0
+        version: 1.8.0
       fastify:
         specifier: 'catalog:'
         version: 5.0.0
@@ -1162,6 +1165,10 @@ packages:
 
   camel-case@4.1.2:
     resolution: {integrity: sha512-gxGWBrTT1JuMx6R+o5PTXMmUnhnVzLQ9SNutD4YqKtI6ap897t3tKECYla6gCWEkplXnlNybEkZg9GEGxKFCgw==}
+
+  cbor2@1.8.0:
+    resolution: {integrity: sha512-CsrHAWXBDEUlc2VsIfLveHZlAmsle8QH8sDIoBqBsq5GuP37FasoRklcnLCxKY+wT+IdQlI2eSRAgP1SZKjChg==}
+    engines: {node: '>=18'}
 
   chai@5.1.2:
     resolution: {integrity: sha512-aGtmf24DW6MLHHG5gCx4zaI3uBq3KRtxeVs0DjFH6Z0rDNbsvTxFASFvdj79pxjxZ8/5u3PIiN3IwEIQkiiuPw==}
@@ -3263,6 +3270,8 @@ snapshots:
     dependencies:
       pascal-case: 3.1.2
       tslib: 2.7.0
+
+  cbor2@1.8.0: {}
 
   chai@5.1.2:
     dependencies:
