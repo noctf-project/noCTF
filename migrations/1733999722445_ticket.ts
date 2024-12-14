@@ -13,11 +13,8 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("description", "text", (col) => col.notNull())
     .addColumn("team_id", "integer", (col) => col.references("core.team.id"))
     .addColumn("user_id", "integer", (col) => col.references("core.user.id"))
-    .addColumn("challenge_id", "integer", (col) =>
-      col.references("core.challenge.id"),
-    )
-    .addColumn("support_id", "varchar")
-    .addColumn("dedupe_id", "varchar")
+    .addColumn("category", "varchar(64)")
+    .addColumn("item", "varchar(64)")
     .addColumn("provider", "varchar(64)", (col) => col.notNull())
     .addColumn("provider_id", "varchar(64)")
     .addColumn("created_at", "timestamp", (col) =>
@@ -25,10 +22,6 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .addCheckConstraint(
       "ticket_chk_oneof_team_user",
-      sql`(team_id IS NULL OR user_id IS NULL) AND NOT (team_id IS NULL AND user_id IS NULL)`,
-    )
-    .addCheckConstraint(
-      "ticket_chk_oneof_challenge_support",
       sql`(team_id IS NULL OR user_id IS NULL) AND NOT (team_id IS NULL AND user_id IS NULL)`,
     )
     .execute();
@@ -53,8 +46,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .createIndex("ticket_uidx_thread")
     .unique()
     .on("core.ticket")
-    .columns(["team_id", "user_id", "dedupe_id"])
-    .where(sql`dedupe_id`, "is not", null)
+    .columns(["category", "item", "team_id", "user_id"])
     .execute();
 
   await schema
@@ -65,6 +57,10 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("reason", "text", (col) => col.notNull())
     .addColumn("created_at", "timestamp", (col) =>
       col.defaultTo(sql`now()`).notNull(),
+    )
+    .addCheckConstraint(
+      "ticket_ban_chk_oneof_team_user",
+      sql`(team_id IS NULL OR user_id IS NULL) AND NOT (team_id IS NULL AND user_id IS NULL)`,
     )
     .execute();
 }

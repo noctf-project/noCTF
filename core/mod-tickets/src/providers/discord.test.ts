@@ -41,6 +41,8 @@ describe("Discord Tickets Provider", async () => {
         id: 1,
         open: true,
         description: "",
+        category: "challenge",
+        item: "pwn-hello",
         provider: "discord",
         created_at: new Date("1970-01-01T00:00:00Z"),
       }),
@@ -60,6 +62,8 @@ describe("Discord Tickets Provider", async () => {
         id: 1,
         open: false,
         description: "",
+        category: "challenge",
+        item: "pwn-hello",
         provider: "discord",
         created_at: new Date("1970-01-01T00:00:00Z"),
       }),
@@ -107,8 +111,9 @@ describe("Discord Tickets Provider", async () => {
       id: 42,
       open: true,
       description: "",
-      challenge_id: 1,
       team_id: 1,
+      category: "challenge",
+      item: "pwn-hello",
       provider: "discord",
       created_at: date,
     });
@@ -121,37 +126,41 @@ describe("Discord Tickets Provider", async () => {
         auto_archive_duration: 60,
       },
     });
+    const embed = {
+      title: "Ticket Opened",
+      color: EmbedColor.Opened,
+      fields: expect.arrayContaining([
+        {
+          name: "Category",
+          value: "challenge",
+          inline: true,
+        },
+        {
+          name: "Item",
+          value: "pwn-hello",
+          inline: true,
+        },
+        {
+          name: "Requester Type",
+          value: "Team",
+          inline: true,
+        },
+        {
+          name: "Actor",
+          value: "<@10>",
+          inline: true,
+        },
+      ]),
+    };
     expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
       json: {
-        embeds: [
-          {
-            title: "Ticket Opened",
-            color: EmbedColor.Opened,
-            fields: expect.arrayContaining([
-              {
-                name: "Ticket Type",
-                value: "Challenge",
-                inline: true,
-              },
-              {
-                name: "Requester Type",
-                value: "Team",
-                inline: true,
-              },
-              {
-                name: "Actor",
-                value: "<@10>",
-                inline: true,
-              },
-            ]),
-          },
-        ],
-      },
+        embeds: [embed]
+      }
     });
     expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
       json: {
-        content: "Ticket opened by <@10>.",
-      },
+        embeds: [embed]
+      }
     });
     expect(mockKy.put).toHaveBeenCalledTimes(3);
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/10");
@@ -195,7 +204,8 @@ describe("Discord Tickets Provider", async () => {
       id: 42,
       open: true,
       description: "",
-      support_id: "u-general",
+      category: "challenge",
+      item: "pwn-hello",
       user_id: 1,
       provider: "discord",
       created_at: date,
@@ -209,37 +219,41 @@ describe("Discord Tickets Provider", async () => {
         auto_archive_duration: 60,
       },
     });
+    const embed = {
+      title: "Ticket Opened",
+      color: EmbedColor.Opened,
+      fields: expect.arrayContaining([
+        {
+          name: "Category",
+          value: "challenge",
+          inline: true,
+        },
+        {
+          name: "Item",
+          value: "pwn-hello",
+          inline: true,
+        },
+        {
+          name: "Requester Type",
+          value: "User",
+          inline: true,
+        },
+        {
+          name: "Actor",
+          value: "<@10>",
+          inline: true,
+        },
+      ]),
+    };
     expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
       json: {
-        embeds: [
-          {
-            title: "Ticket Opened",
-            color: EmbedColor.Opened,
-            fields: expect.arrayContaining([
-              {
-                name: "Ticket Type",
-                value: "Support",
-                inline: true,
-              },
-              {
-                name: "Requester Type",
-                value: "User",
-                inline: true,
-              },
-              {
-                name: "Actor",
-                value: "<@10>",
-                inline: true,
-              },
-            ]),
-          },
-        ],
-      },
+        embeds: [embed]
+      }
     });
     expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
       json: {
-        content: "Ticket opened by <@10>.",
-      },
+        embeds: [embed]
+      }
     });
     expect(mockKy.put).toHaveBeenCalledTimes(1);
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/10");
@@ -271,8 +285,9 @@ describe("Discord Tickets Provider", async () => {
       id: 42,
       open: true,
       description: "",
-      challenge_id: 1,
       user_id: 1,
+      category: "challenge",
+      item: "pwn-hello",
       provider: "discord",
       created_at: date,
     });
@@ -285,37 +300,41 @@ describe("Discord Tickets Provider", async () => {
         auto_archive_duration: 60,
       },
     });
+    const embed = {
+      title: "Ticket Opened",
+      color: EmbedColor.Opened,
+      fields: expect.arrayContaining([
+        {
+          name: "Category",
+          value: "challenge",
+          inline: true,
+        },
+        {
+          name: "Item",
+          value: "pwn-hello",
+          inline: true,
+        },
+        {
+          name: "Requester Type",
+          value: "User",
+          inline: true,
+        },
+        {
+          name: "Actor",
+          value: "user:1",
+          inline: true,
+        },
+      ]),
+    };
     expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
       json: {
-        embeds: [
-          {
-            title: "Ticket Opened",
-            color: EmbedColor.Opened,
-            fields: expect.arrayContaining([
-              {
-                name: "Ticket Type",
-                value: "Challenge",
-                inline: true,
-              },
-              {
-                name: "Requester Type",
-                value: "User",
-                inline: true,
-              },
-              {
-                name: "Actor",
-                value: "user:1",
-                inline: true,
-              },
-            ]),
-          },
-        ],
-      },
+        embeds: [embed]
+      }
     });
     expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
       json: {
-        content: "Ticket opened by user:1.",
-      },
+        embeds: [embed]
+      }
     });
   });
 
@@ -351,7 +370,8 @@ describe("Discord Tickets Provider", async () => {
       id: 42,
       open: true,
       description: "",
-      challenge_id: 1,
+      category: "challenge",
+      item: "pwn-hello",
       team_id: 1,
       provider: "discord",
       provider_id: "2222",
@@ -364,37 +384,41 @@ describe("Discord Tickets Provider", async () => {
       },
     });
     expect(mockKy.post).toHaveBeenCalledTimes(2);
+    const embed = {
+      title: "Ticket Re-Opened",
+      color: EmbedColor["Re-Opened"],
+      fields: expect.arrayContaining([
+        {
+          name: "Category",
+          value: "challenge",
+          inline: true,
+        },
+        {
+          name: "Item",
+          value: "pwn-hello",
+          inline: true,
+        },
+        {
+          name: "Requester Type",
+          value: "Team",
+          inline: true,
+        },
+        {
+          name: "Actor",
+          value: "<@10>",
+          inline: true,
+        },
+      ]),
+    };
     expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
       json: {
-        embeds: [
-          {
-            title: "Ticket Re-Opened",
-            color: EmbedColor["Re-Opened"],
-            fields: expect.arrayContaining([
-              {
-                name: "Ticket Type",
-                value: "Challenge",
-                inline: true,
-              },
-              {
-                name: "Requester Type",
-                value: "Team",
-                inline: true,
-              },
-              {
-                name: "Actor",
-                value: "<@10>",
-                inline: true,
-              },
-            ]),
-          },
-        ],
-      },
+        embeds: [embed]
+      }
     });
     expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
       json: {
-        content: "Ticket re-opened by <@10>.",
-      },
+        embeds: [embed]
+      }
     });
     expect(mockKy.put).toHaveBeenCalledTimes(0);
   });
@@ -430,7 +454,8 @@ describe("Discord Tickets Provider", async () => {
       id: 42,
       open: false,
       description: "",
-      challenge_id: 1,
+      category: "challenge",
+      item: "pwn-hello",
       team_id: 1,
       provider: "discord",
       provider_id: "2222",
@@ -443,37 +468,41 @@ describe("Discord Tickets Provider", async () => {
         archived: true,
       },
     });
-    expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
-      json: {
-        content: expect.stringContaining("Ticket closed by <@10>"),
-      },
-    });
+    const embed = {
+      title: "Ticket Closed",
+      color: EmbedColor.Closed,
+      fields: expect.arrayContaining([
+        {
+          name: "Category",
+          value: "challenge",
+          inline: true,
+        },
+        {
+          name: "Item",
+          value: "pwn-hello",
+          inline: true,
+        },
+        {
+          name: "Requester Type",
+          value: "Team",
+          inline: true,
+        },
+        {
+          name: "Actor",
+          value: "<@10>",
+          inline: true,
+        },
+      ]),
+    };
     expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
       json: {
-        embeds: [
-          {
-            title: "Ticket Closed",
-            color: EmbedColor.Closed,
-            fields: expect.arrayContaining([
-              {
-                name: "Ticket Type",
-                value: "Challenge",
-                inline: true,
-              },
-              {
-                name: "Requester Type",
-                value: "Team",
-                inline: true,
-              },
-              {
-                name: "Actor",
-                value: "<@10>",
-                inline: true,
-              },
-            ]),
-          },
-        ],
-      },
+        embeds: [embed]
+      }
+    });
+    expect(mockKy.post).toHaveBeenCalledWith("channels/2222/messages", {
+      json: {
+        embeds: [embed]
+      }
     });
   });
 });

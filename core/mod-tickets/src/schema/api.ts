@@ -1,18 +1,10 @@
 import { Static, Type } from "@sinclair/typebox";
 
-export const OpenTicketRequest = Type.Composite([
-  Type.Union([
-    Type.Object({
-      challenge_id: Type.Number(),
-    }),
-    Type.Object({
-      support_id: Type.String(),
-    }),
-  ]),
-  Type.Object({
-    title: Type.String(),
-  }),
-]);
+export const OpenTicketRequest = Type.Object({
+  description: Type.String(),
+  type: Type.String(),
+  item: Type.String()
+});
 export type OpenTicketRequest = Static<typeof OpenTicketRequest>;
 
 export const OpenTicketResponse = Type.Object({

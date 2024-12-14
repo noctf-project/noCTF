@@ -90,16 +90,15 @@ export class DiscordProvider {
   }
 
   private async postNotification(
+    channelId: string,
     actor: string,
     ticket: Ticket,
     status: keyof typeof EmbedColor,
   ) {
-    const { notifications_channel_id } = await this.getConfig();
     const client = await this.getClient();
-    const ticketType = ticket.challenge_id ? "Challenge" : "Support";
     const requesterType = ticket.team_id ? "Team" : "User";
     const requesterId = ticket.team_id || ticket.user_id;
-    await client.post(`channels/${notifications_channel_id}/messages`, {
+    await client.post(`channels/${channelId}/messages`, {
       json: {
         embeds: [
           {
@@ -107,11 +106,20 @@ export class DiscordProvider {
             color: EmbedColor[status],
             fields: [
               {
-                name: "Ticket Type",
-                value: ticketType,
+                name: "Category",
+                value: ticket.category,
                 inline: true,
               },
-              // TODO: add name of challenge/support ticket
+              {
+                name: "Item",
+                value: ticket.item,
+                inline: true,
+              },
+              {
+                name: "ID",
+                value: "[1](https://ctf.sk8boarding.dog/ticket/1)",
+                inline: true,
+              },
               { name: "", value: "" },
               {
                 name: "Requester Type",
@@ -147,7 +155,7 @@ export class DiscordProvider {
   }
 
   async open(actingUserId: number, ticket: Ticket) {
-    const { tickets_channel_id } = await this.getConfig();
+    const { notifications_channel_id, tickets_channel_id } = await this.getConfig();
     const client = await this.getClient();
 
     const newTicket = !ticket.provider_id;
@@ -179,17 +187,16 @@ export class DiscordProvider {
     )?.provider_id;
     const actor = actingDiscordId ? `<@${actingDiscordId}>` : `user:${actingUserId}`;
     await this.postNotification(
+      notifications_channel_id,
       actor,
       ticket,
       newTicket ? "Opened" : "Re-Opened",
     );
-    await client.post<APIThreadChannel>(
-      `channels/${ticket.provider_id}/messages`,
-      {
-        json: {
-          content: `Ticket ${newTicket ? "" : "re-"}opened by ${actor}.`
-        } as RESTPostAPIChannelMessageJSONBody,
-      },
+    await this.postNotification(
+      ticket.provider_id,
+      actor,
+      ticket,
+      newTicket ? "Opened" : "Re-Opened",
     );
     if (newTicket) {
       if (ticket.user_id) {
@@ -205,16 +212,13 @@ export class DiscordProvider {
   }
 
   async close(actingDiscordId: string, ticket: Ticket) {
+    const { notifications_channel_id } = await this.getConfig();
     const client = await this.getClient();
-    await client.post<APIThreadChannel>(
-      `channels/${ticket.provider_id}/messages`,
-      {
-        json: {
-          content:
-            `Ticket closed by <@${actingDiscordId}>. To re-open the ticket, ` +
-            "please use the website.",
-        } as RESTPostAPIChannelMessageJSONBody,
-      },
+    await this.postNotification(
+      ticket.provider_id,
+      `<@${actingDiscordId}>`,
+      ticket,
+      "Closed",
     );
     await client.patch<APIThreadChannel>(`channels/${ticket.provider_id}`, {
       json: {
@@ -228,11 +232,11 @@ export class DiscordProvider {
         actingDiscordId,
       )
     )?.user_id;
-    this.logger.info(
+    this.logger.debug(
       { user_id: actingUserId, discord_id: actingDiscordId },
       "Matched Discord ID with existing user",
     );
     // TODO: commit to db here
-    await this.postNotification(`<@${actingDiscordId}>`, ticket, "Closed");
+    await this.postNotification(notifications_channel_id, `<@${actingDiscordId}>`, ticket, "Closed");
   }
 }
