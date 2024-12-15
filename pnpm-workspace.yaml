@@ -24,4 +24,4 @@ catalog:
   "@sinclair/typebox": ^0.33.14
   "vitest": ^2.1.8
   "@vitest/coverage-v8": ^2.1.8
-  "vitest-mock-extended": "^2.0.2"
+  "vitest-mock-extended": ^2.0.2

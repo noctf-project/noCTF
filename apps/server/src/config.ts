@@ -12,3 +12,6 @@ export const TOKEN_SECRET = process.env.TOKEN_SECRET || "keyboard-cat";
 export const ENABLE_HTTP2 = ["1", "true"].includes(
   (process.env.ENABLE_HTTP2 || "").toLowerCase(),
 );
+
+export const METRICS_PATH = process.env.METRICS_PATH || "./";
+export const METRICS_FILE_NAME_FORMAT = process.env.METRICS_FILE_NAME_FORMAT;

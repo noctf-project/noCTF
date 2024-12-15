@@ -1,16 +1,5 @@
 import fastify, { FastifyRequest } from "fastify";
 import {
-  POSTGRES_URL,
-  HOST,
-  PORT,
-  TOKEN_SECRET,
-  ENABLE_HTTP2,
-  REDIS_EVENT_URL,
-  REDIS_CACHE_URL,
-  LOG_LEVEL,
-} from "./config.ts";
-import core from "./core.ts";
-import {
   asClass,
   asFunction,
   asValue,
@@ -37,6 +26,21 @@ import {
 } from "@noctf/server-core/clients/redis_factory";
 import { EventBusService } from "@noctf/server-core/services/event_bus";
 import { LockService } from "@noctf/server-core/services/lock";
+
+import {
+  POSTGRES_URL,
+  HOST,
+  PORT,
+  TOKEN_SECRET,
+  ENABLE_HTTP2,
+  REDIS_EVENT_URL,
+  REDIS_CACHE_URL,
+  LOG_LEVEL,
+  METRICS_PATH,
+  METRICS_FILE_NAME_FORMAT,
+} from "./config.ts";
+import core from "./core.ts";
+import { MetricsClient } from "@noctf/server-core/clients/metrics";
 
 export const server = fastify({
   logger: {
@@ -65,7 +69,8 @@ server.register(async () => {
         ),
       { lifetime: Lifetime.SINGLETON },
     ),
-    databaseClient: asValue(new DatabaseClient(POSTGRES_URL, server.log)),
+    databaseClient: asValue(new DatabaseClient(server.log, POSTGRES_URL)),
+    metricsClient: asValue(new MetricsClient(server.log, METRICS_PATH, METRICS_FILE_NAME_FORMAT)),
     cacheService: asClass(CacheService, { lifetime: Lifetime.SINGLETON }),
     auditLogService: asClass(AuditLogService, { lifetime: Lifetime.SINGLETON }),
     eventBusService: asClass(EventBusService, { lifetime: Lifetime.SINGLETON }),
@@ -123,9 +128,10 @@ const logRequest = async (
   reply: { elapsedTime?: number; statusCode?: number },
   flag?: string,
 ) => {
+  const elapsed = Math.round(reply.elapsedTime);
   server.log.info(
     {
-      elpased: Math.round(reply.elapsedTime),
+      elapsed,
       reqId: request.id,
       status: reply.statusCode,
       path: request.originalUrl,
@@ -135,6 +141,13 @@ const logRequest = async (
     },
     "request",
   );
+  server.container.cradle.metricsClient.record("Time",
+    {
+      'http_route': request.routeOptions.url || '__notfound__',
+      'http_method': request.method,
+      'http_status': Math.floor(reply.statusCode/100) + 'xx'
+    },
+    elapsed);
 };
 
 server.addHook("onResponse", async (request, reply) => {
@@ -146,6 +159,7 @@ server.addHook("onTimeout", async (request, reply) => {
 server.addHook("onRequestAbort", async (request) => {
   await logRequest(request, {}, "abort");
 });
+
 
 server.setErrorHandler((error, request, reply) => {
   if (error instanceof ApplicationError) {

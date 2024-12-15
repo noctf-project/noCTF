@@ -8,7 +8,7 @@ import { Value } from "@sinclair/typebox/value";
 
 export { UnrecoverableError } from "bullmq";
 
-type Props = Pick<ServiceCradle, "redisClientFactory" | "logger">;
+type Props = Pick<ServiceCradle, "redisClientFactory" | "logger" | "metricsClient">;
 
 export type EventItem<T> = {
   id: string;
@@ -48,6 +48,7 @@ const DEFAULT_BACKOFF_STRATEGY = (attempts: number) => {
 
 export class EventBusService {
   private readonly logger;
+  private readonly metricsClient;
   private readonly queueClient;
   private readonly pubSubClient;
 
@@ -63,8 +64,9 @@ export class EventBusService {
   } = {};
   private remoteQueues: { [key: string]: Map<string, EventFilter> } = {};
 
-  constructor({ redisClientFactory, logger }: Props) {
+  constructor({ redisClientFactory, logger, metricsClient }: Props) {
     this.logger = logger;
+    this.metricsClient = metricsClient;
     this.queueClient = redisClientFactory.getSharedClient(RedisUrlType.Event);
     this.pubSubClient = redisClientFactory.createClient(RedisUrlType.Event);
   }
@@ -109,11 +111,16 @@ export class EventBusService {
           `remote worker with name ${name} and type ${type} is already registered in this process`,
         );
       }
+      const labels: Record<string, string> = {
+        worker_type: 'eventbus_bullmq',
+        qualifier: qualifier
+      };
       const worker = new Worker(
         qualifier,
         async (job) => {
+          const start = performance.now();
+
           try {
-            const start = performance.now();
             await handler({
               id: job.id,
               timestamp: job.timestamp,
@@ -121,6 +128,7 @@ export class EventBusService {
               attempt: job.attemptsMade,
               data: Value.Convert(schema, job.data) as T,
             });
+            this.metricsClient.record("Success", labels, 1);
             this.logger.info(
               {
                 name: qualifier,
@@ -140,7 +148,13 @@ export class EventBusService {
               },
               "Unepected error processing message",
             );
+            this.metricsClient.record("Success", labels, 0);
+            if (job.attemptsMade >= job.opts.attempts) {
+              this.metricsClient.record("ExhaustedRetries", labels, 1);
+            }
             throw e;
+          } finally {
+            this.metricsClient.record("Time", labels, Math.round(performance.now() - start));
           }
         },
         {
@@ -227,6 +241,10 @@ export class EventBusService {
             type: "custom",
           },
         });
+        this.metricsClient.record('Published', {
+          worker_type: 'eventbus_bullmq',
+          qualifier: qualifier
+        }, 1);
       }
     }
   }
@@ -251,6 +269,7 @@ export class EventBusService {
     );
     const workers: EventBusService["remoteQueues"] = {};
 
+    let activeQueues = 0;
     for (let i = 0; i < remotes.length; i++) {
       const spec = decode(
         Buffer.from(remotes[remotes.length - i - 1]),
@@ -266,6 +285,7 @@ export class EventBusService {
         workers[type] = new Map();
       }
       if (!workers[type].has(qualifier)) {
+        activeQueues += 1;
         workers[type].set(qualifier, filter);
         if (!this.bullQueues.has(qualifier)) {
           this.bullQueues.set(
@@ -273,10 +293,16 @@ export class EventBusService {
             new Queue(qualifier, { connection: this.queueClient }),
           );
         }
+        this.metricsClient.record(
+          'QueueDepth',
+          { worker_type: 'eventbus_bullmq', qualifier },
+          (await this.bullQueues.get(qualifier).getJobCounts('active')).active
+        );
       }
     }
     this.remoteQueues = workers;
     this.logger.debug({ queues: workers }, "Syncing remote workers");
+    this.metricsClient.record('ActiveQueues', {worker_type: 'eventbus_bullmq'}, activeQueues);
     void this.queueClient.zremrangebyscore(ACTIVE_REMOTE_QUEUES_KEY, 0, now);
   }
 }

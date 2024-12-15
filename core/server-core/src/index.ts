@@ -12,10 +12,12 @@ import type { Logger } from "./types/primitives.ts";
 import { RoleService } from "./services/role.ts";
 import { EventBusService } from "./services/event_bus.ts";
 import { LockService } from "./services/lock.ts";
+import { MetricsClient } from "./clients/metrics.ts";
 
 export type ServiceCradle = {
   logger: Logger;
   databaseClient: DatabaseClient;
+  metricsClient: MetricsClient;
   redisClientFactory: RedisClientFactory;
   auditLogService: AuditLogService;
   cacheService: CacheService;
