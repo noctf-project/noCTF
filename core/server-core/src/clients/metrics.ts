@@ -20,6 +20,8 @@ function strftime(format: string, date = new Date()) {
 export type MetricLabels = Record<string, string> | [string, string][];
 export type Metric = [string, number];
 
+const AGGREGATE_FLUSH_INTERVAL = 100;
+
 export class MetricsClient {
   private readonly logger;
   private readonly pathName;
@@ -27,8 +29,11 @@ export class MetricsClient {
   private readonly flushInterval;
   private fileName: string;
   private series: Map<string, Map<string, [number[], number[]]>> = new Map();
+  private aggregateSeries: Map<string, Map<string, number>> = new Map();
   private file: WriteStream;
+
   private flushing = false;
+  private lastFlushAggregate = performance.now();
   private lastFlushToFile = performance.now();
 
   constructor(logger: Logger, pathName: string, fileNameFormat: string, flushInterval=2000) {
@@ -46,21 +51,42 @@ export class MetricsClient {
   record(values: Metric[], labels?: MetricLabels, timestamp?: number) {
     if (!this.pathName || !this.fileNameFormat) return;
     const key = MetricsClient.toKey(labels);
-    this.addMetrics(key, values, timestamp);
-
-    const now = performance.now();
-    if (now > this.lastFlushToFile + this.flushInterval) {
-      void this.flushToFile();
-      this.lastFlushToFile = now;
-    }
-  }
-
-  private addMetrics(key: string, values: Metric[], timestamp?: number) {
     let series = this.series.get(key);
     if (!series) {
       series = new Map();
       this.series.set(key, series);
     }
+    this.addMetrics(series, values, (timestamp || timestamp === 0) ? timestamp : Date.now());
+  }
+
+  recordAggregate(values: Metric[], labels?: MetricLabels) {
+    if (!this.pathName || !this.fileNameFormat) return;
+    // Flush first since we don't want new data to be part of old block
+    const now = performance.now();
+    if (now > this.lastFlushAggregate + AGGREGATE_FLUSH_INTERVAL) {
+      this.flushAggregate(now);
+      this.lastFlushAggregate = now;
+    }
+    const key = MetricsClient.toKey(labels);
+    let series = this.aggregateSeries.get(key);
+    if (!series) {
+      series = new Map();
+      this.aggregateSeries.set(key, series);
+    }
+    this.addMetricsAggregate(series, values);
+  }
+
+  private addMetricsAggregate(series: Map<string, number>, values: Metric[]) {
+    for (const [metric, value] of values) {
+      series.set(metric, (series.get(metric) || 0) + value);
+    }
+  }
+
+  private addMetrics(
+    series: Map<string, [number[], number[]]>,
+    values: Metric[] | MapIterator<Metric>,
+    timestamp: number
+  ) {
     for (const [metric, value] of values) {
       let buffer = series.get(metric);
       if (!buffer) {
@@ -68,7 +94,12 @@ export class MetricsClient {
         series.set(metric, buffer);
       }
       buffer[0].push(value);
-      buffer[1].push((timestamp || timestamp === 0) ? timestamp : Date.now());
+      buffer[1].push(timestamp);
+    }
+    const now = performance.now();
+    if (now > this.lastFlushToFile + this.flushInterval) {
+      void this.flushToFile();
+      this.lastFlushToFile = now;
     }
   }
 
@@ -76,8 +107,22 @@ export class MetricsClient {
     if (!labels) return '[]';
     const parts = Array.isArray(labels)
       ? labels.filter((x) => x[1])
-      : Object.keys(labels).filter((x) => labels[x]);
+      : Object.keys(labels).filter((x) => labels[x]).map((x) => [x, labels[x]]);
     return JSON.stringify(parts.sort().flat());
+  }
+
+  private flushAggregate(now: number) {
+    const timestamp = Math.floor(Date.now() - now + this.lastFlushAggregate);
+    const flushSeries = this.aggregateSeries;
+    this.aggregateSeries = new Map();
+    for (const [key, metrics] of flushSeries) {
+      let series = this.series.get(key);
+      if (!series) {
+        series = new Map();
+        this.series.set(key, series);
+      }
+      this.addMetrics(series, metrics.entries(), timestamp);
+    }
   }
 
   private async flushToFile() {

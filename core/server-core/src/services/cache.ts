@@ -19,15 +19,10 @@ enum MetricIndex {
   MissTime = 3
 };
 
-const FLUSH_INTERVAL = 1000;
 
 export class CacheService {
   private readonly redisClient;
   private readonly metricsClient;
-
-  // Hit, HitTime, Miss, MissTime
-  private counters: Map<string, [number, number, number, number]> = new Map();
-  private lastFlush = performance.now();
 
   constructor({ redisClientFactory, metricsClient }: Props) {
     this.redisClient = redisClientFactory.getSharedClient(RedisUrlType.Cache);
@@ -50,17 +45,19 @@ export class CacheService {
     if (data) {
       const d = decode(data) as T;
       const end = performance.now();
-      this.recordMetric(namespace, [
-        [MetricIndex.HitCount, 1],
-        [MetricIndex.HitTime, end - start]], end);
+      this.metricsClient.recordAggregate([
+        ['HitCount', 1],
+        ['HitTime', end - start]
+      ], { cache_namespace: namespace });
       return d;
     }
       const result = await fetcher();
       await this._put(k, result, expireSeconds);
     const end = performance.now();
-    this.recordMetric(namespace, [
-      [MetricIndex.MissCount, 1],
-      [MetricIndex.MissTime, end - start]], end);
+    this.metricsClient.recordAggregate([
+      ['MissCount', 1],
+      ['MissTime', end - start]
+    ], { cache_namespace: namespace });
     return result;
   }
 
@@ -72,45 +69,6 @@ export class CacheService {
   async getTtl(namespace: string, key: string) {
     const k = `${namespace}:${key}`;
     return await this.redisClient.ttl(k);
-  }
-
-  private recordMetric(namespace: string, values: [MetricIndex, number][], now: number) {
-    let counters = this.counters.get(namespace);
-    if (!counters) {
-      counters = [0, 0, 0, 0];
-      this.counters.set(namespace, counters);
-    }
-    for (const [index, value] of values) {
-      counters[index] += value;
-    }
-    if (now > this.lastFlush + FLUSH_INTERVAL) {
-      this.flushMetrics();
-    }
-  }
-
-  private flushMetrics() {
-    const now = performance.now();
-    const timestamp = Math.floor(Date.now() - now + this.lastFlush);
-    for (const [cache_namespace, metrics] of this.counters) {
-      const labels = { cache_namespace };
-      if (metrics[MetricIndex.HitCount] !== 0) {
-        this.metricsClient.record([['HitCount', metrics[MetricIndex.HitCount]]], labels, timestamp);
-        metrics[MetricIndex.HitCount] = 0;
-      }
-      if (metrics[MetricIndex.HitTime] !== 0) {
-        this.metricsClient.record([['HitTime', metrics[MetricIndex.HitTime]]], labels, timestamp);
-        metrics[MetricIndex.HitTime] = 0;
-      }
-      if (metrics[MetricIndex.MissCount] !== 0) {
-        this.metricsClient.record([['MissCount', metrics[MetricIndex.MissCount]]], labels, timestamp);
-        metrics[MetricIndex.MissCount] = 0;
-      }
-      if (metrics[MetricIndex.MissTime] !== 0) {
-        this.metricsClient.record([['MissTime', metrics[MetricIndex.MissTime]]], labels, timestamp);
-        metrics[MetricIndex.MissTime] = 0;
-      }
-    }
-    this.lastFlush = now;
   }
 
   private async _put(k: string, value: unknown, expireSeconds = 0) {

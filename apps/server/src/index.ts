@@ -141,13 +141,13 @@ const logRequest = async (
     },
     "request",
   );
-  server.container.cradle.metricsClient.record("ResponseTime",
+  server.container.cradle.metricsClient.recordAggregate(
+    [["ResponseTime", reply.elapsedTime], ["ResponseCount", 1]],
     {
       'http_route': request.routeOptions.url || '__notfound__',
       'http_method': request.method,
       'http_status': Math.floor(reply.statusCode/100) + 'xx'
-    },
-    elapsed);
+    });
 };
 
 server.addHook("onResponse", async (request, reply) => {
