@@ -8,6 +8,7 @@ type Props = Pick<ServiceCradle, "cacheService" | "logger"> & {
   secret: string;
 };
 
+const REVOKE_NS = 'core:token:rev';
 export class TokenService {
   private secret: Props["secret"];
   private cacheService: Props["cacheService"];
@@ -44,7 +45,8 @@ export class TokenService {
 
       // Set a record in the cache with an extra 60 second buffer to account for clock skew
       await this.cacheService.put(
-        `core:token:rev:${data.jti}`,
+        REVOKE_NS,
+        data.jti,
         1,
         data.exp - Math.floor(Date.now() / 1000) + 60 || 60,
       );
@@ -70,7 +72,7 @@ export class TokenService {
       if (!verifyRevocation) {
         return data;
       }
-      const ttl = await this.cacheService.getTtl(`core:token:rev:${data.jti}`);
+      const ttl = await this.cacheService.getTtl(REVOKE_NS, data.jti);
       if (ttl === -1 || ttl > 0) {
         throw new TokenValidationError("Token has been revoked");
       }

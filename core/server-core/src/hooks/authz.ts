@@ -19,7 +19,8 @@ export const AuthzHook = async (request: FastifyRequest) => {
   const routeKey = `${request.routeOptions.method}:${request.routeOptions.url}`;
   const evaluateCached = async (roleId: number) => {
     return await cacheService.load(
-      `${CACHE_NAMESPACE}:r:${roleId}:${routeKey}`,
+      CACHE_NAMESPACE,
+      `r:${roleId}:${routeKey}`,
       () => roleService.evaluate(roleId, expanded),
     );
   };

@@ -31,7 +31,8 @@ export class OAuthConfigProvider {
       return [];
     }
     return await this.cacheService.load(
-      `${CACHE_NAMESPACE}:oauth:methods`,
+      CACHE_NAMESPACE,
+      'oauth:methods',
       () => this._queryMethods(),
     );
   }
@@ -56,7 +57,8 @@ export class OAuthConfigProvider {
     }
 
     return await this.cacheService.load(
-      `${CACHE_NAMESPACE}:oauth:method:${provider}`,
+      CACHE_NAMESPACE,
+      `oauth:method:${provider}`,
       () => this._queryMethod(provider),
     );
   }

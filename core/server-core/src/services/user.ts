@@ -40,7 +40,8 @@ export class UserService {
 
   async getFlags(id: number) {
     return this.cacheService.load(
-      `${CACHE_NAMESPACE}:${id}:flag`,
+      CACHE_NAMESPACE,
+      `${id}:flag`,
       async () =>
         (
           await this.databaseClient

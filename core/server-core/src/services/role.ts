@@ -35,7 +35,8 @@ export class RoleService {
 
   async getPermissions(roleId: number) {
     return this.cacheService.load(
-      `${CACHE_NAMESPACE}:permission:${roleId}`,
+      CACHE_NAMESPACE,
+      `permission:${roleId}`,
       async () =>
         (
           await this.databaseClient
@@ -49,7 +50,8 @@ export class RoleService {
 
   async getUserRoleIds(userId: number) {
     return this.cacheService.load(
-      `${CACHE_NAMESPACE}:user:${userId}`,
+      CACHE_NAMESPACE,
+      `user:${userId}`,
       async () =>
         (
           await this.databaseClient

@@ -10,6 +10,8 @@ type Props = Pick<
   "databaseClient" | "tokenService" | "cacheService"
 >;
 
+const CACHE_NAMESPACE = 'core:svc:identity';
+
 export class IdentityService {
   private readonly databaseClient;
   private readonly tokenService;
@@ -118,7 +120,8 @@ export class IdentityService {
 
   async getProviderForUser(name: string, id: number) {
     return this.cacheService.load(
-      `core:svc:identity:pid_usr:${id}:${name}`,
+      CACHE_NAMESPACE,
+      `pid_usr:${id}:${name}`,
       async () =>
         await this.databaseClient
           .selectFrom("core.user_identity")
@@ -137,7 +140,8 @@ export class IdentityService {
 
   async getIdentityForProvider(name: string, id: string) {
     return this.cacheService.load(
-      `core:svc:identity:uid_pvd:${id}:${name}`,
+      CACHE_NAMESPACE,
+      `uid_pvd:${id}:${name}`,
       async () =>
         await this.databaseClient
           .selectFrom("core.user_identity")

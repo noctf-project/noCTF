@@ -128,7 +128,6 @@ export class EventBusService {
               attempt: job.attemptsMade,
               data: Value.Convert(schema, job.data) as T,
             });
-            this.metricsClient.record("Success", labels, 1);
             this.logger.info(
               {
                 name: qualifier,
@@ -138,6 +137,8 @@ export class EventBusService {
               },
               "Processed remote message",
             );
+            this.metricsClient.record("QueueToFinishTime", labels, Date.now() - job.timestamp);
+            this.metricsClient.record("Success", labels, 1);
           } catch (e) {
             this.logger.error(
               {
@@ -150,11 +151,12 @@ export class EventBusService {
             );
             this.metricsClient.record("Success", labels, 0);
             if (job.attemptsMade >= job.opts.attempts) {
+              this.metricsClient.record("QueueToFinishTime", labels, Date.now() - job.timestamp);
               this.metricsClient.record("ExhaustedRetries", labels, 1);
             }
             throw e;
           } finally {
-            this.metricsClient.record("Time", labels, Math.round(performance.now() - start));
+            this.metricsClient.record("ProcessTime", labels, Math.round(performance.now() - start));
           }
         },
         {

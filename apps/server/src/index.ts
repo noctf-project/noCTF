@@ -141,7 +141,7 @@ const logRequest = async (
     },
     "request",
   );
-  server.container.cradle.metricsClient.record("Time",
+  server.container.cradle.metricsClient.record("ResponseTime",
     {
       'http_route': request.routeOptions.url || '__notfound__',
       'http_method': request.method,
