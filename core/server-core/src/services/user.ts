@@ -1,6 +1,6 @@
 import { UpdateIdentityData } from "../types/identity.ts";
 import { DatabaseClient } from "../clients/database.ts";
-import { ApplicationError, BadRequestError } from "../errors.ts";
+import { ApplicationError, BadRequestError, ConflictError } from "../errors.ts";
 import { ServiceCradle } from "../index.ts";
 import { CacheService } from "./cache.ts";
 import { AuditLogService } from "./audit_log.ts";
@@ -92,9 +92,7 @@ export class UserService {
         ].concat(promises),
       );
       if (result) {
-        throw new ApplicationError(
-          409,
-          "IdentityAlreadyExists",
+        throw new ConflictError(
           `The identity with type ${result} is already bound to a different user`,
         );
       }

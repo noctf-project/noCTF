@@ -1,17 +1,13 @@
+import { decode, encode } from "cbor2";
 import { RedisUrlType } from "../clients/redis_factory.ts";
 import { ServiceCradle } from "../index.ts";
 
-type Data = string | number | Buffer;
 type LoadParams<T> = {
   expireSeconds: number;
-  serializer: (d: T) => Data;
-  deserializer: (d: Data) => T;
 };
 export type LoadOptions<T> = Partial<LoadParams<T>>;
 const DEFAULT_LOAD_PARAMS: LoadParams<unknown> = {
   expireSeconds: 30,
-  serializer: JSON.stringify,
-  deserializer: JSON.parse,
 };
 
 type Props = Pick<ServiceCradle, "redisClientFactory">;
@@ -20,7 +16,7 @@ export class CacheService {
   private readonly redisClient;
 
   constructor({ redisClientFactory }: Props) {
-    this.redisClient = redisClientFactory.createClient(RedisUrlType.Cache);
+    this.redisClient = redisClientFactory.getSharedClient(RedisUrlType.Cache);
   }
 
   async load<T>(
@@ -28,25 +24,30 @@ export class CacheService {
     fetcher: () => Promise<T>,
     options?: LoadOptions<T>,
   ): Promise<T> {
-    const { serializer, deserializer, expireSeconds } = {
+    const { expireSeconds } = {
       ...DEFAULT_LOAD_PARAMS,
       ...options,
     };
-    const data = await this.redisClient.get(key);
+    const data = await this.redisClient.getBuffer(key);
     if (data) {
-      return deserializer(data) as T;
+      return decode(data) as T;
     }
     const result = await fetcher();
-    await this.put(key, serializer(result), expireSeconds);
+    await this.put(key, result, expireSeconds);
     return result;
   }
 
-  async put(key: string, value: Data, expireSeconds = 0) {
+  async put(key: string, value: unknown, expireSeconds = 0) {
     if (expireSeconds) {
-      return await this.redisClient.set(key, value, "EX", expireSeconds);
+      return await this.redisClient.set(
+        key,
+        Buffer.from(encode(value)),
+        "EX",
+        expireSeconds,
+      );
     }
 
-    await this.redisClient.set(key, value);
+    await this.redisClient.set(key, Buffer.from(encode(value)));
   }
 
   async getTtl(key: string) {

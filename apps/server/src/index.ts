@@ -36,6 +36,7 @@ import {
   RedisUrlType,
 } from "@noctf/server-core/clients/redis_factory";
 import { EventBusService } from "@noctf/server-core/services/event_bus";
+import { LockService } from "@noctf/server-core/services/lock";
 
 export const server = fastify({
   logger: {
@@ -84,6 +85,7 @@ server.register(async () => {
     roleService: asClass(RoleService, { lifetime: Lifetime.SINGLETON }),
     teamService: asClass(TeamService, { lifetime: Lifetime.SINGLETON }),
     userService: asClass(UserService, { lifetime: Lifetime.SINGLETON }),
+    lockService: asClass(LockService, { lifetime: Lifetime.SINGLETON }),
   });
   server.container.cradle.eventBusService.start();
 });
@@ -123,7 +125,7 @@ const logRequest = async (
 ) => {
   server.log.info(
     {
-      elpased: Math.floor(reply.elapsedTime),
+      elpased: Math.round(reply.elapsedTime),
       reqId: request.id,
       status: reply.statusCode,
       path: request.originalUrl,

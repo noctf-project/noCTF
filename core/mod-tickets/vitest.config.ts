@@ -6,7 +6,7 @@ export default defineConfig({
       reportsDirectory: "./dist/documentation/coverage",
       provider: "v8",
       reporter: ["text", "json", "html"],
-      exclude: ["src/schema/*.ts", "vitest.config.ts"],
+      exclude: ["src/schema/*.ts", "vitest.config.ts", "**/*.test.ts"],
     },
   },
 });

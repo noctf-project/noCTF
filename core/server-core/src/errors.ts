@@ -47,3 +47,9 @@ export class ValidationError extends ApplicationError {
     super(400, "ValidationError", message || "Validation Error");
   }
 }
+
+export class ConflictError extends ApplicationError {
+  constructor(message: string) {
+    super(409, "ConflictError", message);
+  }
+}

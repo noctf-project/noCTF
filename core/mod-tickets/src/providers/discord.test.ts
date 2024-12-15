@@ -23,7 +23,7 @@ describe("Discord Tickets Provider", async () => {
   const logger = mock<Logger>();
 
   beforeEach(() => {
-    mockKy.create.mockReturnValue(ky);
+    mockKy.create.mockReturnThis();
   });
 
   afterEach(() => {
@@ -40,7 +40,7 @@ describe("Discord Tickets Provider", async () => {
     });
     configService.get.mockResolvedValue({ version: 1, value: {} });
     await expect(() =>
-      provider.open("user:1", {
+      provider.open("user:1", "lease", {
         id: 1,
         open: true,
         category: "challenge",
@@ -61,7 +61,7 @@ describe("Discord Tickets Provider", async () => {
     });
     configService.get.mockResolvedValue({ version: 1, value: {} });
     await expect(() =>
-      provider.open("user:1", {
+      provider.open("user:1", "lease", {
         id: 1,
         open: false,
         category: "challenge",
@@ -110,7 +110,7 @@ describe("Discord Tickets Provider", async () => {
         }),
     );
     mockKy.post.mockResolvedValueOnce(res);
-    await provider.open("user:1", {
+    await provider.open("user:1", "lease", {
       id: 42,
       open: true,
       team_id: 1,
@@ -168,6 +168,8 @@ describe("Discord Tickets Provider", async () => {
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/10");
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/20");
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/30");
+    expect(ticketService.renewStateLease).toBeCalledWith(42, "lease");
+    expect(ticketService.dropStateLease).toBeCalledWith(42, "lease");
   });
 
   test("Open a new ticket on behalf of a user", async () => {
@@ -203,7 +205,7 @@ describe("Discord Tickets Provider", async () => {
         }),
     );
     mockKy.post.mockResolvedValueOnce(res);
-    await provider.open("user:1", {
+    await provider.open("user:1", "lease", {
       id: 42,
       open: true,
       category: "challenge",
@@ -259,6 +261,8 @@ describe("Discord Tickets Provider", async () => {
     });
     expect(mockKy.put).toHaveBeenCalledTimes(1);
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/10");
+    expect(ticketService.renewStateLease).toBeCalledWith(42, "lease");
+    expect(ticketService.dropStateLease).toBeCalledWith(42, "lease");
   });
 
   test("Open a new ticket for a user without a linked discord account.", async () => {
@@ -284,7 +288,7 @@ describe("Discord Tickets Provider", async () => {
       id: "2222",
     });
     mockKy.post.mockResolvedValueOnce(res);
-    await provider.open("user:1", {
+    await provider.open("user:1", "lease", {
       id: 42,
       open: true,
       user_id: 1,
@@ -338,6 +342,8 @@ describe("Discord Tickets Provider", async () => {
         embeds: [embed],
       },
     });
+    expect(ticketService.renewStateLease).toBeCalledWith(42, "lease");
+    expect(ticketService.dropStateLease).toBeCalledWith(42, "lease");
   });
 
   test("Re-open an existing ticket", async () => {
@@ -368,7 +374,7 @@ describe("Discord Tickets Provider", async () => {
           secret_data: null,
         }),
     );
-    await provider.open("user:1", {
+    await provider.open("user:1", "lease", {
       id: 42,
       open: true,
       category: "challenge",
@@ -422,6 +428,8 @@ describe("Discord Tickets Provider", async () => {
       },
     });
     expect(mockKy.put).toHaveBeenCalledTimes(0);
+    expect(ticketService.renewStateLease).toBeCalledWith(42, "lease");
+    expect(ticketService.dropStateLease).toBeCalledWith(42, "lease");
   });
 
   test("Closing a ticket", async () => {
@@ -452,7 +460,7 @@ describe("Discord Tickets Provider", async () => {
           secret_data: null,
         }),
     );
-    await provider.close("discord:10", {
+    await provider.close("discord:10", "lease", {
       id: 42,
       open: false,
       category: "challenge",
@@ -505,5 +513,7 @@ describe("Discord Tickets Provider", async () => {
         embeds: [embed],
       },
     });
+    expect(ticketService.renewStateLease).toBeCalledWith(42, "lease");
+    expect(ticketService.dropStateLease).toBeCalledWith(42, "lease");
   });
 });

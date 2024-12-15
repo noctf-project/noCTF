@@ -6,6 +6,8 @@ import { EvaluateFilter, EventFilter } from "../util/filter.ts";
 import { TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 
+export { UnrecoverableError } from "bullmq";
+
 type Props = Pick<ServiceCradle, "redisClientFactory" | "logger">;
 
 export type EventItem<T> = {
@@ -17,7 +19,10 @@ export type EventItem<T> = {
 };
 export type EventSubscribeOptions = {
   name?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   filter?: any;
+  backoffStrategy?: (attempts: number) => number;
+  concurrency?: number;
 };
 export type EventPublishOptions = {
   delay?: number;
@@ -35,6 +40,11 @@ type EventHandlerFn<T> = (e: EventItem<T>) => Promise<void> | void;
 
 const ACTIVE_REMOTE_QUEUES_KEY = "core:eventbus:activequeues";
 const ACTIVE_QUEUE_HEARTBEAT_EXPIRE = 30;
+const DEFAULT_BACKOFF_STRATEGY = (attempts: number) => {
+  const base = Math.min(2 ** (attempts - 1) * 1000, 30000);
+  const jitter = Math.floor(Math.random() * 1000);
+  return base + jitter;
+};
 
 export class EventBusService {
   private readonly logger;
@@ -55,9 +65,7 @@ export class EventBusService {
 
   constructor({ redisClientFactory, logger }: Props) {
     this.logger = logger;
-    this.queueClient = redisClientFactory.createClient(RedisUrlType.Event, {
-      maxRetriesPerRequest: 0,
-    });
+    this.queueClient = redisClientFactory.getSharedClient(RedisUrlType.Event);
     this.pubSubClient = redisClientFactory.createClient(RedisUrlType.Event);
   }
 
@@ -89,12 +97,12 @@ export class EventBusService {
     handler: EventHandlerFn<T>,
     schema: TSchema,
     type: string,
-    { name, filter }: EventSubscribeOptions = {},
+    { name, filter, backoffStrategy, concurrency }: EventSubscribeOptions = {},
   ): EventSubscriberHandle<T> {
-    if (name.includes("|")) {
-      throw new Error("message type cannot contain a pipe character");
-    }
     if (name) {
+      if (name.includes("|")) {
+        throw new Error("message type cannot contain a pipe character");
+      }
       const qualifier = `${type}|${name}`;
       if (this.bullWorkers.has(qualifier)) {
         throw new Error(
@@ -105,6 +113,7 @@ export class EventBusService {
         qualifier,
         async (job) => {
           try {
+            const start = performance.now();
             await handler({
               id: job.id,
               timestamp: job.timestamp,
@@ -112,13 +121,34 @@ export class EventBusService {
               attempt: job.attemptsMade,
               data: Value.Convert(schema, job.data) as T,
             });
+            this.logger.info(
+              {
+                name: qualifier,
+                attempt: job.attemptsMade,
+                id: job.id,
+                elapsed: Math.round(performance.now() - start)
+              },
+              "Processed remote message",
+            );
           } catch (e) {
-            this.logger.error({ error: e, name }, "Unepected error running worker");
+            this.logger.error(
+              {
+                stack: e.stack,
+                name: qualifier,
+                attempt: job.attemptsMade,
+                id: job.id,
+              },
+              "Unepected error processing message",
+            );
             throw e;
           }
         },
         {
           connection: this.queueClient,
+          settings: {
+            backoffStrategy: backoffStrategy || DEFAULT_BACKOFF_STRATEGY,
+          },
+          concurrency: concurrency || 1
         },
       );
       const spec = encode([qualifier, filter || null]);
@@ -193,6 +223,9 @@ export class EventBusService {
           attempts: attempts || 10,
           removeOnFail: true,
           removeOnComplete: true,
+          backoff: {
+            type: "custom",
+          },
         });
       }
     }

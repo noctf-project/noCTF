@@ -11,6 +11,7 @@ import type { TeamService } from "./services/team.ts";
 import type { Logger } from "./types/primitives.ts";
 import { RoleService } from "./services/role.ts";
 import { EventBusService } from "./services/event_bus.ts";
+import { LockService } from "./services/lock.ts";
 
 export type ServiceCradle = {
   logger: Logger;
@@ -25,6 +26,7 @@ export type ServiceCradle = {
   roleService: RoleService;
   teamService: TeamService;
   userService: UserService;
+  lockService: LockService;
 };
 
 declare module "fastify" {

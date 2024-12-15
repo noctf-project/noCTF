@@ -79,8 +79,11 @@ export class DiscordProvider {
         authorization: `Bot ${bot_token}`,
       },
       retry: {
-        limit: 5,
+        limit: 3,
         backoffLimit: 8000,
+        statusCodes: [408, 429, 502, 503, 504],
+        afterStatusCodes: [429, 503],
+        methods: ["get", "post", "put", "head", "delete", "patch", "options"],
       },
     });
     this.clientConfigVersion = version;
@@ -160,10 +163,11 @@ export class DiscordProvider {
     });
   }
 
-  async open(actor: string, ticket: Ticket) {
+  async open(actor: string, lease: string, ticket: Ticket) {
     const { notifications_channel_id, tickets_channel_id } =
       await this.getConfig();
     const client = await this.getClient();
+    await this.ticketService.renewStateLease(ticket.id, lease);
 
     const newTicket = !ticket.provider_id;
     if (newTicket) {
@@ -190,31 +194,17 @@ export class DiscordProvider {
       });
     }
     const match = actor.match(USER_REGEX);
-    let actingDiscordId: string;
-    if (match && match[1] === "user") {
-      actingDiscordId = (
-        await this.identityService.getProviderForUser(
-          "discord",
-          parseInt(match[2]),
-        )
-      )?.provider_id;
-    } else if (match && match[1] === "discord") {
-      actingDiscordId = match[2];
-    }
+    const actingDiscordId = await this.getActingDiscordId(actor);
     // TODO: commit to db here
     const actorStr = actingDiscordId ? `<@${actingDiscordId}>` : actor;
+    const state = newTicket ? "Opened" : "Re-Opened";
     await this.postNotification(
       notifications_channel_id,
       actorStr,
       ticket,
-      newTicket ? "Opened" : "Re-Opened",
+      state,
     );
-    await this.postNotification(
-      ticket.provider_id,
-      actorStr,
-      ticket,
-      newTicket ? "Opened" : "Re-Opened",
-    );
+    await this.postNotification(ticket.provider_id, actorStr, ticket, state);
     if (newTicket) {
       if (ticket.user_id) {
         const members = [ticket.user_id];
@@ -226,23 +216,15 @@ export class DiscordProvider {
         await this.addUsers(ticket.provider_id, members);
       }
     }
+    await this.ticketService.dropStateLease(ticket.id, lease);
   }
 
-  async close(actor: string, ticket: Ticket) {
+  async close(actor: string, lease: string, ticket: Ticket) {
     const { notifications_channel_id } = await this.getConfig();
     const client = await this.getClient();
+    await this.ticketService.renewStateLease(ticket.id, lease);
     const match = actor.match(USER_REGEX);
-    let actingDiscordId: string;
-    if (match && match[1] === "user") {
-      actingDiscordId = (
-        await this.identityService.getProviderForUser(
-          "discord",
-          parseInt(match[2]),
-        )
-      )?.provider_id;
-    } else if (match && match[1] === "discord") {
-      actingDiscordId = match[2];
-    }
+    const actingDiscordId = await this.getActingDiscordId(actor);
     await this.postNotification(
       ticket.provider_id,
       actingDiscordId ? `<@${actingDiscordId}>` : actor,
@@ -272,5 +254,20 @@ export class DiscordProvider {
       ticket,
       "Closed",
     );
+    await this.ticketService.dropStateLease(ticket.id, lease);
+  }
+
+  private async getActingDiscordId(actor: string) {
+    const match = actor.match(USER_REGEX);
+    if (match && match[1] === "user") {
+      return (
+        await this.identityService.getProviderForUser(
+          "discord",
+          parseInt(match[2]),
+        )
+      )?.provider_id;
+    } else if (match && match[1] === "discord") {
+      return match[2];
+    }
   }
 }

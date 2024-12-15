@@ -1,7 +1,7 @@
 import { AuthMethod } from "@noctf/api/datatypes";
 import { AuthToken, AuthTokenType } from "@noctf/api/token";
 
-import { ApplicationError, ValidationError } from "../errors.ts";
+import { ConflictError, ValidationError } from "../errors.ts";
 import { IdentityProvider, UpdateIdentityData } from "../types/identity.ts";
 import type { ServiceCradle } from "../index.ts";
 
@@ -87,9 +87,7 @@ export class IdentityService {
         .executeTakeFirst();
       return;
     } else if (data.user_id && data.user_id !== result?.user_id) {
-      throw new ApplicationError(
-        409,
-        "IdentityExistsForDifferentUser",
+      throw new ConflictError(
         "The identity is already bound to a different user",
       );
     }

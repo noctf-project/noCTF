@@ -9,10 +9,20 @@ export enum RedisUrlType {
 export class RedisClientFactory {
   private readonly urls;
   private readonly logger;
+  private readonly clients: Map<RedisUrlType, Redis> = new Map();
 
   constructor(urls: Record<RedisUrlType, string>, logger?: Logger) {
     this.urls = urls;
     this.logger = logger;
+  }
+
+  getSharedClient(type: RedisUrlType) {
+    if (this.clients.has(type)) {
+      return this.clients.get(type);
+    }
+    const client = this.createClient(type, { maxRetriesPerRequest: 0 });
+    this.clients.set(type, client);
+    return client;
   }
 
   createClient(type: RedisUrlType, options: RedisOptions = {}) {

@@ -45,19 +45,19 @@ export async function initWorker(cradle: ServiceCradle) {
   const discordProvider = new DiscordProvider({ ...cradle, ticketService });
   eventBusService.subscribe<TicketStateMessage>(
     async (data) => {
-      const { ticket, actor } = data.data;
+      const { actor, lease, ticket } = data.data;
       if (ticket.provider !== "discord") return;
 
       if (ticket.open) {
-        await discordProvider.open(actor, ticket);
+        await discordProvider.open(actor, lease, ticket);
       } else {
-        await discordProvider.close(actor, ticket);
+        await discordProvider.close(actor, lease, ticket);
       }
     },
     TicketStateMessage,
     "ticket.state",
     {
-      name: "worker",
+      name: "discord"
     },
   );
 }
