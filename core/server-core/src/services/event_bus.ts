@@ -1,6 +1,7 @@
 import { DefaultJobOptions, Queue, Worker } from "bullmq";
 import { ServiceCradle } from "../index.ts";
-import { RedisUrlType as RedisUrlType } from "../clients/redis_factory.ts";
+import { RedisUrlType } from "../clients/redis_factory.ts";
+import { Metric } from "../clients/metrics.ts";
 import { decode, encode } from "cbor2";
 import { EvaluateFilter, EventFilter } from "../util/filter.ts";
 import { TSchema } from "@sinclair/typebox";
@@ -119,7 +120,7 @@ export class EventBusService {
         qualifier,
         async (job) => {
           const start = performance.now();
-
+          const metrics: Metric[] = [];
           try {
             await handler({
               id: job.id,
@@ -137,8 +138,10 @@ export class EventBusService {
               },
               "Processed remote message",
             );
-            this.metricsClient.record("QueueToFinishTime", labels, Date.now() - job.timestamp);
-            this.metricsClient.record("Success", labels, 1);
+            metrics.push(
+              ["QueueToFinishTime", Date.now() - job.timestamp],
+              ["Success", 1]
+            );
           } catch (e) {
             this.logger.error(
               {
@@ -149,14 +152,17 @@ export class EventBusService {
               },
               "Unepected error processing message",
             );
-            this.metricsClient.record("Success", labels, 0);
+            metrics.push(["Success", 0]);
             if (job.attemptsMade >= job.opts.attempts) {
-              this.metricsClient.record("QueueToFinishTime", labels, Date.now() - job.timestamp);
-              this.metricsClient.record("ExhaustedRetries", labels, 1);
+              metrics.push(
+                ["QueueToFinishTime", Date.now() - job.timestamp],
+                ["ExhaustedRetries", 1]
+              );
             }
             throw e;
           } finally {
-            this.metricsClient.record("ProcessTime", labels, Math.round(performance.now() - start));
+            metrics.push(["ProcessTime", Math.round(performance.now() - start)]);
+            this.metricsClient.record(metrics, labels);
           }
         },
         {
@@ -243,10 +249,10 @@ export class EventBusService {
             type: "custom",
           },
         });
-        this.metricsClient.record('Published', {
+        this.metricsClient.record([['Published', 1]], {
           worker_type: 'eventbus_bullmq',
           qualifier: qualifier
-        }, 1);
+        });
       }
     }
   }
@@ -270,7 +276,6 @@ export class EventBusService {
       Number.MAX_SAFE_INTEGER,
     );
     const workers: EventBusService["remoteQueues"] = {};
-
     let activeQueues = 0;
     for (let i = 0; i < remotes.length; i++) {
       const spec = decode(
@@ -295,16 +300,16 @@ export class EventBusService {
             new Queue(qualifier, { connection: this.queueClient }),
           );
         }
+
         this.metricsClient.record(
-          'QueueDepth',
+          [["QueueDepth", (await this.bullQueues.get(qualifier).getJobCounts('active')).active]],
           { worker_type: 'eventbus_bullmq', qualifier },
-          (await this.bullQueues.get(qualifier).getJobCounts('active')).active
         );
       }
     }
     this.remoteQueues = workers;
     this.logger.debug({ queues: workers }, "Syncing remote workers");
-    this.metricsClient.record('ActiveQueues', {worker_type: 'eventbus_bullmq'}, activeQueues);
+    this.metricsClient.record([['ActiveQueues', activeQueues]], {worker_type: 'eventbus_bullmq'});
     void this.queueClient.zremrangebyscore(ACTIVE_REMOTE_QUEUES_KEY, 0, now);
   }
 }

@@ -94,19 +94,19 @@ export class CacheService {
     for (const [cache_namespace, metrics] of this.counters) {
       const labels = { cache_namespace };
       if (metrics[MetricIndex.HitCount] !== 0) {
-        this.metricsClient.record('HitCount', labels, metrics[MetricIndex.HitCount], timestamp);
+        this.metricsClient.record([['HitCount', metrics[MetricIndex.HitCount]]], labels, timestamp);
         metrics[MetricIndex.HitCount] = 0;
       }
       if (metrics[MetricIndex.HitTime] !== 0) {
-        this.metricsClient.record('HitTime', labels, metrics[MetricIndex.HitTime], timestamp);
+        this.metricsClient.record([['HitTime', metrics[MetricIndex.HitTime]]], labels, timestamp);
         metrics[MetricIndex.HitTime] = 0;
       }
       if (metrics[MetricIndex.MissCount] !== 0) {
-        this.metricsClient.record('MissCount', labels, metrics[MetricIndex.MissCount], timestamp);
+        this.metricsClient.record([['MissCount', metrics[MetricIndex.MissCount]]], labels, timestamp);
         metrics[MetricIndex.MissCount] = 0;
       }
       if (metrics[MetricIndex.MissTime] !== 0) {
-        this.metricsClient.record('MissTime', labels, metrics[MetricIndex.MissTime], timestamp);
+        this.metricsClient.record([['MissTime', metrics[MetricIndex.MissTime]]], labels, timestamp);
         metrics[MetricIndex.MissTime] = 0;
       }
     }
