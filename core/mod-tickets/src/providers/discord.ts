@@ -6,6 +6,7 @@ import ky, { KyInstance } from "ky";
 import {
   APIThreadChannel,
   ChannelType,
+  RESTGetAPIChannelThreadMembersResult,
   RESTPatchAPIChannelJSONBody,
   RESTPostAPIChannelMessageJSONBody,
   RESTPostAPIChannelThreadsJSONBody,
@@ -91,13 +92,38 @@ export class DiscordProvider {
     return this.client;
   }
 
-  private async addUsers(channelId: string, userIds: number[]) {
+  private async addUsers(channelId: string, userIds: number[], isNew: boolean) {
     const client = await this.getClient();
+    const current = new Set<string>();
+    if (!isNew) {
+      const limit = 100;
+      let after = "";
+      while (true) {
+        const searchParams: Record<string, number | string> = { limit };
+        if (after) {
+          searchParams.after = after;
+        }
+        const res = await client.get<RESTGetAPIChannelThreadMembersResult>(
+          `channels/${channelId}/thread-members`,
+          {
+            searchParams,
+          },
+        );
+        const members = await res.json();
+        for (const member of members) {
+          current.add(member.id);
+        }
+        if (members.length < limit) {
+          break;
+        }
+        after = members[members.length - 1].id;
+      }
+    }
     for (const id of userIds) {
       const providerId = (
         await this.identityService.getProviderForUser("discord", id)
       )?.provider_id;
-      if (!providerId) {
+      if (!providerId || current.has(providerId)) {
         continue;
       }
       await client.put(`channels/${channelId}/thread-members/${providerId}`);
@@ -198,7 +224,6 @@ export class DiscordProvider {
         } as RESTPatchAPIChannelJSONBody,
       });
     }
-    const match = actor.match(USER_REGEX);
     const actingDiscordId = await this.getActingDiscordId(actor);
     // TODO: commit to db here
     const actorStr = actingDiscordId ? `<@${actingDiscordId}>` : actor;
@@ -210,16 +235,14 @@ export class DiscordProvider {
       state,
     );
     await this.postNotification(ticket.provider_id, actorStr, ticket, state);
-    if (newTicket) {
-      if (ticket.user_id) {
-        const members = [ticket.user_id];
-        await this.addUsers(ticket.provider_id, members);
-      } else if (ticket.team_id) {
-        const members = (await this.teamService.getMembers(ticket.team_id)).map(
-          ({ user_id }) => user_id,
-        );
-        await this.addUsers(ticket.provider_id, members);
-      }
+    if (ticket.user_id) {
+      const members = [ticket.user_id];
+      await this.addUsers(ticket.provider_id, members, newTicket);
+    } else if (ticket.team_id) {
+      const members = (await this.teamService.getMembers(ticket.team_id)).map(
+        ({ user_id }) => user_id,
+      );
+      await this.addUsers(ticket.provider_id, members, newTicket);
     }
     await this.ticketService.dropStateLease(ticket.id, lease);
   }

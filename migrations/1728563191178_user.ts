@@ -76,8 +76,12 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.notNull().defaultTo("{}"),
     )
     .addColumn("public", "boolean", (col) => col.notNull().defaultTo(false))
-    .addColumn("match_flags", sql`varchar[]`, (col) => col.notNull().defaultTo('{}'))
-    .addColumn("omit_flags", sql`varchar[]`, (col) => col.notNull().defaultTo('{}'))
+    .addColumn("match_flags", sql`varchar[]`, (col) =>
+      col.notNull().defaultTo("{}"),
+    )
+    .addColumn("omit_flags", sql`varchar[]`, (col) =>
+      col.notNull().defaultTo("{}"),
+    )
     .execute();
   await db
     .withSchema("core")
@@ -87,13 +91,13 @@ export async function up(db: Kysely<any>): Promise<void> {
         name: "public",
         description: "Public user permissions",
         permissions: [":r", "!user.me", "!admin"],
-        public: true
+        public: true,
       },
       {
         name: "user",
         description: "Standard user permissions",
         permissions: ["", "!admin"],
-        omit_flags: ["blocked"]
+        omit_flags: ["blocked"],
       },
       {
         name: "user_blocked",
@@ -104,7 +108,7 @@ export async function up(db: Kysely<any>): Promise<void> {
         name: "admin",
         description: "Administrators",
         permissions: ["admin"],
-        match_flags: ["admin"]
+        match_flags: ["admin"],
       },
     ])
     .execute();

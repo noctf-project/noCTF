@@ -1,6 +1,9 @@
 import { FastifyRequest } from "fastify";
 import { AuthScopedToken, AuthSessionToken } from "@noctf/api/token";
-import { AuthenticationError, TokenValidationError } from "@noctf/server-core/errors";
+import {
+  AuthenticationError,
+  TokenValidationError,
+} from "@noctf/server-core/errors";
 
 const parseCookie = (str: string) =>
   str
@@ -34,7 +37,7 @@ export const AuthnHook = async (request: FastifyRequest) => {
   const { identityService } = request.server.container.cradle;
   let tokenData;
   try {
-    tokenData= await identityService.validateToken<
+    tokenData = await identityService.validateToken<
       AuthSessionToken | AuthScopedToken
     >(token, ["scoped", "session"]);
     request.user = {

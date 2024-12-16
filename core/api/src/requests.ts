@@ -52,3 +52,9 @@ export const QueryAuditLogRequest = Type.Object({
   limit: Type.Optional(Type.Number()),
 });
 export type QueryAuditLogRequest = Static<typeof QueryAuditLogRequest>;
+
+export const CreateTeamRequest = Type.Object({
+  name: Type.String(),
+  captcha: Type.Optional(Type.String()),
+});
+export type CreateTeamRequest = Static<typeof CreateTeamRequest>;

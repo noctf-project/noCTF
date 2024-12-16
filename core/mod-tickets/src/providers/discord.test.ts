@@ -7,21 +7,26 @@ import { TeamService } from "@noctf/server-core/services/team";
 import { Logger } from "@noctf/server-core/types/primitives";
 import { TicketConfig } from "../schema/config.ts";
 import ky, { KyResponse } from "ky";
-import { APIThreadChannel, ChannelType } from "discord-api-types/v10";
+import {
+  APIThreadChannel,
+  APIThreadMember,
+  ChannelType,
+  ThreadMemberFlags,
+} from "discord-api-types/v10";
 import { TicketService } from "../service.ts";
 
 vi.mock("ky");
 const mockKy = vi.mocked(ky, true);
+const mockKyResponse = mock<KyResponse>();
+const configService = mock<ConfigService>();
+const identityService = mock<IdentityService>();
+const teamService = mock<TeamService>();
+const ticketService = mock<TicketService>();
+const logger = mock<Logger>();
 
 const date = new Date("1970-01-01T00:00:00Z");
 
 describe("Discord Tickets Provider", async () => {
-  const configService = mock<ConfigService>();
-  const identityService = mock<IdentityService>();
-  const teamService = mock<TeamService>();
-  const ticketService = mock<TicketService>();
-  const logger = mock<Logger>();
-
   beforeEach(() => {
     mockKy.create.mockReturnThis();
   });
@@ -94,20 +99,19 @@ describe("Discord Tickets Provider", async () => {
     res.json.mockResolvedValue({
       id: "2222",
     });
-    vi.mocked(teamService).getMembers.mockResolvedValue([
+    teamService.getMembers.mockResolvedValue([
       { user_id: 1, role: "member" },
       { user_id: 2, role: "member" },
       { user_id: 3, role: "member" },
     ]);
-    vi.mocked(identityService).getProviderForUser.mockImplementation(
-      (name, id) =>
-        Promise.resolve({
-          provider_id: (id * 10).toString(),
-          provider: name,
-          user_id: id,
-          created_at: date,
-          secret_data: null,
-        }),
+    identityService.getProviderForUser.mockImplementation((name, id) =>
+      Promise.resolve({
+        provider_id: (id * 10).toString(),
+        provider: name,
+        user_id: id,
+        created_at: date,
+        secret_data: null,
+      }),
     );
     mockKy.post.mockResolvedValueOnce(res);
     await provider.open("user:1", "lease", {
@@ -374,6 +378,25 @@ describe("Discord Tickets Provider", async () => {
           secret_data: null,
         }),
     );
+    const apiThreadMembers: APIThreadMember[] = [
+      {
+        id: "10",
+        join_timestamp: "0",
+        flags: ThreadMemberFlags.NoMessages,
+      },
+      {
+        id: "20",
+        join_timestamp: "0",
+        flags: ThreadMemberFlags.NoMessages,
+      },
+    ];
+    mockKyResponse.json.mockResolvedValueOnce(apiThreadMembers);
+    mockKy.get.mockResolvedValueOnce(mockKyResponse);
+    vi.mocked(teamService).getMembers.mockResolvedValue([
+      { user_id: 1, role: "member" },
+      { user_id: 2, role: "member" },
+      { user_id: 3, role: "member" },
+    ]);
     await provider.open("user:1", "lease", {
       id: 42,
       open: true,
@@ -427,7 +450,8 @@ describe("Discord Tickets Provider", async () => {
         embeds: [embed],
       },
     });
-    expect(mockKy.put).toHaveBeenCalledTimes(0);
+    expect(mockKy.put).toHaveBeenCalledTimes(1);
+    expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/30");
     expect(ticketService.renewStateLease).toBeCalledWith(42, "lease");
     expect(ticketService.dropStateLease).toBeCalledWith(42, "lease");
   });

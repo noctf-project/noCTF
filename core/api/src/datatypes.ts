@@ -1,4 +1,11 @@
-import { Static, Type } from "@sinclair/typebox";
+import { Static, Type, UnsafeOptions } from "@sinclair/typebox";
+
+export const TypeDate = (options: UnsafeOptions = {}) =>
+  Type.Unsafe<Date>({
+    ...options,
+    type: "string",
+    format: "datetime",
+  });
 
 export const AuthMethod = Type.Object({
   provider: Type.String(),
@@ -15,3 +22,13 @@ export const AuditLogEntry = Type.Object({
   created_at: Type.Number(),
 });
 export type AuditLogEntry = Static<typeof AuditLogEntry>;
+
+export const Team = Type.Object({
+  id: Type.Number(),
+  name: Type.String(),
+  bio: Type.String(),
+  join_code: Type.String(),
+  flags: Type.Array(Type.String()),
+  created_at: TypeDate(),
+});
+export type Team = Static<typeof Team>;

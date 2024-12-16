@@ -8,7 +8,7 @@ type Props = Pick<ServiceCradle, "cacheService" | "logger"> & {
   secret: string;
 };
 
-const REVOKE_NS = 'core:token:rev';
+const REVOKE_NS = "core:token:rev";
 export class TokenService {
   private secret: Props["secret"];
   private cacheService: Props["cacheService"];

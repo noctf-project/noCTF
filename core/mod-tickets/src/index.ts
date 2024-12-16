@@ -56,7 +56,7 @@ export async function initWorker(cradle: ServiceCradle) {
     "ticket.state",
     {
       name: "discord",
-      concurrency: 4
+      concurrency: 4,
     },
   );
 }

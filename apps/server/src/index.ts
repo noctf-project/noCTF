@@ -70,7 +70,9 @@ server.register(async () => {
       { lifetime: Lifetime.SINGLETON },
     ),
     databaseClient: asValue(new DatabaseClient(server.log, POSTGRES_URL)),
-    metricsClient: asValue(new MetricsClient(server.log, METRICS_PATH, METRICS_FILE_NAME_FORMAT)),
+    metricsClient: asValue(
+      new MetricsClient(server.log, METRICS_PATH, METRICS_FILE_NAME_FORMAT),
+    ),
     cacheService: asClass(CacheService, { lifetime: Lifetime.SINGLETON }),
     auditLogService: asClass(AuditLogService, { lifetime: Lifetime.SINGLETON }),
     eventBusService: asClass(EventBusService, { lifetime: Lifetime.SINGLETON }),
@@ -142,12 +144,16 @@ const logRequest = async (
     "request",
   );
   server.container.cradle.metricsClient.recordAggregate(
-    [["ResponseTime", reply.elapsedTime], ["ResponseCount", 1]],
+    [
+      ["ResponseTime", reply.elapsedTime],
+      ["ResponseCount", 1],
+    ],
     {
-      'http_route': request.routeOptions.url || '__notfound__',
-      'http_method': request.method,
-      'http_status': Math.floor(reply.statusCode/100) + 'xx'
-    });
+      http_route: request.routeOptions.url || "__notfound__",
+      http_method: request.method,
+      http_status: Math.floor(reply.statusCode / 100) + "xx",
+    },
+  );
 };
 
 server.addHook("onResponse", async (request, reply) => {
@@ -159,7 +165,6 @@ server.addHook("onTimeout", async (request, reply) => {
 server.addHook("onRequestAbort", async (request) => {
   await logRequest(request, {}, "abort");
 });
-
 
 server.setErrorHandler((error, request, reply) => {
   if (error instanceof ApplicationError) {

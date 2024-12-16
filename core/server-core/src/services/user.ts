@@ -53,17 +53,59 @@ export class UserService {
     );
   }
 
-  async create({
-    name,
-    identities,
-    flags,
-    actor,
-  }: {
-    name: string;
-    identities: UpdateIdentityData[];
-    flags?: string[];
-    actor?: AuditLogActor;
-  }) {
+  async update(
+    id: number,
+    {
+      name,
+      bio,
+      flags,
+    }: {
+      name: string;
+      bio: string;
+      flags: string[];
+    },
+    actor?: AuditLogActor,
+  ) {
+    const r = await this.databaseClient
+      .updateTable("core.user")
+      .set({
+        name,
+        bio,
+        flags,
+      })
+      .where("id", "=", id)
+      .returning(["name", "bio", "flags"])
+      .executeTakeFirstOrThrow();
+
+    const changed = [
+      name === r.name && `name = ${name}`,
+      bio === r.bio && "bio",
+      flags === r.flags && `flags = ${flags}`,
+    ].filter((x) => x);
+
+    await this.auditLogService.log({
+      operation: "user.update",
+      actor: actor || {
+        type: ActorType.USER,
+        id: id,
+      },
+      entities: [`${ActorType.USER}:${id}`],
+      data: `Properties ${changed.join(", ")} were updated.`,
+    });
+  }
+
+  async create(
+    {
+      name,
+      identities,
+      flags,
+    }: {
+      name: string;
+      identities: UpdateIdentityData[];
+      flags?: string[];
+    },
+    actor?: AuditLogActor,
+  ) {
     if (!identities || !identities.length) {
       throw new BadRequestError(
         "NoIdentitiesForUserError",
@@ -122,7 +164,7 @@ export class UserService {
         .values(insertedIdentities)
         .execute();
 
-      void this.auditLogService.log({
+      await this.auditLogService.log({
         operation: "user.create",
         actor: actor || {
           type: ActorType.USER,

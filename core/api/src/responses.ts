@@ -1,5 +1,5 @@
 import { Static, Type } from "@sinclair/typebox";
-import { AuditLogEntry, AuthMethod } from "./datatypes.ts";
+import { AuditLogEntry, AuthMethod, Team } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 
 export const BaseResponse = Type.Object({
@@ -58,3 +58,8 @@ export const QueryAuditLogResponse = Type.Object({
   data: Type.Array(AuditLogEntry),
 });
 export type QueryAuditLogResponse = Static<typeof QueryAuditLogResponse>;
+
+export const MeTeamResponse = Type.Object({
+  data: Type.Omit(Team, ["flags"]),
+});
+export type MeTeamResponse = Static<typeof MeTeamResponse>;

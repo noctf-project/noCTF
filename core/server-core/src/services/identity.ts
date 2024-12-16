@@ -10,7 +10,7 @@ type Props = Pick<
   "databaseClient" | "tokenService" | "cacheService"
 >;
 
-const CACHE_NAMESPACE = 'core:svc:identity';
+const CACHE_NAMESPACE = "core:svc:identity";
 
 export class IdentityService {
   private readonly databaseClient;

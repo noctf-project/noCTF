@@ -16,9 +16,8 @@ enum MetricIndex {
   HitCount = 0,
   HitTime = 1,
   MissCount = 2,
-  MissTime = 3
-};
-
+  MissTime = 3,
+}
 
 export class CacheService {
   private readonly redisClient;
@@ -45,25 +44,36 @@ export class CacheService {
     if (data) {
       const d = decode(data) as T;
       const end = performance.now();
-      this.metricsClient.recordAggregate([
-        ['HitCount', 1],
-        ['HitTime', end - start]
-      ], { cache_namespace: namespace });
+      this.metricsClient.recordAggregate(
+        [
+          ["HitCount", 1],
+          ["HitTime", end - start],
+        ],
+        { cache_namespace: namespace },
+      );
       return d;
     }
-      const result = await fetcher();
-      await this._put(k, result, expireSeconds);
+    const result = await fetcher();
+    await this._put(k, result, expireSeconds);
     const end = performance.now();
-    this.metricsClient.recordAggregate([
-      ['MissCount', 1],
-      ['MissTime', end - start]
-    ], { cache_namespace: namespace });
+    this.metricsClient.recordAggregate(
+      [
+        ["MissCount", 1],
+        ["MissTime", end - start],
+      ],
+      { cache_namespace: namespace },
+    );
     return result;
   }
 
   async put(namespace: string, key: string, value: unknown, expireSeconds = 0) {
     const k = `${namespace}:${key}`;
     return this._put(k, value, expireSeconds);
+  }
+
+  async del(namespace: string, key: string) {
+    const k = `${namespace}:${key}`;
+    return this.redisClient.del(k);
   }
 
   async getTtl(namespace: string, key: string) {

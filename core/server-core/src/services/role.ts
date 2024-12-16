@@ -37,18 +37,25 @@ export class RoleService {
     return this.cacheService.load(
       CACHE_NAMESPACE,
       `rbac:user:${userId}`,
-      async () => await this.databaseClient
-        .selectFrom("core.role")
-        .select(["core.role.id", "core.role.permissions"])
-        .innerJoin('core.user', (join) => join.on((eb) => eb.and([
-          eb.or([
-            eb('core.role.match_flags', '=', '{}' as unknown as string[]),
-            eb('core.role.match_flags', '&&', eb.ref('core.user.flags'))
-          ]),
-          eb.not(eb('core.user.flags', '&&', eb.ref('core.role.omit_flags')))
-        ])))
-        .where("core.user.id", "=", userId)
-        .execute(),
+      async () =>
+        await this.databaseClient
+          .selectFrom("core.role")
+          .select(["core.role.id", "core.role.permissions"])
+          .innerJoin("core.user", (join) =>
+            join.on((eb) =>
+              eb.and([
+                eb.or([
+                  eb("core.role.match_flags", "=", "{}" as unknown as string[]),
+                  eb("core.role.match_flags", "&&", eb.ref("core.user.flags")),
+                ]),
+                eb.not(
+                  eb("core.user.flags", "&&", eb.ref("core.role.omit_flags")),
+                ),
+              ]),
+            ),
+          )
+          .where("core.user.id", "=", userId)
+          .execute(),
       {
         expireSeconds: 10,
       },
@@ -59,11 +66,12 @@ export class RoleService {
     return this.cacheService.load(
       CACHE_NAMESPACE,
       `rbac:public`,
-      async () => await this.databaseClient
-        .selectFrom("core.role")
-        .select(["id", "permissions"])
-        .where("public", "=", true)
-        .execute(),
+      async () =>
+        await this.databaseClient
+          .selectFrom("core.role")
+          .select(["id", "permissions"])
+          .where("public", "=", true)
+          .execute(),
       {
         expireSeconds: 10,
       },

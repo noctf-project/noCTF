@@ -4,7 +4,7 @@ import { DB } from "@noctf/schema";
 import { Logger } from "../types/primitives.ts";
 
 export class DatabaseClient extends Kysely<DB> {
-  constructor(logger: Logger|null, connectionString: string) {
+  constructor(logger: Logger | null, connectionString: string) {
     if (logger) {
       const url = new URL(connectionString);
       logger.info(`Connecting to postgres at ${url.host}`);

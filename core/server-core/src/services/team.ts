@@ -11,6 +11,7 @@ type Props = Pick<
   "databaseClient" | "cacheService" | "auditLogService"
 >;
 
+const CACHE_NAMESPACE = "core:svc:team";
 export class TeamService {
   private readonly cacheService: Props["cacheService"];
   private readonly databaseClient: Props["databaseClient"];
@@ -26,27 +27,30 @@ export class TeamService {
     this.auditLogService = auditLogService;
   }
 
-  async create({
-    name,
-    flags = [],
-    generateJoinCode,
-    audit: { actor, message } = {},
-  }: {
-    name: string;
-    flags: string[];
-    generateJoinCode?: boolean;
-    audit?: AuditParams;
-  }) {
-    const { id } = await this.databaseClient
+  async create(
+    {
+      name,
+      flags,
+      generate_join_code,
+    }: {
+      name: string;
+      flags?: string[];
+      generate_join_code?: boolean;
+      audit?: AuditParams;
+    },
+    { actor, message }: AuditParams = {},
+  ) {
+    const join_code = generate_join_code ? nanoid() : null;
+    const { id, bio, created_at } = await this.databaseClient
       .insertInto("core.team")
       .values({
         name,
-        join_code: generateJoinCode && nanoid(),
-        flags,
+        join_code,
+        flags: flags || [],
       })
-      .returning("id")
+      .returning(["id", "bio", "created_at"])
       .executeTakeFirstOrThrow();
-    void this.auditLogService.log({
+    await this.auditLogService.log({
       operation: "team.create",
       actor: actor || {
         type: ActorType.SYSTEM,
@@ -54,7 +58,22 @@ export class TeamService {
       data: message,
       entities: [`${ActorType.TEAM}:${id}`],
     });
-    return id;
+    return {
+      id,
+      name,
+      bio,
+      join_code,
+      flags,
+      created_at,
+    };
+  }
+
+  async get(id: number) {
+    return await this.databaseClient
+      .selectFrom("core.team")
+      .select(["id", "name", "bio", "join_code", "flags", "created_at"])
+      .where("id", "=", id)
+      .executeTakeFirst();
   }
 
   async delete(id: number, { actor, message }: AuditParams = {}) {
@@ -65,7 +84,7 @@ export class TeamService {
     if (numDeletedRows === 0n) {
       throw new NotFoundError("Team does not exist");
     }
-    void this.auditLogService.log({
+    await this.auditLogService.log({
       actor: actor || {
         type: ActorType.SYSTEM,
       },
@@ -80,96 +99,124 @@ export class TeamService {
    * @param userId
    * @param code
    */
-  async join(userId: number, code: string) {
-    const { id: teamId, flags } =
+  async join(user_id: number, code: string) {
+    const { id: team_id, flags } =
       (await this.databaseClient
         .selectFrom("core.team")
         .select(["id", "flags"])
         .where("join_code", "=", code)
         .executeTakeFirst()) || {};
     if (
-      !teamId ||
+      !team_id ||
       flags.includes(TeamFlag.FROZEN) ||
       flags.includes(TeamFlag.BLOCKED)
     ) {
       throw new NotFoundError("Invalid joining code");
     }
-    await this.assignMember({
-      userId,
-      teamId,
-      audit: {
+    await this.assignMember(
+      {
+        user_id,
+        team_id,
+      },
+      {
         actor: {
           type: ActorType.USER,
-          id: userId,
+          id: user_id,
         },
         message: "Joined using code",
       },
+    );
+  }
+
+  async getMembership(userId: number) {
+    return this.cacheService.load(CACHE_NAMESPACE, `u:${userId}`, async () => {
+      const result = await this.databaseClient
+        .selectFrom("core.team")
+        .innerJoin(
+          "core.team_member",
+          "core.team_member.team_id",
+          "core.team.id",
+        )
+        .select(["core.team.id", "core.team_member.role"])
+        .where("core.team_member.user_id", "=", userId)
+        .executeTakeFirst();
+
+      if (!result) {
+        return null;
+      }
+      return result;
     });
   }
 
-  async assignMember({
-    userId,
-    teamId,
-    role = "member",
-    audit: { actor, message } = {},
-  }: {
-    userId: number;
-    teamId: number;
-    role?: CoreTeamMemberRole;
-    audit?: AuditParams;
-  }) {
+  async assignMember(
+    {
+      user_id,
+      team_id,
+      role = "member",
+    }: {
+      user_id: number;
+      team_id: number;
+      role?: CoreTeamMemberRole;
+    },
+    { actor, message }: AuditParams = {},
+  ) {
     const { numInsertedOrUpdatedRows } = await this.databaseClient
       .insertInto("core.team_member")
       .values({
-        user_id: userId,
-        team_id: teamId,
+        user_id,
+        team_id,
         role,
       })
       .onConflict((b) =>
         b
           .column("user_id")
           .doUpdateSet({ role })
-          .where("core.team_member.team_id", "=", teamId)
+          .where("core.team_member.team_id", "=", team_id)
           .where("core.team_member.role", "!=", role),
       )
       .executeTakeFirst();
     if (numInsertedOrUpdatedRows === 0n) {
       throw new ForbiddenError("User has already joined a team.");
     }
-    void this.auditLogService.log({
+    await this.cacheService.del(CACHE_NAMESPACE, `u:${user_id}`);
+    await this.auditLogService.log({
       actor: actor || {
         type: ActorType.SYSTEM,
       },
       operation: "team.member.assign",
-      entities: [`${ActorType.TEAM}:${teamId}`, `${ActorType.USER}:${userId}`],
+      entities: [
+        `${ActorType.TEAM}:${team_id}`,
+        `${ActorType.USER}:${user_id}`,
+      ],
       data: message,
     });
   }
 
-  async removeMember({
-    userId,
-    teamId,
-    checkOwner,
-    audit: { actor, message } = {},
-  }: {
-    userId: number;
-    teamId: number;
-    checkOwner?: boolean;
-    audit?: AuditParams;
-  }) {
+  async removeMember(
+    {
+      user_id,
+      team_id,
+      check_owner,
+    }: {
+      user_id: number;
+      team_id: number;
+      check_owner?: boolean;
+    },
+    { actor, message }: AuditParams,
+  ) {
     let query = this.databaseClient
       .deleteFrom("core.team_member")
-      .where("user_id", "=", userId)
-      .where("team_id", "=", teamId);
-    if (checkOwner) {
+      .where("user_id", "=", user_id)
+      .where("team_id", "=", team_id);
+    if (check_owner) {
       query = query.where((op) =>
         op.or([
           op(
             op
               .selectFrom("core.team_member")
               .select((o) => o.fn.countAll().as("cnt"))
-              .where("team_id", "=", teamId)
-              .where("user_id", "!=", userId)
+              .where("team_id", "=", team_id)
+              .where("user_id", "!=", user_id)
               .where("role", "=", "owner"),
             "!=",
             0,
@@ -178,7 +225,7 @@ export class TeamService {
             op
               .selectFrom("core.team_member")
               .select((o) => o.fn.countAll().as("cnt"))
-              .where("team_id", "=", teamId),
+              .where("team_id", "=", team_id),
             "=",
             1,
           ),
@@ -189,12 +236,16 @@ export class TeamService {
     if (!numDeletedRows) {
       throw new NotFoundError("User's membership does not exist.");
     }
-    void this.auditLogService.log({
+    await this.cacheService.del(CACHE_NAMESPACE, `u:${user_id}`);
+    await this.auditLogService.log({
       actor: actor || {
         type: ActorType.SYSTEM,
       },
       operation: "team.member.remove",
-      entities: [`${ActorType.TEAM}:${teamId}`, `${ActorType.USER}:${userId}`],
+      entities: [
+        `${ActorType.TEAM}:${team_id}`,
+        `${ActorType.USER}:${user_id}`,
+      ],
       data: message,
     });
   }

@@ -31,10 +31,8 @@ export class ConfigService {
   private readonly validators: Map<string, [TSchema, Validator<unknown>]> =
     new Map();
 
-  private cache: Map<
-    string,
-    [Promise<ConfigValue<SerializableMap>>, number]
-  > = new Map();
+  private cache: Map<string, [Promise<ConfigValue<SerializableMap>>, number]> =
+    new Map();
 
   constructor({ logger, databaseClient, auditLogService }: Props) {
     this.logger = logger;
@@ -171,7 +169,7 @@ export class ConfigService {
     if (!result) {
       throw new BadRequestError("config version mismatch");
     }
-    void this.auditLogService.log({
+    await this.auditLogService.log({
       actor,
       operation: "config.update",
       entities: [namespace],

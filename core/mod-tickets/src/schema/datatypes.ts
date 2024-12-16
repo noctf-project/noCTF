@@ -1,3 +1,4 @@
+import { TypeDate } from "@noctf/api/datatypes";
 import { Static, Type } from "@sinclair/typebox";
 
 export const Ticket = Type.Object({
@@ -9,6 +10,6 @@ export const Ticket = Type.Object({
   item: Type.String(),
   provider: Type.String(),
   provider_id: Type.Optional(Type.String()),
-  created_at: Type.Date(),
+  created_at: TypeDate(),
 });
 export type Ticket = Static<typeof Ticket>;

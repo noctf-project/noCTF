@@ -45,9 +45,6 @@ catalogs:
     pino-pretty:
       specifier: ^13.0.0
       version: 13.0.0
-    prom-client:
-      specifier: ^15.1.3
-      version: 15.1.3
     tsx:
       specifier: ^4.19.1
       version: 4.19.1
@@ -122,9 +119,6 @@ importers:
       '@noctf/mod-setup':
         specifier: workspace:*
         version: link:../../core/mod-setup
-      '@noctf/mod-team':
-        specifier: workspace:*
-        version: link:../../core/mod-team
       '@noctf/mod-tickets':
         specifier: workspace:*
         version: link:../../core/mod-tickets
@@ -140,18 +134,12 @@ importers:
       fastify:
         specifier: 'catalog:'
         version: 5.0.0
-      fastify-metrics:
-        specifier: ^12.1.0
-        version: 12.1.0(fastify@5.0.0)
       kysely:
         specifier: 'catalog:'
         version: 0.27.4
       nanoid:
         specifier: ^5.0.7
         version: 5.0.7
-      prom-client:
-        specifier: 'catalog:'
-        version: 15.1.3
       tsx:
         specifier: 'catalog:'
         version: 4.19.1
@@ -252,28 +240,6 @@ importers:
       kysely:
         specifier: 'catalog:'
         version: 0.27.4
-    devDependencies:
-      typescript:
-        specifier: 'catalog:'
-        version: 5.6.2
-
-  core/mod-team:
-    dependencies:
-      '@noctf/api':
-        specifier: workspace:*
-        version: link:../api
-      '@noctf/schema':
-        specifier: workspace:*
-        version: link:../schema
-      '@noctf/server-core':
-        specifier: workspace:*
-        version: link:../server-core
-      '@sinclair/typebox':
-        specifier: 'catalog:'
-        version: 0.33.14
-      fastify:
-        specifier: 'catalog:'
-        version: 5.0.0
     devDependencies:
       typescript:
         specifier: 'catalog:'
@@ -844,10 +810,6 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@opentelemetry/api@1.9.0':
-    resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
-    engines: {node: '>=8.0.0'}
-
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
@@ -1137,9 +1099,6 @@ packages:
   binary-extensions@2.3.0:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
-
-  bintrees@1.0.2:
-    resolution: {integrity: sha512-VOMgTMwjAaUG580SXn3LacVgjurrbMme7ZZNYGSSV7mmtY6QQRh0Eg3pwIcntQ77DErK1L0NxkbetjcoXzVwKw==}
 
   brace-expansion@1.1.11:
     resolution: {integrity: sha512-iCuPHDFgrHX7H2vEI/5xpz07zSHB00TpugqhmYtVmMO6518mCuRMoOYFldEBl0g187ufozdaHgWKcYFb61qGiA==}
@@ -1463,11 +1422,6 @@ packages:
 
   fast-uri@3.0.2:
     resolution: {integrity: sha512-GR6f0hD7XXyNJa25Tb9BuIdN0tdr+0BMi6/CJPH3wJO1JjNG3n/VsSw38AwRdKZABm8lGbPfakLRkYzx2V9row==}
-
-  fastify-metrics@12.1.0:
-    resolution: {integrity: sha512-EpbT+W1jm8kMbkCPvfW4j23y3BZlXGOcO6+75EFTKDxbJIyXbldrFIoVoP0oD4CsqrKeIARvrOjbZNqK5MdRwQ==}
-    peerDependencies:
-      fastify: '>=5'
 
   fastify-plugin@5.0.1:
     resolution: {integrity: sha512-HCxs+YnRaWzCl+cWRYFnHmeRFyR5GVnJTAaCJQiYzQSDwK9MgJdyAsuL3nh0EWRCYMgQ5MeziymvmAhUHYHDUQ==}
@@ -2184,10 +2138,6 @@ packages:
     resolution: {integrity: sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A==}
     engines: {node: '>= 0.6.0'}
 
-  prom-client@15.1.3:
-    resolution: {integrity: sha512-6ZiOBfCywsD4k1BN9IX0uZhF+tJkV8q8llP64G5Hajs4JOeVLPCwpPVcpXy3BwYiUGgyJzsJJQeOIv7+hDSq8g==}
-    engines: {node: ^16 || ^18 || >=20}
-
   proxy-addr@2.0.7:
     resolution: {integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==}
     engines: {node: '>= 0.10'}
@@ -2402,9 +2352,6 @@ packages:
   tar@6.2.1:
     resolution: {integrity: sha512-DZ4yORTwrbTj/7MZYq2w+/ZFdI6OZ/f9SFHR+71gIVUZhOQPHzVCLpvRnPgyaMpfWxxk/4ONva3GQSyNIKRv6A==}
     engines: {node: '>=10'}
-
-  tdigest@0.1.2:
-    resolution: {integrity: sha512-+G0LLgjjo9BZX2MfdvPfH+MKLCrxlXSYec5DaPYP1fe6Iyhf0/fSmJ0bFiZ1F8BT6cGXl2LpltQptzjXKWEkKA==}
 
   test-exclude@7.0.1:
     resolution: {integrity: sha512-pFYqmTw68LXVjeWJMST4+borgQP2AyMNbg1BpZh9LbyhUeNkeaPF9gzfPGUAnSMV3qPYdWUwDIjjCLiSDOl7vg==}
@@ -2952,8 +2899,6 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.17.1
 
-  '@opentelemetry/api@1.9.0': {}
-
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
@@ -3240,8 +3185,6 @@ snapshots:
   base64-js@1.5.1: {}
 
   binary-extensions@2.3.0: {}
-
-  bintrees@1.0.2: {}
 
   brace-expansion@1.1.11:
     dependencies:
@@ -3638,12 +3581,6 @@ snapshots:
   fast-uri@2.4.0: {}
 
   fast-uri@3.0.2: {}
-
-  fastify-metrics@12.1.0(fastify@5.0.0):
-    dependencies:
-      fastify: 5.0.0
-      fastify-plugin: 5.0.1
-      prom-client: 15.1.3
 
   fastify-plugin@5.0.1: {}
 
@@ -4367,11 +4304,6 @@ snapshots:
 
   process@0.11.10: {}
 
-  prom-client@15.1.3:
-    dependencies:
-      '@opentelemetry/api': 1.9.0
-      tdigest: 0.1.2
-
   proxy-addr@2.0.7:
     dependencies:
       forwarded: 0.2.0
@@ -4591,10 +4523,6 @@ snapshots:
       minizlib: 2.1.2
       mkdirp: 1.0.4
       yallist: 4.0.0
-
-  tdigest@0.1.2:
-    dependencies:
-      bintrees: 1.0.2
 
   test-exclude@7.0.1:
     dependencies:

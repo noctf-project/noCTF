@@ -3,19 +3,19 @@ import { createWriteStream, mkdirSync, WriteStream } from "node:fs";
 import { Logger } from "../types/primitives.ts";
 
 function strftime(format: string, date = new Date()) {
-  const pad = (n: number, width = 2) => String(n).padStart(width, '0');
-  
+  const pad = (n: number, width = 2) => String(n).padStart(width, "0");
+
   const map: Record<string, string> = {
-    '%Y': date.getFullYear().toString(),      
-    '%m': pad(date.getMonth() + 1),
-    '%d': pad(date.getDate()),     
-    '%H': pad(date.getHours()),    
-    '%M': pad(date.getMinutes()),  
-    '%S': pad(date.getSeconds()),
-    '%p': process.pid.toString() 
+    "%Y": date.getFullYear().toString(),
+    "%m": pad(date.getMonth() + 1),
+    "%d": pad(date.getDate()),
+    "%H": pad(date.getHours()),
+    "%M": pad(date.getMinutes()),
+    "%S": pad(date.getSeconds()),
+    "%p": process.pid.toString(),
   };
-  return format.replace(/%[YmdHMSp]/g, match => map[match] || match);
-};
+  return format.replace(/%[YmdHMSp]/g, (match) => map[match] || match);
+}
 
 export type MetricLabels = Record<string, string> | [string, string][];
 export type Metric = [string, number];
@@ -36,13 +36,19 @@ export class MetricsClient {
   private lastFlushAggregate = performance.now();
   private lastFlushToFile = performance.now();
 
-  constructor(logger: Logger, pathName: string, fileNameFormat: string, flushInterval=2000) {
+  constructor(
+    logger: Logger,
+    pathName: string,
+    fileNameFormat: string,
+    flushInterval = 2000,
+  ) {
     this.logger = logger;
     this.pathName = pathName;
     this.fileNameFormat = fileNameFormat;
     this.flushInterval = flushInterval;
     if (!this.pathName || !this.fileNameFormat) {
-      if (this.logger) this.logger.warn("Metrics emission is not currently configured");
+      if (this.logger)
+        this.logger.warn("Metrics emission is not currently configured");
       return;
     }
     mkdirSync(pathName, { recursive: true });
@@ -56,7 +62,11 @@ export class MetricsClient {
       series = new Map();
       this.series.set(key, series);
     }
-    this.addMetrics(series, values, (timestamp || timestamp === 0) ? timestamp : Date.now());
+    this.addMetrics(
+      series,
+      values,
+      timestamp || timestamp === 0 ? timestamp : Date.now(),
+    );
   }
 
   recordAggregate(values: Metric[], labels?: MetricLabels) {
@@ -85,7 +95,7 @@ export class MetricsClient {
   private addMetrics(
     series: Map<string, [number[], number[]]>,
     values: Metric[] | MapIterator<Metric>,
-    timestamp: number
+    timestamp: number,
   ) {
     for (const [metric, value] of values) {
       let buffer = series.get(metric);
@@ -104,10 +114,12 @@ export class MetricsClient {
   }
 
   private static toKey(labels?: MetricLabels) {
-    if (!labels) return '[]';
+    if (!labels) return "[]";
     const parts = Array.isArray(labels)
       ? labels.filter((x) => x[1])
-      : Object.keys(labels).filter((x) => labels[x]).map((x) => [x, labels[x]]);
+      : Object.keys(labels)
+          .filter((x) => labels[x])
+          .map((x) => [x, labels[x]]);
     return JSON.stringify(parts.sort().flat());
   }
 
@@ -137,7 +149,9 @@ export class MetricsClient {
       const fileName = strftime(this.fileNameFormat);
       if (!this.fileName) {
         this.fileName = fileName;
-        this.file = createWriteStream(join(this.pathName, fileName), { flags: 'a+' });
+        this.file = createWriteStream(join(this.pathName, fileName), {
+          flags: "a+",
+        });
       } else if (this.fileName !== fileName) {
         this.fileName = fileName;
         await this.file.close();
@@ -147,23 +161,25 @@ export class MetricsClient {
         const keys = JSON.parse(k);
         const labels: Record<string, string> = {};
         for (let i = 0; i < keys.length; i += 2) {
-          labels[keys[i]] = keys[i+1];
+          labels[keys[i]] = keys[i + 1];
         }
         for (const [metric, [values, timestamps]] of series) {
-          this.file.write(JSON.stringify({
-            metric:{
-              __name__: metric,
-              ...labels
-            },
-            values,
-            timestamps
-          }) + '\n');
+          this.file.write(
+            JSON.stringify({
+              metric: {
+                __name__: metric,
+                ...labels,
+              },
+              values,
+              timestamps,
+            }) + "\n",
+          );
         }
       }
     } catch (e) {
       this.logger.warn(
         { stack: e.stack },
-        "Error flushing metrics, some of them may have been lost."
+        "Error flushing metrics, some of them may have been lost.",
       );
     } finally {
       this.flushing = false;
