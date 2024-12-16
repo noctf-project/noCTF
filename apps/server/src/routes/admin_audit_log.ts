@@ -1,9 +1,7 @@
 import { QueryAuditLogRequest } from "@noctf/api/requests";
 import { QueryAuditLogResponse } from "@noctf/api/responses";
-import { AuthnHook } from "@noctf/server-core/hooks/authn";
 import { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
-import { AuthzHook } from "@noctf/server-core/hooks/authz";
 import { Policy } from "@noctf/server-core/util/policy";
 
 export async function routes(fastify: FastifyInstance) {
@@ -14,9 +12,6 @@ export async function routes(fastify: FastifyInstance) {
     scopes: new Set(["admin"]),
     policy: ["AND", "admin.audit_log:r"] as Policy,
   };
-
-  fastify.addHook("preHandler", AuthnHook);
-  fastify.addHook("preHandler", AuthzHook);
 
   fastify.post(
     "/admin/audit_log",

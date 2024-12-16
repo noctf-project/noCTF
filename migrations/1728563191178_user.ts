@@ -75,6 +75,9 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("permissions", sql`varchar[]`, (col) =>
       col.notNull().defaultTo("{}"),
     )
+    .addColumn("public", "boolean", (col) => col.notNull().defaultTo(false))
+    .addColumn("match_flags", sql`varchar[]`, (col) => col.notNull().defaultTo('{}'))
+    .addColumn("omit_flags", sql`varchar[]`, (col) => col.notNull().defaultTo('{}'))
     .execute();
   await db
     .withSchema("core")
@@ -82,41 +85,45 @@ export async function up(db: Kysely<any>): Promise<void> {
     .values([
       {
         name: "public",
-        description: "users who are not logged in",
+        description: "Public user permissions",
         permissions: [":r", "!user.me", "!admin"],
+        public: true
       },
       {
         name: "user",
-        description: "logged in users",
+        description: "Standard user permissions",
         permissions: ["", "!admin"],
+        omit_flags: ["blocked"]
+      },
+      {
+        name: "user_blocked",
+        description: "Subset of permissions for blocked users",
+        permissions: ["!"],
       },
       {
         name: "admin",
-        description: "admin users",
-        permissions: ["", "admin"],
+        description: "Administrators",
+        permissions: ["admin"],
+        match_flags: ["admin"]
       },
     ])
     .execute();
-
   await schema
-    .createTable("user_role")
-    .addColumn("user_id", "integer", (col) =>
-      col.notNull().references("core.user.id").onDelete("cascade"),
-    )
-    .addColumn("role_id", "integer", (col) =>
-      col.notNull().references("core.role.id").onDelete("cascade"),
-    )
-    .addColumn("created_at", "timestamp", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
-    .addPrimaryKeyConstraint("user_role_pkey", ["user_id", "role_id"])
+    .createIndex("role_idx_match_flags")
+    .on("role")
+    .using("gin")
+    .column("match_flags")
+    .execute();
+  await schema
+    .createIndex("role_idx_public")
+    .on("role")
+    .column("public")
     .execute();
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
   const schema = db.schema.withSchema("core");
 
-  await schema.dropTable("user_role").execute();
   await schema.dropTable("role").execute();
   await schema.dropTable("oauth_provider").execute();
   await schema.dropTable("user_identity").execute();

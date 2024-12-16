@@ -2,16 +2,8 @@ import { Static, Type } from "@sinclair/typebox";
 
 export const TeamConfig = Type.Object(
   {
-    allow_registration: Type.Boolean({
-      title: "Allow self-service team registration",
-    }),
-    allow_joining: Type.Boolean({
-      title:
-        "Allow self-service team joining using join code. Will also allow users" +
-        " to leave teams as long as there are no solves (WIP)",
-    }),
-    restrict_valid_email: Type.Boolean({
-      title: "Only allow users with validated emails to register or join.",
+    max_members: Type.Number({
+      title: "Maximum number of members in a team.",
     }),
   },
   { $id: "core.team" },

@@ -1,10 +1,8 @@
 import { UpdateConfigValueRequest } from "@noctf/api/requests";
 import { GetAdminConfigValueResponse } from "@noctf/api/responses";
-import { AuthnHook } from "@noctf/server-core/hooks/authn";
 import { ActorType } from "@noctf/server-core/types/enums";
 import { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
-import { AuthzHook } from "@noctf/server-core/hooks/authz";
 import { Policy } from "@noctf/server-core/util/policy";
 
 export async function routes(fastify: FastifyInstance) {
@@ -15,9 +13,6 @@ export async function routes(fastify: FastifyInstance) {
     scopes: new Set(["admin"]),
     policy: ["AND", "admin.config"] as Policy,
   };
-
-  fastify.addHook("preHandler", AuthnHook);
-  fastify.addHook("preHandler", AuthzHook);
 
   fastify.get(
     "/admin/config",

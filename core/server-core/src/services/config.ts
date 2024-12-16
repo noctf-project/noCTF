@@ -25,20 +25,28 @@ const EXPIRY_MS = 2000;
 export class ConfigService {
   // A simple map-based cache is good enough, we want low latency and don't really need
   // to evict stuff, all the config keys are static and there shouldn't be too many.
-  private readonly cache: Map<
-    string,
-    [Promise<ConfigValue<SerializableMap>>, number]
-  > = new Map();
   private readonly logger: Props["logger"];
   private readonly databaseClient: Props["databaseClient"];
   private readonly auditLogService: Props["auditLogService"];
   private readonly validators: Map<string, [TSchema, Validator<unknown>]> =
     new Map();
 
+  private cache: Map<
+    string,
+    [Promise<ConfigValue<SerializableMap>>, number]
+  > = new Map();
+
   constructor({ logger, databaseClient, auditLogService }: Props) {
     this.logger = logger;
     this.databaseClient = databaseClient;
     this.auditLogService = auditLogService;
+  }
+
+  /**
+   * Clears the cache
+   */
+  clearCache() {
+    this.cache = new Map();
   }
 
   /**

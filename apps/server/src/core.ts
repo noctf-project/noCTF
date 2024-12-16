@@ -8,8 +8,13 @@ import { initServer as team } from "@noctf/mod-team";
 import { initServer as tickets } from "@noctf/mod-tickets";
 
 import { FastifyInstance } from "fastify";
+import { AuthnHook } from "./hooks/authn.ts";
+import { AuthzHook } from "./hooks/authz.ts";
 
 export default async function (fastify: FastifyInstance) {
+  fastify.addHook('preHandler', AuthnHook);
+  fastify.addHook('preHandler', AuthzHook);
+
   fastify.register(adminAuditLog);
   fastify.register(adminConfig);
 

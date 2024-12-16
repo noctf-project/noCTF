@@ -5,7 +5,6 @@ import oauth_routes from "./oauth_routes.ts";
 import register_routes from "./register_routes.ts";
 import { FastifyInstance } from "fastify/types/instance.js";
 import { AuthConfig } from "@noctf/api/config";
-import { AuthnHook } from "@noctf/server-core/hooks/authn";
 import "@noctf/server-core/types/fastify";
 
 export async function initServer(fastify: FastifyInstance) {
@@ -40,7 +39,6 @@ export async function initServer(fastify: FastifyInstance) {
           require: true,
         },
       },
-      preHandler: AuthnHook,
     },
     async (request) => {
       try {
