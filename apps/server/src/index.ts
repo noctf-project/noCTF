@@ -19,7 +19,7 @@ import SwaggerUI from "@fastify/swagger-ui";
 import { fastifyCompress } from "@fastify/compress";
 import { nanoid } from "nanoid/non-secure";
 import { AuditLogService } from "@noctf/server-core/services/audit_log";
-import { RoleService } from "@noctf/server-core/services/role";
+import { PolicyService } from "@noctf/server-core/services/policy";
 import {
   RedisClientFactory,
   RedisUrlType,
@@ -89,12 +89,11 @@ server.register(async () => {
     identityService: asClass(IdentityService, {
       lifetime: Lifetime.SINGLETON,
     }),
-    roleService: asClass(RoleService, { lifetime: Lifetime.SINGLETON }),
+    policyService: asClass(PolicyService, { lifetime: Lifetime.SINGLETON }),
     teamService: asClass(TeamService, { lifetime: Lifetime.SINGLETON }),
     userService: asClass(UserService, { lifetime: Lifetime.SINGLETON }),
     lockService: asClass(LockService, { lifetime: Lifetime.SINGLETON }),
   });
-  server.container.cradle.eventBusService.start();
 });
 
 server.register(Swagger, {

@@ -16,7 +16,7 @@ export const SupportSpec = Type.Object({
 export type SupportSpec = Static<typeof SupportSpec>;
 
 export enum TicketProvider {
-  Discord = "discord"
+  Discord = "discord",
 }
 
 export const TicketConfig = Type.Object(

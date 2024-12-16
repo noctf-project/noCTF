@@ -75,7 +75,7 @@ export class TeamService {
       name,
       bio,
       join_code,
-      flags
+      flags,
     }: {
       name?: string;
       bio?: string;
@@ -87,21 +87,20 @@ export class TeamService {
     const set: UpdateObject<DB, "core.team", "core.team"> = {
       name,
       flags,
-      bio
+      bio,
     };
-    if (join_code === 'refresh') {
+    if (join_code === "refresh") {
       set.join_code = nanoid();
-    } else if (join_code === 'remove') {
+    } else if (join_code === "remove") {
       set.join_code = null;
     }
 
     await this.databaseClient
       .updateTable("core.team")
       .set(set)
-      .where('id', '=', id)
+      .where("id", "=", id)
       .executeTakeFirstOrThrow();
 
-    
     await this.auditLogService.log({
       operation: "team.update",
       actor: actor || {

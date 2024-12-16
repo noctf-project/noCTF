@@ -13,7 +13,6 @@ export const SuccessResponse = Type.Object({
 });
 export type SuccessResponse = Static<typeof SuccessResponse>;
 
-
 export const GetCaptchaConfigResponse = Type.Object({
   data: Type.Optional(
     Type.Object({
@@ -69,4 +68,3 @@ export const MeTeamResponse = Type.Object({
   data: Team,
 });
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
-

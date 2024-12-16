@@ -64,7 +64,6 @@ export class TokenService {
     audience?: string | string[],
     verifyRevocation = true,
   ): Promise<T> {
-
     try {
       const data = jwt.verify(token, this.secret, {
         audience,

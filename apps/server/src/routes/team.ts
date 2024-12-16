@@ -2,8 +2,16 @@ import { ServiceCradle } from "@noctf/server-core";
 import { FastifyInstance } from "fastify";
 import { TeamConfig } from "@noctf/api/config";
 import "@noctf/server-core/types/fastify";
-import { ConflictError, ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
-import { CreateTeamRequest, JoinTeamRequest, UpdateTeamRequest } from "@noctf/api/requests";
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from "@noctf/server-core/errors";
+import {
+  CreateTeamRequest,
+  JoinTeamRequest,
+  UpdateTeamRequest,
+} from "@noctf/api/requests";
 import { MeTeamResponse, SuccessResponse } from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
 
@@ -36,30 +44,39 @@ export async function routes(fastify: FastifyInstance) {
       }
       const actor = {
         type: ActorType.USER,
-        id: request.user.id
+        id: request.user.id,
       };
-      const team = await teamService.create({
-        name: request.body.name,
-        generate_join_code: true,
-      }, {
-        actor,
-        message: 'Created a team using self-service.'
-      });
-      await teamService.assignMember({
-        team_id: team.id,
-        user_id: request.user.id,
-        role: 'owner'
-      }, { actor: {
-        type: ActorType.USER,
-        id: request.user.id
-      }, message: 'Assigned owner permissions to the team\'s creator.'});
+      const team = await teamService.create(
+        {
+          name: request.body.name,
+          generate_join_code: true,
+        },
+        {
+          actor,
+          message: "Created a team using self-service.",
+        },
+      );
+      await teamService.assignMember(
+        {
+          team_id: team.id,
+          user_id: request.user.id,
+          role: "owner",
+        },
+        {
+          actor: {
+            type: ActorType.USER,
+            id: request.user.id,
+          },
+          message: "Assigned owner permissions to the team's creator.",
+        },
+      );
       return reply.status(201).send({
         data: team,
       });
     },
   );
 
-  fastify.post<{ Body: JoinTeamRequest, Reply: MeTeamResponse }>(
+  fastify.post<{ Body: JoinTeamRequest; Reply: MeTeamResponse }>(
     "/team/join",
     {
       schema: {
@@ -71,15 +88,18 @@ export async function routes(fastify: FastifyInstance) {
         },
         body: JoinTeamRequest,
         response: {
-          201: MeTeamResponse
-        }
+          201: MeTeamResponse,
+        },
       },
     },
     async (request, reply) => {
-      const id = await teamService.join(request.user.id, request.body.join_code);
+      const id = await teamService.join(
+        request.user.id,
+        request.body.join_code,
+      );
 
       return reply.status(201).send({
-        data: await teamService.get(id)
+        data: await teamService.get(id),
       });
     },
   );
@@ -127,7 +147,7 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.put<{ Body: UpdateTeamRequest, Reply: SuccessResponse }>(
+  fastify.put<{ Body: UpdateTeamRequest; Reply: SuccessResponse }>(
     "/team/me",
     {
       schema: {
@@ -154,11 +174,11 @@ export async function routes(fastify: FastifyInstance) {
       await teamService.update(membership.team_id, request.body, {
         actor: {
           type: ActorType.USER,
-          id: request.user.id
-        }
+          id: request.user.id,
+        },
       });
       return {
-        data: true
+        data: true,
       };
     },
   );

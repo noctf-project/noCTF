@@ -42,8 +42,9 @@ type SerializedSpec = Buffer;
 
 type EventHandlerFn<T> = (e: EventItem<T>) => Promise<void> | void;
 
-const ACTIVE_REMOTE_QUEUES_KEY = "core:eventbus:activequeues";
 const ACTIVE_QUEUE_HEARTBEAT_EXPIRE = 30;
+const REMOTE_QUEUES_REFRESH_SECONDS = 10;
+const ACTIVE_REMOTE_QUEUES_KEY = "core:eventbus:activequeues";
 const DEFAULT_BACKOFF_STRATEGY = (attempts: number) => {
   const base = Math.min(2 ** (attempts - 1) * 1000, 30000);
   const jitter = Math.floor(Math.random() * 1000);
@@ -73,21 +74,15 @@ export class EventBusService {
     this.metricsClient = metricsClient;
     this.queueClient = redisClientFactory.getSharedClient(RedisUrlType.Event);
     this.pubSubClient = redisClientFactory.createClient(RedisUrlType.Event);
-  }
-
-  start() {
-    if (this.remoteInterval) {
-      throw new Error("Event bus already started");
-    }
-    this.logger.info("Starting EventBusService");
+    this.logger.info("Starting event bus");
+    void this._maintainRemote();
     this.remoteInterval = setInterval(
       this._maintainRemote.bind(this),
-      ACTIVE_QUEUE_HEARTBEAT_EXPIRE * 1000,
+      REMOTE_QUEUES_REFRESH_SECONDS * 1000,
     );
-    setTimeout(() => void this._maintainRemote(), 2000);
   }
 
-  stop() {
+  dispose() {
     clearInterval(this.remoteInterval);
     this.remoteInterval = null;
   }

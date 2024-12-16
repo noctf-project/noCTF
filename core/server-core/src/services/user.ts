@@ -61,17 +61,14 @@ export class UserService {
       .where("id", "=", id)
       .executeTakeFirstOrThrow();
 
-    const changed = [
-      name && 'name',
-      bio && 'bio',
-      roles && 'roles'
-    ].filter((x) => x);
+    const changed = [name && "name", bio && "bio", roles && "roles"].filter(
+      (x) => x,
+    );
 
     await this.auditLogService.log({
       operation: "user.update",
       actor: actor || {
-        type: ActorType.USER,
-        id: id,
+        type: ActorType.SYSTEM,
       },
       entities: [`${ActorType.USER}:${id}`],
       data: `Properties ${changed.join(", ")} were updated.`,

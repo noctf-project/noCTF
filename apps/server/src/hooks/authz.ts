@@ -4,7 +4,7 @@ import { ForbiddenError } from "@noctf/server-core/errors";
 const CACHE_NAMESPACE = "core:hook:authz";
 
 export const AuthzHook = async (request: FastifyRequest) => {
-  const { roleService, cacheService: cacheService } =
+  const { policyService, cacheService: cacheService } =
     request.server.container.cradle;
 
   const policy = request.routeOptions.schema?.auth?.policy;
@@ -17,7 +17,7 @@ export const AuthzHook = async (request: FastifyRequest) => {
   const result = await cacheService.load(
     CACHE_NAMESPACE,
     routeKey,
-    () => roleService.evaluate(request.user.id, expanded),
+    () => policyService.evaluate(request.user.id, expanded),
     { expireSeconds: 10 },
   );
 
