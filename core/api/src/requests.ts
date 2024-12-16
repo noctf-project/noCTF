@@ -1,4 +1,9 @@
 import { Static, Type } from "@sinclair/typebox";
+import { Team } from "./datatypes.ts";
+
+export const CaptchaValidationString = Type.Optional(Type.String({ maxLength: 1024 }));
+export type CaptchaValidationString = Static<typeof CaptchaValidationString>;
+
 
 export const InitAuthOauthRequest = Type.Object({
   name: Type.String(),
@@ -25,9 +30,10 @@ export type FinishAuthEmailRequest = Static<typeof FinishAuthEmailRequest>;
 
 export const RegisterAuthRequest = Type.Object({
   token: Type.String(),
-  name: Type.String(),
+  name: Type.String({ maxLength: 64 }),
   email: Type.Optional(Type.String({ format: "email" })),
-  password: Type.Optional(Type.String({ minLength: 8 })),
+  password: Type.Optional(Type.String({ minLength: 8, maxLength: 256 })),
+  captcha: CaptchaValidationString
 });
 export type RegisterAuthRequest = Static<typeof RegisterAuthRequest>;
 
@@ -53,8 +59,31 @@ export const QueryAuditLogRequest = Type.Object({
 });
 export type QueryAuditLogRequest = Static<typeof QueryAuditLogRequest>;
 
-export const CreateTeamRequest = Type.Object({
-  name: Type.String(),
-  captcha: Type.Optional(Type.String()),
-});
+export const CreateTeamRequest = Type.Composite([
+  Type.Pick(Team, ["name"]),
+  Type.Object({
+    captcha: CaptchaValidationString
+  })
+]);
 export type CreateTeamRequest = Static<typeof CreateTeamRequest>;
+
+export const JoinTeamRequest = Type.Composite([
+  Type.Pick(Team, ["join_code"]),
+  Type.Object({
+    captcha: CaptchaValidationString
+  })
+]);
+export type JoinTeamRequest = Static<typeof JoinTeamRequest>;
+
+export enum UpdateTeamJoinCodeAction {
+  Refresh = "refresh",
+  Remove = "remove",
+}
+
+export const UpdateTeamRequest = Type.Composite([
+  Type.Pick(Team, ["name", "bio"]),
+  Type.Object({
+    join_code: Type.Optional(Type.Enum(UpdateTeamJoinCodeAction))
+  })
+]);
+export type UpdateTeamRequest = Static<typeof UpdateTeamRequest>;

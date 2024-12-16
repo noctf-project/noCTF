@@ -1,10 +1,11 @@
-import { ForbiddenError, NotFoundError } from "../errors.ts";
+import { ConflictError, NotFoundError } from "../errors.ts";
 import { TeamFlag } from "../types/enums.ts";
-import { CoreTeamMemberRole } from "@noctf/schema";
+import { CoreTeamMemberRole, DB } from "@noctf/schema";
 import type { ServiceCradle } from "../index.ts";
 import { nanoid } from "nanoid";
 import { AuditParams } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
+import { UpdateObject } from "kysely";
 
 type Props = Pick<
   ServiceCradle,
@@ -68,6 +69,49 @@ export class TeamService {
     };
   }
 
+  async update(
+    id: number,
+    {
+      name,
+      bio,
+      join_code,
+      flags
+    }: {
+      name?: string;
+      bio?: string;
+      flags?: string[];
+      join_code?: "refresh" | "remove";
+    },
+    { actor, message }: AuditParams = {},
+  ) {
+    const set: UpdateObject<DB, "core.team", "core.team"> = {
+      name,
+      flags,
+      bio
+    };
+    if (join_code === 'refresh') {
+      set.join_code = nanoid();
+    } else if (join_code === 'remove') {
+      set.join_code = null;
+    }
+
+    await this.databaseClient
+      .updateTable("core.team")
+      .set(set)
+      .where('id', '=', id)
+      .executeTakeFirstOrThrow();
+
+    
+    await this.auditLogService.log({
+      operation: "team.update",
+      actor: actor || {
+        type: ActorType.SYSTEM,
+      },
+      data: message,
+      entities: [`${ActorType.TEAM}:${id}`],
+    });
+  }
+
   async get(id: number) {
     return await this.databaseClient
       .selectFrom("core.team")
@@ -126,26 +170,20 @@ export class TeamService {
         message: "Joined using code",
       },
     );
+    return team_id;
   }
 
   async getMembership(userId: number) {
-    return this.cacheService.load(CACHE_NAMESPACE, `u:${userId}`, async () => {
-      const result = await this.databaseClient
-        .selectFrom("core.team")
-        .innerJoin(
-          "core.team_member",
-          "core.team_member.team_id",
-          "core.team.id",
-        )
-        .select(["core.team.id", "core.team_member.role"])
-        .where("core.team_member.user_id", "=", userId)
-        .executeTakeFirst();
+    const result = await this.databaseClient
+      .selectFrom("core.team_member")
+      .select(["team_id", "role"])
+      .where("user_id", "=", userId)
+      .executeTakeFirst();
 
-      if (!result) {
-        return null;
-      }
-      return result;
-    });
+    if (!result) {
+      return null;
+    }
+    return result;
   }
 
   async assignMember(
@@ -176,7 +214,7 @@ export class TeamService {
       )
       .executeTakeFirst();
     if (numInsertedOrUpdatedRows === 0n) {
-      throw new ForbiddenError("User has already joined a team.");
+      throw new ConflictError("User has already joined a team.");
     }
     await this.cacheService.del(CACHE_NAMESPACE, `u:${user_id}`);
     await this.auditLogService.log({

@@ -8,6 +8,12 @@ export const BaseResponse = Type.Object({
 });
 export type BaseResponse = Static<typeof BaseResponse>;
 
+export const SuccessResponse = Type.Object({
+  data: Type.Literal(true),
+});
+export type SuccessResponse = Static<typeof SuccessResponse>;
+
+
 export const GetCaptchaConfigResponse = Type.Object({
   data: Type.Optional(
     Type.Object({
@@ -63,3 +69,4 @@ export const MeTeamResponse = Type.Object({
   data: Type.Omit(Team, ["flags"]),
 });
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
+

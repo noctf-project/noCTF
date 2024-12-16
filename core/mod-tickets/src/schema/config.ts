@@ -15,9 +15,13 @@ export const SupportSpec = Type.Object({
 });
 export type SupportSpec = Static<typeof SupportSpec>;
 
+export enum TicketProvider {
+  Discord = "discord"
+}
+
 export const TicketConfig = Type.Object(
   {
-    provider: Type.Literal("discord", {
+    provider: Type.Enum(TicketProvider, {
       title: "Currently, only the discord provider is supported",
     }),
     enabled: Type.Boolean({
@@ -65,7 +69,7 @@ export const TicketConfig = Type.Object(
 export type TicketConfig = Static<typeof TicketConfig>;
 
 export const DEFAULT_CONFIG: TicketConfig = {
-  provider: "discord",
+  provider: TicketProvider.Discord,
   enabled: false,
   team_open_limit: 0,
   user_open_limit: 0,

@@ -25,9 +25,9 @@ export type AuditLogEntry = Static<typeof AuditLogEntry>;
 
 export const Team = Type.Object({
   id: Type.Number(),
-  name: Type.String(),
-  bio: Type.String(),
-  join_code: Type.String(),
+  name: Type.String({ maxLength: 64 }),
+  bio: Type.String({ maxLength: 256 }),
+  join_code: Type.String({ maxLength: 256 }),
   flags: Type.Array(Type.String()),
   created_at: TypeDate(),
 });
