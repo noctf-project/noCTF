@@ -48,6 +48,7 @@ export const AuthnHook = async (request: FastifyRequest) => {
     if (!require && e instanceof TokenValidationError) {
       return;
     }
+    throw e;
   }
 
   if (!scopes || !scopes.size || tokenData.aud === "session") {

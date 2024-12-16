@@ -1,6 +1,6 @@
 import { UpdateIdentityData } from "../types/identity.ts";
 import { DatabaseClient } from "../clients/database.ts";
-import { ApplicationError, BadRequestError, ConflictError } from "../errors.ts";
+import { BadRequestError, ConflictError } from "../errors.ts";
 import { ServiceCradle } from "../index.ts";
 import { CacheService } from "./cache.ts";
 import { AuditLogService } from "./audit_log.ts";
@@ -38,31 +38,16 @@ export class UserService {
     this.auditLogService = auditLogService;
   }
 
-  async getFlags(id: number) {
-    return this.cacheService.load(
-      CACHE_NAMESPACE,
-      `${id}:flag`,
-      async () =>
-        (
-          await this.databaseClient
-            .selectFrom("core.user")
-            .select("flags")
-            .where("id", "=", id)
-            .executeTakeFirstOrThrow()
-        ).flags,
-    );
-  }
-
   async update(
     id: number,
     {
       name,
       bio,
-      flags,
+      roles,
     }: {
       name: string;
       bio: string;
-      flags: string[];
+      roles: string[];
     },
     actor?: AuditLogActor,
   ) {
@@ -71,16 +56,15 @@ export class UserService {
       .set({
         name,
         bio,
-        flags,
+        roles,
       })
       .where("id", "=", id)
-      .returning(["name", "bio", "flags"])
       .executeTakeFirstOrThrow();
 
     const changed = [
-      name === r.name && `name = ${name}`,
-      bio === r.bio && "bio",
-      flags === r.flags && `flags = ${flags}`,
+      name && 'name',
+      bio && 'bio',
+      roles && 'roles'
     ].filter((x) => x);
 
     await this.auditLogService.log({
@@ -98,11 +82,11 @@ export class UserService {
     {
       name,
       identities,
-      flags,
+      roles,
     }: {
       name: string;
       identities: UpdateIdentityData[];
-      flags?: string[];
+      roles?: string[];
     },
     actor?: AuditLogActor,
   ) {
@@ -150,7 +134,7 @@ export class UserService {
         .insertInto("core.user")
         .values({
           name,
-          flags: flags || [],
+          roles: roles || [],
         })
         .returning("id")
         .executeTakeFirstOrThrow();

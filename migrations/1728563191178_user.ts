@@ -11,7 +11,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .addColumn("name", "varchar(64)", (col) => col.unique())
     .addColumn("bio", "text", (col) => col.notNull().defaultTo(""))
-    .addColumn("flags", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
+    .addColumn("roles", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .addColumn("created_at", "timestamp", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
@@ -66,7 +66,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .execute();
 
   await schema
-    .createTable("role")
+    .createTable("policy")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
@@ -76,16 +76,16 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.notNull().defaultTo("{}"),
     )
     .addColumn("public", "boolean", (col) => col.notNull().defaultTo(false))
-    .addColumn("match_flags", sql`varchar[]`, (col) =>
+    .addColumn("match_roles", sql`varchar[]`, (col) =>
       col.notNull().defaultTo("{}"),
     )
-    .addColumn("omit_flags", sql`varchar[]`, (col) =>
+    .addColumn("omit_roles", sql`varchar[]`, (col) =>
       col.notNull().defaultTo("{}"),
     )
     .execute();
   await db
     .withSchema("core")
-    .insertInto("role")
+    .insertInto("policy")
     .values([
       {
         name: "public",
@@ -97,7 +97,7 @@ export async function up(db: Kysely<any>): Promise<void> {
         name: "user",
         description: "Standard user permissions",
         permissions: ["", "!admin"],
-        omit_flags: ["blocked"],
+        omit_roles: ["blocked"],
       },
       {
         name: "user_blocked",
@@ -108,19 +108,19 @@ export async function up(db: Kysely<any>): Promise<void> {
         name: "admin",
         description: "Administrators",
         permissions: ["admin"],
-        match_flags: ["admin"],
+        match_roles: ["admin"],
       },
     ])
     .execute();
   await schema
-    .createIndex("role_idx_match_flags")
-    .on("role")
+    .createIndex("role_idx_match_roles")
+    .on("policy")
     .using("gin")
-    .column("match_flags")
+    .column("match_roles")
     .execute();
   await schema
     .createIndex("role_idx_public")
-    .on("role")
+    .on("policy")
     .column("public")
     .execute();
 }
@@ -128,7 +128,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 export async function down(db: Kysely<any>): Promise<void> {
   const schema = db.schema.withSchema("core");
 
-  await schema.dropTable("role").execute();
+  await schema.dropTable("policy").execute();
   await schema.dropTable("oauth_provider").execute();
   await schema.dropTable("user_identity").execute();
   await schema.dropTable("user").execute();

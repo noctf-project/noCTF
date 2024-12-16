@@ -67,7 +67,7 @@ export class PasswordProvider implements IdentityProvider {
             provider_id: email,
           },
         ],
-        flags: validate_email ? [UserFlag.VALID_EMAIL] : [],
+        roles: validate_email ? [UserFlag.VALID_EMAIL] : [],
       };
     }
     if (!identity.secret_data) {

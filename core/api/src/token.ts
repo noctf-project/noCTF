@@ -29,7 +29,7 @@ export const AuthRegisterToken = Type.Object({
       provider_id: Type.String(),
     }),
   ),
-  flags: Type.Optional(Type.Array(Type.String())),
+  roles: Type.Optional(Type.Array(Type.String())),
 });
 export type AuthRegisterToken = Static<typeof AuthRegisterToken>;
 

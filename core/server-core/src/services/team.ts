@@ -64,7 +64,7 @@ export class TeamService {
       name,
       bio,
       join_code,
-      flags,
+      flags: flags || [],
       created_at,
     };
   }

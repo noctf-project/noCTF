@@ -66,7 +66,7 @@ export const QueryAuditLogResponse = Type.Object({
 export type QueryAuditLogResponse = Static<typeof QueryAuditLogResponse>;
 
 export const MeTeamResponse = Type.Object({
-  data: Type.Omit(Team, ["flags"]),
+  data: Team,
 });
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
 

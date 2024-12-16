@@ -39,17 +39,17 @@ export class RoleService {
       `rbac:user:${userId}`,
       async () =>
         await this.databaseClient
-          .selectFrom("core.role")
-          .select(["core.role.id", "core.role.permissions"])
+          .selectFrom("core.policy")
+          .select(["core.policy.id", "core.policy.permissions"])
           .innerJoin("core.user", (join) =>
             join.on((eb) =>
               eb.and([
                 eb.or([
-                  eb("core.role.match_flags", "=", "{}" as unknown as string[]),
-                  eb("core.role.match_flags", "&&", eb.ref("core.user.flags")),
+                  eb("core.policy.match_roles", "=", "{}" as unknown as string[]),
+                  eb("core.policy.match_roles", "&&", eb.ref("core.user.roles")),
                 ]),
                 eb.not(
-                  eb("core.user.flags", "&&", eb.ref("core.role.omit_flags")),
+                  eb("core.user.roles", "&&", eb.ref("core.policy.omit_roles")),
                 ),
               ]),
             ),
@@ -68,7 +68,7 @@ export class RoleService {
       `rbac:public`,
       async () =>
         await this.databaseClient
-          .selectFrom("core.role")
+          .selectFrom("core.policy")
           .select(["id", "permissions"])
           .where("public", "=", true)
           .execute(),

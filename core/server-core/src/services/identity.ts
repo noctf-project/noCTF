@@ -52,7 +52,7 @@ export class IdentityService {
       case "associate":
       case "register":
         return this.tokenService.sign(
-          { flags: result.flags, identity: result.identity },
+          { roles: result.roles, identity: result.identity },
           result.aud,
           30 * 60,
         );

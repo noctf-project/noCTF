@@ -59,7 +59,7 @@ export default async function (fastify: FastifyInstance) {
         token,
         "register",
       )) as AuthRegisterToken;
-      const flags = parsed.flags;
+      const roles = parsed.roles;
       let identity = parsed.identity as UpdateIdentityData[];
       if (
         identity.length === 1 &&
@@ -98,7 +98,7 @@ export default async function (fastify: FastifyInstance) {
                 },
               ],
         ),
-        flags,
+        roles,
       });
 
       await identityService.revokeToken(token);
