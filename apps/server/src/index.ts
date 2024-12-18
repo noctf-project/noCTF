@@ -22,8 +22,7 @@ import { AuditLogService } from "@noctf/server-core/services/audit_log";
 import { PolicyService } from "@noctf/server-core/services/policy";
 import {
   RedisClientFactory,
-  RedisUrlType,
-} from "@noctf/server-core/clients/redis_factory";
+} from "@noctf/server-core/clients/redis";
 import { EventBusService } from "@noctf/server-core/services/event_bus";
 import { LockService } from "@noctf/server-core/services/lock";
 
@@ -63,10 +62,7 @@ server.register(async () => {
     redisClientFactory: asFunction(
       ({ logger }) =>
         new RedisClientFactory(
-          {
-            [RedisUrlType.Cache]: REDIS_CACHE_URL,
-            [RedisUrlType.Event]: REDIS_EVENT_URL,
-          },
+          REDIS_CACHE_URL,
           logger,
         ),
       { lifetime: Lifetime.SINGLETON },

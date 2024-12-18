@@ -1,5 +1,4 @@
 import { decode, encode } from "cbor2";
-import { RedisUrlType } from "../clients/redis_factory.ts";
 import { ServiceCradle } from "../index.ts";
 
 type LoadParams<T> = {
@@ -24,7 +23,7 @@ export class CacheService {
   private readonly metricsClient;
 
   constructor({ redisClientFactory, metricsClient }: Props) {
-    this.redisClient = redisClientFactory.getSharedClient(RedisUrlType.Cache);
+    this.redisClient = redisClientFactory.getClient();
     this.metricsClient = metricsClient;
   }
 
@@ -40,7 +39,8 @@ export class CacheService {
       ...options,
     };
     const k = `${namespace}:${key}`;
-    const data = await this.redisClient.getBuffer(k);
+    const client = await this.redisClient;
+    const data = await client.get(client.commandOptions({ returnBuffers: true }), k);
     if (data) {
       const d = decode(data) as T;
       const end = performance.now();
@@ -73,24 +73,24 @@ export class CacheService {
 
   async del(namespace: string, key: string) {
     const k = `${namespace}:${key}`;
-    return this.redisClient.del(k);
+    const client = await this.redisClient;
+    return client.del(k);
   }
 
   async getTtl(namespace: string, key: string) {
     const k = `${namespace}:${key}`;
-    return await this.redisClient.ttl(k);
+    const client = await this.redisClient;
+    return client.ttl(k);
   }
 
   private async _put(k: string, value: unknown, expireSeconds = 0) {
-    if (expireSeconds) {
-      return await this.redisClient.set(
-        k,
-        Buffer.from(encode(value)),
-        "EX",
-        expireSeconds,
-      );
-    }
-
-    await this.redisClient.set(k, Buffer.from(encode(value)));
+    const client = await this.redisClient;
+    return await client.set(
+      k,
+      Buffer.from(encode(value)),
+      {
+        EX: expireSeconds
+      }
+    );
   }
 }

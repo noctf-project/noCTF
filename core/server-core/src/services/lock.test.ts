@@ -1,14 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { anyString, mock } from "vitest-mock-extended";
+import { any, anyString, mock } from "vitest-mock-extended";
 import { LockService } from "./lock.ts";
-import { RedisClientFactory } from "../clients/redis_factory.ts";
+import { RedisClientFactory } from "../clients/redis.ts";
+import { createClient, ErrorReply } from "redis";
 
 describe("LockService", () => {
   const redisClientFactory = mock<RedisClientFactory>();
-  const redisClient = mock<LockService["client"]>();
+  const redisClient = mock<ReturnType<typeof createClient>>();
 
   beforeEach(() => {
-    redisClientFactory.getSharedClient.mockReturnValue(redisClient);
+    redisClientFactory.getClient.mockResolvedValue(redisClient);
   });
 
   afterEach(() => {
@@ -30,22 +31,51 @@ describe("LockService", () => {
     expect(redisClient.set).toBeCalledWith(
       "lease:lol",
       anyString(),
-      "EX",
-      60,
-      "NX",
+      {
+        EX: 60,
+        NX: true
+      }
     );
   });
 
   it("Renews a lease", async () => {
+    redisClient.scriptLoad.mockResolvedValue("aaa");
     const service = new LockService({ redisClientFactory });
-    redisClient.svcLeaseRenew.mockResolvedValue(1);
+    redisClient.evalSha.mockResolvedValue(1);
     await service.renewLease("lol", "token", 60);
-    expect(redisClient.svcLeaseRenew).toBeCalledWith("lease:lol", "token", 60);
+    redisClient.scriptLoad.mockResolvedValue("aaa");
+    expect(redisClient.evalSha).toBeCalledWith("aaa", {
+      keys: ["lease:lol"],
+      arguments: ["token", "60"]
+    });
+  });
+
+
+  it("Renews a lease - lua not loaded", async () => {
+    redisClient.scriptLoad.mockResolvedValue("aaa");
+    const service = new LockService({ redisClientFactory });
+    redisClient.evalSha
+      .mockRejectedValueOnce(new ErrorReply("NOSCRIPT No matching script."))
+      .mockResolvedValue("aaa");
+    await service.renewLease("lol", "token", 60);
+    redisClient.scriptLoad.mockResolvedValue("aaa");
+    expect(redisClient.evalSha).toBeCalledWith("aaa", {
+      keys: ["lease:lol"],
+      arguments: ["token", "60"]
+    });
+  });
+
+  it("Renews a lease - exec throws another error", async () => {
+    redisClient.scriptLoad.mockResolvedValue("aaa");
+    const service = new LockService({ redisClientFactory });
+    redisClient.evalSha
+      .mockRejectedValue(new Error("lol"));
+    await expect(() => service.renewLease("lol", "token", 60)).rejects.toThrowError("lol");
   });
 
   it("Fails to renew a lease", async () => {
     const service = new LockService({ redisClientFactory });
-    redisClient.svcLeaseRenew.mockResolvedValue(0);
+    redisClient.evalSha.mockResolvedValue(0);
     await expect(() =>
       service.renewLease("lol", "token", 60),
     ).rejects.toThrowError("lease token mismatch");
@@ -53,14 +83,18 @@ describe("LockService", () => {
 
   it("Drops a lease", async () => {
     const service = new LockService({ redisClientFactory });
-    redisClient.svcLeaseRenew.mockResolvedValue(1);
+    redisClient.evalSha.mockResolvedValue(1);
+    redisClient.scriptLoad.mockResolvedValue("aaa");
     await service.dropLease("lol", "token");
-    expect(redisClient.svcLeaseRenew).toBeCalledWith("lease:lol", "token", 0);
+    expect(redisClient.evalSha).toBeCalledWith("aaa", {
+      keys: ["lease:lol"],
+      arguments: ["token", "0"]
+    });
   });
 
   it("Fails to drop a lease", async () => {
     const service = new LockService({ redisClientFactory });
-    redisClient.svcLeaseRenew.mockResolvedValue(0);
+    redisClient.evalSha.mockResolvedValue(0);
     await expect(() => service.dropLease("lol", "token")).rejects.toThrowError(
       "lease token mismatch",
     );
@@ -70,6 +104,6 @@ describe("LockService", () => {
     const service = new LockService({ redisClientFactory });
     await service.dropLease("lol");
     expect(redisClient.del).toBeCalledWith("lease:lol");
-    expect(redisClient.svcLeaseRenew).not.toHaveBeenCalled;
+    expect(redisClient.evalSha).not.toHaveBeenCalled;
   });
 });

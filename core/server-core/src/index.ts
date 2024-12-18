@@ -2,7 +2,7 @@ import type { AwilixContainer } from "awilix";
 import type { AuditLogService } from "./services/audit_log.ts";
 import type { IdentityService } from "./services/identity.ts";
 import type { DatabaseClient } from "./clients/database.ts";
-import { RedisClientFactory } from "./clients/redis_factory.ts";
+import { RedisClientFactory } from "./clients/redis.ts";
 import type { ConfigService } from "./services/config.ts";
 import type { TokenService } from "./services/token.ts";
 import type { UserService } from "./services/user.ts";
