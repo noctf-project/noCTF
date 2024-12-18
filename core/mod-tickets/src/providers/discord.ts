@@ -12,7 +12,7 @@ import {
   RESTPostAPIChannelThreadsJSONBody,
 } from "discord-api-types/v10";
 import { TicketService } from "../service.ts";
-import { UnrecoverableError } from "@noctf/server-core/services/event_bus";
+import { EventBusNonRetryableError } from "@noctf/server-core/services/event_bus";
 
 export const DiscordProviderData = Type.Object({
   channel: Type.String(),
@@ -197,7 +197,7 @@ export class DiscordProvider {
     try {
       await this.ticketService.renewStateLease(ticket.id, lease);
     } catch (e) {
-      throw new UnrecoverableError("Could not renew state lease");
+      throw new EventBusNonRetryableError("Could not renew state lease");
     }
 
     const newTicket = !ticket.provider_id;
@@ -248,12 +248,18 @@ export class DiscordProvider {
   }
 
   async close(actor: string, lease: string, ticket: Ticket) {
+    if (!ticket.provider_id) {
+      await this.ticketService.dropStateLease(ticket.id, lease);
+      throw new EventBusNonRetryableError(
+        "Ticket has no provider ID, cannot be closed",
+      );
+    }
     const { notifications_channel_id } = await this.getConfig();
     const client = await this.getClient();
     try {
       await this.ticketService.renewStateLease(ticket.id, lease);
     } catch (e) {
-      throw new UnrecoverableError("Could not renew state lease");
+      throw new EventBusNonRetryableError("Could not renew state lease");
     }
     const match = actor.match(USER_REGEX);
     const actingDiscordId = await this.getActingDiscordId(actor);

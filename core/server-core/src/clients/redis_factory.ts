@@ -38,7 +38,9 @@ export class RedisClientFactory {
       db: parseInt(url.pathname.substring(1)) || 0,
     });
     if (this.logger) {
-      this.logger.info(`Connecting to redis at ${url.host}`);
+      this.logger.info(
+        `Connecting to redis at ${url.host}:${url.port || 6379}`,
+      );
     }
     return client;
   }

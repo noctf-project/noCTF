@@ -7,7 +7,7 @@ export class DatabaseClient extends Kysely<DB> {
   constructor(logger: Logger | null, connectionString: string) {
     if (logger) {
       const url = new URL(connectionString);
-      logger.info(`Connecting to postgres at ${url.host}`);
+      logger.info(`Connecting to postgres at ${url.host}:${url.port || 5432}`);
     }
     super({
       dialect: new PostgresDialect({

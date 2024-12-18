@@ -14,6 +14,8 @@ export type SerializableMap = {
 
 export type StringOrSet = string | Set<string>;
 
+export type AtLeast<T, K extends keyof T> = Partial<T> & Pick<T, K>;
+
 export interface LogFn {
   /* eslint-disable @typescript-eslint/no-explicit-any */
   <T extends object>(obj: T, msg?: string, ...args: any[]): void;

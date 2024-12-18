@@ -9,7 +9,7 @@ type Props = Pick<
   "databaseClient" | "configService" | "eventBusService" | "lockService"
 >;
 
-export const LEASE_DURATION = 120;
+export const LEASE_DURATION = 60;
 
 export class TicketService {
   private readonly configService;
@@ -69,7 +69,7 @@ export class TicketService {
     };
 
     const lease = await this.acquireStateLease(id);
-    await this.eventBusService.publish("ticket.state", {
+    await this.eventBusService.publish("events.ticket.state.open", {
       actor,
       lease,
       ticket,
@@ -90,7 +90,11 @@ export class TicketService {
   }
 
   async renewStateLease(id: number, token: string) {
-    return this.lockService.renewLease(`ticket:state:${id}`, token);
+    return this.lockService.renewLease(
+      `ticket:state:${id}`,
+      token,
+      LEASE_DURATION,
+    );
   }
 
   async dropStateLease(id: number, token: string) {
@@ -142,11 +146,14 @@ export class TicketService {
       .executeTakeFirst();
     if (numUpdatedRows > 0) {
       ticket.open = open;
-      await this.eventBusService.publish("ticket.state", {
-        actor,
-        lease,
-        ticket,
-      } as TicketStateMessage);
+      await this.eventBusService.publish(
+        `events.ticket.state.${open ? "open" : "closed"}`,
+        {
+          actor,
+          lease,
+          ticket,
+        } as TicketStateMessage,
+      );
     } else {
       await this.dropStateLease(id, lease);
     }

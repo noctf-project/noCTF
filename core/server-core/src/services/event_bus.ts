@@ -1,31 +1,34 @@
-import { DefaultJobOptions, Queue, Worker } from "bullmq";
 import { ServiceCradle } from "../index.ts";
-import { RedisUrlType } from "../clients/redis_factory.ts";
-import { Metric } from "../clients/metrics.ts";
+import {
+  AckPolicy,
+  ConsumerConfig,
+  DeliverPolicy,
+  JsMsg,
+  NatsError,
+  RetentionPolicy,
+  StorageType,
+  StreamConfig,
+} from "nats";
+import { NATSClientFactory } from "../clients/nats.ts";
+import { Metric, MetricLabels } from "../clients/metrics.ts";
+import { SimpleMutex } from "nats/lib/nats-base-client/util.js";
 import { decode, encode } from "cbor2";
-import { EvaluateFilter, EventFilter } from "../util/filter.ts";
-import { TSchema } from "@sinclair/typebox";
-import { Value } from "@sinclair/typebox/value";
-
-export { UnrecoverableError } from "bullmq";
 
 type Props = Pick<
   ServiceCradle,
-  "redisClientFactory" | "logger" | "metricsClient"
+  "natsClientFactory" | "logger" | "metricsClient"
 >;
 
 export type EventItem<T> = {
-  id: string;
+  id: number;
   type: string;
   timestamp: number;
   attempt: number;
   data: T;
 };
-export type EventSubscribeOptions = {
-  name?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  filter?: any;
-  backoffStrategy?: (attempts: number) => number;
+export type EventSubscribeOptions<T> = {
+  handler: EventHandlerFn<T>;
+  backoff?: (attempts: number) => number;
   concurrency?: number;
 };
 export type EventPublishOptions = {
@@ -37,285 +40,199 @@ export type EventSubscriberHandle<T> = {
   _data: string | EventHandlerFn<T>;
 };
 
-type RemoteSpec = [string, EventFilter];
-type SerializedSpec = Buffer;
+export class EventBusNonRetryableError extends Error {}
 
 type EventHandlerFn<T> = (e: EventItem<T>) => Promise<void> | void;
 
-const ACTIVE_QUEUE_HEARTBEAT_EXPIRE = 30;
-const REMOTE_QUEUES_REFRESH_SECONDS = 10;
-const ACTIVE_REMOTE_QUEUES_KEY = "core:eventbus:activequeues";
-const DEFAULT_BACKOFF_STRATEGY = (attempts: number) => {
-  const base = Math.min(2 ** (attempts - 1) * 1000, 30000);
-  const jitter = Math.floor(Math.random() * 1000);
-  return base + jitter;
+enum StreamType {
+  Event,
+}
+
+const STREAMS: Record<StreamType, Partial<StreamConfig>> = {
+  [StreamType.Event]: {
+    name: "noctf_events",
+    subjects: ["events.>"],
+    retention: RetentionPolicy.Interest,
+    storage: StorageType.Memory,
+  },
 };
+
+const DEFAULT_BACKOFF_STRATEGY = (_a: number) =>
+  10000 + Math.floor(Math.random() * 1000);
 
 export class EventBusService {
   private readonly logger;
   private readonly metricsClient;
-  private readonly queueClient;
-  private readonly pubSubClient;
+  private readonly natsClientFactory;
+  private natsClient: Awaited<ReturnType<NATSClientFactory["getClient"]>>;
 
-  // These values do leak but the number of queues is not expected to grow over time.
-  // Will implement GC at later
-  private readonly bullWorkers: Map<string, [SerializedSpec, Worker]> =
-    new Map();
-  private readonly bullQueues: Map<string, Queue> = new Map();
-
-  private remoteInterval?: NodeJS.Timeout;
-  private localQueues: {
-    [key: string]: { id: number; fn: Set<EventHandlerFn<unknown>> };
-  } = {};
-  private remoteQueues: { [key: string]: Map<string, EventFilter> } = {};
-
-  constructor({ redisClientFactory, logger, metricsClient }: Props) {
+  constructor({ natsClientFactory, logger, metricsClient }: Props) {
     this.logger = logger;
     this.metricsClient = metricsClient;
-    this.queueClient = redisClientFactory.getSharedClient(RedisUrlType.Event);
-    this.pubSubClient = redisClientFactory.createClient(RedisUrlType.Event);
+    this.natsClientFactory = natsClientFactory;
     this.logger.info("Starting event bus");
-    void this._maintainRemote();
-    this.remoteInterval = setInterval(
-      this._maintainRemote.bind(this),
-      REMOTE_QUEUES_REFRESH_SECONDS * 1000,
-    );
-  }
-
-  dispose() {
-    clearInterval(this.remoteInterval);
-    this.remoteInterval = null;
   }
 
   /**
    * Subscribe to a queue
+   * @param consumer name of queue, must be unique
+   * @param subjects name of the nats subject to subscribe to
    * @param handler job processing handler
    * @param type message type to receive
-   * @param name name of queue, cannot have a pipe charcater. if provided the message will be
    * published to a remote queue. this is more reliable, since jobs can be retried by bullmq.
    */
-  subscribe<T>(
-    handler: EventHandlerFn<T>,
-    schema: TSchema,
-    type: string,
-    { name, filter, backoffStrategy, concurrency }: EventSubscribeOptions = {},
-  ): EventSubscriberHandle<T> {
-    if (name) {
-      if (name.includes("|")) {
-        throw new Error("message type cannot contain a pipe character");
-      }
-      const qualifier = `${type}|${name}`;
-      if (this.bullWorkers.has(qualifier)) {
-        throw new Error(
-          `remote worker with name ${name} and type ${type} is already registered in this process`,
-        );
-      }
-      const labels: Record<string, string> = {
-        worker_type: "eventbus_bullmq",
-        qualifier: qualifier,
-      };
-      const worker = new Worker(
-        qualifier,
-        async (job) => {
-          const start = performance.now();
-          const metrics: Metric[] = [];
-          try {
-            await handler({
-              id: job.id,
-              timestamp: job.timestamp,
-              type,
-              attempt: job.attemptsMade,
-              data: Value.Convert(schema, job.data) as T,
-            });
-            this.logger.info(
-              {
-                name: qualifier,
-                attempt: job.attemptsMade,
-                id: job.id,
-                elapsed: Math.round(performance.now() - start),
-              },
-              "Processed remote message",
-            );
-            metrics.push(
-              ["QueueToFinishTime", Date.now() - job.timestamp],
-              ["Success", 1],
-            );
-          } catch (e) {
-            this.logger.error(
-              {
-                stack: e.stack,
-                name: qualifier,
-                attempt: job.attemptsMade,
-                id: job.id,
-              },
-              "Unepected error processing message",
-            );
-            metrics.push(["Success", 0]);
-            if (job.attemptsMade >= job.opts.attempts) {
-              metrics.push(
-                ["QueueToFinishTime", Date.now() - job.timestamp],
-                ["ExhaustedRetries", 1],
-              );
-            }
-            throw e;
-          } finally {
-            metrics.push([
-              "ProcessTime",
-              Math.round(performance.now() - start),
-            ]);
-            this.metricsClient.record(metrics, labels);
-          }
-        },
-        {
-          connection: this.queueClient,
-          settings: {
-            backoffStrategy: backoffStrategy || DEFAULT_BACKOFF_STRATEGY,
-          },
-          concurrency: concurrency || 1,
-        },
-      );
-      const spec = encode([qualifier, filter || null]);
-      this.bullWorkers.set(qualifier, [Buffer.from(spec), worker]);
-      return {
-        _type: type,
-        _data: qualifier,
-      };
-    }
-
-    if (!this.localQueues[type]) {
-      this.localQueues[type] = {
-        id: 0,
-        fn: new Set(),
-      };
-    }
-    if (this.localQueues[type].fn.has(handler)) {
-      throw new Error("handler already registered for this type");
-    }
-    this.localQueues[type].fn.add(handler);
-    return {
-      _type: type,
-      _data: handler,
-    };
-  }
-
-  unsubscribe({ _data, _type }: EventSubscriberHandle<unknown>) {
-    if (typeof _data === "string") {
-      this.bullWorkers.delete(_data);
-    } else {
-      this.localQueues[_type].fn.delete(_data);
-    }
-  }
-
-  async publish(
-    type: string,
-    data: unknown,
-    { delay, attempts }: DefaultJobOptions = {},
+  async subscribe<T>(
+    consumer: string,
+    subjects: string[],
+    options: EventSubscribeOptions<T>,
   ) {
-    if (this.localQueues[type]) {
-      const id = (++this.localQueues[type].id).toString();
-      for (const fn of this.localQueues[type].fn) {
-        this.logger.debug({ type }, "publishing message to local queue");
-        const closure = async () => {
-          try {
-            fn({
-              id,
-              timestamp: Date.now(),
-              type,
-              attempt: 0,
-              data,
-            });
-          } catch (e) {
-            this.logger.error("Error handling event", e);
-          }
-        };
-        if (delay) {
-          setTimeout(closure, delay);
-          return;
-        }
-        void closure();
+    if (!this.natsClient) {
+      await this.init();
+    }
+    const manager = await this.natsClient.jetstream().jetstreamManager();
+    const stream = STREAMS[StreamType.Event];
+    const updateable: Partial<ConsumerConfig> = {
+      filter_subjects: subjects,
+      ack_wait: 60 * 10 ** 9,
+      inactive_threshold: 30 * 60 * 10 ** 9,
+    };
+
+    this.logger.info({ consumer }, "Upserting eventbus consumer");
+    try {
+      await manager.consumers.add(stream.name, {
+        durable_name: consumer,
+        ack_policy: AckPolicy.Explicit,
+        deliver_policy: DeliverPolicy.New,
+        max_deliver: 5,
+        ...updateable,
+      });
+    } catch (e) {
+      if (e instanceof NatsError) {
+        const c = await manager.consumers.info(stream.name, consumer);
+        const config = { ...c.config, ...updateable };
+        await manager.consumers.update(stream.name, consumer, config);
       }
     }
 
-    if (this.remoteQueues[type]) {
-      for (const [qualifier, filter] of this.remoteQueues[type]) {
-        this.logger.debug({ qualifier }, "publishing message to remote queue");
-        if (!EvaluateFilter(filter, data)) continue;
-        const queue = this.bullQueues.get(qualifier);
-        await queue.add("", data, {
-          delay,
-          attempts: attempts || 10,
-          removeOnFail: true,
-          removeOnComplete: true,
-          backoff: {
-            type: "custom",
-          },
-        });
-        this.metricsClient.record([["Published", 1]], {
-          worker_type: "eventbus_bullmq",
-          qualifier: qualifier,
-        });
+    void this.listen(StreamType.Event, consumer, options);
+  }
+
+  async publish<T>(subject: string, data: T) {
+    await this.natsClient.publish(subject, encode(data));
+  }
+
+  private async listen<T>(
+    streamType: StreamType,
+    name: string,
+    options: EventSubscribeOptions<T>,
+  ) {
+    // TODO: customise parallelism
+    const rl = new SimpleMutex(options.concurrency || 1);
+    const stream = this.natsClient.jetstream();
+    const q = await stream.consumers.get(STREAMS[streamType].name, name);
+    while (true) {
+      this.logger.info({ consumer: name }, "Waiting for messages");
+      const messages = await q.consume();
+      try {
+        for await (const m of messages) {
+          await rl.lock();
+          void this.consume(m, options).finally(() => rl.unlock());
+        }
+      } catch (err) {
+        this.logger.error(
+          { consumer: name, stack: err.stack },
+          "Failed to consume",
+        );
       }
     }
   }
 
-  /**
-   * This function should be run on a setInterval to renew the lease on the workers.
-   */
-  private async _maintainRemote() {
-    const now = Math.floor(Date.now() / 1000); // 1 minute lease
-    const args: (string | Buffer | number)[] = [];
-    for (const i of this.bullWorkers.keys()) {
-      args.push(now + ACTIVE_QUEUE_HEARTBEAT_EXPIRE * 2);
-      args.push(this.bullWorkers.get(i)[0]);
-    }
-    if (args.length) {
-      await this.queueClient.zadd(ACTIVE_REMOTE_QUEUES_KEY, ...args);
-    }
-    const remotes = await this.queueClient.zrangebyscoreBuffer(
-      ACTIVE_REMOTE_QUEUES_KEY,
-      now,
-      Number.MAX_SAFE_INTEGER,
-    );
-    const workers: EventBusService["remoteQueues"] = {};
-    let activeQueues = 0;
-    for (let i = 0; i < remotes.length; i++) {
-      const spec = decode(
-        Buffer.from(remotes[remotes.length - i - 1]),
-      ) as RemoteSpec;
-      const [qualifier, filter] = spec;
-
-      const sp = qualifier.indexOf("|");
-      if (sp === -1) {
-        throw new Error("invalid queue name spec on remote");
-      }
-      const type = qualifier.substring(0, sp);
-      if (!workers[type]) {
-        workers[type] = new Map();
-      }
-      if (!workers[type].has(qualifier)) {
-        activeQueues += 1;
-        workers[type].set(qualifier, filter);
-        if (!this.bullQueues.has(qualifier)) {
-          this.bullQueues.set(
-            qualifier,
-            new Queue(qualifier, { connection: this.queueClient }),
-          );
-        }
-
-        const depth = await this.bullQueues
-          .get(qualifier)
-          .getJobCounts("wait", "delayed");
-        this.metricsClient.record(
-          [["QueueDepth", depth.wait + depth.delayed]],
-          { worker_type: "eventbus_bullmq", qualifier },
+  private async consume<T>(message: JsMsg, options: EventSubscribeOptions<T>) {
+    const consumer = message.info.consumer;
+    const labels: Record<string, string> = {
+      worker_type: "eventbus_nats",
+      consumer,
+    };
+    const metrics: Metric[] = [];
+    const interval = setInterval(() => message.working(), 30 * 1000);
+    const start = performance.now();
+    const timestamp = Math.floor(message.info.timestampNanos / 1000000);
+    try {
+      this.logger.info(
+        { consumer, subject: message.subject, id: message.seq },
+        "Processing message",
+      );
+      await options.handler({
+        id: message.seq,
+        type: message.subject,
+        timestamp,
+        attempt: message.info.redeliveryCount,
+        data: decode(message.data),
+      });
+      await message.ack();
+      this.logger.info(
+        { consumer, subject: message.subject, id: message.seq },
+        "Processed message",
+      );
+      metrics.push(
+        ["QueueToFinishTime", Date.now() - timestamp],
+        ["Success", 1],
+      );
+    } catch (e) {
+      if (e instanceof EventBusNonRetryableError) {
+        this.logger.error(
+          {
+            consumer,
+            subject: message.subject,
+            id: message.seq,
+            stack: e.stack,
+          },
+          "Failed to process message and a non-retryable error was thrown",
+        );
+        await message.term(e.message);
+        metrics.push(
+          ["QueueToFinishTime", Date.now() - timestamp],
+          ["NonRetryableError", 1],
+        );
+      } else {
+        this.logger.error(
+          {
+            consumer,
+            subject: message.subject,
+            id: message.seq,
+            stack: e.stack,
+          },
+          "Failed to process message, requeueing",
+        );
+        await message.nak(
+          Math.floor(
+            (options.backoff ? options.backoff : DEFAULT_BACKOFF_STRATEGY)(
+              message.info.redeliveryCount,
+            ),
+          ),
         );
       }
+      metrics.push(["Success", 0]);
+    } finally {
+      clearInterval(interval);
+      metrics.push(["ProcessTime", Math.round(performance.now() - start)]);
+      this.metricsClient.record(metrics, labels);
     }
-    this.remoteQueues = workers;
-    this.logger.debug({ queues: workers }, "Syncing remote workers");
-    this.metricsClient.record([["ActiveQueues", activeQueues]], {
-      worker_type: "eventbus_bullmq",
-    });
-    void this.queueClient.zremrangebyscore(ACTIVE_REMOTE_QUEUES_KEY, 0, now);
+  }
+
+  private async init() {
+    this.natsClient = await this.natsClientFactory.getClient();
+    const manager = await this.natsClient.jetstream().jetstreamManager();
+    for (const type of Object.keys(STREAMS)) {
+      const stream = STREAMS[type as unknown as StreamType];
+      this.logger.info("Upserting stream %s", stream.name);
+      try {
+        await manager.streams.add(stream);
+      } catch (e) {
+        if (e instanceof NatsError) {
+          await manager.streams.update(stream.name, stream);
+        }
+      }
+    }
   }
 }

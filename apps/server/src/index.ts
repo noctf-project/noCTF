@@ -38,9 +38,11 @@ import {
   LOG_LEVEL,
   METRICS_PATH,
   METRICS_FILE_NAME_FORMAT,
+  NATS_URL,
 } from "./config.ts";
 import core from "./core.ts";
 import { MetricsClient } from "@noctf/server-core/clients/metrics";
+import { NATSClientFactory } from "@noctf/server-core/clients/nats";
 
 export const server = fastify({
   logger: {
@@ -70,6 +72,7 @@ server.register(async () => {
       { lifetime: Lifetime.SINGLETON },
     ),
     databaseClient: asValue(new DatabaseClient(server.log, POSTGRES_URL)),
+    natsClientFactory: asValue(new NATSClientFactory(server.log, NATS_URL)),
     metricsClient: asValue(
       new MetricsClient(server.log, METRICS_PATH, METRICS_FILE_NAME_FORMAT),
     ),

@@ -1,6 +1,9 @@
 services:
   redis:
     image: valkey/valkey:8-alpine
+  nats:
+    image: nats
+    command: -js
   postgres:
     image: postgres:17-alpine
     volumes:

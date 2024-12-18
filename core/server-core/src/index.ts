@@ -13,9 +13,11 @@ import { PolicyService } from "./services/policy.ts";
 import { EventBusService } from "./services/event_bus.ts";
 import { LockService } from "./services/lock.ts";
 import { MetricsClient } from "./clients/metrics.ts";
+import { NATSClientFactory } from "./clients/nats.ts";
 
 export type ServiceCradle = {
   logger: Logger;
+  natsClientFactory: NATSClientFactory;
   databaseClient: DatabaseClient;
   metricsClient: MetricsClient;
   redisClientFactory: RedisClientFactory;

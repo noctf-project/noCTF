@@ -22,7 +22,8 @@
     "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.2",
     "kysely": "catalog:",
-    "nanoid": "^5.0.7"
+    "nanoid": "^5.0.7",
+    "nats": "^2.28.2"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.7",
