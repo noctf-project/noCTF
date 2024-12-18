@@ -3,6 +3,8 @@ import pg from "pg";
 import { DB } from "@noctf/schema";
 import { Logger } from "../types/primitives.ts";
 
+export type DBType = Kysely<DB>;
+
 export class DatabaseClient extends Kysely<DB> {
   constructor(logger: Logger | null, connectionString: string) {
     if (logger) {

@@ -1,9 +1,10 @@
 import { Static, Type } from "@sinclair/typebox";
-import { Ticket } from "./datatypes.ts";
+import { Ticket, TicketState } from "./datatypes.ts";
 
-export const TicketStateMessage = Type.Object({
+export const TicketStateUpdateMessage = Type.Object({
   actor: Type.String(),
   lease: Type.String(),
-  ticket: Ticket,
+  desired_state: Type.Enum(TicketState),
+  id: Type.Number(),
 });
-export type TicketStateMessage = Static<typeof TicketStateMessage>;
+export type TicketStateUpdateMessage = Static<typeof TicketStateUpdateMessage>;

@@ -4,7 +4,7 @@ import { Insertable, Kysely } from "kysely";
 import { ConflictError } from "../errors.ts";
 
 export class UserIdentityDAO {
-  async insert(
+  async create(
     db: Kysely<DB>,
     {
       user_id,

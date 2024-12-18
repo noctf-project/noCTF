@@ -83,9 +83,9 @@ export class UserService {
     }
 
     const id = await this.databaseClient.transaction().execute(async (tx) => {
-      const id = await this.userDAO.insert(tx, { name, roles });
+      const id = await this.userDAO.create(tx, { name, roles });
       for (const identity of identities) {
-        await this.userIdentityDAO.insert(tx, { ...identity, user_id: id });
+        await this.userIdentityDAO.create(tx, { ...identity, user_id: id });
       }
 
       return id;

@@ -14,7 +14,7 @@ export class UserDAO {
     return count != 0 && count != "0";
   }
 
-  async insert(
+  async create(
     db: Kysely<DB>,
     {
       name,
@@ -22,7 +22,6 @@ export class UserDAO {
       roles,
     }: Pick<Insertable<DB["core.user"]>, "name" | "bio" | "roles">,
   ) {
-    console.log(roles);
     try {
       const { id } = await db
         .insertInto("core.user")

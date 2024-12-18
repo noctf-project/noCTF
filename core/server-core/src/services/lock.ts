@@ -8,10 +8,11 @@ type Props = Pick<ServiceCradle, "redisClientFactory">;
 const LEASE_PREFIX = "lease";
 
 const SCRIPTS: Record<string, string> = {
-  renew: 'local val = redis.call("GET", KEYS[1]);' +
+  renew:
+    'local val = redis.call("GET", KEYS[1]);' +
     'if val == ARGV[1] then redis.call("EXPIRE", KEYS[1], ARGV[2]);return 1;' +
-    "else return 0 end"
-}
+    "else return 0 end",
+};
 
 export class LockService {
   private readonly redisClientFactory;
@@ -25,14 +26,10 @@ export class LockService {
     const token = nanoid();
     const client = await this.redisClientFactory.getClient();
     if (
-      !(await client.set(
-        `${LEASE_PREFIX}:${name}`,
-        token,
-        {
-          EX: durationSeconds,
-          NX: true
-        }
-      ))
+      !(await client.set(`${LEASE_PREFIX}:${name}`, token, {
+        EX: durationSeconds,
+        NX: true,
+      }))
     ) {
       throw new Error("lease already exists");
     }
@@ -42,7 +39,7 @@ export class LockService {
   async renewLease(name: string, token: string, durationSeconds = 60) {
     if (
       !(await this.executeScript(
-        'renew',
+        "renew",
         [`${LEASE_PREFIX}:${name}`],
         [token, durationSeconds.toString()],
       ))
@@ -73,7 +70,7 @@ export class LockService {
         arguments: args,
       });
     } catch (e) {
-      if (e instanceof ErrorReply && e.message.startsWith('NOSCRIPT')) {
+      if (e instanceof ErrorReply && e.message.startsWith("NOSCRIPT")) {
         this.scriptCache.set(name, await client.scriptLoad(SCRIPTS[name]));
         return await client.evalSha(this.scriptCache.get(name), {
           keys,

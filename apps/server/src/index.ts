@@ -20,9 +20,7 @@ import { fastifyCompress } from "@fastify/compress";
 import { nanoid } from "nanoid/non-secure";
 import { AuditLogService } from "@noctf/server-core/services/audit_log";
 import { PolicyService } from "@noctf/server-core/services/policy";
-import {
-  RedisClientFactory,
-} from "@noctf/server-core/clients/redis";
+import { RedisClientFactory } from "@noctf/server-core/clients/redis";
 import { EventBusService } from "@noctf/server-core/services/event_bus";
 import { LockService } from "@noctf/server-core/services/lock";
 
@@ -60,11 +58,7 @@ server.register(async () => {
   server.container.register({
     logger: asValue(server.log),
     redisClientFactory: asFunction(
-      ({ logger }) =>
-        new RedisClientFactory(
-          REDIS_CACHE_URL,
-          logger,
-        ),
+      ({ logger }) => new RedisClientFactory(REDIS_CACHE_URL, logger),
       { lifetime: Lifetime.SINGLETON },
     ),
     databaseClient: asValue(new DatabaseClient(server.log, POSTGRES_URL)),

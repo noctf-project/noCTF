@@ -28,14 +28,10 @@ describe("LockService", () => {
     await expect(() => service.acquireLease("lol", 60)).rejects.toThrowError(
       "lease already exists",
     );
-    expect(redisClient.set).toBeCalledWith(
-      "lease:lol",
-      anyString(),
-      {
-        EX: 60,
-        NX: true
-      }
-    );
+    expect(redisClient.set).toBeCalledWith("lease:lol", anyString(), {
+      EX: 60,
+      NX: true,
+    });
   });
 
   it("Renews a lease", async () => {
@@ -46,10 +42,9 @@ describe("LockService", () => {
     redisClient.scriptLoad.mockResolvedValue("aaa");
     expect(redisClient.evalSha).toBeCalledWith("aaa", {
       keys: ["lease:lol"],
-      arguments: ["token", "60"]
+      arguments: ["token", "60"],
     });
   });
-
 
   it("Renews a lease - lua not loaded", async () => {
     redisClient.scriptLoad.mockResolvedValue("aaa");
@@ -61,16 +56,17 @@ describe("LockService", () => {
     redisClient.scriptLoad.mockResolvedValue("aaa");
     expect(redisClient.evalSha).toBeCalledWith("aaa", {
       keys: ["lease:lol"],
-      arguments: ["token", "60"]
+      arguments: ["token", "60"],
     });
   });
 
   it("Renews a lease - exec throws another error", async () => {
     redisClient.scriptLoad.mockResolvedValue("aaa");
     const service = new LockService({ redisClientFactory });
-    redisClient.evalSha
-      .mockRejectedValue(new Error("lol"));
-    await expect(() => service.renewLease("lol", "token", 60)).rejects.toThrowError("lol");
+    redisClient.evalSha.mockRejectedValue(new Error("lol"));
+    await expect(() =>
+      service.renewLease("lol", "token", 60),
+    ).rejects.toThrowError("lol");
   });
 
   it("Fails to renew a lease", async () => {
@@ -88,7 +84,7 @@ describe("LockService", () => {
     await service.dropLease("lol", "token");
     expect(redisClient.evalSha).toBeCalledWith("aaa", {
       keys: ["lease:lol"],
-      arguments: ["token", "0"]
+      arguments: ["token", "0"],
     });
   });
 

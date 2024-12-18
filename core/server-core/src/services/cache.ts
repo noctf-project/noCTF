@@ -40,7 +40,10 @@ export class CacheService {
     };
     const k = `${namespace}:${key}`;
     const client = await this.redisClient;
-    const data = await client.get(client.commandOptions({ returnBuffers: true }), k);
+    const data = await client.get(
+      client.commandOptions({ returnBuffers: true }),
+      k,
+    );
     if (data) {
       const d = decode(data) as T;
       const end = performance.now();
@@ -85,12 +88,8 @@ export class CacheService {
 
   private async _put(k: string, value: unknown, expireSeconds = 0) {
     const client = await this.redisClient;
-    return await client.set(
-      k,
-      Buffer.from(encode(value)),
-      {
-        EX: expireSeconds
-      }
-    );
+    return await client.set(k, Buffer.from(encode(value)), {
+      EX: expireSeconds,
+    });
   }
 }

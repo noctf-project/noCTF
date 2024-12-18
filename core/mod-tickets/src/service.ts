@@ -1,42 +1,47 @@
 import { ServiceCradle } from "@noctf/server-core";
-import { Ticket } from "./schema/datatypes.ts";
+import { Ticket, TicketState } from "./schema/datatypes.ts";
 import { ConflictError, NotFoundError } from "@noctf/server-core/errors";
 import { TicketConfig } from "./schema/config.ts";
-import { TicketStateMessage } from "./schema/messages.ts";
+import { TicketStateUpdateMessage } from "./schema/messages.ts";
+import { TicketDAO } from "./dao.ts";
 
 type Props = Pick<
   ServiceCradle,
-  "databaseClient" | "configService" | "eventBusService" | "lockService"
+  | "databaseClient"
+  | "configService"
+  | "eventBusService"
+  | "lockService"
+  | "logger"
 >;
 
-export const LEASE_DURATION = 60;
+export const LEASE_DURATION = 10;
 
 export class TicketService {
   private readonly configService;
   private readonly databaseClient;
   private readonly eventBusService;
   private readonly lockService;
+  private readonly logger;
+  private readonly dao;
 
   constructor({
     configService,
     databaseClient,
     eventBusService,
     lockService,
+    logger,
   }: Props) {
     this.configService = configService;
     this.databaseClient = databaseClient;
     this.eventBusService = eventBusService;
     this.lockService = lockService;
+    this.logger = logger;
+    this.dao = new TicketDAO();
   }
 
   async create(
     actor: string,
-    {
-      category,
-      item,
-      team_id,
-      user_id,
-    }: Pick<Ticket, "category" | "item" | "team_id" | "user_id">,
+    params: Pick<Ticket, "category" | "item" | "team_id" | "user_id">,
   ): Promise<Ticket> {
     const {
       value: { provider },
@@ -44,134 +49,69 @@ export class TicketService {
     if (!provider) {
       throw new Error("A provider has not been configured");
     }
-    const { id, created_at } = await this.databaseClient
-      .insertInto("core.ticket")
-      .values({
-        open: true,
-        category,
-        item,
-        team_id,
-        user_id,
-        provider,
-      })
-      .returning(["id", "created_at"])
-      .executeTakeFirst();
-
-    const ticket: Ticket = {
-      id,
-      open: true,
-      category,
-      item,
-      team_id,
-      user_id,
+    const ticket = await this.dao.create(this.databaseClient, {
+      ...params,
       provider,
-      created_at,
-    };
+    });
 
-    const lease = await this.acquireStateLease(id);
-    await this.eventBusService.publish("events.ticket.state.open", {
+    const lease = await this.acquireStateLease(ticket.id);
+    await this.eventBusService.publish("queue.ticket.state", {
       actor,
       lease,
-      ticket,
-    } as TicketStateMessage);
+      id: ticket.id,
+      desired_state: TicketState.Open,
+    } as TicketStateUpdateMessage);
     return ticket;
   }
 
-  async open(actor: string, id: number): Promise<Ticket> {
-    return this.flipState(actor, id, true);
+  async get(id: number) {
+    return this.dao.get(this.databaseClient, id);
   }
 
-  async close(actor: string, id: number): Promise<Ticket> {
-    return this.flipState(actor, id, false);
+  async requestStateChange(
+    actor: string,
+    id: number,
+    desired_state: TicketState,
+  ) {
+    if ((await this.dao.getState(this.databaseClient, id)) === desired_state) {
+      return;
+    }
+
+    try {
+      const lease = await this.acquireStateLease(id);
+      await this.eventBusService.publish("queue.ticket.state", {
+        actor,
+        lease,
+        desired_state,
+        id,
+      } as TicketStateUpdateMessage);
+    } catch (e) {
+      throw new ConflictError(
+        "A request to change the ticket state has not been completed.",
+      );
+    }
   }
 
   async acquireStateLease(id: number) {
     return this.lockService.acquireLease(`ticket:state:${id}`, LEASE_DURATION);
   }
 
-  async renewStateLease(id: number, token: string) {
-    return this.lockService.renewLease(
-      `ticket:state:${id}`,
-      token,
-      LEASE_DURATION,
-    );
-  }
-
   async dropStateLease(id: number, token: string) {
-    return this.lockService.dropLease(`ticket:state:${id}`, token);
-  }
-
-  private async flipState(
-    actor: string,
-    id: number,
-    open: boolean,
-  ): Promise<Ticket> {
-    const ticket = await this.databaseClient
-      .selectFrom("core.ticket")
-      .select([
-        "id",
-        "open",
-        "team_id",
-        "user_id",
-        "category",
-        "item",
-        "provider",
-        "provider_id",
-        "created_at",
-      ])
-      .where("id", "=", id)
-      .executeTakeFirst();
-    if (!ticket) {
-      throw new NotFoundError("A ticket with the id was not found");
-    }
-    if (ticket.open === open) {
-      return ticket;
-    }
-    let lease;
     try {
-      lease = await this.acquireStateLease(id);
+      await this.lockService.dropLease(`ticket:state:${id}`, token);
     } catch (e) {
-      throw new ConflictError(
-        "A change ticket state operation is currently ongoing.",
-      );
+      this.logger.warn("Ticket has invalid lease token, however will ignore");
     }
-
-    const { numUpdatedRows } = await this.databaseClient
-      .updateTable("core.ticket")
-      .set({
-        open,
-      })
-      .where("id", "=", id)
-      .where("open", "=", ticket.open)
-      .executeTakeFirst();
-    if (numUpdatedRows > 0) {
-      ticket.open = open;
-      await this.eventBusService.publish(
-        `events.ticket.state.${open ? "open" : "closed"}`,
-        {
-          actor,
-          lease,
-          ticket,
-        } as TicketStateMessage,
-      );
-    } else {
-      await this.dropStateLease(id, lease);
-    }
-    return ticket;
   }
 
-  async setProviderId(id: number, provider: string, providerId: string) {
-    const { numUpdatedRows } = await this.databaseClient
-      .updateTable("core.ticket")
-      .set({
-        provider_id: providerId,
-      })
-      .where("id", "=", id)
-      .where("provider", "=", provider)
-      .where("provider_id", "is", null)
-      .executeTakeFirst();
-    if (!numUpdatedRows) {
-      throw new Error("Could not find a valid ticket");
-    }
+  async updateStateOrProvider(
+    id: number,
+    values: Partial<Pick<Ticket, "provider_id" | "state">>,
+  ) {
+    return await this.dao.updateStateOrProvider(
+      this.databaseClient,
+      id,
+      values,
+    );
   }
 }

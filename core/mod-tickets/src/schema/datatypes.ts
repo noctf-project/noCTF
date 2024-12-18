@@ -1,9 +1,15 @@
 import { TypeDate } from "@noctf/api/datatypes";
 import { Static, Type } from "@sinclair/typebox";
 
+export enum TicketState {
+  Open = "open",
+  Closed = "closed",
+  Created = "created",
+}
+
 export const Ticket = Type.Object({
   id: Type.Number(),
-  open: Type.Boolean(),
+  state: Type.Enum(TicketState),
   team_id: Type.Optional(Type.Number()),
   user_id: Type.Optional(Type.Number()),
   category: Type.String(),

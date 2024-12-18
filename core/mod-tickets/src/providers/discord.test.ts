@@ -14,6 +14,7 @@ import {
   ThreadMemberFlags,
 } from "discord-api-types/v10";
 import { TicketService } from "../service.ts";
+import { TicketState } from "../schema/datatypes.ts";
 
 vi.mock("ky");
 const mockKy = vi.mocked(ky, true);
@@ -47,7 +48,7 @@ describe("Discord Tickets Provider", async () => {
     await expect(() =>
       provider.open("user:1", "lease", {
         id: 1,
-        open: true,
+        state: TicketState.Created,
         category: "challenge",
         item: "pwn-hello",
         provider: "discord",
@@ -68,7 +69,7 @@ describe("Discord Tickets Provider", async () => {
     await expect(() =>
       provider.open("user:1", "lease", {
         id: 1,
-        open: false,
+        state: TicketState.Open,
         category: "challenge",
         item: "pwn-hello",
         provider: "discord",
@@ -116,7 +117,7 @@ describe("Discord Tickets Provider", async () => {
     mockKy.post.mockResolvedValueOnce(res);
     await provider.open("user:1", "lease", {
       id: 42,
-      open: true,
+      state: TicketState.Created,
       team_id: 1,
       category: "challenge",
       item: "pwn-hello",
@@ -172,8 +173,10 @@ describe("Discord Tickets Provider", async () => {
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/10");
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/20");
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/30");
-    expect(ticketService.renewStateLease).toBeCalledWith(42, "lease");
-    expect(ticketService.dropStateLease).toBeCalledWith(42, "lease");
+    expect(ticketService.updateStateOrProvider).toBeCalledWith(42, {
+      state: TicketState.Open,
+      provider_id: "2222",
+    });
   });
 
   test("Open a new ticket on behalf of a user", async () => {
@@ -211,7 +214,7 @@ describe("Discord Tickets Provider", async () => {
     mockKy.post.mockResolvedValueOnce(res);
     await provider.open("user:1", "lease", {
       id: 42,
-      open: true,
+      state: TicketState.Created,
       category: "challenge",
       item: "pwn-hello",
       user_id: 1,
@@ -265,8 +268,10 @@ describe("Discord Tickets Provider", async () => {
     });
     expect(mockKy.put).toHaveBeenCalledTimes(1);
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/10");
-    expect(ticketService.renewStateLease).toBeCalledWith(42, "lease");
-    expect(ticketService.dropStateLease).toBeCalledWith(42, "lease");
+    expect(ticketService.updateStateOrProvider).toBeCalledWith(42, {
+      state: TicketState.Open,
+      provider_id: "2222",
+    });
   });
 
   test("Open a new ticket for a user without a linked discord account.", async () => {
@@ -294,7 +299,7 @@ describe("Discord Tickets Provider", async () => {
     mockKy.post.mockResolvedValueOnce(res);
     await provider.open("user:1", "lease", {
       id: 42,
-      open: true,
+      state: TicketState.Created,
       user_id: 1,
       category: "challenge",
       item: "pwn-hello",
@@ -346,8 +351,10 @@ describe("Discord Tickets Provider", async () => {
         embeds: [embed],
       },
     });
-    expect(ticketService.renewStateLease).toBeCalledWith(42, "lease");
-    expect(ticketService.dropStateLease).toBeCalledWith(42, "lease");
+    expect(ticketService.updateStateOrProvider).toBeCalledWith(42, {
+      state: TicketState.Open,
+      provider_id: "2222",
+    });
   });
 
   test("Re-open an existing ticket", async () => {
@@ -399,7 +406,7 @@ describe("Discord Tickets Provider", async () => {
     ]);
     await provider.open("user:1", "lease", {
       id: 42,
-      open: true,
+      state: TicketState.Closed,
       category: "challenge",
       item: "pwn-hello",
       team_id: 1,
@@ -452,8 +459,9 @@ describe("Discord Tickets Provider", async () => {
     });
     expect(mockKy.put).toHaveBeenCalledTimes(1);
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/30");
-    expect(ticketService.renewStateLease).toBeCalledWith(42, "lease");
-    expect(ticketService.dropStateLease).toBeCalledWith(42, "lease");
+    expect(ticketService.updateStateOrProvider).toBeCalledWith(42, {
+      state: TicketState.Open,
+    });
   });
 
   test("Closing a ticket", async () => {
@@ -486,7 +494,7 @@ describe("Discord Tickets Provider", async () => {
     );
     await provider.close("discord:10", "lease", {
       id: 42,
-      open: false,
+      state: TicketState.Open,
       category: "challenge",
       item: "pwn-hello",
       team_id: 1,
@@ -537,7 +545,8 @@ describe("Discord Tickets Provider", async () => {
         embeds: [embed],
       },
     });
-    expect(ticketService.renewStateLease).toBeCalledWith(42, "lease");
-    expect(ticketService.dropStateLease).toBeCalledWith(42, "lease");
+    expect(ticketService.updateStateOrProvider).toBeCalledWith(42, {
+      state: TicketState.Closed,
+    });
   });
 });

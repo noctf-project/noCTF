@@ -5,29 +5,46 @@ import { LockService } from "@noctf/server-core/services/lock";
 import { describe, it, beforeEach, vi, expect, Mock } from "vitest";
 import { anyNumber, mock } from "vitest-mock-extended";
 import { TicketService } from "./service.ts";
+import { Logger } from "@noctf/server-core/types/primitives";
+import { TicketDAO } from "./dao.ts";
+import { TicketState } from "./schema/datatypes.ts";
 import { ConflictError } from "@noctf/server-core/errors";
 
-const date = new Date("1970-01-01T00:00:00.000Z");
-describe("TicketService", () => {
-  const configService = mock<ConfigService>();
+vi.mock(import("./dao.ts"), () => ({
+  TicketDAO: vi.fn(),
+}));
 
-  const databaseClient = {
-    insertInto: vi.fn(),
-    updateTable: vi.fn(),
-    selectFrom: vi.fn(),
-  };
+const date = new Date("1970-01-01T00:00:00.000Z");
+
+describe(TicketService, () => {
+  const configService = mock<ConfigService>();
+  const databaseClient = {} as DatabaseClient;
   const eventBusService = mock<EventBusService>();
   const lockService = mock<LockService>();
+  const logger = mock<Logger>();
+  const ticketDAO = mock<TicketDAO>();
+
+  const ticket = {
+    id: 42,
+    state: TicketState.Created,
+    item: "test",
+    category: "test",
+    team_id: 1,
+    provider: "test-provider",
+    created_at: date,
+  };
 
   const props = {
     configService,
-    databaseClient: databaseClient as unknown as DatabaseClient,
+    databaseClient,
     eventBusService,
     lockService,
+    logger,
   };
 
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(TicketDAO).mockReturnValue(ticketDAO);
   });
 
   it("Fails to create a ticket if no provider", async () => {
@@ -48,28 +65,10 @@ describe("TicketService", () => {
       value: { provider: "test-provider" },
       version: 1,
     });
-    const insert = {
-      values: databaseClient.insertInto,
-      returning: databaseClient.insertInto,
-      executeTakeFirst: databaseClient.insertInto,
-    };
-    databaseClient.insertInto.mockReturnValueOnce(insert);
-    insert.values.mockReturnValueOnce(insert);
-    insert.returning.mockReturnValueOnce(insert);
-    insert.executeTakeFirst.mockResolvedValueOnce({
-      id: 42,
-      created_at: date,
-    });
+
     lockService.acquireLease.mockResolvedValueOnce("token");
-    const ticket = {
-      id: 42,
-      open: true,
-      item: "test",
-      category: "test",
-      team_id: 1,
-      provider: "test-provider",
-      created_at: date,
-    };
+
+    ticketDAO.create.mockResolvedValue(ticket);
     expect(
       await service.create("user:1", {
         category: "test",
@@ -81,170 +80,73 @@ describe("TicketService", () => {
       "ticket:state:42",
       anyNumber(),
     );
-    expect(eventBusService.publish).toHaveBeenCalledWith("ticket.state", {
+    expect(eventBusService.publish).toHaveBeenCalledWith("queue.ticket.state", {
       actor: "user:1",
       lease: "token",
-      ticket,
+      id: 42,
+      desired_state: TicketState.Open,
     });
   });
 
-  it("Closes a ticket", async () => {
+  it("Ticket state change publishes a message to queue if status is different", async () => {
     const service = new TicketService(props);
-    const ticket = {
-      id: 42,
-      open: true,
-      item: "test",
-      category: "test",
-      team_id: 1,
-      provider: "test-provider",
-      created_at: date,
-    };
-    const select = {
-      selectFrom: databaseClient.selectFrom,
-      select: databaseClient.selectFrom,
-      where: databaseClient.selectFrom,
-      executeTakeFirst: databaseClient.selectFrom,
-    };
-    databaseClient.selectFrom.mockReturnValueOnce(select);
-    select.select.mockReturnValueOnce(select);
-    select.where.mockReturnValueOnce(select);
-    select.executeTakeFirst.mockResolvedValueOnce(ticket);
-    const update = {
-      set: databaseClient.updateTable,
-      where: databaseClient.updateTable,
-      executeTakeFirst: databaseClient.updateTable,
-    };
-    databaseClient.updateTable.mockReturnValueOnce(update);
-    update.set.mockReturnValueOnce(update);
-    update.where.mockReturnValueOnce(update);
-    update.where.mockReturnValueOnce(update);
-    update.executeTakeFirst.mockResolvedValueOnce({
-      numUpdatedRows: 1,
-    });
-    lockService.acquireLease.mockResolvedValueOnce("token");
-    expect(await service.close("user:1", 42)).toMatchObject(ticket);
-    expect(update.set).toBeCalledWith({ open: false });
-    expect(lockService.acquireLease).toHaveBeenCalledWith(
-      "ticket:state:42",
-      anyNumber(),
-    );
-    expect(eventBusService.publish).toHaveBeenCalledWith("ticket.state", {
+    ticketDAO.getState.mockResolvedValueOnce(TicketState.Created);
+    lockService.acquireLease.mockResolvedValueOnce("lease");
+    await service.requestStateChange("user:1", 42, TicketState.Open);
+    expect(eventBusService.publish).toBeCalledWith("queue.ticket.state", {
       actor: "user:1",
-      lease: "token",
-      ticket,
+      lease: "lease",
+      desired_state: TicketState.Open,
+      id: 42,
     });
   });
 
-  it("Fails to close a ticket if lease exists", async () => {
+  it("Ticket state does not publish a message if the current state is the same", async () => {
     const service = new TicketService(props);
-    const ticket = {
-      id: 42,
-      open: true,
-      item: "test",
-      category: "test",
-      team_id: 1,
-      provider: "test-provider",
-      created_at: date,
-    };
-    const select = {
-      selectFrom: databaseClient.selectFrom,
-      select: databaseClient.selectFrom,
-      where: databaseClient.selectFrom,
-      executeTakeFirst: databaseClient.selectFrom,
-    };
-    databaseClient.selectFrom.mockReturnValueOnce(select);
-    select.select.mockReturnValueOnce(select);
-    select.where.mockReturnValueOnce(select);
-    select.executeTakeFirst.mockResolvedValueOnce(ticket);
-    lockService.acquireLease.mockRejectedValue("fail");
-    await expect(() => service.close("user:1", 42)).rejects.toThrowError();
-    expect(databaseClient.updateTable).not.toHaveBeenCalled;
-    expect(eventBusService.publish).not.toHaveBeenCalled;
+    ticketDAO.getState.mockResolvedValueOnce(TicketState.Open);
+    lockService.acquireLease.mockResolvedValueOnce("lease");
+    await service.requestStateChange("user:1", 42, TicketState.Open);
+    expect(lockService.acquireLease).not.toBeCalled();
+    expect(eventBusService.publish).not.toBeCalled();
   });
 
-  it("returns the same ticket if update does not match any rows", async () => {
+  it("Ticket state throws an error if it fails to acquire a lease", async () => {
     const service = new TicketService(props);
-    const ticket = {
-      id: 42,
-      open: true,
-      item: "test",
-      category: "test",
-      team_id: 1,
-      provider: "test-provider",
-      created_at: date,
-    };
-    const select = {
-      selectFrom: databaseClient.selectFrom,
-      select: databaseClient.selectFrom,
-      where: databaseClient.selectFrom,
-      executeTakeFirst: databaseClient.selectFrom,
-    };
-    databaseClient.selectFrom.mockReturnValueOnce(select);
-    select.select.mockReturnValueOnce(select);
-    select.where.mockReturnValueOnce(select);
-    select.executeTakeFirst.mockResolvedValueOnce(ticket);
-    const update = {
-      set: databaseClient.updateTable,
-      where: databaseClient.updateTable,
-      executeTakeFirst: databaseClient.updateTable,
-    };
-    databaseClient.updateTable.mockReturnValueOnce(update);
-    update.set.mockReturnValueOnce(update);
-    update.where.mockReturnValueOnce(update);
-    update.where.mockReturnValueOnce(update);
-    update.executeTakeFirst.mockResolvedValueOnce({
-      numUpdatedRows: 0,
-    });
-    lockService.acquireLease.mockResolvedValueOnce("token");
-    expect(await service.close("user:1", 42)).toMatchObject(ticket);
-    expect(update.set).toBeCalledWith({ open: false });
-    expect(lockService.acquireLease).toHaveBeenCalledWith(
-      "ticket:state:42",
-      anyNumber(),
-    );
-    expect(lockService.dropLease).toHaveBeenCalledWith(
-      "ticket:state:42",
-      "token",
-    );
-    expect(eventBusService.publish).not.toHaveBeenCalled;
+    ticketDAO.getState.mockResolvedValueOnce(TicketState.Created);
+    lockService.acquireLease.mockRejectedValueOnce(new Error("lol"));
+    await expect(() =>
+      service.requestStateChange("user:1", 42, TicketState.Open),
+    ).rejects.toThrowError(ConflictError);
+    expect(eventBusService.publish).not.toBeCalled();
+  });
+
+  it("successfully drops the lease", async () => {
+    const service = new TicketService(props);
+    await service.dropStateLease(42, "token");
+    expect(lockService.dropLease).toBeCalledWith("ticket:state:42", "token");
+  });
+
+  it("does not throw when dropping the lease if it returns an error", async () => {
+    const service = new TicketService(props);
+    lockService.dropLease.mockRejectedValueOnce("oops");
+    await service.dropStateLease(42, "token");
+  });
+
+  it("gets the ticket details", async () => {
+    const service = new TicketService(props);
+    ticketDAO.get.mockResolvedValue(ticket);
+    expect(await service.get(42)).to.eql(ticket);
   });
 
   it("sets the provider ID", async () => {
     const service = new TicketService(props);
-    const update = {
-      set: databaseClient.updateTable,
-      where: databaseClient.updateTable,
-      executeTakeFirst: databaseClient.updateTable,
-    };
-    databaseClient.updateTable.mockReturnValueOnce(update);
-    update.set.mockReturnValueOnce(update);
-    update.where.mockReturnValueOnce(update);
-    update.where.mockReturnValueOnce(update);
-    update.where.mockReturnValueOnce(update);
-    update.executeTakeFirst.mockResolvedValueOnce({
-      numUpdatedRows: 1,
+    await service.updateStateOrProvider(42, {
+      provider_id: "1",
+      state: TicketState.Open,
     });
-    await service.setProviderId(42, "test-provider", "1234");
-    expect(update.set).toBeCalledWith({ provider_id: "1234" });
-  });
-
-  it("fails to set the provider ID", async () => {
-    const service = new TicketService(props);
-    const update = {
-      set: databaseClient.updateTable,
-      where: databaseClient.updateTable,
-      executeTakeFirst: databaseClient.updateTable,
-    };
-    databaseClient.updateTable.mockReturnValueOnce(update);
-    update.set.mockReturnValueOnce(update);
-    update.where.mockReturnValueOnce(update);
-    update.where.mockReturnValueOnce(update);
-    update.where.mockReturnValueOnce(update);
-    update.executeTakeFirst.mockResolvedValueOnce({
-      numUpdatedRows: 0,
+    expect(ticketDAO.updateStateOrProvider).toBeCalledWith(databaseClient, 42, {
+      provider_id: "1",
+      state: TicketState.Open,
     });
-    await expect(() =>
-      service.setProviderId(42, "test-provider", "1234"),
-    ).rejects.toThrowError("Could not find a valid ticket");
   });
 });

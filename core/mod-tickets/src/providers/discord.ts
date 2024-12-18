@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import { Ticket } from "../schema/datatypes.ts";
+import { Ticket, TicketState } from "../schema/datatypes.ts";
 import { ServiceCradle } from "@noctf/server-core";
 import { TicketConfig } from "../schema/config.ts";
 import ky, { KyInstance } from "ky";
@@ -194,11 +194,6 @@ export class DiscordProvider {
     const { notifications_channel_id, tickets_channel_id } =
       await this.getConfig();
     const client = await this.getClient();
-    try {
-      await this.ticketService.renewStateLease(ticket.id, lease);
-    } catch (e) {
-      throw new EventBusNonRetryableError("Could not renew state lease");
-    }
 
     const newTicket = !ticket.provider_id;
     if (newTicket) {
@@ -215,7 +210,10 @@ export class DiscordProvider {
       );
       const json = await res.json();
       ticket.provider_id = json.id;
-      await this.ticketService.setProviderId(ticket.id, "discord", json.id);
+      await this.ticketService.updateStateOrProvider(ticket.id, {
+        provider_id: json.id,
+        state: TicketState.Open,
+      });
     } else {
       await client.patch<APIThreadChannel>(`channels/${ticket.provider_id}`, {
         json: {
@@ -223,9 +221,12 @@ export class DiscordProvider {
           locked: false,
         } as RESTPatchAPIChannelJSONBody,
       });
+      await this.ticketService.updateStateOrProvider(ticket.id, {
+        state: TicketState.Open,
+      });
     }
     const actingDiscordId = await this.getActingDiscordId(actor);
-    // TODO: commit to db here
+    // TODO: commit log to db here
     const actorStr = actingDiscordId ? `<@${actingDiscordId}>` : actor;
     const state = newTicket ? "Opened" : "Re-Opened";
     await this.postNotification(
@@ -244,24 +245,16 @@ export class DiscordProvider {
       );
       await this.addUsers(ticket.provider_id, members, newTicket);
     }
-    await this.ticketService.dropStateLease(ticket.id, lease);
   }
 
   async close(actor: string, lease: string, ticket: Ticket) {
     if (!ticket.provider_id) {
-      await this.ticketService.dropStateLease(ticket.id, lease);
       throw new EventBusNonRetryableError(
         "Ticket has no provider ID, cannot be closed",
       );
     }
     const { notifications_channel_id } = await this.getConfig();
     const client = await this.getClient();
-    try {
-      await this.ticketService.renewStateLease(ticket.id, lease);
-    } catch (e) {
-      throw new EventBusNonRetryableError("Could not renew state lease");
-    }
-    const match = actor.match(USER_REGEX);
     const actingDiscordId = await this.getActingDiscordId(actor);
     await this.postNotification(
       ticket.provider_id,
@@ -274,6 +267,9 @@ export class DiscordProvider {
         archived: true,
         locked: true,
       } as RESTPatchAPIChannelJSONBody,
+    });
+    await this.ticketService.updateStateOrProvider(ticket.id, {
+      state: TicketState.Closed,
     });
     const actingUserId = (
       await this.identityService.getIdentityForProvider(
@@ -292,7 +288,6 @@ export class DiscordProvider {
       ticket,
       "Closed",
     );
-    await this.ticketService.dropStateLease(ticket.id, lease);
   }
 
   private async getActingDiscordId(actor: string) {

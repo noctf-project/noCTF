@@ -45,16 +45,26 @@ export class EventBusNonRetryableError extends Error {}
 type EventHandlerFn<T> = (e: EventItem<T>) => Promise<void> | void;
 
 enum StreamType {
-  Event,
+  Events = "events",
+  Queue = "queue",
 }
 
 const STREAMS: Record<StreamType, Partial<StreamConfig>> = {
-  [StreamType.Event]: {
+  [StreamType.Events]: {
     name: "noctf_events",
-    subjects: ["events.>"],
     retention: RetentionPolicy.Interest,
     storage: StorageType.Memory,
   },
+  [StreamType.Queue]: {
+    name: "noctf_queue",
+    retention: RetentionPolicy.Workqueue,
+    storage: StorageType.Memory,
+  },
+};
+
+const DELIVER_POLICIES: Record<StreamType, DeliverPolicy> = {
+  [StreamType.Events]: DeliverPolicy.New,
+  [StreamType.Queue]: DeliverPolicy.All,
 };
 
 const DEFAULT_BACKOFF_STRATEGY = (_a: number) =>
@@ -89,20 +99,34 @@ export class EventBusService {
     if (!this.natsClient) {
       await this.init();
     }
+    const types = new Set(subjects.map((x) => x.split(".")[0]));
+    if (
+      types.size > 1 ||
+      (!types.has(StreamType.Events) && !types.has(StreamType.Queue))
+    ) {
+      throw new Error("cannot listen on both queue and events, or none");
+    }
+    const type: StreamType = types
+      .values()
+      .toArray()[0] as unknown as StreamType;
+
     const manager = await this.natsClient.jetstream().jetstreamManager();
-    const stream = STREAMS[StreamType.Event];
+    const stream = STREAMS[type];
     const updateable: Partial<ConsumerConfig> = {
       filter_subjects: subjects,
       ack_wait: 60 * 10 ** 9,
       inactive_threshold: 30 * 60 * 10 ** 9,
     };
 
-    this.logger.info({ consumer }, "Upserting eventbus consumer");
+    this.logger.info(
+      { consumer, stream: stream.name },
+      "Upserting eventbus consumer",
+    );
     try {
       await manager.consumers.add(stream.name, {
         durable_name: consumer,
         ack_policy: AckPolicy.Explicit,
-        deliver_policy: DeliverPolicy.New,
+        deliver_policy: DELIVER_POLICIES[type],
         max_deliver: 5,
         ...updateable,
       });
@@ -114,7 +138,7 @@ export class EventBusService {
       }
     }
 
-    void this.listen(StreamType.Event, consumer, options);
+    void this.listen(type, consumer, options);
   }
 
   async publish<T>(subject: string, data: T) {
@@ -128,11 +152,17 @@ export class EventBusService {
   ) {
     // TODO: customise parallelism
     const rl = new SimpleMutex(options.concurrency || 1);
-    const stream = this.natsClient.jetstream();
-    const q = await stream.consumers.get(STREAMS[streamType].name, name);
+    const jetstream = this.natsClient.jetstream();
+    const stream = STREAMS[streamType];
+    const q = await jetstream.consumers.get(stream.name, name);
     while (true) {
-      this.logger.info({ consumer: name }, "Waiting for messages");
-      const messages = await q.consume();
+      this.logger.info(
+        { consumer: name, stream: stream.name },
+        "Waiting for messages",
+      );
+      const messages = await q.consume({
+        max_messages: options.concurrency || 1,
+      });
       try {
         for await (const m of messages) {
           await rl.lock();
@@ -227,7 +257,10 @@ export class EventBusService {
       const stream = STREAMS[type as unknown as StreamType];
       this.logger.info("Upserting stream %s", stream.name);
       try {
-        await manager.streams.add(stream);
+        await manager.streams.add({
+          ...stream,
+          subjects: [`${type}.>`],
+        });
       } catch (e) {
         if (e instanceof NatsError) {
           await manager.streams.update(stream.name, stream);
