@@ -1,7 +1,9 @@
-import { IdentityProvider } from "@noctf/server-core/types/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
 import { AuthMethod } from "@noctf/api/datatypes";
-import { IdentityService } from "@noctf/server-core/services/identity";
+import {
+  IdentityProvider,
+  IdentityService,
+} from "@noctf/server-core/services/identity";
 import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
 import { AuthToken } from "@noctf/api/token";
 import { Validate } from "./hash_util.ts";

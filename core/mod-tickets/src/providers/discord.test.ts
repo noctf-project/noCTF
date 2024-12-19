@@ -105,11 +105,11 @@ describe("Discord Tickets Provider", async () => {
       { user_id: 2, role: "member" },
       { user_id: 3, role: "member" },
     ]);
-    identityService.getProviderForUser.mockImplementation((name, id) =>
+    identityService.getProviderForUser.mockImplementation((user_id, provider) =>
       Promise.resolve({
-        provider_id: (id * 10).toString(),
-        provider: name,
-        user_id: id,
+        provider_id: (user_id * 10).toString(),
+        provider,
+        user_id,
         created_at: date,
         secret_data: null,
       }),
@@ -202,11 +202,11 @@ describe("Discord Tickets Provider", async () => {
       id: "2222",
     });
     vi.mocked(identityService).getProviderForUser.mockImplementation(
-      (name, id) =>
+      (user_id, provider) =>
         Promise.resolve({
-          provider_id: (id * 10).toString(),
-          provider: name,
-          user_id: id,
+          provider_id: (user_id * 10).toString(),
+          provider,
+          user_id,
           created_at: date,
           secret_data: null,
         }),
@@ -376,11 +376,11 @@ describe("Discord Tickets Provider", async () => {
       } as TicketConfig,
     });
     vi.mocked(identityService).getProviderForUser.mockImplementation(
-      (name, id) =>
+      (user_id, provider) =>
         Promise.resolve({
-          provider_id: (id * 10).toString(),
-          provider: name,
-          user_id: id,
+          provider_id: (user_id * 10).toString(),
+          provider,
+          user_id,
           created_at: date,
           secret_data: null,
         }),

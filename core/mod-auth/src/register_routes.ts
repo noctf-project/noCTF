@@ -10,7 +10,8 @@ import { AuthRegisterToken } from "@noctf/api/token";
 import { BadRequestError } from "@noctf/server-core/errors";
 import { FastifyInstance } from "fastify";
 import { Generate } from "./hash_util.ts";
-import { UpdateIdentityData } from "@noctf/server-core/types/identity";
+import { UserIdentity } from "@noctf/api/datatypes";
+import { AssociateIdentity } from "@noctf/server-core/services/identity";
 
 export default async function (fastify: FastifyInstance) {
   const { identityService, userService } = fastify.container.cradle;
@@ -60,7 +61,7 @@ export default async function (fastify: FastifyInstance) {
         "register",
       )) as AuthRegisterToken;
       const roles = parsed.roles;
-      let identity = parsed.identity as UpdateIdentityData[];
+      let identity = parsed.identity as AssociateIdentity[];
       if (
         identity.length === 1 &&
         identity[0].provider === "email" &&

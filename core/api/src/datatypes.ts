@@ -32,3 +32,12 @@ export const Team = Type.Object({
   created_at: TypeDate(),
 });
 export type Team = Static<typeof Team>;
+
+export const UserIdentity = Type.Object({
+  user_id: Type.Number(),
+  provider: Type.String(),
+  provider_id: Type.String(),
+  secret_data: Type.Optional(Type.String()),
+  created_at: TypeDate(),
+});
+export type UserIdentity = Static<typeof UserIdentity>;

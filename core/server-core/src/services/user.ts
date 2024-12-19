@@ -1,13 +1,10 @@
-import { UpdateIdentityData } from "../types/identity.ts";
-import { DatabaseClient } from "../clients/database.ts";
 import { BadRequestError, ConflictError } from "../errors.ts";
 import { ServiceCradle } from "../index.ts";
-import { CacheService } from "./cache.ts";
-import { AuditLogService } from "./audit_log.ts";
 import { AuditLogActor } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 import { UserDAO } from "../dao/user.ts";
 import { UserIdentityDAO } from "../dao/user_identity.ts";
+import { AssociateIdentity } from "./identity.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -70,7 +67,7 @@ export class UserService {
       roles,
     }: {
       name: string;
-      identities: UpdateIdentityData[];
+      identities: AssociateIdentity[];
       roles?: string[];
     },
     actor?: AuditLogActor,
@@ -89,7 +86,7 @@ export class UserService {
     const id = await this.databaseClient.transaction(async (tx) => {
       const id = await this.userDAO.create(tx, { name, roles });
       for (const identity of identities) {
-        await this.userIdentityDAO.create(tx, { ...identity, user_id: id });
+        await this.userIdentityDAO.associate(tx, { ...identity, user_id: id });
       }
 
       return id;

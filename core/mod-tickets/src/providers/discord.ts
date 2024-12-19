@@ -121,7 +121,7 @@ export class DiscordProvider {
     }
     for (const id of userIds) {
       const providerId = (
-        await this.identityService.getProviderForUser("discord", id)
+        await this.identityService.getProviderForUser(id, "discord")
       )?.provider_id;
       if (!providerId || current.has(providerId)) {
         continue;
@@ -295,8 +295,8 @@ export class DiscordProvider {
     if (match && match[1] === "user") {
       return (
         await this.identityService.getProviderForUser(
-          "discord",
           parseInt(match[2]),
+          "discord",
         )
       )?.provider_id;
     } else if (match && match[1] === "discord") {
