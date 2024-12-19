@@ -184,7 +184,13 @@ export class EventBusService {
       consumer,
     };
     const metrics: Metric[] = [];
-    const interval = setInterval(() => message.working(), 30 * 1000);
+    const interval = setInterval(async () => {
+      try {
+        await message.working();
+      } catch (e) {
+        this.logger.warn({ stack: e.stack }, "Failed to heartbeat message");
+      }
+    }, 30 * 1000);
     const start = performance.now();
     const timestamp = Math.floor(message.info.timestampNanos / 1000000);
     try {
@@ -200,15 +206,18 @@ export class EventBusService {
         data: decode(message.data),
       });
       await message.ack();
+      const elapsed = Math.round(performance.now() - start);
       this.logger.info(
-        { consumer, subject: message.subject, id: message.seq },
+        { consumer, subject: message.subject, id: message.seq, elapsed },
         "Processed message",
       );
       metrics.push(
         ["QueueToFinishTime", Date.now() - timestamp],
         ["Success", 1],
+        ["ProcessTime", elapsed],
       );
     } catch (e) {
+      const elapsed = Math.round(performance.now() - start);
       if (e instanceof EventBusNonRetryableError) {
         this.logger.error(
           {
@@ -216,6 +225,7 @@ export class EventBusService {
             subject: message.subject,
             id: message.seq,
             stack: e.stack,
+            elapsed,
           },
           "Failed to process message and a non-retryable error was thrown",
         );
@@ -231,6 +241,7 @@ export class EventBusService {
             subject: message.subject,
             id: message.seq,
             stack: e.stack,
+            elapsed,
           },
           "Failed to process message, requeueing",
         );
@@ -242,10 +253,9 @@ export class EventBusService {
           ),
         );
       }
-      metrics.push(["Success", 0]);
+      metrics.push(["Success", 0], ["ProcessTime", elapsed]);
     } finally {
       clearInterval(interval);
-      metrics.push(["ProcessTime", Math.round(performance.now() - start)]);
       this.metricsClient.record(metrics, labels);
     }
   }

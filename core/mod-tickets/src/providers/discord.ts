@@ -76,6 +76,7 @@ export class DiscordProvider {
       return this.client;
     }
     this.client = ky.create({
+      keepalive: true,
       prefixUrl: API_ENDPOINT,
       headers: {
         authorization: `Bot ${bot_token}`,
