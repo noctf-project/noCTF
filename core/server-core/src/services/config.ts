@@ -89,6 +89,7 @@ export class ConfigService {
     namespace: string,
   ): Promise<ConfigValue<T>> {
     const config = await this.databaseClient
+      .get()
       .selectFrom("core.config")
       .select(["version", "value"])
       .where("namespace", "=", namespace)
@@ -154,6 +155,7 @@ export class ConfigService {
     }
 
     let query = this.databaseClient
+      .get()
       .updateTable("core.config")
       .set((eb) => ({
         value,
@@ -204,6 +206,7 @@ export class ConfigService {
     this.validators.set(namespace, [schema, validator || nullValidator]);
     this.logger.info("Registered config namespace %s", namespace);
     const result = await this.databaseClient
+      .get()
       .insertInto("core.config")
       .values({
         namespace,

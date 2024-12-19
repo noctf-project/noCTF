@@ -37,6 +37,7 @@ export class OAuthConfigProvider {
 
   private async _queryMethods(): Promise<AuthMethod[]> {
     const methods = await this.databaseClient
+      .get()
       .selectFrom("core.oauth_provider")
       .where("is_enabled", "=", true)
       .select(["name", "image_src"])
@@ -63,6 +64,7 @@ export class OAuthConfigProvider {
 
   private async _queryMethod(provider: string) {
     const data = await this.databaseClient
+      .get()
       .selectFrom("core.oauth_provider")
       .where("is_enabled", "=", true)
       .where("name", "=", provider)

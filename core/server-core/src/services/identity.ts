@@ -77,6 +77,7 @@ export class IdentityService {
 
   async associateIdentity(data: UpdateIdentityData) {
     const result = await this.databaseClient
+      .get()
       .selectFrom("core.user_identity")
       .select(["user_id"])
       .where("provider", "=", data.provider)
@@ -84,6 +85,7 @@ export class IdentityService {
       .executeTakeFirst();
     if (!result) {
       await this.databaseClient
+        .get()
         .insertInto("core.user_identity")
         .values([data])
         .executeTakeFirst();
@@ -95,6 +97,7 @@ export class IdentityService {
     }
 
     await this.databaseClient
+      .get()
       .updateTable("core.user_identity")
       .where("user_id", "=", data.user_id)
       .where("provider", "=", data.provider)
@@ -104,6 +107,7 @@ export class IdentityService {
 
   async removeIdentity(userId: number, provider: string) {
     await this.databaseClient
+      .get()
       .deleteFrom("core.user_identity")
       .where("user_id", "=", userId)
       .where("provider", "=", provider)
@@ -112,6 +116,7 @@ export class IdentityService {
 
   async listProvidersForUser(id: number) {
     return await this.databaseClient
+      .get()
       .selectFrom("core.user_identity")
       .select(["provider", "provider_id"])
       .where("user_id", "=", id)
@@ -124,6 +129,7 @@ export class IdentityService {
       `pid_usr:${id}:${name}`,
       async () =>
         await this.databaseClient
+          .get()
           .selectFrom("core.user_identity")
           .select([
             "user_id",
@@ -144,6 +150,7 @@ export class IdentityService {
       `uid_pvd:${id}:${name}`,
       async () =>
         await this.databaseClient
+          .get()
           .selectFrom("core.user_identity")
           .select([
             "user_id",

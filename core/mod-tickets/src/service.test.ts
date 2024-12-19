@@ -18,7 +18,7 @@ const date = new Date("1970-01-01T00:00:00.000Z");
 
 describe(TicketService, () => {
   const configService = mock<ConfigService>();
-  const databaseClient = {} as DatabaseClient;
+  const databaseClient = mock<DatabaseClient>();
   const eventBusService = mock<EventBusService>();
   const lockService = mock<LockService>();
   const logger = mock<Logger>();
@@ -44,6 +44,7 @@ describe(TicketService, () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    databaseClient.get.mockReturnThis();
     vi.mocked(TicketDAO).mockReturnValue(ticketDAO);
   });
 

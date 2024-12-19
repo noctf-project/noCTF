@@ -49,7 +49,7 @@ export class TicketService {
     if (!provider) {
       throw new Error("A provider has not been configured");
     }
-    const ticket = await this.dao.create(this.databaseClient, {
+    const ticket = await this.dao.create(this.databaseClient.get(), {
       ...params,
       provider,
     });
@@ -65,7 +65,7 @@ export class TicketService {
   }
 
   async get(id: number) {
-    return this.dao.get(this.databaseClient, id);
+    return this.dao.get(this.databaseClient.get(), id);
   }
 
   async requestStateChange(
@@ -73,7 +73,9 @@ export class TicketService {
     id: number,
     desired_state: TicketState,
   ) {
-    if ((await this.dao.getState(this.databaseClient, id)) === desired_state) {
+    if (
+      (await this.dao.getState(this.databaseClient.get(), id)) === desired_state
+    ) {
       return;
     }
 
@@ -109,7 +111,7 @@ export class TicketService {
     values: Partial<Pick<Ticket, "provider_id" | "state">>,
   ) {
     return await this.dao.updateStateOrProvider(
-      this.databaseClient,
+      this.databaseClient.get(),
       id,
       values,
     );

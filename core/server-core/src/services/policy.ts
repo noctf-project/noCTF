@@ -36,7 +36,8 @@ export class PolicyService {
     return this.cacheService.load(
       CACHE_NAMESPACE,
       `rbac:user:${userId}`,
-      () => this.policyDAO.getPermissionsForUser(this.databaseClient, userId),
+      () =>
+        this.policyDAO.getPermissionsForUser(this.databaseClient.get(), userId),
       {
         expireSeconds: 10,
       },
@@ -47,7 +48,7 @@ export class PolicyService {
     return this.cacheService.load(
       CACHE_NAMESPACE,
       `rbac:public`,
-      () => this.policyDAO.getPermissionsForPublic(this.databaseClient),
+      () => this.policyDAO.getPermissionsForPublic(this.databaseClient.get()),
       {
         expireSeconds: 10,
       },

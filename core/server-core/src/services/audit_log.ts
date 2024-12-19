@@ -26,6 +26,7 @@ export class AuditLogService {
     data?: string;
   }) {
     await this.databaseClient
+      .get()
       .insertInto("core.audit_log")
       .values({
         actor: id ? `${type}:${id}` : type,
@@ -46,6 +47,7 @@ export class AuditLogService {
     limit,
   }: QueryAuditLogRequest): Promise<AuditLogEntry[]> {
     let query = this.databaseClient
+      .get()
       .selectFrom("core.audit_log")
       .select(["actor", "operation", "entities", "data", "created_at"]);
 

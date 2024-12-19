@@ -44,7 +44,11 @@ export class UserService {
     },
     actor?: AuditLogActor,
   ) {
-    await this.userDAO.update(this.databaseClient, id, { name, bio, roles });
+    await this.userDAO.update(this.databaseClient.get(), id, {
+      name,
+      bio,
+      roles,
+    });
     const changed = [name && "name", bio && "bio", roles && "roles"].filter(
       (x) => x,
     );
@@ -78,11 +82,11 @@ export class UserService {
       );
     }
 
-    if (await this.userDAO.checkNameExists(this.databaseClient, name)) {
+    if (await this.userDAO.checkNameExists(this.databaseClient.get(), name)) {
       throw new ConflictError("A user already exists with this name");
     }
 
-    const id = await this.databaseClient.transaction().execute(async (tx) => {
+    const id = await this.databaseClient.transaction(async (tx) => {
       const id = await this.userDAO.create(tx, { name, roles });
       for (const identity of identities) {
         await this.userIdentityDAO.create(tx, { ...identity, user_id: id });

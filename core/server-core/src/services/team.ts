@@ -43,6 +43,7 @@ export class TeamService {
   ) {
     const join_code = generate_join_code ? nanoid() : null;
     const { id, bio, created_at } = await this.databaseClient
+      .get()
       .insertInto("core.team")
       .values({
         name,
@@ -96,6 +97,7 @@ export class TeamService {
     }
 
     await this.databaseClient
+      .get()
       .updateTable("core.team")
       .set(set)
       .where("id", "=", id)
@@ -113,6 +115,7 @@ export class TeamService {
 
   async get(id: number) {
     return await this.databaseClient
+      .get()
       .selectFrom("core.team")
       .select(["id", "name", "bio", "join_code", "flags", "created_at"])
       .where("id", "=", id)
@@ -121,6 +124,7 @@ export class TeamService {
 
   async delete(id: number, { actor, message }: AuditParams = {}) {
     const { numDeletedRows } = await this.databaseClient
+      .get()
       .deleteFrom("core.team")
       .where("id", "=", id)
       .executeTakeFirst();
@@ -145,6 +149,7 @@ export class TeamService {
   async join(user_id: number, code: string) {
     const { id: team_id, flags } =
       (await this.databaseClient
+        .get()
         .selectFrom("core.team")
         .select(["id", "flags"])
         .where("join_code", "=", code)
@@ -174,6 +179,7 @@ export class TeamService {
 
   async getMembership(userId: number) {
     const result = await this.databaseClient
+      .get()
       .selectFrom("core.team_member")
       .select(["team_id", "role"])
       .where("user_id", "=", userId)
@@ -198,6 +204,7 @@ export class TeamService {
     { actor, message }: AuditParams = {},
   ) {
     const { numInsertedOrUpdatedRows } = await this.databaseClient
+      .get()
       .insertInto("core.team_member")
       .values({
         user_id,
@@ -242,6 +249,7 @@ export class TeamService {
     { actor, message }: AuditParams,
   ) {
     let query = this.databaseClient
+      .get()
       .deleteFrom("core.team_member")
       .where("user_id", "=", user_id)
       .where("team_id", "=", team_id);
@@ -289,6 +297,7 @@ export class TeamService {
 
   async getMembers(teamId: number) {
     return await this.databaseClient
+      .get()
       .selectFrom("core.team_member")
       .select(["user_id", "role"])
       .where("team_id", "=", teamId)
