@@ -87,6 +87,7 @@ server.register(async () => {
     userService: asClass(UserService, { lifetime: Lifetime.SINGLETON }),
     lockService: asClass(LockService, { lifetime: Lifetime.SINGLETON }),
   });
+  void server.container.cradle.metricsClient.start();
 });
 
 server.register(Swagger, {

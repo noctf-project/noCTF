@@ -1,6 +1,8 @@
 import { join } from "node:path";
 import { createWriteStream, mkdirSync, WriteStream } from "node:fs";
 import { Logger } from "../types/primitives.ts";
+import { performance } from "node:perf_hooks";
+import { Delay } from "../util/time.ts";
 
 function strftime(format: string, date = new Date()) {
   const pad = (n: number, width = 2) => String(n).padStart(width, "0");
@@ -20,7 +22,13 @@ function strftime(format: string, date = new Date()) {
 export type MetricLabels = Record<string, string> | [string, string][];
 export type Metric = [string, number];
 
+type PerformanceMetricsHistory = {
+  ctime: number,
+  eventLoopIdleTime: number
+};
+
 const AGGREGATE_FLUSH_INTERVAL = 100;
+const PERIODIC_METRICS_INTERVAL = 30000;
 
 export class MetricsClient {
   private readonly logger;
@@ -35,6 +43,9 @@ export class MetricsClient {
   private flushing = false;
   private lastFlushAggregate = performance.now();
   private lastFlushToFile = performance.now();
+  
+  private periodicMetricsRunning = false;
+  private performanceMetricsHistory: PerformanceMetricsHistory;
 
   constructor(
     logger: Logger,
@@ -55,7 +66,7 @@ export class MetricsClient {
   }
 
   record(values: Metric[], labels?: MetricLabels, timestamp?: number) {
-    if (!this.pathName || !this.fileNameFormat) return;
+    if ((!this.pathName && this.pathName !== "") || !this.fileNameFormat) return;
     const key = MetricsClient.toKey(labels);
     let series = this.series.get(key);
     if (!series) {
@@ -84,6 +95,42 @@ export class MetricsClient {
       this.aggregateSeries.set(key, series);
     }
     this.addMetricsAggregate(series, values);
+  }
+
+  /**
+   * This function doesn't return normally
+   */
+  async start() {
+    if ((!this.pathName && this.pathName !== "") || !this.fileNameFormat) return;
+    this.periodicMetricsRunning = true;
+    this.performanceMetricsHistory = null;
+    while (this.periodicMetricsRunning) {
+      this.recordPerformanceMetrics();
+      await Delay(PERIODIC_METRICS_INTERVAL);
+    }
+  }
+
+  async stopPeriodicMetrics() {
+    this.periodicMetricsRunning = false;
+  }
+
+
+  private recordPerformanceMetrics() {
+    const ctime = performance.now();
+    const { idleTime } = performance.nodeTiming;
+    if (!this.performanceMetricsHistory) {
+      this.performanceMetricsHistory = { eventLoopIdleTime: idleTime, ctime };
+      return;
+    }
+
+    const metrics: Metric[] = [];
+    metrics.push(
+      ["EventLoopIdlePercent", (idleTime - this.performanceMetricsHistory.eventLoopIdleTime)/(ctime - this.performanceMetricsHistory.ctime)],
+    );
+    this.record(metrics, {
+      performance: 'nodejs'
+    });
+    this.performanceMetricsHistory = { eventLoopIdleTime: idleTime, ctime };
   }
 
   private addMetricsAggregate(series: Map<string, number>, values: Metric[]) {
