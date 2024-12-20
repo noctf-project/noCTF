@@ -52,6 +52,7 @@ describe("Discord Tickets Provider", async () => {
         category: "challenge",
         item: "pwn-hello",
         provider: "discord",
+        provider_id: null,
         created_at: new Date("1970-01-01T00:00:00Z"),
       }),
     ).rejects.toThrowError("discord config is not present");
@@ -73,6 +74,7 @@ describe("Discord Tickets Provider", async () => {
         category: "challenge",
         item: "pwn-hello",
         provider: "discord",
+        provider_id: null,
         created_at: new Date("1970-01-01T00:00:00Z"),
       }),
     ).rejects.toThrowError("discord config is not present");
@@ -122,6 +124,7 @@ describe("Discord Tickets Provider", async () => {
       category: "challenge",
       item: "pwn-hello",
       provider: "discord",
+      provider_id: null,
       created_at: date,
     });
     expect(mockKy.post).toHaveBeenCalledTimes(3);
@@ -219,6 +222,7 @@ describe("Discord Tickets Provider", async () => {
       item: "pwn-hello",
       user_id: 1,
       provider: "discord",
+      provider_id: null,
       created_at: date,
     });
     expect(mockKy.post).toHaveBeenCalledTimes(3);
@@ -304,6 +308,7 @@ describe("Discord Tickets Provider", async () => {
       category: "challenge",
       item: "pwn-hello",
       provider: "discord",
+      provider_id: null,
       created_at: date,
     });
     expect(mockKy.post).toHaveBeenCalledTimes(3);

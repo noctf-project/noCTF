@@ -15,7 +15,7 @@ export const Ticket = Type.Object({
   category: Type.String(),
   item: Type.String(),
   provider: Type.String(),
-  provider_id: Type.Optional(Type.String()),
+  provider_id: Type.Union([Type.String(), Type.Null()]),
   created_at: TypeDate(),
 });
 export type Ticket = Static<typeof Ticket>;

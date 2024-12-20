@@ -7,7 +7,7 @@ import { anyNumber, mock } from "vitest-mock-extended";
 import { TicketService } from "./service.ts";
 import { Logger } from "@noctf/server-core/types/primitives";
 import { TicketDAO } from "./dao.ts";
-import { TicketState } from "./schema/datatypes.ts";
+import { Ticket, TicketState } from "./schema/datatypes.ts";
 import { ConflictError } from "@noctf/server-core/errors";
 
 vi.mock(import("./dao.ts"), () => ({
@@ -24,13 +24,14 @@ describe(TicketService, () => {
   const logger = mock<Logger>();
   const ticketDAO = mock<TicketDAO>();
 
-  const ticket = {
+  const ticket: Ticket = {
     id: 42,
     state: TicketState.Created,
     item: "test",
     category: "test",
     team_id: 1,
     provider: "test-provider",
+    provider_id: null,
     created_at: date,
   };
 

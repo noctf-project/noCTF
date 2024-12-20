@@ -37,6 +37,7 @@ export class TicketDAO {
       team_id,
       user_id,
       provider,
+      provider_id: provider_id || null,
       created_at,
     };
   }
