@@ -1,9 +1,10 @@
 import { ServiceCradle } from "@noctf/server-core";
 import { Ticket, TicketState } from "./schema/datatypes.ts";
-import { ConflictError, NotFoundError } from "@noctf/server-core/errors";
+import { BadRequestError, ConflictError, NotFoundError } from "@noctf/server-core/errors";
 import { TicketConfig } from "./schema/config.ts";
 import { TicketStateUpdateMessage } from "./schema/messages.ts";
 import { TicketDAO } from "./dao.ts";
+import { Value } from "@sinclair/typebox/value";
 
 type Props = Pick<
   ServiceCradle,
@@ -73,6 +74,9 @@ export class TicketService {
     id: number,
     desired_state: TicketState,
   ) {
+    if (!Value.Check(TicketStateUpdateMessage.properties.desired_state, desired_state)) {
+      throw new BadRequestError("The state requested is invalid");
+    }
     if (
       (await this.dao.getState(this.databaseClient.get(), id)) === desired_state
     ) {

@@ -1,4 +1,3 @@
-import { Redis } from "ioredis";
 import { ServiceCradle } from "../index.ts";
 import { nanoid } from "nanoid";
 import { ErrorReply } from "redis";

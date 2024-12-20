@@ -206,7 +206,7 @@ export class EventBusService {
         data: decode(message.data),
       });
       await message.ack();
-      const elapsed = Math.round(performance.now() - start);
+      const elapsed = performance.now() - start;
       this.logger.info(
         { consumer, subject: message.subject, id: message.seq, elapsed },
         "Processed message",
@@ -217,7 +217,7 @@ export class EventBusService {
         ["ProcessTime", elapsed],
       );
     } catch (e) {
-      const elapsed = Math.round(performance.now() - start);
+      const elapsed = performance.now() - start;
       if (e instanceof EventBusNonRetryableError) {
         this.logger.error(
           {
@@ -256,7 +256,7 @@ export class EventBusService {
       metrics.push(["Success", 0], ["ProcessTime", elapsed]);
     } finally {
       clearInterval(interval);
-      this.metricsClient.record(metrics, labels);
+      this.metricsClient.recordAggregate(metrics, labels);
     }
   }
 

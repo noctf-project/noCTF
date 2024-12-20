@@ -122,10 +122,11 @@ export class MetricsClient {
       this.performanceMetricsHistory = { eventLoopIdleTime: idleTime, ctime };
       return;
     }
-
+    const { heapUsed } = process.memoryUsage();
     const metrics: Metric[] = [];
     metrics.push(
       ["EventLoopIdlePercent", (idleTime - this.performanceMetricsHistory.eventLoopIdleTime)/(ctime - this.performanceMetricsHistory.ctime)],
+      ["HeapUsed", heapUsed]
     );
     this.record(metrics, {
       performance: 'nodejs'

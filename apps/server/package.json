@@ -4,11 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
+    "test": "vitest --coverage",
+    "typecheck": "tsc -noEmit",
+    "build": "node esbuild.mjs",
+    "release": "pnpm run typecheck && pnpm run build && pnpm run test --run",
     "dev": "tsx watch --env-file=../../.env src | pino-pretty",
     "dev:shell": "tsx -i --env-file=../../.env src/shell.ts",
-    "prod": "tsx src/index.ts"
+    "prod": "node dist/index.cjs"
   },
   "keywords": [],
   "author": "",
@@ -27,14 +29,17 @@
     "awilix": "catalog:",
     "fastify": "catalog:",
     "kysely": "catalog:",
-    "nanoid": "^5.0.7",
-    "tsx": "catalog:"
+    "nanoid": "^5.0.7"
   },
   "type": "module",
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
+    "esbuild": "catalog:",
     "pino-pretty": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "tsx": "catalog:"
   }
 }
