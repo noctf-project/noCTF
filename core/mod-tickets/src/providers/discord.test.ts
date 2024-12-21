@@ -11,14 +11,15 @@ import {
   APIThreadChannel,
   APIThreadMember,
   ChannelType,
+  RESTGetAPIChannelThreadMembersResult,
+  RESTPostAPIChannelMessageResult,
   ThreadMemberFlags,
 } from "discord-api-types/v10";
 import { TicketService } from "../service.ts";
-import { TicketState } from "../schema/datatypes.ts";
+import { Ticket, TicketState } from "../schema/datatypes.ts";
 
 vi.mock("ky");
 const mockKy = vi.mocked(ky, true);
-const mockKyResponse = mock<KyResponse>();
 const configService = mock<ConfigService>();
 const identityService = mock<IdentityService>();
 const teamService = mock<TeamService>();
@@ -36,6 +37,20 @@ describe("Discord Tickets Provider", async () => {
     vi.resetAllMocks();
   });
 
+  const mockTicket = (a: Partial<Ticket> = {}): Ticket => ({
+    id: 42,
+    state: a.state || TicketState.Created,
+    category: "challenge",
+    item: "pwn-hello",
+    assignee_id: null,
+    provider: "discord",
+    provider_id: a.provider_id || null,
+    provider_metadata: a.provider_metadata || null,
+    team_id: a.team_id || null,
+    user_id: a.user_id || null,
+    created_at: new Date("1970-01-01T00:00:00Z"),
+  });
+
   test("Fails to open if discord config is not present", async () => {
     const provider = new DiscordProvider({
       configService,
@@ -46,15 +61,7 @@ describe("Discord Tickets Provider", async () => {
     });
     configService.get.mockResolvedValue({ version: 1, value: {} });
     await expect(() =>
-      provider.open("user:1", "lease", {
-        id: 1,
-        state: TicketState.Created,
-        category: "challenge",
-        item: "pwn-hello",
-        provider: "discord",
-        provider_id: null,
-        created_at: new Date("1970-01-01T00:00:00Z"),
-      }),
+      provider.open("user:1", mockTicket()),
     ).rejects.toThrowError("discord config is not present");
   });
 
@@ -68,15 +75,7 @@ describe("Discord Tickets Provider", async () => {
     });
     configService.get.mockResolvedValue({ version: 1, value: {} });
     await expect(() =>
-      provider.open("user:1", "lease", {
-        id: 1,
-        state: TicketState.Open,
-        category: "challenge",
-        item: "pwn-hello",
-        provider: "discord",
-        provider_id: null,
-        created_at: new Date("1970-01-01T00:00:00Z"),
-      }),
+      provider.open("user:1", mockTicket()),
     ).rejects.toThrowError("discord config is not present");
   });
 
@@ -98,10 +97,20 @@ describe("Discord Tickets Provider", async () => {
         },
       } as TicketConfig,
     });
-    const res = mock<KyResponse<APIThreadChannel>>();
-    res.json.mockResolvedValue({
+    const createThread = mock<KyResponse<APIThreadChannel>>();
+    createThread.json.mockResolvedValue({
       id: "2222",
     });
+    const postNotification =
+      mock<KyResponse<RESTPostAPIChannelMessageResult>>();
+    postNotification.json.mockResolvedValue({
+      id: "3333",
+    });
+    mockKy.post
+      .mockResolvedValueOnce(createThread)
+      .mockResolvedValueOnce(postNotification)
+      .mockResolvedValueOnce(postNotification);
+
     teamService.getMembers.mockResolvedValue([
       { user_id: 1, role: "member" },
       { user_id: 2, role: "member" },
@@ -116,17 +125,7 @@ describe("Discord Tickets Provider", async () => {
         secret_data: null,
       }),
     );
-    mockKy.post.mockResolvedValueOnce(res);
-    await provider.open("user:1", "lease", {
-      id: 42,
-      state: TicketState.Created,
-      team_id: 1,
-      category: "challenge",
-      item: "pwn-hello",
-      provider: "discord",
-      provider_id: null,
-      created_at: date,
-    });
+    await provider.open("user:1", mockTicket({ team_id: 1 }));
     expect(mockKy.post).toHaveBeenCalledTimes(3);
     expect(mockKy.post).toHaveBeenCalledWith("channels/0000/threads", {
       json: {
@@ -156,8 +155,8 @@ describe("Discord Tickets Provider", async () => {
           inline: true,
         },
         {
-          name: "Actor",
-          value: "<@10>",
+          name: "Assignee",
+          value: "nobody",
           inline: true,
         },
       ]),
@@ -176,9 +175,13 @@ describe("Discord Tickets Provider", async () => {
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/10");
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/20");
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/30");
-    expect(ticketService.updateStateOrProvider).toBeCalledWith(42, {
+    expect(ticketService.update).toBeCalledWith(42, {
       state: TicketState.Open,
       provider_id: "2222",
+      assignee_id: null,
+    });
+    expect(ticketService.update).toBeCalledWith(42, {
+      provider_metadata: { notification_id: "3333" },
     });
   });
 
@@ -200,10 +203,25 @@ describe("Discord Tickets Provider", async () => {
         },
       } as TicketConfig,
     });
-    const res = mock<KyResponse<APIThreadChannel>>();
-    res.json.mockResolvedValue({
+
+    const createThread = mock<KyResponse<APIThreadChannel>>();
+    createThread.json.mockResolvedValue({
       id: "2222",
     });
+    const postNotification =
+      mock<KyResponse<RESTPostAPIChannelMessageResult>>();
+    postNotification.json.mockResolvedValue({
+      id: "3333",
+    });
+    mockKy.post
+      .mockResolvedValueOnce(createThread)
+      .mockResolvedValueOnce(postNotification)
+      .mockResolvedValueOnce(postNotification);
+    const apiThreadMembers: APIThreadMember[] = [];
+    const threadMembersResponse =
+      mock<KyResponse<RESTGetAPIChannelThreadMembersResult>>();
+    threadMembersResponse.json.mockResolvedValueOnce(apiThreadMembers);
+    mockKy.get.mockResolvedValueOnce(threadMembersResponse);
     vi.mocked(identityService).getProviderForUser.mockImplementation(
       (user_id, provider) =>
         Promise.resolve({
@@ -214,17 +232,8 @@ describe("Discord Tickets Provider", async () => {
           secret_data: null,
         }),
     );
-    mockKy.post.mockResolvedValueOnce(res);
-    await provider.open("user:1", "lease", {
-      id: 42,
-      state: TicketState.Created,
-      category: "challenge",
-      item: "pwn-hello",
-      user_id: 1,
-      provider: "discord",
-      provider_id: null,
-      created_at: date,
-    });
+
+    await provider.open("user:1", mockTicket({ user_id: 1 }));
     expect(mockKy.post).toHaveBeenCalledTimes(3);
     expect(mockKy.post).toHaveBeenCalledWith("channels/0000/threads", {
       json: {
@@ -254,8 +263,8 @@ describe("Discord Tickets Provider", async () => {
           inline: true,
         },
         {
-          name: "Actor",
-          value: "<@10>",
+          name: "Assignee",
+          value: "nobody",
           inline: true,
         },
       ]),
@@ -272,9 +281,13 @@ describe("Discord Tickets Provider", async () => {
     });
     expect(mockKy.put).toHaveBeenCalledTimes(1);
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/10");
-    expect(ticketService.updateStateOrProvider).toBeCalledWith(42, {
+    expect(ticketService.update).toBeCalledWith(42, {
       state: TicketState.Open,
       provider_id: "2222",
+      assignee_id: null,
+    });
+    expect(ticketService.update).toBeCalledWith(42, {
+      provider_metadata: { notification_id: "3333" },
     });
   });
 
@@ -296,21 +309,26 @@ describe("Discord Tickets Provider", async () => {
         },
       } as TicketConfig,
     });
-    const res = mock<KyResponse<APIThreadChannel>>();
-    res.json.mockResolvedValue({
+
+    const createThread = mock<KyResponse<APIThreadChannel>>();
+    createThread.json.mockResolvedValue({
       id: "2222",
     });
-    mockKy.post.mockResolvedValueOnce(res);
-    await provider.open("user:1", "lease", {
-      id: 42,
-      state: TicketState.Created,
-      user_id: 1,
-      category: "challenge",
-      item: "pwn-hello",
-      provider: "discord",
-      provider_id: null,
-      created_at: date,
+    const postNotification =
+      mock<KyResponse<RESTPostAPIChannelMessageResult>>();
+    postNotification.json.mockResolvedValue({
+      id: "3333",
     });
+    mockKy.post
+      .mockResolvedValueOnce(createThread)
+      .mockResolvedValueOnce(postNotification)
+      .mockResolvedValueOnce(postNotification);
+    const threadMembersResponse =
+      mock<KyResponse<RESTGetAPIChannelThreadMembersResult>>();
+    threadMembersResponse.json.mockResolvedValueOnce([]);
+    mockKy.get.mockResolvedValueOnce(threadMembersResponse);
+
+    await provider.open("user:1", mockTicket({ user_id: 1 }));
     expect(mockKy.post).toHaveBeenCalledTimes(3);
     expect(mockKy.post).toHaveBeenCalledWith("channels/0000/threads", {
       json: {
@@ -340,8 +358,8 @@ describe("Discord Tickets Provider", async () => {
           inline: true,
         },
         {
-          name: "Actor",
-          value: "user:1",
+          name: "Assignee",
+          value: "nobody",
           inline: true,
         },
       ]),
@@ -356,9 +374,13 @@ describe("Discord Tickets Provider", async () => {
         embeds: [embed],
       },
     });
-    expect(ticketService.updateStateOrProvider).toBeCalledWith(42, {
+    expect(ticketService.update).toBeCalledWith(42, {
       state: TicketState.Open,
+      assignee_id: null,
       provider_id: "2222",
+    });
+    expect(ticketService.update).toBeCalledWith(42, {
+      provider_metadata: { notification_id: "3333" },
     });
   });
 
@@ -402,23 +424,38 @@ describe("Discord Tickets Provider", async () => {
         flags: ThreadMemberFlags.NoMessages,
       },
     ];
-    mockKyResponse.json.mockResolvedValueOnce(apiThreadMembers);
-    mockKy.get.mockResolvedValueOnce(mockKyResponse);
+
+    const createThread = mock<KyResponse<APIThreadChannel>>();
+    createThread.json.mockResolvedValue({
+      id: "2222",
+    });
+    const postNotification =
+      mock<KyResponse<RESTPostAPIChannelMessageResult>>();
+    postNotification.json.mockResolvedValue({
+      id: "3333",
+    });
+    mockKy.post
+      .mockResolvedValueOnce(createThread)
+      .mockResolvedValueOnce(postNotification)
+      .mockResolvedValueOnce(postNotification);
+    const threadMembersResponse =
+      mock<KyResponse<RESTGetAPIChannelThreadMembersResult>>();
+    threadMembersResponse.json.mockResolvedValueOnce(apiThreadMembers);
+    mockKy.get.mockResolvedValueOnce(threadMembersResponse);
+
     vi.mocked(teamService).getMembers.mockResolvedValue([
       { user_id: 1, role: "member" },
       { user_id: 2, role: "member" },
       { user_id: 3, role: "member" },
     ]);
-    await provider.open("user:1", "lease", {
-      id: 42,
-      state: TicketState.Closed,
-      category: "challenge",
-      item: "pwn-hello",
-      team_id: 1,
-      provider: "discord",
-      provider_id: "2222",
-      created_at: date,
-    });
+    await provider.open(
+      "user:1",
+      mockTicket({
+        state: TicketState.Closed,
+        provider_id: "2222",
+        team_id: 1,
+      }),
+    );
     expect(mockKy.patch).toHaveBeenCalledWith("channels/2222", {
       json: {
         locked: false,
@@ -446,8 +483,8 @@ describe("Discord Tickets Provider", async () => {
           inline: true,
         },
         {
-          name: "Actor",
-          value: "<@10>",
+          name: "Assignee",
+          value: "nobody",
           inline: true,
         },
       ]),
@@ -464,7 +501,7 @@ describe("Discord Tickets Provider", async () => {
     });
     expect(mockKy.put).toHaveBeenCalledTimes(1);
     expect(mockKy.put).toHaveBeenCalledWith("channels/2222/thread-members/30");
-    expect(ticketService.updateStateOrProvider).toBeCalledWith(42, {
+    expect(ticketService.update).toBeCalledWith(42, {
       state: TicketState.Open,
     });
   });
@@ -497,16 +534,28 @@ describe("Discord Tickets Provider", async () => {
           secret_data: null,
         }),
     );
-    await provider.close("discord:10", "lease", {
-      id: 42,
-      state: TicketState.Open,
-      category: "challenge",
-      item: "pwn-hello",
-      team_id: 1,
-      provider: "discord",
-      provider_id: "2222",
-      created_at: date,
+
+    const createThread = mock<KyResponse<APIThreadChannel>>();
+    createThread.json.mockResolvedValue({
+      id: "2222",
     });
+    const postNotification =
+      mock<KyResponse<RESTPostAPIChannelMessageResult>>();
+    postNotification.json.mockResolvedValue({
+      id: "3333",
+    });
+    mockKy.post
+      .mockResolvedValueOnce(createThread)
+      .mockResolvedValueOnce(postNotification);
+
+    await provider.close(
+      "discord:10",
+      mockTicket({
+        team_id: 1,
+        provider_id: "2222",
+        provider_metadata: { notification_id: "3333" },
+      }),
+    );
 
     expect(mockKy.patch).toHaveBeenCalledWith("channels/2222", {
       json: {
@@ -534,13 +583,13 @@ describe("Discord Tickets Provider", async () => {
           inline: true,
         },
         {
-          name: "Actor",
-          value: "<@10>",
+          name: "Assignee",
+          value: "nobody",
           inline: true,
         },
       ]),
     };
-    expect(mockKy.post).toHaveBeenCalledWith("channels/1111/messages", {
+    expect(mockKy.patch).toHaveBeenCalledWith("channels/1111/messages/3333", {
       json: {
         embeds: [embed],
       },
@@ -550,7 +599,7 @@ describe("Discord Tickets Provider", async () => {
         embeds: [embed],
       },
     });
-    expect(ticketService.updateStateOrProvider).toBeCalledWith(42, {
+    expect(ticketService.update).toBeCalledWith(42, {
       state: TicketState.Closed,
     });
   });

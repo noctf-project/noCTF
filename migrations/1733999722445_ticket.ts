@@ -12,10 +12,14 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("state", "varchar(32)", (col) => col.notNull())
     .addColumn("team_id", "integer", (col) => col.references("core.team.id"))
     .addColumn("user_id", "integer", (col) => col.references("core.user.id"))
+    .addColumn("assignee_id", "integer", (col) =>
+      col.references("core.user.id"),
+    )
     .addColumn("category", "varchar(64)")
     .addColumn("item", "varchar(64)")
     .addColumn("provider", "varchar(64)", (col) => col.notNull())
     .addColumn("provider_id", "varchar(64)")
+    .addColumn("provider_metadata", "jsonb")
     .addColumn("created_at", "timestamp", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )

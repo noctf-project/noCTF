@@ -30,8 +30,10 @@ describe(TicketService, () => {
     item: "test",
     category: "test",
     team_id: 1,
+    assignee_id: null,
     provider: "test-provider",
     provider_id: null,
+    provider_metadata: null,
     created_at: date,
   };
 
@@ -79,7 +81,7 @@ describe(TicketService, () => {
       }),
     ).toMatchObject(ticket);
     expect(lockService.acquireLease).toHaveBeenCalledWith(
-      "ticket:state:42",
+      "ticket:42",
       anyNumber(),
     );
     expect(eventBusService.publish).toHaveBeenCalledWith("queue.ticket.state", {
@@ -124,14 +126,14 @@ describe(TicketService, () => {
 
   it("successfully drops the lease", async () => {
     const service = new TicketService(props);
-    await service.dropStateLease(42, "token");
-    expect(lockService.dropLease).toBeCalledWith("ticket:state:42", "token");
+    await service.dropLease(42, "token");
+    expect(lockService.dropLease).toBeCalledWith("ticket:42", "token");
   });
 
   it("does not throw when dropping the lease if it returns an error", async () => {
     const service = new TicketService(props);
     lockService.dropLease.mockRejectedValueOnce("oops");
-    await service.dropStateLease(42, "token");
+    await service.dropLease(42, "token");
   });
 
   it("gets the ticket details", async () => {
@@ -142,11 +144,11 @@ describe(TicketService, () => {
 
   it("sets the provider ID", async () => {
     const service = new TicketService(props);
-    await service.updateStateOrProvider(42, {
+    await service.update(42, {
       provider_id: "1",
       state: TicketState.Open,
     });
-    expect(ticketDAO.updateStateOrProvider).toBeCalledWith(databaseClient, 42, {
+    expect(ticketDAO.update).toBeCalledWith(databaseClient, 42, {
       provider_id: "1",
       state: TicketState.Open,
     });

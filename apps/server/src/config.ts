@@ -12,5 +12,10 @@ export const ENABLE_HTTP2 = ["1", "true"].includes(
   (process.env.ENABLE_HTTP2 || "").toLowerCase(),
 );
 
+export const ENABLE_SWAGGER =
+  process.env.SWAGGER === undefined ||
+  ["1", "true"].includes((process.env.ENABLE_SWAGGER || "").toLowerCase());
+
 export const METRICS_PATH = process.env.METRICS_PATH;
-export const METRICS_FILE_NAME_FORMAT = process.env.METRICS_FILE_NAME_FORMAT || "metrics-%Y-%m-%d-%H.log";
+export const METRICS_FILE_NAME_FORMAT =
+  process.env.METRICS_FILE_NAME_FORMAT || "metrics-%Y-%m-%d-%H.log";

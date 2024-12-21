@@ -5,9 +5,15 @@ import { OpenTicketRequest, OpenTicketResponse } from "./schema/api.ts";
 import "@noctf/server-core/types/fastify";
 import { TicketService } from "./service.ts";
 import { DiscordProvider } from "./providers/discord.ts";
-import { TicketStateUpdateMessage } from "./schema/messages.ts";
-import { TicketState } from "./schema/datatypes.ts";
-import { EventBusNonRetryableError } from "@noctf/server-core/services/event_bus";
+import {
+  TicketApplyMessage,
+  TicketState,
+  TicketStateMessage,
+} from "./schema/datatypes.ts";
+import {
+  EventBusNonRetryableError,
+  EventItem,
+} from "@noctf/server-core/services/event_bus";
 
 export async function initServer(fastify: FastifyInstance) {
   initWorker(fastify.container.cradle);
@@ -43,35 +49,68 @@ export async function initWorker(cradle: ServiceCradle) {
   const { eventBusService } = cradle;
   const ticketService = new TicketService(cradle);
   const discordProvider = new DiscordProvider({ ...cradle, ticketService });
-  const handler = await eventBusService.subscribe<TicketStateUpdateMessage>(
-    "TicketStateHandler",
-    ["queue.ticket.state"],
-    {
-      concurrency: 5,
-      handler: async (data) => {
-        const { actor, lease, id, desired_state } = data.data;
-        const ticket = await ticketService.get(id);
-        if (ticket.provider !== "discord")
-          throw new Error(
-            "Ticket provider is not discord (others not implemented).",
+
+  const StateHandler = async (message: TicketStateMessage) => {
+    const { actor, lease, id, desired_state } = message;
+    const ticket = await ticketService.get(id);
+    if (ticket.provider !== "discord")
+      throw new Error(
+        "Ticket provider is not discord (others not implemented).",
+      );
+    if (ticket.state === desired_state) {
+      return;
+    }
+    try {
+      if (desired_state === TicketState.Open) {
+        await discordProvider.open(actor, ticket);
+      } else if (desired_state === TicketState.Closed) {
+        await discordProvider.close(actor, ticket);
+      }
+    } catch (e) {
+      if (e instanceof EventBusNonRetryableError) {
+        await ticketService.dropLease(ticket.id, lease);
+      }
+      throw e;
+    }
+    await ticketService.dropLease(ticket.id, lease);
+  };
+
+  const ApplyHandler = async (message: TicketApplyMessage) => {
+    const { properties, id, lease, actor } = message;
+    // Right now we only support assignee updates
+    if (!properties.assignee_id && properties.assignee_id !== null) {
+      await ticketService.dropLease(id, lease);
+      return;
+    }
+
+    try {
+      // Have to grab the whole ticket anyways
+      await discordProvider.assign(actor, await ticketService.get(id));
+    } catch (e) {
+      if (e instanceof EventBusNonRetryableError) {
+        await ticketService.dropLease(id, lease);
+      }
+      throw e;
+    }
+  };
+
+  const worker = await eventBusService.subscribe<
+    TicketStateMessage | TicketApplyMessage
+  >("TicketWorker", ["queue.ticket.state", "queue.ticket.apply"], {
+    concurrency: 3,
+    handler: async (data) => {
+      switch (data.subject) {
+        case "queue.ticket.state":
+          await StateHandler(data.data as TicketStateMessage);
+          break;
+        case "queue.ticket.apply":
+          await ApplyHandler(data.data as TicketApplyMessage);
+          break;
+        default:
+          throw new EventBusNonRetryableError(
+            "Unknown message subject " + data.subject,
           );
-        if (ticket.state === desired_state) {
-          return;
-        }
-        try {
-          if (desired_state === TicketState.Open) {
-            await discordProvider.open(actor, lease, ticket);
-          } else if (desired_state === TicketState.Closed) {
-            await discordProvider.close(actor, lease, ticket);
-          }
-        } catch (e) {
-          if (e instanceof EventBusNonRetryableError) {
-            await ticketService.dropStateLease(ticket.id, lease);
-          }
-          throw e;
-        }
-        await ticketService.dropStateLease(ticket.id, lease);
-      },
+      }
     },
-  );
+  });
 }

@@ -1,8 +1,13 @@
 import { ServiceCradle } from "@noctf/server-core";
-import { Ticket, TicketState } from "./schema/datatypes.ts";
-import { BadRequestError, ConflictError, NotFoundError } from "@noctf/server-core/errors";
+import {
+  Ticket,
+  TicketApplyMessage,
+  TicketState,
+  TicketStateMessage,
+  UpdateTicket,
+} from "./schema/datatypes.ts";
+import { BadRequestError, ConflictError } from "@noctf/server-core/errors";
 import { TicketConfig } from "./schema/config.ts";
-import { TicketStateUpdateMessage } from "./schema/messages.ts";
 import { TicketDAO } from "./dao.ts";
 import { Value } from "@sinclair/typebox/value";
 
@@ -55,13 +60,13 @@ export class TicketService {
       provider,
     });
 
-    const lease = await this.acquireStateLease(ticket.id);
+    const lease = await this.acquireLease(ticket.id);
     await this.eventBusService.publish("queue.ticket.state", {
       actor,
       lease,
       id: ticket.id,
       desired_state: TicketState.Open,
-    } as TicketStateUpdateMessage);
+    } as TicketStateMessage);
     return ticket;
   }
 
@@ -74,7 +79,9 @@ export class TicketService {
     id: number,
     desired_state: TicketState,
   ) {
-    if (!Value.Check(TicketStateUpdateMessage.properties.desired_state, desired_state)) {
+    if (
+      !Value.Check(TicketStateMessage.properties.desired_state, desired_state)
+    ) {
       throw new BadRequestError("The state requested is invalid");
     }
     if (
@@ -84,13 +91,13 @@ export class TicketService {
     }
 
     try {
-      const lease = await this.acquireStateLease(id);
+      const lease = await this.acquireLease(id);
       await this.eventBusService.publish("queue.ticket.state", {
         actor,
         lease,
         desired_state,
         id,
-      } as TicketStateUpdateMessage);
+      } as TicketStateMessage);
     } catch (e) {
       throw new ConflictError(
         "A request to change the ticket state has not been completed.",
@@ -98,26 +105,44 @@ export class TicketService {
     }
   }
 
-  async acquireStateLease(id: number) {
-    return this.lockService.acquireLease(`ticket:state:${id}`, LEASE_DURATION);
+  async acquireLease(id: number) {
+    return this.lockService.acquireLease(`ticket:${id}`, LEASE_DURATION);
   }
 
-  async dropStateLease(id: number, token: string) {
+  async dropLease(id: number, token: string) {
     try {
-      await this.lockService.dropLease(`ticket:state:${id}`, token);
+      await this.lockService.dropLease(`ticket:${id}`, token);
     } catch (e) {
       this.logger.warn("Ticket has invalid lease token, however will ignore");
     }
   }
 
-  async updateStateOrProvider(
-    id: number,
-    values: Partial<Pick<Ticket, "provider_id" | "state">>,
-  ) {
-    return await this.dao.updateStateOrProvider(
+  async update(id: number, properties: UpdateTicket) {
+    await this.dao.update(
       this.databaseClient.get(),
       id,
-      values,
+      Value.Clean(UpdateTicket, properties),
     );
+  }
+
+  async apply(actor: string, id: number, properties: UpdateTicket) {
+    const lease = await this.acquireLease(id);
+    try {
+      await this.update(id, properties);
+      await this.eventBusService.publish("queue.ticket.apply", {
+        lease,
+        properties,
+        id,
+        actor,
+      } as TicketApplyMessage);
+    } catch (e) {
+      this.logger.error(
+        { stack: e.stack },
+        "Could not update and apply properties",
+      );
+      if (lease) {
+        await this.dropLease(id, lease);
+      }
+    }
   }
 }

@@ -35,6 +35,7 @@ import {
   METRICS_FILE_NAME_FORMAT,
   NATS_URL,
   REDIS_URL,
+  ENABLE_SWAGGER,
 } from "./config.ts";
 import core from "./core.ts";
 import { MetricsClient } from "@noctf/server-core/clients/metrics";
@@ -89,31 +90,33 @@ server.register(async () => {
   void server.container.cradle.metricsClient.start();
 });
 
-server.register(Swagger, {
-  openapi: {
-    openapi: "3.0.0",
-    info: {
-      title: "noCTF",
-      description: "noCTF backend API",
-      version: "0.1.0",
-    },
-    components: {
-      securitySchemes: {
-        bearer: {
-          type: "http",
-          scheme: "bearer",
+if (ENABLE_SWAGGER) {
+  server.register(Swagger, {
+    openapi: {
+      openapi: "3.0.0",
+      info: {
+        title: "noCTF",
+        description: "noCTF backend API",
+        version: "0.1.0",
+      },
+      components: {
+        securitySchemes: {
+          bearer: {
+            type: "http",
+            scheme: "bearer",
+          },
         },
       },
     },
-  },
-});
+  });
 
-server.register(SwaggerUI, {
-  routePrefix: "/swagger",
-  uiConfig: {
-    deepLinking: false,
-  },
-});
+  server.register(SwaggerUI, {
+    routePrefix: "/swagger",
+    uiConfig: {
+      deepLinking: false,
+    },
+  });
+}
 
 server.register(core);
 

@@ -1,7 +1,7 @@
 import { DatabaseClient, DBType } from "@noctf/server-core/clients/database";
-import { Ticket, TicketState } from "./schema/datatypes.ts";
+import { Ticket, TicketState, UpdateTicket } from "./schema/datatypes.ts";
 import { NotFoundError } from "@noctf/server-core/errors";
-import { FilterNullAndUndefined } from "./util.ts";
+import { FilterUndefined } from "./util.ts";
 
 export class TicketDAO {
   async create(
@@ -11,8 +11,10 @@ export class TicketDAO {
       item,
       team_id,
       user_id,
+      assignee_id,
       provider,
       provider_id,
+      provider_metadata,
     }: Partial<Ticket>,
   ): Promise<Ticket> {
     const { id, created_at } = await db
@@ -23,8 +25,10 @@ export class TicketDAO {
         item,
         team_id,
         user_id,
+        assignee_id,
         provider,
         provider_id,
+        provider_metadata,
       })
       .returning(["id", "created_at"])
       .executeTakeFirst();
@@ -36,8 +40,10 @@ export class TicketDAO {
       item,
       team_id,
       user_id,
+      assignee_id: assignee_id || null,
       provider,
       provider_id: provider_id || null,
+      provider_metadata: provider_metadata || null,
       created_at,
     };
   }
@@ -52,8 +58,10 @@ export class TicketDAO {
         "item",
         "team_id",
         "user_id",
+        "assignee_id",
         "provider",
         "provider_id",
+        "provider_metadata",
         "created_at",
       ])
       .where("id", "=", id)
@@ -76,14 +84,10 @@ export class TicketDAO {
     return data.state;
   }
 
-  async updateStateOrProvider(
-    db: DBType,
-    id: number,
-    { provider_id, state }: Partial<Pick<Ticket, "provider_id" | "state">>,
-  ) {
+  async update(db: DBType, id: number, properties: UpdateTicket) {
     const { numUpdatedRows } = await db
       .updateTable("core.ticket")
-      .set(FilterNullAndUndefined({ provider_id, state }))
+      .set(FilterUndefined(properties))
       .where("id", "=", id)
       .executeTakeFirst();
     if (!numUpdatedRows) {

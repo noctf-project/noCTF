@@ -18,6 +18,7 @@ RUN pnpm --filter '@noctf/*' release
 RUN pnpm --filter=@noctf/server --prefer-offline --prod deploy /deploy/server
 FROM node:$NODE_VERSION AS server
 COPY --from=build /deploy/server /build
-ENV HOST=0.0.0.0
+ENV HOST=::
+ENV ENABLE_SWAGGER=0
 WORKDIR "/build"
 CMD ["/build/dist/index.cjs"]

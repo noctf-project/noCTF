@@ -4,11 +4,14 @@ import { ServiceCradle } from "@noctf/server-core";
 import { TicketConfig } from "../schema/config.ts";
 import ky, { KyInstance } from "ky";
 import {
+  APIEmbed,
   APIThreadChannel,
   ChannelType,
   RESTGetAPIChannelThreadMembersResult,
   RESTPatchAPIChannelJSONBody,
+  RESTPatchAPIChannelMessageJSONBody,
   RESTPostAPIChannelMessageJSONBody,
+  RESTPostAPIChannelMessageResult,
   RESTPostAPIChannelThreadsJSONBody,
 } from "discord-api-types/v10";
 import { TicketService } from "../service.ts";
@@ -23,6 +26,7 @@ export enum EmbedColor {
   "Opened" = 0x57f287,
   // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
   "Re-Opened" = 0x57f287,
+  "Assigned" = 0xf1c40f,
   "Closed" = 0xed4245,
 }
 
@@ -133,65 +137,84 @@ export class DiscordProvider {
 
   private async postNotification(
     channelId: string,
-    actor: string,
-    ticket: Ticket,
     status: keyof typeof EmbedColor,
+    { ticket, assignee }: { ticket: Ticket; assignee?: string },
+    messageId?: string,
   ) {
     const client = await this.getClient();
     const requesterType = ticket.team_id ? "Team" : "User";
-    const requesterId = ticket.team_id || ticket.user_id;
-    await client.post(`channels/${channelId}/messages`, {
-      json: {
-        embeds: [
-          {
-            title: `Ticket ${status}`,
-            color: EmbedColor[status],
-            fields: [
-              {
-                name: "Category",
-                value: ticket.category,
-                inline: true,
-              },
-              {
-                name: "Item",
-                value: ticket.item,
-                inline: true,
-              },
-              {
-                name: "ID",
-                value: "[1](https://ctf.sk8boarding.dog/ticket/1)",
-                inline: true,
-              },
-              { name: "", value: "" },
-              {
-                name: "Requester Type",
-                value: requesterType,
-                inline: true,
-              },
-              {
-                name: "Requester ID",
-                value: requesterId,
-                inline: true,
-              },
-              {
-                name: "Actor",
-                value: actor,
-                inline: true,
-              },
-              { name: "", value: "" },
-              {
-                name: "Thread",
-                value: `<#${ticket.provider_id}>`,
-                inline: true,
-              },
-            ].filter((x) => x),
-          },
-        ],
-      } as RESTPostAPIChannelMessageJSONBody,
-    });
+    const requesterId = (ticket.team_id || ticket.user_id).toString();
+    const embed: APIEmbed = {
+      title: `Ticket ${status}`,
+      color: EmbedColor[status],
+      fields: [
+        {
+          name: "Category",
+          value: ticket.category,
+          inline: true,
+        },
+        {
+          name: "Item",
+          value: ticket.item,
+          inline: true,
+        },
+        {
+          name: "ID",
+          value: `[${ticket.id}](https://ctf.sk8boarding.dog/ticket/${ticket.id})`,
+          inline: true,
+        },
+        { name: "", value: "" },
+        {
+          name: "Requester Type",
+          value: requesterType,
+          inline: true,
+        },
+        {
+          name: "Requester ID",
+          value: requesterId.toString(),
+          inline: true,
+        },
+        {
+          name: "Assignee",
+          value: assignee || "nobody",
+          inline: true,
+        },
+        { name: "", value: "" },
+        {
+          name: "Thread",
+          value: `<#${ticket.provider_id}>`,
+          inline: true,
+        },
+      ].filter((x) => x),
+    };
+    if (messageId) {
+      try {
+        await client.patch(`channels/${channelId}/messages/${messageId}`, {
+          json: {
+            embeds: [embed],
+          } as RESTPatchAPIChannelMessageJSONBody,
+        });
+      } catch (e) {
+        this.logger.error(
+          { stack: e.stack },
+          "Could not update message, ignoring error.",
+        );
+      }
+    } else {
+      const result = await client.post<RESTPostAPIChannelMessageResult>(
+        `channels/${channelId}/messages`,
+        {
+          json: {
+            embeds: [embed],
+          } as RESTPostAPIChannelMessageJSONBody,
+        },
+      );
+      const data = await result.json();
+      return data.id;
+    }
   }
 
-  async open(actor: string, lease: string, ticket: Ticket) {
+  async open(actor: string, ticket: Ticket) {
     const { notifications_channel_id, tickets_channel_id } =
       await this.getConfig();
     const client = await this.getClient();
@@ -211,10 +234,12 @@ export class DiscordProvider {
       );
       const json = await res.json();
       ticket.provider_id = json.id;
-      await this.ticketService.updateStateOrProvider(ticket.id, {
+      await this.ticketService.update(ticket.id, {
         provider_id: json.id,
+        assignee_id: null,
         state: TicketState.Open,
       });
+      ticket.assignee_id = null;
     } else {
       await client.patch<APIThreadChannel>(`channels/${ticket.provider_id}`, {
         json: {
@@ -222,21 +247,29 @@ export class DiscordProvider {
           locked: false,
         } as RESTPatchAPIChannelJSONBody,
       });
-      await this.ticketService.updateStateOrProvider(ticket.id, {
+      await this.ticketService.update(ticket.id, {
         state: TicketState.Open,
       });
     }
-    const actingDiscordId = await this.getActingDiscordId(actor);
     // TODO: commit log to db here
-    const actorStr = actingDiscordId ? `<@${actingDiscordId}>` : actor;
     const state = newTicket ? "Opened" : "Re-Opened";
-    await this.postNotification(
+    const notificationId = await this.postNotification(
       notifications_channel_id,
-      actorStr,
-      ticket,
       state,
+      {
+        ticket,
+      },
     );
-    await this.postNotification(ticket.provider_id, actorStr, ticket, state);
+    await this.ticketService.update(ticket.id, {
+      provider_metadata: {
+        ...ticket.provider_metadata,
+        notification_id: notificationId,
+      },
+    });
+    await this.postNotification(ticket.provider_id, state, {
+      ticket,
+    });
+
     if (ticket.user_id) {
       const members = [ticket.user_id];
       await this.addUsers(ticket.provider_id, members, newTicket);
@@ -248,7 +281,21 @@ export class DiscordProvider {
     }
   }
 
-  async close(actor: string, lease: string, ticket: Ticket) {
+  async assign(actor: string, ticket: Ticket) {
+    const { notifications_channel_id } = await this.getConfig();
+
+    await this.postNotification(
+      notifications_channel_id,
+      ticket.state === "open" ? "Assigned" : "Closed",
+      {
+        assignee: await this.formatUserIdForDiscord(ticket.assignee_id),
+        ticket,
+      },
+      ticket.provider_metadata.notification_id,
+    );
+  }
+
+  async close(actor: string, ticket: Ticket) {
     if (!ticket.provider_id) {
       throw new EventBusNonRetryableError(
         "Ticket has no provider ID, cannot be closed",
@@ -256,20 +303,19 @@ export class DiscordProvider {
     }
     const { notifications_channel_id } = await this.getConfig();
     const client = await this.getClient();
+    const assignee = await this.formatUserIdForDiscord(ticket.assignee_id);
     const actingDiscordId = await this.getActingDiscordId(actor);
-    await this.postNotification(
-      ticket.provider_id,
-      actingDiscordId ? `<@${actingDiscordId}>` : actor,
+    await this.postNotification(ticket.provider_id, "Closed", {
+      assignee,
       ticket,
-      "Closed",
-    );
+    });
     await client.patch<APIThreadChannel>(`channels/${ticket.provider_id}`, {
       json: {
         archived: true,
         locked: true,
       } as RESTPatchAPIChannelJSONBody,
     });
-    await this.ticketService.updateStateOrProvider(ticket.id, {
+    await this.ticketService.update(ticket.id, {
       state: TicketState.Closed,
     });
     const actingUserId = (
@@ -285,13 +331,31 @@ export class DiscordProvider {
     // TODO: commit to db here
     await this.postNotification(
       notifications_channel_id,
-      actingDiscordId ? `<@${actingDiscordId}>` : actor,
-      ticket,
       "Closed",
+      {
+        assignee,
+        ticket,
+      },
+      ticket.provider_metadata?.notification_id,
     );
   }
 
-  private async getActingDiscordId(actor: string) {
+  private async formatUserIdForDiscord(actor: string | number) {
+    if (!actor) {
+      return null;
+    }
+    const id = await this.getActingDiscordId(actor);
+    if (id) {
+      return `<@${id}>`;
+    }
+    return actor.toString();
+  }
+
+  private async getActingDiscordId(actor: string | number) {
+    if (typeof actor === "number") {
+      return (await this.identityService.getProviderForUser(actor, "discord"))
+        ?.provider_id;
+    }
     const match = actor.match(USER_REGEX);
     if (match && match[1] === "user") {
       return (

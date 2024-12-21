@@ -23,8 +23,8 @@ export type MetricLabels = Record<string, string> | [string, string][];
 export type Metric = [string, number];
 
 type PerformanceMetricsHistory = {
-  ctime: number,
-  eventLoopIdleTime: number
+  ctime: number;
+  eventLoopIdleTime: number;
 };
 
 const AGGREGATE_FLUSH_INTERVAL = 100;
@@ -43,7 +43,7 @@ export class MetricsClient {
   private flushing = false;
   private lastFlushAggregate = performance.now();
   private lastFlushToFile = performance.now();
-  
+
   private periodicMetricsRunning = false;
   private performanceMetricsHistory: PerformanceMetricsHistory;
 
@@ -66,7 +66,8 @@ export class MetricsClient {
   }
 
   record(values: Metric[], labels?: MetricLabels, timestamp?: number) {
-    if ((!this.pathName && this.pathName !== "") || !this.fileNameFormat) return;
+    if ((!this.pathName && this.pathName !== "") || !this.fileNameFormat)
+      return;
     const key = MetricsClient.toKey(labels);
     let series = this.series.get(key);
     if (!series) {
@@ -101,7 +102,8 @@ export class MetricsClient {
    * This function doesn't return normally
    */
   async start() {
-    if ((!this.pathName && this.pathName !== "") || !this.fileNameFormat) return;
+    if ((!this.pathName && this.pathName !== "") || !this.fileNameFormat)
+      return;
     this.periodicMetricsRunning = true;
     this.performanceMetricsHistory = null;
     while (this.periodicMetricsRunning) {
@@ -114,7 +116,6 @@ export class MetricsClient {
     this.periodicMetricsRunning = false;
   }
 
-
   private recordPerformanceMetrics() {
     const ctime = performance.now();
     const { idleTime } = performance.nodeTiming;
@@ -125,11 +126,15 @@ export class MetricsClient {
     const { heapUsed } = process.memoryUsage();
     const metrics: Metric[] = [];
     metrics.push(
-      ["EventLoopIdlePercent", (idleTime - this.performanceMetricsHistory.eventLoopIdleTime)/(ctime - this.performanceMetricsHistory.ctime)],
-      ["HeapUsed", heapUsed]
+      [
+        "EventLoopIdlePercent",
+        (idleTime - this.performanceMetricsHistory.eventLoopIdleTime) /
+          (ctime - this.performanceMetricsHistory.ctime),
+      ],
+      ["HeapUsed", heapUsed],
     );
     this.record(metrics, {
-      performance: 'nodejs'
+      performance: "nodejs",
     });
     this.performanceMetricsHistory = { eventLoopIdleTime: idleTime, ctime };
   }

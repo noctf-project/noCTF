@@ -21,7 +21,7 @@ type Props = Pick<
 
 export type EventItem<T> = {
   id: number;
-  type: string;
+  subject: string;
   timestamp: number;
   attempt: number;
   data: T;
@@ -200,7 +200,7 @@ export class EventBusService {
       );
       await options.handler({
         id: message.seq,
-        type: message.subject,
+        subject: message.subject,
         timestamp,
         attempt: message.info.redeliveryCount,
         data: decode(message.data),
