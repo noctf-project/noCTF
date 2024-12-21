@@ -51,7 +51,7 @@ export async function initWorker(cradle: ServiceCradle) {
   const discordProvider = new DiscordProvider({ ...cradle, ticketService });
 
   const StateHandler = async (message: TicketStateMessage) => {
-    const { actor, lease, id, desired_state } = message;
+    const { lease, id, desired_state } = message;
     const ticket = await ticketService.get(id);
     if (ticket.provider !== "discord")
       throw new Error(
@@ -62,9 +62,9 @@ export async function initWorker(cradle: ServiceCradle) {
     }
     try {
       if (desired_state === TicketState.Open) {
-        await discordProvider.open(actor, ticket);
+        await discordProvider.open(ticket);
       } else if (desired_state === TicketState.Closed) {
-        await discordProvider.close(actor, ticket);
+        await discordProvider.close(ticket);
       }
     } catch (e) {
       if (e instanceof EventBusNonRetryableError) {
@@ -76,7 +76,7 @@ export async function initWorker(cradle: ServiceCradle) {
   };
 
   const ApplyHandler = async (message: TicketApplyMessage) => {
-    const { properties, id, lease, actor } = message;
+    const { properties, id, lease } = message;
     // Right now we only support assignee updates
     if (!properties.assignee_id && properties.assignee_id !== null) {
       await ticketService.dropLease(id, lease);
@@ -85,7 +85,7 @@ export async function initWorker(cradle: ServiceCradle) {
 
     try {
       // Have to grab the whole ticket anyways
-      await discordProvider.assign(actor, await ticketService.get(id));
+      await discordProvider.assign(await ticketService.get(id));
     } catch (e) {
       if (e instanceof EventBusNonRetryableError) {
         await ticketService.dropLease(id, lease);
@@ -94,7 +94,7 @@ export async function initWorker(cradle: ServiceCradle) {
     }
   };
 
-  const worker = await eventBusService.subscribe<
+  await eventBusService.subscribe<
     TicketStateMessage | TicketApplyMessage
   >("TicketWorker", ["queue.ticket.state", "queue.ticket.apply"], {
     concurrency: 3,

@@ -62,7 +62,6 @@ export class TicketService {
 
     const lease = await this.acquireLease(ticket.id);
     await this.eventBusService.publish("queue.ticket.state", {
-      actor,
       lease,
       id: ticket.id,
       desired_state: TicketState.Open,
@@ -93,7 +92,6 @@ export class TicketService {
     try {
       const lease = await this.acquireLease(id);
       await this.eventBusService.publish("queue.ticket.state", {
-        actor,
         lease,
         desired_state,
         id,
@@ -133,7 +131,6 @@ export class TicketService {
         lease,
         properties,
         id,
-        actor,
       } as TicketApplyMessage);
     } catch (e) {
       this.logger.error(
@@ -143,6 +140,7 @@ export class TicketService {
       if (lease) {
         await this.dropLease(id, lease);
       }
+      throw e;
     }
   }
 }

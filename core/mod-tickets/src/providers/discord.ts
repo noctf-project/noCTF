@@ -214,7 +214,7 @@ export class DiscordProvider {
     }
   }
 
-  async open(actor: string, ticket: Ticket) {
+  async open(ticket: Ticket) {
     const { notifications_channel_id, tickets_channel_id } =
       await this.getConfig();
     const client = await this.getClient();
@@ -281,7 +281,7 @@ export class DiscordProvider {
     }
   }
 
-  async assign(actor: string, ticket: Ticket) {
+  async assign(ticket: Ticket) {
     const { notifications_channel_id } = await this.getConfig();
 
     await this.postNotification(
@@ -295,7 +295,7 @@ export class DiscordProvider {
     );
   }
 
-  async close(actor: string, ticket: Ticket) {
+  async close(ticket: Ticket) {
     if (!ticket.provider_id) {
       throw new EventBusNonRetryableError(
         "Ticket has no provider ID, cannot be closed",
@@ -304,7 +304,6 @@ export class DiscordProvider {
     const { notifications_channel_id } = await this.getConfig();
     const client = await this.getClient();
     const assignee = await this.formatUserIdForDiscord(ticket.assignee_id);
-    const actingDiscordId = await this.getActingDiscordId(actor);
     await this.postNotification(ticket.provider_id, "Closed", {
       assignee,
       ticket,
@@ -318,16 +317,6 @@ export class DiscordProvider {
     await this.ticketService.update(ticket.id, {
       state: TicketState.Closed,
     });
-    const actingUserId = (
-      await this.identityService.getIdentityForProvider(
-        "discord",
-        actingDiscordId,
-      )
-    )?.user_id;
-    this.logger.debug(
-      { user_id: actingUserId, discord_id: actingDiscordId },
-      "Matched Discord ID with existing user",
-    );
     // TODO: commit to db here
     await this.postNotification(
       notifications_channel_id,

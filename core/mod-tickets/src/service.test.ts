@@ -8,7 +8,7 @@ import { TicketService } from "./service.ts";
 import { Logger } from "@noctf/server-core/types/primitives";
 import { TicketDAO } from "./dao.ts";
 import { Ticket, TicketState } from "./schema/datatypes.ts";
-import { ConflictError } from "@noctf/server-core/errors";
+import { BadRequestError, ConflictError } from "@noctf/server-core/errors";
 
 vi.mock(import("./dao.ts"), () => ({
   TicketDAO: vi.fn(),
@@ -85,7 +85,6 @@ describe(TicketService, () => {
       anyNumber(),
     );
     expect(eventBusService.publish).toHaveBeenCalledWith("queue.ticket.state", {
-      actor: "user:1",
       lease: "token",
       id: 42,
       desired_state: TicketState.Open,
@@ -98,7 +97,6 @@ describe(TicketService, () => {
     lockService.acquireLease.mockResolvedValueOnce("lease");
     await service.requestStateChange("user:1", 42, TicketState.Open);
     expect(eventBusService.publish).toBeCalledWith("queue.ticket.state", {
-      actor: "user:1",
       lease: "lease",
       desired_state: TicketState.Open,
       id: 42,
@@ -112,6 +110,12 @@ describe(TicketService, () => {
     await service.requestStateChange("user:1", 42, TicketState.Open);
     expect(lockService.acquireLease).not.toBeCalled();
     expect(eventBusService.publish).not.toBeCalled();
+  });
+
+  it("Throws error if ticket state does not exist", async () => {
+    const service = new TicketService(props);
+    expect(() => service.requestStateChange("user:1", 42, "NonExistent" as TicketState))
+      .rejects.toThrowError(BadRequestError);
   });
 
   it("Ticket state throws an error if it fails to acquire a lease", async () => {
@@ -142,7 +146,7 @@ describe(TicketService, () => {
     expect(await service.get(42)).to.eql(ticket);
   });
 
-  it("sets the provider ID", async () => {
+  it("updates the DB", async () => {
     const service = new TicketService(props);
     await service.update(42, {
       provider_id: "1",
@@ -152,5 +156,31 @@ describe(TicketService, () => {
       provider_id: "1",
       state: TicketState.Open,
     });
+  });
+
+  it("apply updates the DB and sends out a message", async () => {
+    const service = new TicketService(props);
+    lockService.acquireLease.mockResolvedValue("lease");
+    await service.apply("user:1", 42, {
+      assignee_id: 1,
+    });
+    expect(ticketDAO.update).toBeCalledWith(databaseClient, 42, {
+      assignee_id: 1,
+    });
+    expect(eventBusService.publish).toBeCalledWith("queue.ticket.apply", {
+      lease: "lease",
+      properties: { assignee_id: 1 },
+      id: 42
+    });
+  });
+
+  it("apply releases the lease if failed", async () => {
+    const service = new TicketService(props);
+    lockService.acquireLease.mockResolvedValue("lease");
+    ticketDAO.update.mockRejectedValue(Error);
+    await expect(() => service.apply("user:1", 42, {
+      assignee_id: 1,
+    })).rejects.toThrowError();
+    expect(lockService.dropLease).toBeCalledWith("ticket:42", "lease");
   });
 });

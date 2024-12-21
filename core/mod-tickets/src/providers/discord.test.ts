@@ -61,7 +61,7 @@ describe("Discord Tickets Provider", async () => {
     });
     configService.get.mockResolvedValue({ version: 1, value: {} });
     await expect(() =>
-      provider.open("user:1", mockTicket()),
+      provider.open(mockTicket()),
     ).rejects.toThrowError("discord config is not present");
   });
 
@@ -75,7 +75,7 @@ describe("Discord Tickets Provider", async () => {
     });
     configService.get.mockResolvedValue({ version: 1, value: {} });
     await expect(() =>
-      provider.open("user:1", mockTicket()),
+      provider.open(mockTicket()),
     ).rejects.toThrowError("discord config is not present");
   });
 
@@ -125,7 +125,7 @@ describe("Discord Tickets Provider", async () => {
         secret_data: null,
       }),
     );
-    await provider.open("user:1", mockTicket({ team_id: 1 }));
+    await provider.open(mockTicket({ team_id: 1 }));
     expect(mockKy.post).toHaveBeenCalledTimes(3);
     expect(mockKy.post).toHaveBeenCalledWith("channels/0000/threads", {
       json: {
@@ -233,7 +233,7 @@ describe("Discord Tickets Provider", async () => {
         }),
     );
 
-    await provider.open("user:1", mockTicket({ user_id: 1 }));
+    await provider.open(mockTicket({ user_id: 1 }));
     expect(mockKy.post).toHaveBeenCalledTimes(3);
     expect(mockKy.post).toHaveBeenCalledWith("channels/0000/threads", {
       json: {
@@ -328,7 +328,7 @@ describe("Discord Tickets Provider", async () => {
     threadMembersResponse.json.mockResolvedValueOnce([]);
     mockKy.get.mockResolvedValueOnce(threadMembersResponse);
 
-    await provider.open("user:1", mockTicket({ user_id: 1 }));
+    await provider.open(mockTicket({ user_id: 1 }));
     expect(mockKy.post).toHaveBeenCalledTimes(3);
     expect(mockKy.post).toHaveBeenCalledWith("channels/0000/threads", {
       json: {
@@ -449,7 +449,6 @@ describe("Discord Tickets Provider", async () => {
       { user_id: 3, role: "member" },
     ]);
     await provider.open(
-      "user:1",
       mockTicket({
         state: TicketState.Closed,
         provider_id: "2222",
@@ -549,7 +548,6 @@ describe("Discord Tickets Provider", async () => {
       .mockResolvedValueOnce(postNotification);
 
     await provider.close(
-      "discord:10",
       mockTicket({
         team_id: 1,
         provider_id: "2222",

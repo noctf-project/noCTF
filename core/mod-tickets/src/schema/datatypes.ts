@@ -32,7 +32,6 @@ export const UpdateTicket = Type.Omit(Type.Partial(Ticket), [
 export type UpdateTicket = Static<typeof UpdateTicket>;
 
 export const TicketStateMessage = Type.Object({
-  actor: Type.String(),
   lease: Type.String(),
   desired_state: Type.Enum(TicketState),
   id: Type.Number(),
@@ -40,7 +39,6 @@ export const TicketStateMessage = Type.Object({
 export type TicketStateMessage = Static<typeof TicketStateMessage>;
 
 export const TicketApplyMessage = Type.Object({
-  actor: Type.String(),
   lease: Type.String(),
   properties: Type.Partial(Ticket),
   id: Type.Number(),
