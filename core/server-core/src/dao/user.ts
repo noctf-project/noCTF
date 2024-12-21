@@ -1,6 +1,6 @@
-import { Insertable, Kysely, Updateable } from "kysely";
+import type { Insertable, Kysely, Updateable } from "kysely";
 import pg from "pg";
-import { DB } from "@noctf/schema";
+import type { DB } from "@noctf/schema";
 import { ConflictError, NotFoundError } from "../errors.ts";
 
 export class UserDAO {

@@ -3,7 +3,7 @@ import * as path from "node:path";
 import * as fsp from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-const nodeModules = new RegExp(/^(?:.*[\\\/])?node_modules(?:[\\\/].*)?$/);
+const nodeModules = new RegExp(/^(?:.*[\\/])?node_modules(?:[\\/].*)?$/);
 const root = path.dirname(fileURLToPath(import.meta.url));
 const output = process.argv[2] || root;
 

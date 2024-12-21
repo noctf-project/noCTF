@@ -4,7 +4,7 @@ import {
 } from "@noctf/api/requests";
 import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
 import { PasswordProvider } from "./password_provider.ts";
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 
 export default async function (fastify: FastifyInstance) {
   const { identityService } = fastify.container.cradle;

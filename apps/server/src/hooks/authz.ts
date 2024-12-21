@@ -1,4 +1,4 @@
-import { FastifyRequest } from "fastify";
+import type { FastifyRequest } from "fastify";
 import { ForbiddenError } from "@noctf/server-core/errors";
 
 const CACHE_NAMESPACE = "core:hook:authz";

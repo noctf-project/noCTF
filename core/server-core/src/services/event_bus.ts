@@ -1,16 +1,14 @@
-import { ServiceCradle } from "../index.ts";
+import type { ServiceCradle } from "../index.ts";
+import type { ConsumerConfig, JsMsg, StreamConfig } from "nats";
 import {
   AckPolicy,
-  ConsumerConfig,
   DeliverPolicy,
-  JsMsg,
   NatsError,
   RetentionPolicy,
   StorageType,
-  StreamConfig,
 } from "nats";
-import { NATSClientFactory } from "../clients/nats.ts";
-import { Metric, MetricLabels } from "../clients/metrics.ts";
+import type { NATSClientFactory } from "../clients/nats.ts";
+import type { Metric } from "../clients/metrics.ts";
 import { SimpleMutex } from "nats/lib/nats-base-client/util.js";
 import { decode, encode } from "cbor2";
 
@@ -67,8 +65,7 @@ const DELIVER_POLICIES: Record<StreamType, DeliverPolicy> = {
   [StreamType.Queue]: DeliverPolicy.All,
 };
 
-const DEFAULT_BACKOFF_STRATEGY = (_a: number) =>
-  10000 + Math.floor(Math.random() * 1000);
+const DEFAULT_BACKOFF_STRATEGY = () => 10000 + Math.floor(Math.random() * 1000);
 
 export class EventBusService {
   private readonly logger;

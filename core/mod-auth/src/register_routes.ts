@@ -6,12 +6,11 @@ import {
   FinishAuthResponse,
   RegisterAuthTokenResponse,
 } from "@noctf/api/responses";
-import { AuthRegisterToken } from "@noctf/api/token";
+import type { AuthRegisterToken } from "@noctf/api/token";
 import { BadRequestError } from "@noctf/server-core/errors";
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { Generate } from "./hash_util.ts";
-import { UserIdentity } from "@noctf/api/datatypes";
-import { AssociateIdentity } from "@noctf/server-core/services/identity";
+import type { AssociateIdentity } from "@noctf/server-core/services/identity";
 
 export default async function (fastify: FastifyInstance) {
   const { identityService, userService } = fastify.container.cradle;

@@ -1,4 +1,4 @@
-import { ActorType } from "./enums.ts";
+import type { ActorType } from "./enums.ts";
 
 export type AuditLogActor = {
   type: ActorType;

@@ -1,4 +1,5 @@
-import { Static, Type, UnsafeOptions } from "@sinclair/typebox";
+import type { Static, UnsafeOptions } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
 
 export const TypeDate = (options: UnsafeOptions = {}) =>
   Type.Unsafe<Date>({

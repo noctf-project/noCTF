@@ -1,6 +1,7 @@
 import { join } from "node:path";
-import { createWriteStream, mkdirSync, WriteStream } from "node:fs";
-import { Logger } from "../types/primitives.ts";
+import type { WriteStream } from "node:fs";
+import { createWriteStream, mkdirSync } from "node:fs";
+import type { Logger } from "../types/primitives.ts";
 import { performance } from "node:perf_hooks";
 import { Delay } from "../util/time.ts";
 

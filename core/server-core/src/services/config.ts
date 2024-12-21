@@ -1,9 +1,9 @@
-import { TSchema } from "@sinclair/typebox";
+import type { TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import type { ServiceCradle } from "../index.ts";
 import { BadRequestError, ValidationError } from "../errors.ts";
-import { SerializableMap } from "../types/primitives.ts";
-import { AuditLogActor } from "../types/audit_log.ts";
+import type { SerializableMap } from "../types/primitives.ts";
+import type { AuditLogActor } from "../types/audit_log.ts";
 
 type Validator<T> = (kv: T) => Promise<string | null> | string | null;
 

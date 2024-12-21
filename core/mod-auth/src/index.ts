@@ -1,9 +1,9 @@
-import { ListAuthMethodsResponse } from "@noctf/api/responses";
+import type { ListAuthMethodsResponse } from "@noctf/api/responses";
 import { DEFAULT_CONFIG } from "./const.ts";
 import password_routes from "./password_routes.ts";
 import oauth_routes from "./oauth_routes.ts";
 import register_routes from "./register_routes.ts";
-import { FastifyInstance } from "fastify/types/instance.js";
+import type { FastifyInstance } from "fastify/types/instance.js";
 import { AuthConfig } from "@noctf/api/config";
 import "@noctf/server-core/types/fastify";
 

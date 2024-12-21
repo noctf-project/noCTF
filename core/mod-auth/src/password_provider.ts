@@ -1,14 +1,14 @@
-import { ConfigService } from "@noctf/server-core/services/config";
-import { AuthMethod } from "@noctf/api/datatypes";
-import {
+import type { ConfigService } from "@noctf/server-core/services/config";
+import type { AuthMethod } from "@noctf/api/datatypes";
+import type {
   IdentityProvider,
   IdentityService,
 } from "@noctf/server-core/services/identity";
 import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
-import { AuthToken } from "@noctf/api/token";
+import type { AuthToken } from "@noctf/api/token";
 import { Validate } from "./hash_util.ts";
-import { Logger } from "@noctf/server-core/types/primitives";
-import { ServiceCradle } from "@noctf/server-core";
+import type { Logger } from "@noctf/server-core/types/primitives";
+import type { ServiceCradle } from "@noctf/server-core";
 import { AuthConfig } from "@noctf/api/config";
 import { UserFlag } from "@noctf/server-core/types/enums";
 

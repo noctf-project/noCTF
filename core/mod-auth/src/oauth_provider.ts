@@ -1,11 +1,11 @@
-import { AuthMethod } from "@noctf/api/datatypes";
-import { AuthToken } from "@noctf/api/token";
+import type { AuthMethod } from "@noctf/api/datatypes";
+import type { AuthToken } from "@noctf/api/token";
 import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
 import { get } from "@noctf/server-core/util/object";
 import { AuthConfig } from "@noctf/api/config";
 import { CACHE_NAMESPACE } from "./const.ts";
-import { ServiceCradle } from "@noctf/server-core";
-import { IdentityProvider } from "@noctf/server-core/services/identity";
+import type { ServiceCradle } from "@noctf/server-core";
+import type { IdentityProvider } from "@noctf/server-core/services/identity";
 
 type StateToken = {
   name: string;

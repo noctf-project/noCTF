@@ -1,5 +1,5 @@
-import { CaptchaProvider } from "./provider.ts";
-import { ServiceCradle } from "@noctf/server-core";
+import type { CaptchaProvider } from "./provider.ts";
+import type { ServiceCradle } from "@noctf/server-core";
 import { CaptchaConfig } from "@noctf/api/config";
 
 type Props = Pick<ServiceCradle, "configService">;

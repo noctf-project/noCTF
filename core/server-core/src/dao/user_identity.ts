@@ -1,7 +1,7 @@
 import pg from "pg";
 import { ConflictError } from "../errors.ts";
-import { DBType } from "../clients/database.ts";
-import { UserIdentity } from "@noctf/api/datatypes";
+import type { DBType } from "../clients/database.ts";
+import type { UserIdentity } from "@noctf/api/datatypes";
 
 export class UserIdentityDAO {
   async associate(

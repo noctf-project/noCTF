@@ -1,5 +1,6 @@
-import { DatabaseClient, DBType } from "@noctf/server-core/clients/database";
-import { Ticket, TicketState, UpdateTicket } from "./schema/datatypes.ts";
+import type { DBType } from "@noctf/server-core/clients/database";
+import type { Ticket, UpdateTicket } from "./schema/datatypes.ts";
+import { TicketState } from "./schema/datatypes.ts";
 import { NotFoundError } from "@noctf/server-core/errors";
 import { FilterUndefined } from "./util.ts";
 

@@ -1,8 +1,8 @@
 import { QueryAuditLogRequest } from "@noctf/api/requests";
 import { QueryAuditLogResponse } from "@noctf/api/responses";
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
-import { Policy } from "@noctf/server-core/util/policy";
+import type { Policy } from "@noctf/server-core/util/policy";
 
 export async function routes(fastify: FastifyInstance) {
   const { auditLogService } = fastify.container.cradle;

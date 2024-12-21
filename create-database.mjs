@@ -1,4 +1,5 @@
 // Create a database given a postgres URL
+/* eslint-disable */
 import pg from "pg";
 
 const url = new URL(process.env.POSTGRES_URL);

@@ -12,7 +12,7 @@ import {
   OAuthConfigProvider,
   OAuthIdentityProvider,
 } from "./oauth_provider.ts";
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 
 export default async function (fastify: FastifyInstance) {
   const {

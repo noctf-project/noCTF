@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { any, anyString, mock } from "vitest-mock-extended";
+import { anyString, mock } from "vitest-mock-extended";
 import { LockService } from "./lock.ts";
-import { RedisClientFactory } from "../clients/redis.ts";
-import { createClient, ErrorReply } from "redis";
+import type { RedisClientFactory } from "../clients/redis.ts";
+import type { createClient } from "redis";
+import { ErrorReply } from "redis";
 
 describe("LockService", () => {
   const redisClientFactory = mock<RedisClientFactory>();
@@ -100,6 +101,6 @@ describe("LockService", () => {
     const service = new LockService({ redisClientFactory });
     await service.dropLease("lol");
     expect(redisClient.del).toBeCalledWith("lease:lol");
-    expect(redisClient.evalSha).not.toHaveBeenCalled;
+    expect(redisClient.evalSha).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,5 @@
-import { FastifyRequest } from "fastify";
-import { AuthScopedToken, AuthSessionToken } from "@noctf/api/token";
+import type { FastifyRequest } from "fastify";
+import type { AuthScopedToken, AuthSessionToken } from "@noctf/api/token";
 import {
   AuthenticationError,
   TokenValidationError,

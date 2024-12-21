@@ -1,5 +1,6 @@
 import { expect, it } from "vitest";
-import { Evaluate, Policy } from "./policy.ts";
+import type { Policy } from "./policy.ts";
+import { Evaluate } from "./policy.ts";
 
 it("Evaluates single scalar policies", () => {
   const permissions = ["admin.user", "!admin", "admin.challenges"];

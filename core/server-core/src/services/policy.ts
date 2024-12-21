@@ -1,6 +1,7 @@
 import { PolicyDAO } from "../dao/policy.ts";
-import { ServiceCradle } from "../index.ts";
-import { Evaluate, Policy } from "../util/policy.ts";
+import type { ServiceCradle } from "../index.ts";
+import type { Policy } from "../util/policy.ts";
+import { Evaluate } from "../util/policy.ts";
 
 type Props = Pick<
   ServiceCradle,

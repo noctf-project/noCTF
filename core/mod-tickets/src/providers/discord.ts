@@ -1,12 +1,13 @@
 import { Type } from "@sinclair/typebox";
-import { Ticket, TicketState } from "../schema/datatypes.ts";
-import { ServiceCradle } from "@noctf/server-core";
+import type { Ticket } from "../schema/datatypes.ts";
+import { TicketState } from "../schema/datatypes.ts";
+import type { ServiceCradle } from "@noctf/server-core";
 import { TicketConfig } from "../schema/config.ts";
-import ky, { KyInstance } from "ky";
-import {
+import type { KyInstance } from "ky";
+import ky from "ky";
+import type {
   APIEmbed,
   APIThreadChannel,
-  ChannelType,
   RESTGetAPIChannelThreadMembersResult,
   RESTPatchAPIChannelJSONBody,
   RESTPatchAPIChannelMessageJSONBody,
@@ -14,7 +15,8 @@ import {
   RESTPostAPIChannelMessageResult,
   RESTPostAPIChannelThreadsJSONBody,
 } from "discord-api-types/v10";
-import { TicketService } from "../service.ts";
+import { ChannelType } from "discord-api-types/v10";
+import type { TicketService } from "../service.ts";
 import { EventBusNonRetryableError } from "@noctf/server-core/services/event_bus";
 
 export const DiscordProviderData = Type.Object({

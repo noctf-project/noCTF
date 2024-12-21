@@ -1,7 +1,7 @@
 import type { AuditLogEntry } from "@noctf/api/datatypes";
 import type { QueryAuditLogRequest } from "@noctf/api/requests";
-import { ServiceCradle } from "../index.ts";
-import { AuditLogActor } from "../types/audit_log.ts";
+import type { ServiceCradle } from "../index.ts";
+import type { AuditLogActor } from "../types/audit_log.ts";
 import { sql } from "kysely";
 
 const MAX_QUERY_LIMIT = 100;

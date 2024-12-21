@@ -1,5 +1,5 @@
-import { DB } from "@noctf/schema";
-import { Kysely } from "kysely";
+import type { DB } from "@noctf/schema";
+import type { Kysely } from "kysely";
 
 export class PolicyDAO {
   async getPermissionsForUser(db: Kysely<DB>, userId: number) {

@@ -1,10 +1,10 @@
 import { BadRequestError, ConflictError } from "../errors.ts";
-import { ServiceCradle } from "../index.ts";
-import { AuditLogActor } from "../types/audit_log.ts";
+import type { ServiceCradle } from "../index.ts";
+import type { AuditLogActor } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 import { UserDAO } from "../dao/user.ts";
 import { UserIdentityDAO } from "../dao/user_identity.ts";
-import { AssociateIdentity } from "./identity.ts";
+import type { AssociateIdentity } from "./identity.ts";
 
 type Props = Pick<
   ServiceCradle,

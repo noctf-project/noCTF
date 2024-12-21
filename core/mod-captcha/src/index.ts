@@ -2,7 +2,7 @@ import { GetCaptchaConfigResponse } from "@noctf/api/responses";
 import { CaptchaService } from "./service.ts";
 import { ValidationError } from "@noctf/server-core/errors";
 import { HCaptchaProvider } from "./provider.ts";
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 
 export const RESTRICTED_METHODS = new Set(["POST", "PUT", "DELETE"]);
 

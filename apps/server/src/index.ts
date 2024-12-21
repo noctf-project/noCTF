@@ -1,4 +1,5 @@
-import fastify, { FastifyRequest } from "fastify";
+import type { FastifyRequest } from "fastify";
+import fastify from "fastify";
 import {
   asClass,
   asFunction,

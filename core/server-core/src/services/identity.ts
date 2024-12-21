@@ -1,5 +1,5 @@
-import { AuthMethod, UserIdentity } from "@noctf/api/datatypes";
-import { AuthToken, AuthTokenType } from "@noctf/api/token";
+import type { AuthMethod, UserIdentity } from "@noctf/api/datatypes";
+import type { AuthToken, AuthTokenType } from "@noctf/api/token";
 
 import { ValidationError } from "../errors.ts";
 import type { ServiceCradle } from "../index.ts";

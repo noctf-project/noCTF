@@ -1,5 +1,5 @@
 import { defineConfig } from "kysely-ctl";
-import { MigrationProvider } from "kysely";
+import type { MigrationProvider } from "kysely";
 import { Pool } from "pg";
 import { glob } from "node:fs/promises";
 

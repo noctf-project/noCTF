@@ -17,6 +17,7 @@ export default [
   {
     rules: {
       "no-case-declarations": "off",
+      "@typescript-eslint/consistent-type-imports": "error",
     },
   },
 ];

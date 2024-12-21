@@ -1,6 +1,6 @@
-import { ServiceCradle } from "@noctf/server-core";
+import type { ServiceCradle } from "@noctf/server-core";
 import { SetupConfig } from "@noctf/api/config";
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 
 export async function initServer(fastify: FastifyInstance) {
   const { configService } = fastify.container.cradle as ServiceCradle;

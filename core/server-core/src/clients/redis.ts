@@ -1,5 +1,5 @@
 import { createClient } from "redis";
-import { Logger } from "../types/primitives.ts";
+import type { Logger } from "../types/primitives.ts";
 
 export class RedisClientFactory {
   private readonly url;

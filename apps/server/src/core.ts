@@ -7,7 +7,7 @@ import { initServer as setup } from "@noctf/mod-setup";
 import { initServer as captcha } from "@noctf/mod-captcha";
 import { initServer as tickets } from "@noctf/mod-tickets";
 
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { AuthnHook } from "./hooks/authn.ts";
 import { AuthzHook } from "./hooks/authz.ts";
 

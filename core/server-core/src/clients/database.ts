@@ -1,7 +1,8 @@
-import { IsolationLevel, Kysely, PostgresDialect, Transaction } from "kysely";
+import type { IsolationLevel, Transaction } from "kysely";
+import { Kysely, PostgresDialect } from "kysely";
 import pg from "pg";
-import { DB } from "@noctf/schema";
-import { Logger } from "../types/primitives.ts";
+import type { DB } from "@noctf/schema";
+import type { Logger } from "../types/primitives.ts";
 
 export type DBType = Kysely<DB>;
 

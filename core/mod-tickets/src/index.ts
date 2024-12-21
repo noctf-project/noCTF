@@ -1,19 +1,16 @@
-import { ServiceCradle } from "@noctf/server-core";
-import { FastifyInstance } from "fastify";
+import type { ServiceCradle } from "@noctf/server-core";
+import type { FastifyInstance } from "fastify";
 import { DEFAULT_CONFIG, TicketConfig } from "./schema/config.ts";
 import { OpenTicketRequest, OpenTicketResponse } from "./schema/api.ts";
 import "@noctf/server-core/types/fastify";
 import { TicketService } from "./service.ts";
 import { DiscordProvider } from "./providers/discord.ts";
-import {
+import type {
   TicketApplyMessage,
-  TicketState,
   TicketStateMessage,
 } from "./schema/datatypes.ts";
-import {
-  EventBusNonRetryableError,
-  EventItem,
-} from "@noctf/server-core/services/event_bus";
+import { TicketState } from "./schema/datatypes.ts";
+import { EventBusNonRetryableError } from "@noctf/server-core/services/event_bus";
 
 export async function initServer(fastify: FastifyInstance) {
   initWorker(fastify.container.cradle);
@@ -94,23 +91,25 @@ export async function initWorker(cradle: ServiceCradle) {
     }
   };
 
-  await eventBusService.subscribe<
-    TicketStateMessage | TicketApplyMessage
-  >("TicketWorker", ["queue.ticket.state", "queue.ticket.apply"], {
-    concurrency: 3,
-    handler: async (data) => {
-      switch (data.subject) {
-        case "queue.ticket.state":
-          await StateHandler(data.data as TicketStateMessage);
-          break;
-        case "queue.ticket.apply":
-          await ApplyHandler(data.data as TicketApplyMessage);
-          break;
-        default:
-          throw new EventBusNonRetryableError(
-            "Unknown message subject " + data.subject,
-          );
-      }
+  await eventBusService.subscribe<TicketStateMessage | TicketApplyMessage>(
+    "TicketWorker",
+    ["queue.ticket.state", "queue.ticket.apply"],
+    {
+      concurrency: 3,
+      handler: async (data) => {
+        switch (data.subject) {
+          case "queue.ticket.state":
+            await StateHandler(data.data as TicketStateMessage);
+            break;
+          case "queue.ticket.apply":
+            await ApplyHandler(data.data as TicketApplyMessage);
+            break;
+          default:
+            throw new EventBusNonRetryableError(
+              "Unknown message subject " + data.subject,
+            );
+        }
+      },
     },
-  });
+  );
 }

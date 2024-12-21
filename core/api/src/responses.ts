@@ -1,4 +1,5 @@
-import { Static, Type } from "@sinclair/typebox";
+import type { Static } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
 import { AuditLogEntry, AuthMethod, Team } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 

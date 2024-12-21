@@ -1,22 +1,15 @@
 import { decode, encode } from "cbor2";
-import { ServiceCradle } from "../index.ts";
+import type { ServiceCradle } from "../index.ts";
 
-type LoadParams<T> = {
+type LoadParams = {
   expireSeconds: number;
 };
-export type LoadOptions<T> = Partial<LoadParams<T>>;
-const DEFAULT_LOAD_PARAMS: LoadParams<unknown> = {
+export type LoadOptions = Partial<LoadParams>;
+const DEFAULT_LOAD_PARAMS: LoadParams = {
   expireSeconds: 30,
 };
 
 type Props = Pick<ServiceCradle, "redisClientFactory" | "metricsClient">;
-
-enum MetricIndex {
-  HitCount = 0,
-  HitTime = 1,
-  MissCount = 2,
-  MissTime = 3,
-}
 
 export class CacheService {
   private readonly redisClient;
@@ -31,7 +24,7 @@ export class CacheService {
     namespace: string,
     key: string,
     fetcher: () => Promise<T>,
-    options?: LoadOptions<T>,
+    options?: LoadOptions,
   ): Promise<T> {
     const start = performance.now();
     const { expireSeconds } = {

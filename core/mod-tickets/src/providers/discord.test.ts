@@ -1,22 +1,23 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 import { DiscordProvider, EmbedColor } from "./discord.ts";
-import { ConfigService } from "@noctf/server-core/services/config";
-import { IdentityService } from "@noctf/server-core/services/identity";
-import { TeamService } from "@noctf/server-core/services/team";
-import { Logger } from "@noctf/server-core/types/primitives";
-import { TicketConfig } from "../schema/config.ts";
-import ky, { KyResponse } from "ky";
-import {
+import type { ConfigService } from "@noctf/server-core/services/config";
+import type { IdentityService } from "@noctf/server-core/services/identity";
+import type { TeamService } from "@noctf/server-core/services/team";
+import type { Logger } from "@noctf/server-core/types/primitives";
+import type { TicketConfig } from "../schema/config.ts";
+import type { KyResponse } from "ky";
+import ky from "ky";
+import type {
   APIThreadChannel,
   APIThreadMember,
-  ChannelType,
   RESTGetAPIChannelThreadMembersResult,
   RESTPostAPIChannelMessageResult,
-  ThreadMemberFlags,
 } from "discord-api-types/v10";
-import { TicketService } from "../service.ts";
-import { Ticket, TicketState } from "../schema/datatypes.ts";
+import { ChannelType, ThreadMemberFlags } from "discord-api-types/v10";
+import type { TicketService } from "../service.ts";
+import type { Ticket } from "../schema/datatypes.ts";
+import { TicketState } from "../schema/datatypes.ts";
 
 vi.mock("ky");
 const mockKy = vi.mocked(ky, true);
@@ -60,9 +61,9 @@ describe("Discord Tickets Provider", async () => {
       logger,
     });
     configService.get.mockResolvedValue({ version: 1, value: {} });
-    await expect(() =>
-      provider.open(mockTicket()),
-    ).rejects.toThrowError("discord config is not present");
+    await expect(() => provider.open(mockTicket())).rejects.toThrowError(
+      "discord config is not present",
+    );
   });
 
   test("Fails to close if discord config is not present", async () => {
@@ -74,9 +75,9 @@ describe("Discord Tickets Provider", async () => {
       logger,
     });
     configService.get.mockResolvedValue({ version: 1, value: {} });
-    await expect(() =>
-      provider.open(mockTicket()),
-    ).rejects.toThrowError("discord config is not present");
+    await expect(() => provider.open(mockTicket())).rejects.toThrowError(
+      "discord config is not present",
+    );
   });
 
   test("Open a new ticket on behalf of a team", async () => {

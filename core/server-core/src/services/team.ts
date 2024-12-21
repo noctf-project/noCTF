@@ -1,11 +1,11 @@
 import { ConflictError, NotFoundError } from "../errors.ts";
 import { TeamFlag } from "../types/enums.ts";
-import { CoreTeamMemberRole, DB } from "@noctf/schema";
+import type { CoreTeamMemberRole, DB } from "@noctf/schema";
 import type { ServiceCradle } from "../index.ts";
 import { nanoid } from "nanoid";
-import { AuditParams } from "../types/audit_log.ts";
+import type { AuditParams } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
-import { UpdateObject } from "kysely";
+import type { UpdateObject } from "kysely";
 
 type Props = Pick<
   ServiceCradle,

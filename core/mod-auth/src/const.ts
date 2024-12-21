@@ -1,4 +1,4 @@
-import { AuthConfig } from "@noctf/api/config";
+import type { AuthConfig } from "@noctf/api/config";
 
 export const CACHE_NAMESPACE = "core:mod:auth";
 

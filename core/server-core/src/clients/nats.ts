@@ -1,5 +1,6 @@
-import NATS, { NatsConnection, RetentionPolicy } from "nats";
-import { Logger } from "../types/primitives.ts";
+import type { NatsConnection } from "nats";
+import NATS from "nats";
+import type { Logger } from "../types/primitives.ts";
 
 export class NATSClientFactory {
   private readonly logger;

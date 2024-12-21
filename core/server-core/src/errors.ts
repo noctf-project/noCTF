@@ -3,53 +3,64 @@ export class ApplicationError extends Error {
     public readonly status: number,
     public readonly code: string,
     message: string,
+    options?: ErrorOptions,
   ) {
-    super(message);
+    super(message, options || {});
   }
 }
 
 export class NotFoundError extends ApplicationError {
-  constructor(message: string) {
-    super(404, "NotFoundError", message);
+  constructor(message: string, options?: ErrorOptions) {
+    super(404, "NotFoundError", message, options);
   }
 }
 
 export class BadRequestError extends ApplicationError {
-  constructor(code: string, message?: string) {
+  constructor(code: string, message?: string, options?: ErrorOptions) {
     if (!message) {
-      super(400, "BadRequestError", code);
+      super(400, "BadRequestError", code, options);
     } else {
-      super(400, code, message);
+      super(400, code, message, options);
     }
   }
 }
 
 export class TokenValidationError extends ApplicationError {
-  constructor(message?: string) {
-    super(401, "TokenValidationError", message || "Token Validation Error");
+  constructor(message?: string, options?: ErrorOptions) {
+    super(
+      401,
+      "TokenValidationError",
+      message || "Token Validation Error",
+      options,
+    );
   }
 }
 
 export class AuthenticationError extends ApplicationError {
-  constructor(message?: string) {
-    super(401, "AuthenticationError", message || "Authentication Error");
+  constructor(message?: string, options?: ErrorOptions) {
+    super(
+      401,
+      "AuthenticationError",
+      message || "Authentication Error",
+      options,
+    );
   }
 }
 
 export class ForbiddenError extends ApplicationError {
-  constructor(message?: string) {
-    super(403, "ForbiddenError", message || "Forbidden");
+  constructor(message?: string, options?: ErrorOptions) {
+    super(403, "ForbiddenError", message || "Forbidden", options);
   }
 }
 
 export class ValidationError extends ApplicationError {
-  constructor(message?: string) {
-    super(400, "ValidationError", message || "Validation Error");
+  constructor(message?: string, options?: ErrorOptions) {
+    super(400, "ValidationError", message || "Validation Error", options);
   }
 }
 
 export class ConflictError extends ApplicationError {
-  constructor(message: string) {
-    super(409, "ConflictError", message);
+  constructor(message?: string, options?: ErrorOptions) {
+    super(409, "ConflictError", message || "Conflict", options);
   }
 }

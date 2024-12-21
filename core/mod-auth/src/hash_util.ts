@@ -1,10 +1,5 @@
-import {
-  BinaryLike,
-  randomBytes,
-  scrypt,
-  ScryptOptions,
-  timingSafeEqual,
-} from "node:crypto";
+import type { BinaryLike, ScryptOptions } from "node:crypto";
+import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 
 const scryptPromise = promisify<

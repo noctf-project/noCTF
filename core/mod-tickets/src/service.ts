@@ -1,7 +1,6 @@
-import { ServiceCradle } from "@noctf/server-core";
+import type { ServiceCradle } from "@noctf/server-core";
+import type { Ticket, TicketApplyMessage } from "./schema/datatypes.ts";
 import {
-  Ticket,
-  TicketApplyMessage,
   TicketState,
   TicketStateMessage,
   UpdateTicket,
@@ -96,7 +95,7 @@ export class TicketService {
         desired_state,
         id,
       } as TicketStateMessage);
-    } catch (e) {
+    } catch {
       throw new ConflictError(
         "A request to change the ticket state has not been completed.",
       );
@@ -111,7 +110,10 @@ export class TicketService {
     try {
       await this.lockService.dropLease(`ticket:${id}`, token);
     } catch (e) {
-      this.logger.warn("Ticket has invalid lease token, however will ignore");
+      this.logger.warn(
+        { stack: e.stack },
+        "Ticket has invalid lease token, however will ignore",
+      );
     }
   }
 

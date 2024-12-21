@@ -1,5 +1,6 @@
 import { TypeDate } from "@noctf/api/datatypes";
-import { Static, Type } from "@sinclair/typebox";
+import type { Static } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
 
 export enum TicketState {
   Open = "open",

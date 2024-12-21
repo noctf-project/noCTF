@@ -1,13 +1,14 @@
-import { DatabaseClient } from "@noctf/server-core/clients/database";
-import { ConfigService } from "@noctf/server-core/services/config";
-import { EventBusService } from "@noctf/server-core/services/event_bus";
-import { LockService } from "@noctf/server-core/services/lock";
-import { describe, it, beforeEach, vi, expect, Mock } from "vitest";
+import type { DatabaseClient } from "@noctf/server-core/clients/database";
+import type { ConfigService } from "@noctf/server-core/services/config";
+import type { EventBusService } from "@noctf/server-core/services/event_bus";
+import type { LockService } from "@noctf/server-core/services/lock";
+import { describe, it, beforeEach, vi, expect } from "vitest";
 import { anyNumber, mock } from "vitest-mock-extended";
 import { TicketService } from "./service.ts";
-import { Logger } from "@noctf/server-core/types/primitives";
+import type { Logger } from "@noctf/server-core/types/primitives";
 import { TicketDAO } from "./dao.ts";
-import { Ticket, TicketState } from "./schema/datatypes.ts";
+import type { Ticket } from "./schema/datatypes.ts";
+import { TicketState } from "./schema/datatypes.ts";
 import { BadRequestError, ConflictError } from "@noctf/server-core/errors";
 
 vi.mock(import("./dao.ts"), () => ({
@@ -114,8 +115,9 @@ describe(TicketService, () => {
 
   it("Throws error if ticket state does not exist", async () => {
     const service = new TicketService(props);
-    expect(() => service.requestStateChange("user:1", 42, "NonExistent" as TicketState))
-      .rejects.toThrowError(BadRequestError);
+    expect(() =>
+      service.requestStateChange("user:1", 42, "NonExistent" as TicketState),
+    ).rejects.toThrowError(BadRequestError);
   });
 
   it("Ticket state throws an error if it fails to acquire a lease", async () => {
@@ -170,7 +172,7 @@ describe(TicketService, () => {
     expect(eventBusService.publish).toBeCalledWith("queue.ticket.apply", {
       lease: "lease",
       properties: { assignee_id: 1 },
-      id: 42
+      id: 42,
     });
   });
 
@@ -178,9 +180,11 @@ describe(TicketService, () => {
     const service = new TicketService(props);
     lockService.acquireLease.mockResolvedValue("lease");
     ticketDAO.update.mockRejectedValue(Error);
-    await expect(() => service.apply("user:1", 42, {
-      assignee_id: 1,
-    })).rejects.toThrowError();
+    await expect(() =>
+      service.apply("user:1", 42, {
+        assignee_id: 1,
+      }),
+    ).rejects.toThrowError();
     expect(lockService.dropLease).toBeCalledWith("ticket:42", "lease");
   });
 });

@@ -1,4 +1,4 @@
-import { ServiceCradle } from "../index.ts";
+import type { ServiceCradle } from "../index.ts";
 import { nanoid } from "nanoid";
 import { ErrorReply } from "redis";
 

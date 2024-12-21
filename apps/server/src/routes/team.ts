@@ -1,5 +1,5 @@
-import { ServiceCradle } from "@noctf/server-core";
-import { FastifyInstance } from "fastify";
+import type { ServiceCradle } from "@noctf/server-core";
+import type { FastifyInstance } from "fastify";
 import { TeamConfig } from "@noctf/api/config";
 import "@noctf/server-core/types/fastify";
 import {
