@@ -5,6 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "kysely-codegen --url 'env(POSTGRES_URL)' --out-file dist/index.d.ts",
+    "release": "pnpm run build",
     "dev": "echo 'Nothing to do' && exit"
   },
   "keywords": [],

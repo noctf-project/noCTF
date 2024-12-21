@@ -30,12 +30,11 @@ import {
   PORT,
   TOKEN_SECRET,
   ENABLE_HTTP2,
-  REDIS_EVENT_URL,
-  REDIS_CACHE_URL,
   LOG_LEVEL,
   METRICS_PATH,
   METRICS_FILE_NAME_FORMAT,
   NATS_URL,
+  REDIS_URL,
 } from "./config.ts";
 import core from "./core.ts";
 import { MetricsClient } from "@noctf/server-core/clients/metrics";
@@ -58,7 +57,7 @@ server.register(async () => {
   server.container.register({
     logger: asValue(server.log),
     redisClientFactory: asFunction(
-      ({ logger }) => new RedisClientFactory(REDIS_CACHE_URL, logger),
+      ({ logger }) => new RedisClientFactory(REDIS_URL, logger),
       { lifetime: Lifetime.SINGLETON },
     ),
     databaseClient: asValue(new DatabaseClient(server.log, POSTGRES_URL)),

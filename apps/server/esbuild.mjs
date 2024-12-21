@@ -1,8 +1,11 @@
 import * as esbuild from 'esbuild';
 import * as path from 'node:path';
 import * as fsp from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 
 const nodeModules = new RegExp(/^(?:.*[\\\/])?node_modules(?:[\\\/].*)?$/);
+const root = path.dirname(fileURLToPath(import.meta.url));
+const output = process.argv[2] || root;
 
 const dirnamePlugin = {
   name: "dirname",
@@ -12,7 +15,8 @@ const dirnamePlugin = {
         let contents = await fsp.readFile(filePath, "utf8");
         const loader = path.extname(filePath).substring(1);
         const dirname = path.dirname(filePath);
-        contents = `var __dirname = "${dirname}";\n` + contents;
+        const rel = path.relative('../..', path.relative(root, dirname));
+        contents = `var __dirname = "${path.join(output, rel)}";\n` + contents;
         return {
           contents,
           loader,

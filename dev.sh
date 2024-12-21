@@ -10,9 +10,9 @@ start() {
   docker-compose -p "${PROJECT_NAME}" up -d
 
   cat << EOF > .env
-POSTGRES_URL="postgres://postgres:noctf@`get-ip postgres`/noctf"
-REDIS_URL="redis://`get-ip redis`"
-NATS_URL="nats://`get-ip nats`"
+POSTGRES_URL=postgres://postgres:noctf@`get-ip postgres`/noctf
+REDIS_URL=redis://`get-ip redis`
+NATS_URL=nats://`get-ip nats`
 EOF
   echo "Started $PROJECT_NAME"
 }

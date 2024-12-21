@@ -6,8 +6,6 @@ export const POSTGRES_URL =
 export const NATS_URL = process.env.NATS_URL || "nats://localhost:4222";
 
 export const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
-export const REDIS_CACHE_URL = process.env.REDIS_CACHE_URL || REDIS_URL;
-export const REDIS_EVENT_URL = process.env.REDIS_EVENT_URL || REDIS_URL;
 
 export const TOKEN_SECRET = process.env.TOKEN_SECRET || "keyboard-cat";
 export const ENABLE_HTTP2 = ["1", "true"].includes(
