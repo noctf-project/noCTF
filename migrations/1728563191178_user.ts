@@ -12,7 +12,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("name", "varchar(64)", (col) => col.unique())
     .addColumn("bio", "text", (col) => col.notNull().defaultTo(""))
     .addColumn("roles", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
-    .addColumn("created_at", "timestamp", (col) =>
+    .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
     .execute();
@@ -33,7 +33,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       "provider",
       "provider_id",
     ])
-    .addColumn("created_at", "timestamp", (col) =>
+    .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
     .execute();
@@ -55,7 +55,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("token_url", "varchar", (col) => col.notNull())
     .addColumn("info_url", "varchar", (col) => col.notNull())
     .addColumn("info_id_property", "varchar")
-    .addColumn("created_at", "timestamp", (col) =>
+    .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
     .execute();

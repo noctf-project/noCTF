@@ -20,7 +20,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("provider", "varchar(64)", (col) => col.notNull())
     .addColumn("provider_id", "varchar(64)")
     .addColumn("provider_metadata", "jsonb")
-    .addColumn("created_at", "timestamp", (col) =>
+    .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
     .addCheckConstraint(
@@ -56,9 +56,9 @@ export async function up(db: Kysely<any>): Promise<void> {
     .createTable("ticket_ban")
     .addColumn("team_id", "integer", (col) => col.references("core.team.id"))
     .addColumn("user_id", "integer", (col) => col.references("core.user.id"))
-    .addColumn("until", "timestamp")
+    .addColumn("until", "timestamptz")
     .addColumn("reason", "text", (col) => col.notNull())
-    .addColumn("created_at", "timestamp", (col) =>
+    .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
     .addCheckConstraint(
@@ -74,7 +74,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .addColumn("operation", "varchar(64)", (col) => col.notNull())
     .addColumn("actor", "varchar(64)", (col) => col.notNull())
-    .addColumn("created_at", "timestamp", (col) =>
+    .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
     .execute();

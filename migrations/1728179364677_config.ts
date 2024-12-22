@@ -11,10 +11,10 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("namespace", "varchar", (col) => col.primaryKey())
     .addColumn("value", "jsonb", (col) => col.notNull().defaultTo("{}"))
     .addColumn("version", "integer", (col) => col.notNull().defaultTo(1))
-    .addColumn("created_at", "timestamp", (col) =>
+    .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
-    .addColumn("updated_at", "timestamp", (col) =>
+    .addColumn("updated_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
     .execute();
@@ -25,7 +25,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("operation", "varchar(64)", (col) => col.notNull())
     .addColumn("entities", sql`text[]`, (col) => col.notNull())
     .addColumn("data", "text")
-    .addColumn("created_at", "timestamp", (col) =>
+    .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
     .execute();

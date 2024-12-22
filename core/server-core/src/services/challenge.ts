@@ -34,11 +34,11 @@ export class ChallengeService {
   }
 
   async update(
-    idOrSlug: string | number,
+    id: number,
     v: AdminUpdateChallengeRequest,
     actor?: AuditLogActor,
   ) {
-    const id = await this.dao.update(this.databaseClient.get(), idOrSlug, v);
+    await this.dao.update(this.databaseClient.get(), id, v);
     await this.auditLogService.log({
       operation: "challenge.update",
       actor,

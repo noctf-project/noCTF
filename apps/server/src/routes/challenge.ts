@@ -24,6 +24,7 @@ export async function routes(fastify: FastifyInstance) {
         "admin.challenge.get",
       ]);
 
+      const ctime = Date.now();
       if (!admin) {
         const {
           value: { active, start_time },
@@ -31,7 +32,7 @@ export async function routes(fastify: FastifyInstance) {
         if (!active) {
           throw new ForbiddenError("The CTF is not currently active");
         }
-        if (new Date().getTime() < start_time) {
+        if (ctime < start_time) {
           throw new ForbiddenError("The CTF has not started yet");
         }
       }
@@ -41,13 +42,13 @@ export async function routes(fastify: FastifyInstance) {
         `list:${admin}`,
         () =>
           challengeService.list(
-            admin ? {} : { hidden: false, visible_at: new Date() },
-            !admin,
+            // To account for clock skew
+            admin ? {} : { hidden: false, visible_at: new Date(ctime + 60000) }, 
+            true,
           ),
-        { expireSeconds: 5 },
       );
       return {
-        data: challenges,
+        data: challenges.filter(({ visible_at }) => ctime > visible_at.getTime()),
       };
     },
   );

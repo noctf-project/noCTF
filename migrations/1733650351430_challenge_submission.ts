@@ -15,11 +15,11 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("private_metadata", "jsonb", (col) => col.notNull())
     .addColumn("tags", "jsonb", (col) => col.notNull().defaultTo("{}"))
     .addColumn("hidden", "boolean", (col) => col.notNull().defaultTo(false))
-    .addColumn("visible_at", "timestamp")
-    .addColumn("created_at", "timestamp", (col) =>
+    .addColumn("visible_at", "timestamptz")
+    .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
-    .addColumn("updated_at", "timestamp", (col) =>
+    .addColumn("updated_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
     .execute();
@@ -52,10 +52,10 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("data", "text")
     .addColumn("comments", "text")
     .addColumn("pending", "boolean", (col) => col.notNull().defaultTo(false))
-    .addColumn("created_at", "timestamp", (col) =>
+    .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
-    .addColumn("updated_at", "timestamp", (col) =>
+    .addColumn("updated_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
     .execute();
@@ -85,7 +85,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("team_id", "integer", (col) =>
       col.notNull().references("core.team.id").onDelete("cascade"),
     )
-    .addColumn("created_at", "timestamp", (col) =>
+    .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
     .addUniqueConstraint("uidx_challenge_id_team_id", [
@@ -110,7 +110,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("team_id", "integer", (col) =>
       col.notNull().references("core.team.id").onDelete("cascade"),
     )
-    .addColumn("created_at", "timestamp", (col) =>
+    .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
     .addCheckConstraint(

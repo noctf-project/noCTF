@@ -68,7 +68,7 @@ export class ChallengeDAO {
     if (visible_at) {
       query = query.where((eb) =>
         eb.or([
-          eb("visible_at", ">=", visible_at),
+          eb("visible_at", "<=", visible_at),
           eb("visible_at", "is", null),
         ]),
       );
@@ -106,7 +106,7 @@ export class ChallengeDAO {
 
   async update(
     db: DBType,
-    id_or_slug: number | string,
+    id: number,
     v: AdminUpdateChallengeRequest,
   ) {
     const values: AdminUpdateChallengeRequest & { updated_at: Date } = {
@@ -118,14 +118,14 @@ export class ChallengeDAO {
       visible_at: v.visible_at,
       updated_at: new Date(),
     };
-    const query = db.updateTable("core.challenge").set(FilterUndefined(values));
-    const result = await this.resolveIdOrSlug(query, id_or_slug)
+    const result = db.updateTable("core.challenge")
+      .set(FilterUndefined(values))
+      .where('id', '=', id)
       .returning("id")
       .executeTakeFirst();
     if (!result) {
       throw new NotFoundError("Challenge not found");
     }
-    return result.id;
   }
 
   private resolveIdOrSlug<T extends WhereInterface<DB, "core.challenge">>(

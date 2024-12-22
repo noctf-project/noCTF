@@ -24,7 +24,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("division_id", "integer", (col) =>
       col.notNull().references("core.division.id").onDelete("cascade"),
     )
-    .addColumn("created_at", "timestamp", (col) =>
+    .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
     .addPrimaryKeyConstraint("team_division_pkey", ["team_id", "division_id"])
