@@ -22,7 +22,7 @@ export const Ticket = Type.Object({
     Type.Record(Type.String(), Type.String()),
     Type.Null(),
   ]),
-  created_at: TypeDate(),
+  created_at: TypeDate,
 });
 export type Ticket = Static<typeof Ticket>;
 

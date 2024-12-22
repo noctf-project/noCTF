@@ -21,7 +21,6 @@
     "@noctf/api": "workspace:*",
     "@noctf/mod-auth": "workspace:*",
     "@noctf/mod-captcha": "workspace:*",
-    "@noctf/mod-setup": "workspace:*",
     "@noctf/mod-tickets": "workspace:*",
     "@noctf/server-core": "workspace:*",
     "@sinclair/typebox": "catalog:",

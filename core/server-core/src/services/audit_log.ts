@@ -3,9 +3,14 @@ import type { QueryAuditLogRequest } from "@noctf/api/requests";
 import type { ServiceCradle } from "../index.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
 import { sql } from "kysely";
+import { ActorType } from "../types/enums.ts";
 
 const MAX_QUERY_LIMIT = 100;
 type Props = Pick<ServiceCradle, "databaseClient">;
+
+export const SYSTEM_ACTOR: AuditLogActor = {
+  type: ActorType.SYSTEM,
+};
 
 export class AuditLogService {
   private readonly databaseClient: Props["databaseClient"];
@@ -16,7 +21,7 @@ export class AuditLogService {
 
   async log({
     operation,
-    actor: { type, id },
+    actor: { type, id } = SYSTEM_ACTOR,
     entities = [],
     data,
   }: {
@@ -52,10 +57,10 @@ export class AuditLogService {
       .select(["actor", "operation", "entities", "data", "created_at"]);
 
     if (start_time) {
-      query = query.where("created_at", ">=", new Date(start_time * 1000));
+      query = query.where("created_at", ">=", start_time);
     }
     if (end_time) {
-      query = query.where("created_at", "<=", new Date(end_time * 1000));
+      query = query.where("created_at", "<=", end_time);
     }
     if (actor) {
       query = query.where("actor", "=", actor);
@@ -71,15 +76,10 @@ export class AuditLogService {
       query = query.where("operation", "like", operation);
     }
 
-    return (
-      await query
-        .orderBy("created_at desc")
-        .offset(offset || 0)
-        .limit(limit > MAX_QUERY_LIMIT ? MAX_QUERY_LIMIT : limit)
-        .execute()
-    ).map((e) => ({
-      ...e,
-      created_at: Math.floor(e.created_at.getTime() / 1000),
-    }));
+    return await query
+      .orderBy("created_at desc")
+      .offset(offset || 0)
+      .limit(limit > MAX_QUERY_LIMIT ? MAX_QUERY_LIMIT : limit)
+      .execute();
   }
 }

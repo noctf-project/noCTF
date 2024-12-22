@@ -5,6 +5,7 @@ import { ActorType } from "../types/enums.ts";
 import { UserDAO } from "../dao/user.ts";
 import { UserIdentityDAO } from "../dao/user_identity.ts";
 import type { AssociateIdentity } from "./identity.ts";
+import { SYSTEM_ACTOR } from "./audit_log.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -52,9 +53,7 @@ export class UserService {
 
     await this.auditLogService.log({
       operation: "user.update",
-      actor: actor || {
-        type: ActorType.SYSTEM,
-      },
+      actor,
       entities: [`${ActorType.USER}:${id}`],
       data: `Properties ${changed.join(", ")} were updated.`,
     });

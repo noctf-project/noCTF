@@ -1,4 +1,4 @@
-export type Policy = ["OR" | "AND", ...(string | Policy)[]];
+export type Policy = [string] | ["OR" | "AND", ...(string | Policy)[]];
 
 const MODIFIERS_SET = new Set("abcdefghijklmnopqrstuvwxyz");
 
@@ -22,7 +22,9 @@ export const Evaluate = (policy: Policy, permissions: string[], _ttl = 64) => {
   const evaluate = (expr: string | Policy) =>
     (Array.isArray(expr) && Evaluate(expr, permissions, _ttl - 1)) ||
     (typeof expr === "string" && EvaluateScalar(expr, permissionsMap));
-  if (op.toUpperCase() === "OR") {
+  if (policy.length === 1) {
+    return EvaluateScalar(op, permissionsMap);
+  } else if (op.toUpperCase() === "OR") {
     if (!expressions.length) return true;
     for (const expr of expressions) {
       if (evaluate(expr)) {

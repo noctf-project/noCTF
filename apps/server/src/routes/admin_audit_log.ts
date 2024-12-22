@@ -10,7 +10,7 @@ export async function routes(fastify: FastifyInstance) {
   const auth = {
     require: true,
     scopes: new Set(["admin"]),
-    policy: ["AND", "admin.audit_log:r"] as Policy,
+    policy: ["AND", "admin.audit_log.read"] as Policy,
   };
 
   fastify.post(

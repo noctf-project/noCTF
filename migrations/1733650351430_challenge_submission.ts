@@ -10,13 +10,18 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
     .addColumn("slug", "varchar(64)", (col) => col.notNull().unique())
-    .addColumn("created_at", "timestamp", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
-    .addColumn("data", "jsonb", (col) => col.notNull())
+    .addColumn("title", "varchar(128)", (col) => col.notNull())
+    .addColumn("description", "text", (col) => col.notNull())
+    .addColumn("private_metadata", "jsonb", (col) => col.notNull())
     .addColumn("tags", "jsonb", (col) => col.notNull().defaultTo("{}"))
     .addColumn("hidden", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("visible_at", "timestamp")
+    .addColumn("created_at", "timestamp", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
+    .addColumn("updated_at", "timestamp", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
     .execute();
   await schema
     .createIndex("challenge_idx_tags")
@@ -44,17 +49,22 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("challenge_id", "integer", (col) =>
       col.notNull().references("core.challenge.id").onDelete("cascade"),
     )
+    .addColumn("data", "text")
+    .addColumn("comments", "text")
+    .addColumn("pending", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("created_at", "timestamp", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
-    .addColumn("data", "text", (col) => col.notNull())
-    .addColumn("remarks", "text")
-    .addColumn("pending", "boolean", (col) => col.notNull().defaultTo(false))
+    .addColumn("updated_at", "timestamp", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
     .execute();
   await schema
-    .createIndex("submission_idx_pending")
+    .createIndex("submission_uidx_pending")
     .on("submission")
-    .columns(["pending"])
+    .unique()
+    .columns(["team_id", "challenge_id", "pending"])
+    .where("pending", "=", "true")
     .execute();
 
   await schema
@@ -68,6 +78,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("id", "integer", (col) =>
       col.primaryKey().references("core.submission.id").onDelete("cascade"),
     )
+    .addColumn("value", "integer")
     .addColumn("challenge_id", "integer", (col) =>
       col.notNull().references("core.challenge.id").onDelete("cascade"),
     )
@@ -77,17 +88,42 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("created_at", "timestamp", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
-    .addColumn("hidden", "boolean", (col) => col.notNull().defaultTo(false))
     .addUniqueConstraint("uidx_challenge_id_team_id", [
       "challenge_id",
       "team_id",
     ])
+    .execute();
+
+  await schema
+    .createTable("award")
+    .addColumn("id", "integer", (col) =>
+      col.primaryKey().generatedAlwaysAsIdentity(),
+    )
+    .addColumn("value", "integer")
+    .addColumn("title", "varchar(128)", (col) => col.notNull())
+    .addColumn("challenge_id", "integer", (col) =>
+      col.references("core.challenge.id").onDelete("cascade"),
+    )
+    .addColumn("solve_id", "integer", (col) =>
+      col.references("core.solve.id").onDelete("cascade"),
+    )
+    .addColumn("team_id", "integer", (col) =>
+      col.notNull().references("core.team.id").onDelete("cascade"),
+    )
+    .addColumn("created_at", "timestamp", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
+    .addCheckConstraint(
+      "award_chk_solve_has_challenge",
+      sql`(solve_id IS NULL) OR (solve_id IS NOT NULL AND challenge_id IS NOT NULL)`,
+    )
     .execute();
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
   const schema = db.schema.withSchema("core");
 
+  await schema.dropTable("award").execute();
   await schema.dropTable("solve").execute();
   await schema.dropTable("submission").execute();
   await schema.dropTable("challenge").execute();

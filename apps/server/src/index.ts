@@ -41,6 +41,7 @@ import {
 import core from "./core.ts";
 import { MetricsClient } from "@noctf/server-core/clients/metrics";
 import { NATSClientFactory } from "@noctf/server-core/clients/nats";
+import { ChallengeService } from "@noctf/server-core/services/challenge";
 
 export const server = fastify({
   logger: {
@@ -68,6 +69,9 @@ server.register(async () => {
       new MetricsClient(server.log, METRICS_PATH, METRICS_FILE_NAME_FORMAT),
     ),
     cacheService: asClass(CacheService, { lifetime: Lifetime.SINGLETON }),
+    challengeService: asClass(ChallengeService, {
+      lifetime: Lifetime.SINGLETON,
+    }),
     auditLogService: asClass(AuditLogService, { lifetime: Lifetime.SINGLETON }),
     eventBusService: asClass(EventBusService, { lifetime: Lifetime.SINGLETON }),
     tokenService: asFunction(

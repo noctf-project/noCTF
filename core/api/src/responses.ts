@@ -1,6 +1,11 @@
 import type { Static } from "@sinclair/typebox";
 import { Type } from "@sinclair/typebox";
-import { AuditLogEntry, AuthMethod, Team } from "./datatypes.ts";
+import {
+  AuditLogEntry,
+  AuthMethod,
+  ChallengeSummary,
+  Team,
+} from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 
 export const BaseResponse = Type.Object({
@@ -69,3 +74,8 @@ export const MeTeamResponse = Type.Object({
   data: Team,
 });
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
+
+export const ListChallengesResponse = Type.Object({
+  data: Type.Array(ChallengeSummary),
+});
+export type ListChallengesResponse = Static<typeof ListChallengesResponse>;

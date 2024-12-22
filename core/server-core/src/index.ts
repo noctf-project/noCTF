@@ -14,6 +14,7 @@ import type { EventBusService } from "./services/event_bus.ts";
 import type { LockService } from "./services/lock.ts";
 import type { MetricsClient } from "./clients/metrics.ts";
 import type { NATSClientFactory } from "./clients/nats.ts";
+import { ChallengeService } from "./services/challenge.ts";
 
 export type ServiceCradle = {
   logger: Logger;
@@ -23,6 +24,7 @@ export type ServiceCradle = {
   redisClientFactory: RedisClientFactory;
   auditLogService: AuditLogService;
   cacheService: CacheService;
+  challengeService: ChallengeService;
   eventBusService: EventBusService;
   tokenService: TokenService;
   configService: ConfigService;

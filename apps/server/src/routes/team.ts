@@ -16,11 +16,7 @@ import { MeTeamResponse, SuccessResponse } from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
 
 export async function routes(fastify: FastifyInstance) {
-  const { configService, teamService } = fastify.container
-    .cradle as ServiceCradle;
-  await configService.register<TeamConfig>(TeamConfig, {
-    max_members: 0,
-  });
+  const { teamService } = fastify.container.cradle as ServiceCradle;
 
   fastify.post<{ Body: CreateTeamRequest; Reply: MeTeamResponse }>(
     "/team",

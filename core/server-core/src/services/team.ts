@@ -14,16 +14,10 @@ type Props = Pick<
 
 const CACHE_NAMESPACE = "core:svc:team";
 export class TeamService {
-  private readonly cacheService: Props["cacheService"];
   private readonly databaseClient: Props["databaseClient"];
   private readonly auditLogService: Props["auditLogService"];
 
-  constructor({
-    databaseClient,
-    cacheService: cacheService,
-    auditLogService,
-  }: Props) {
-    this.cacheService = cacheService;
+  constructor({ databaseClient, auditLogService }: Props) {
     this.databaseClient = databaseClient;
     this.auditLogService = auditLogService;
   }
@@ -54,9 +48,7 @@ export class TeamService {
       .executeTakeFirstOrThrow();
     await this.auditLogService.log({
       operation: "team.create",
-      actor: actor || {
-        type: ActorType.SYSTEM,
-      },
+      actor,
       data: message,
       entities: [`${ActorType.TEAM}:${id}`],
     });
@@ -105,9 +97,7 @@ export class TeamService {
 
     await this.auditLogService.log({
       operation: "team.update",
-      actor: actor || {
-        type: ActorType.SYSTEM,
-      },
+      actor,
       data: message,
       entities: [`${ActorType.TEAM}:${id}`],
     });
@@ -132,9 +122,7 @@ export class TeamService {
       throw new NotFoundError("Team does not exist");
     }
     await this.auditLogService.log({
-      actor: actor || {
-        type: ActorType.SYSTEM,
-      },
+      actor,
       operation: "team.delete",
       entities: [`${ActorType.TEAM}:${id}`],
       data: message,
@@ -222,11 +210,8 @@ export class TeamService {
     if (numInsertedOrUpdatedRows === 0n) {
       throw new ConflictError("User has already joined a team.");
     }
-    await this.cacheService.del(CACHE_NAMESPACE, `u:${user_id}`);
     await this.auditLogService.log({
-      actor: actor || {
-        type: ActorType.SYSTEM,
-      },
+      actor,
       operation: "team.member.assign",
       entities: [
         `${ActorType.TEAM}:${team_id}`,
@@ -281,11 +266,8 @@ export class TeamService {
     if (!numDeletedRows) {
       throw new NotFoundError("User's membership does not exist.");
     }
-    await this.cacheService.del(CACHE_NAMESPACE, `u:${user_id}`);
     await this.auditLogService.log({
-      actor: actor || {
-        type: ActorType.SYSTEM,
-      },
+      actor,
       operation: "team.member.remove",
       entities: [
         `${ActorType.TEAM}:${team_id}`,

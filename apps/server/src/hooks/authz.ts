@@ -12,12 +12,11 @@ export const AuthzHook = async (request: FastifyRequest) => {
     return;
   }
   const expanded = typeof policy === "function" ? await policy() : policy;
-
-  const routeKey = `${request.user.id || 0}:${request.routeOptions.method}:${request.routeOptions.url}`;
+  const routeKey = `${request.user?.id || 0}:${request.routeOptions.method}:${request.routeOptions.url}`;
   const result = await cacheService.load(
     CACHE_NAMESPACE,
     routeKey,
-    () => policyService.evaluate(request.user.id, expanded),
+    () => policyService.evaluate(request.user?.id, expanded),
     { expireSeconds: 10 },
   );
 

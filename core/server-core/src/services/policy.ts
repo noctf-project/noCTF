@@ -8,7 +8,7 @@ type Props = Pick<
   "auditLogService" | "cacheService" | "databaseClient"
 >;
 
-export const CACHE_NAMESPACE = "core:svc:role";
+export const CACHE_NAMESPACE = "core:svc:policy";
 
 export enum StaticRole {
   PUBLIC = "public",
@@ -36,7 +36,7 @@ export class PolicyService {
   async getPermissionsForUser(userId: number) {
     return this.cacheService.load(
       CACHE_NAMESPACE,
-      `rbac:user:${userId}`,
+      `user:${userId}`,
       () =>
         this.policyDAO.getPermissionsForUser(this.databaseClient.get(), userId),
       {
@@ -48,7 +48,7 @@ export class PolicyService {
   async getPermissionsForPublic() {
     return this.cacheService.load(
       CACHE_NAMESPACE,
-      `rbac:public`,
+      `public`,
       () => this.policyDAO.getPermissionsForPublic(this.databaseClient.get()),
       {
         expireSeconds: 10,

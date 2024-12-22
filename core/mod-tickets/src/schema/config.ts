@@ -65,7 +65,7 @@ export const TicketConfig = Type.Object(
       ),
     ),
   },
-  { $id: "core.tickets" },
+  { $id: "core.tickets", additionalProperties: false },
 );
 export type TicketConfig = Static<typeof TicketConfig>;
 
