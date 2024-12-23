@@ -3,33 +3,46 @@ import type { Policy } from "./policy.ts";
 import { Evaluate } from "./policy.ts";
 
 it("Evaluates single scalar policies", () => {
-  const permissions = ["admin.user", "!admin", "admin.challenges"];
+  const permissions = [
+    "admin.user.*",
+    "admin.challenges.*",
+    "!admin.user.update",
+  ];
 
-  expect(Evaluate(["OR"], permissions)).toBe(true);
-  expect(Evaluate(["OR", "admin.user"], permissions)).toBe(true);
-  expect(Evaluate(["AND", "admin.user"], permissions)).toBe(true);
-  expect(Evaluate(["OR", "admin.config"], permissions)).toBe(false);
-  expect(Evaluate(["AND", "admin.config"], permissions)).toBe(false);
-  expect(Evaluate(["OR", "admin.challenges"], permissions)).toBe(true);
-  expect(Evaluate(["OR", "user.get"], permissions)).toBe(false);
+  expect(Evaluate(["admin.user"], permissions)).toBe(true);
+  expect(Evaluate(["admin.user.update"], permissions)).toBe(false);
+  expect(Evaluate(["admin.config"], permissions)).toBe(false);
+  expect(Evaluate(["admin.challenges"], permissions)).toBe(true);
+  expect(Evaluate(["admin.challenges"], ["!*", "admin.challenges.*"])).toBe(
+    false,
+  );
+  expect(Evaluate(["user.get"], permissions)).toBe(false);
 });
 
 it("Evaluates multi scalar policies", () => {
-  const permissions = ["admin.user", "admin.stats", "!admin"];
+  const permissions = [
+    "*",
+    "admin.user.*",
+    "admin.challenges.*",
+    "!admin.user.update",
+  ];
 
   expect(Evaluate(["OR", "admin.challenges", "admin.user"], permissions)).toBe(
     true,
   );
   expect(Evaluate(["AND", "admin.challenges", "admin.user"], permissions)).toBe(
-    false,
-  );
-  expect(Evaluate(["AND", "admin.stats", "admin.user"], permissions)).toBe(
     true,
   );
+  expect(
+    Evaluate(["OR", "admin.user.update", "admin.challenges.get"], permissions),
+  ).toBe(true);
+  expect(
+    Evaluate(["AND", "admin.user.update", "admin.challenges.get"], permissions),
+  ).toBe(false);
 });
 
 it("Evaluates nested policies", () => {
-  const permissions = ["admin.user", "admin.stats", "!admin"];
+  const permissions = ["admin.user.*"];
 
   expect(
     Evaluate(
@@ -55,7 +68,7 @@ it("Evaluates nested policies", () => {
 });
 
 it("Fails to evaluate deeply nested policies according to TTL", () => {
-  const permissions = ["admin.user", "admin.stats", "!admin"];
+  const permissions = ["admin.user.*"];
 
   expect(
     Evaluate(
@@ -68,6 +81,18 @@ it("Fails to evaluate deeply nested policies according to TTL", () => {
       2,
     ),
   ).toBe(false);
+
+  expect(
+    Evaluate(
+      [
+        "OR",
+        ["OR", ["OR", ["OR", "admin.challenges", "admin.user"]]],
+        ["AND", "admin.challenges", "admin.user"],
+      ],
+      permissions,
+      64,
+    ),
+  ).toBe(true);
 });
 
 it("Fails to evaluate incorrect policies", () => {
@@ -76,36 +101,4 @@ it("Fails to evaluate incorrect policies", () => {
   expect(() =>
     Evaluate(["NO", "admin.user"] as unknown as Policy, permissions),
   ).toThrowError("Invalid policy expression");
-});
-
-it("Evaluates policies with modifiers", () => {
-  const permissions = [
-    "admin.user:r",
-    "admin.stats:rw",
-    "admin.challenges",
-    "admin.score:rwx",
-    "!admin.score:w",
-    "admin.score2",
-    "!admin.score2:w",
-    "admin.score3",
-    "!admin.score3",
-    "!admin",
-    ":r",
-  ];
-
-  expect(Evaluate(["OR", "admin.user:r"], permissions)).toBe(true);
-  expect(Evaluate(["OR", "admin.stats:r"], permissions)).toBe(true);
-  expect(Evaluate(["OR", "admin.stats:w"], permissions)).toBe(true);
-  expect(Evaluate(["OR", "admin.stats:rw"], permissions)).toBe(true);
-  expect(Evaluate(["OR", "admin.stats:rwx"], permissions)).toBe(false);
-  expect(Evaluate(["OR", "admin.challenges:r"], permissions)).toBe(true);
-  expect(Evaluate(["OR", "admin.challenges:w"], permissions)).toBe(true);
-  expect(Evaluate(["OR", "admin.score:w"], permissions)).toBe(false);
-  expect(Evaluate(["OR", "admin.score:r"], permissions)).toBe(true);
-  expect(Evaluate(["OR", "admin.score2:w"], permissions)).toBe(false);
-  expect(Evaluate(["OR", "admin.score2:r"], permissions)).toBe(true);
-  expect(Evaluate(["OR", "admin.score3"], permissions)).toBe(false);
-  expect(Evaluate(["OR", "admin.score3:r"], permissions)).toBe(false);
-  expect(Evaluate(["OR", "admin.me"], permissions)).toBe(false);
-  expect(Evaluate(["OR", "user.me"], permissions)).toBe(false);
 });

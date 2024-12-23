@@ -90,24 +90,24 @@ export async function up(db: Kysely<any>): Promise<void> {
       {
         name: "public",
         description: "Public user permissions",
-        permissions: [":r", "!user.me", "!admin"],
+        permissions: ["challenge.get", "team.get"],
         public: true,
       },
       {
         name: "user",
         description: "Standard user permissions",
-        permissions: ["", "!admin"],
+        permissions: ["*", "!admin.*"],
         omit_roles: ["blocked"],
       },
       {
         name: "user_blocked",
         description: "Subset of permissions for blocked users",
-        permissions: ["!"],
+        permissions: ["!.*"],
       },
       {
         name: "admin",
         description: "Administrators",
-        permissions: ["admin"],
+        permissions: ["admin.*"],
         match_roles: ["admin"],
       },
     ])
