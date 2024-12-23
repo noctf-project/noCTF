@@ -107,7 +107,12 @@ export const Challenge = Type.Object({
 export type Challenge = Static<typeof Challenge>;
 
 export const RenderedChallenge = Type.Intersect([
-  Type.Omit(Challenge, ["private_metadata", "tags"]),
+  Type.Omit(Challenge, [
+    "private_metadata",
+    "tags",
+    "created_at",
+    "updated_at",
+  ]),
   Type.Object({
     metadata: Type.Any(),
   }),
@@ -122,8 +127,6 @@ export const ChallengeSummary = Type.Pick(Challenge, [
   "hidden",
   "can_submit",
   "visible_at",
-  "created_at",
-  "updated_at",
 ]);
 export type ChallengeSummary = Static<typeof ChallengeSummary>;
 

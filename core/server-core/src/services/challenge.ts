@@ -1,11 +1,15 @@
-import {
+import type {
   AdminCreateChallengeRequest,
   AdminUpdateChallengeRequest,
 } from "@noctf/api/requests";
 import { ChallengeDAO } from "../dao/challenge.ts";
 import type { ServiceCradle } from "../index.ts";
-import { AuditLogActor } from "../types/audit_log.ts";
-import { Challenge, RenderedChallenge } from "@noctf/api/datatypes";
+import type { AuditLogActor } from "../types/audit_log.ts";
+import type {
+  Challenge,
+  ChallengeSummary,
+  RenderedChallenge,
+} from "@noctf/api/datatypes";
 
 type Props = Pick<
   ServiceCradle,
@@ -49,7 +53,7 @@ export class ChallengeService {
   async list(
     query: Parameters<ChallengeDAO["list"]>[1],
     removePrivateTags = false,
-  ) {
+  ): Promise<ChallengeSummary[]> {
     const summaries = await this.dao.list(this.databaseClient.get(), query);
     if (removePrivateTags) {
       return summaries.map((c) => {
@@ -94,8 +98,6 @@ export class ChallengeService {
       metadata: {}, // TODO
       hidden: c.hidden,
       visible_at: c.visible_at,
-      created_at: c.created_at,
-      updated_at: c.updated_at,
     };
   }
 }

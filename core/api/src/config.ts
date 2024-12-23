@@ -1,6 +1,5 @@
 import type { Static } from "@sinclair/typebox";
 import { Type } from "@sinclair/typebox";
-import { TypeDate } from "./datatypes.ts";
 
 export const TeamConfig = Type.Object(
   {

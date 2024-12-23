@@ -1,6 +1,6 @@
 export type Policy = [string] | ["OR" | "AND", ...(string | Policy)[]];
 
-const REPLACE_REGEX = /\.*[^\.]+$/;
+const REPLACE_REGEX = /\.*[^.]+$/;
 /**
  * Evaluate a policy expression
  * @param policy

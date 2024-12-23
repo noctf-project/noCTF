@@ -1,5 +1,5 @@
 import { SetupConfig, TeamConfig } from "@noctf/api/config";
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 
 export async function register(fastify: FastifyInstance) {
   const { configService } = fastify.container.cradle;

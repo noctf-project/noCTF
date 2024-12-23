@@ -12,7 +12,6 @@ type Props = Pick<
   "databaseClient" | "cacheService" | "auditLogService"
 >;
 
-const CACHE_NAMESPACE = "core:svc:team";
 export class TeamService {
   private readonly databaseClient: Props["databaseClient"];
   private readonly auditLogService: Props["auditLogService"];

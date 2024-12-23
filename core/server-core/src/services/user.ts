@@ -5,7 +5,6 @@ import { ActorType } from "../types/enums.ts";
 import { UserDAO } from "../dao/user.ts";
 import { UserIdentityDAO } from "../dao/user_identity.ts";
 import type { AssociateIdentity } from "./identity.ts";
-import { SYSTEM_ACTOR } from "./audit_log.ts";
 
 type Props = Pick<
   ServiceCradle,

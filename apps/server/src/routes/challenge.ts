@@ -2,7 +2,7 @@ import { SetupConfig } from "@noctf/api/config";
 import { GetChallengeParams } from "@noctf/api/params";
 import { ListChallengesResponse } from "@noctf/api/responses";
 import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 
 const CACHE_NAMESPACE = "route:challenge";
 

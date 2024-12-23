@@ -1,13 +1,13 @@
-import {
+import type {
   AdminCreateChallengeRequest,
   AdminUpdateChallengeRequest,
 } from "@noctf/api/requests";
 import type { DBType } from "../clients/database.ts";
-import { Challenge, ChallengeSummary } from "@noctf/api/datatypes";
+import type { Challenge, ChallengeSummary } from "@noctf/api/datatypes";
 import { FilterUndefined } from "../util/filter.ts";
 import { NotFoundError } from "../errors.ts";
-import { WhereInterface } from "kysely";
-import { DB } from "@noctf/schema";
+import type { WhereInterface } from "kysely";
+import type { DB } from "@noctf/schema";
 
 export class ChallengeDAO {
   async create(db: DBType, v: AdminCreateChallengeRequest): Promise<Challenge> {
@@ -44,16 +44,7 @@ export class ChallengeDAO {
   ): Promise<ChallengeSummary[]> {
     let query = db
       .selectFrom("core.challenge")
-      .select([
-        "id",
-        "slug",
-        "title",
-        "tags",
-        "hidden",
-        "visible_at",
-        "created_at",
-        "updated_at",
-      ]);
+      .select(["id", "slug", "title", "tags", "hidden", "visible_at"]);
     if (tags) {
       query = query.where("tags", "@>", tags);
     }
