@@ -5,7 +5,7 @@ import {
 import { ChallengeDAO } from "../dao/challenge.ts";
 import type { ServiceCradle } from "../index.ts";
 import { AuditLogActor } from "../types/audit_log.ts";
-import { Challenge } from "@noctf/api/datatypes";
+import { Challenge, RenderedChallenge } from "@noctf/api/datatypes";
 
 type Props = Pick<
   ServiceCradle,
@@ -60,8 +60,17 @@ export class ChallengeService {
     return summaries;
   }
 
-  async get(idOrSlug: string | number) {
-    return this.dao.get(this.databaseClient.get(), idOrSlug);
+  async get<R extends boolean>(
+    idOrSlug: string | number,
+    render = false as R,
+  ): Promise<R extends true ? RenderedChallenge : Challenge> {
+    const result = await this.dao.get(this.databaseClient.get(), idOrSlug);
+    if (render) {
+      return (await this.render(result)) as R extends true
+        ? RenderedChallenge
+        : never;
+    }
+    return result as R extends true ? never : Challenge;
   }
 
   private removePrivateTags(tags: Record<string, string>) {
@@ -76,12 +85,17 @@ export class ChallengeService {
       );
   }
 
-  async render(c: Challenge) {
-    const rendered = {
-      ...c,
-      tags: this.removePrivateTags(c.tags),
+  private async render(c: Challenge): Promise<RenderedChallenge> {
+    return {
+      id: c.id,
+      slug: c.slug,
+      title: c.title,
+      description: c.description,
+      metadata: {}, // TODO
+      hidden: c.hidden,
+      visible_at: c.visible_at,
+      created_at: c.created_at,
+      updated_at: c.updated_at,
     };
-    delete rendered["private_metadata"];
-    return rendered;
   }
 }

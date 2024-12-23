@@ -13,7 +13,7 @@ export type TypeDate = Static<typeof TypeDate>;
 
 export const Slug = Type.String({
   maxLength: 64,
-  pattern: "^(?!\\d+$)[a-z\\d][-a-z\\d]+[a-z\\d]$",
+  pattern: "^(?!\\d+$)[a-z\\d][-a-z\\d]*[a-z\\d]$",
 });
 export type Slug = Static<typeof Slug>;
 
@@ -105,6 +105,14 @@ export const Challenge = Type.Object({
   updated_at: TypeDate,
 });
 export type Challenge = Static<typeof Challenge>;
+
+export const RenderedChallenge = Type.Intersect([
+  Type.Omit(Challenge, ["private_metadata", "tags"]),
+  Type.Object({
+    metadata: Type.Any(),
+  }),
+]);
+export type RenderedChallenge = Static<typeof RenderedChallenge>;
 
 export const ChallengeSummary = Type.Pick(Challenge, [
   "id",

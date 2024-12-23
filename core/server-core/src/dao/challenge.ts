@@ -5,13 +5,8 @@ import {
 import type { DBType } from "../clients/database.ts";
 import { Challenge, ChallengeSummary } from "@noctf/api/datatypes";
 import { FilterUndefined } from "../util/filter.ts";
-import { BadRequestError, NotFoundError } from "../errors.ts";
-import {
-  MergeQueryBuilder,
-  Selectable,
-  SelectQueryBuilder,
-  WhereInterface,
-} from "kysely";
+import { NotFoundError } from "../errors.ts";
+import { WhereInterface } from "kysely";
 import { DB } from "@noctf/schema";
 
 export class ChallengeDAO {
@@ -104,11 +99,7 @@ export class ChallengeDAO {
     return challenge as Challenge;
   }
 
-  async update(
-    db: DBType,
-    id: number,
-    v: AdminUpdateChallengeRequest,
-  ) {
+  async update(db: DBType, id: number, v: AdminUpdateChallengeRequest) {
     const values: AdminUpdateChallengeRequest & { updated_at: Date } = {
       title: v.title,
       description: v.description,
@@ -118,9 +109,10 @@ export class ChallengeDAO {
       visible_at: v.visible_at,
       updated_at: new Date(),
     };
-    const result = db.updateTable("core.challenge")
+    const result = db
+      .updateTable("core.challenge")
       .set(FilterUndefined(values))
-      .where('id', '=', id)
+      .where("id", "=", id)
       .returning("id")
       .executeTakeFirst();
     if (!result) {
