@@ -21,6 +21,19 @@ export class LockService {
     this.redisClientFactory = redisClientFactory;
   }
 
+  async withLease<T>(
+    name: string,
+    handler: () => Promise<T>,
+    durationSeconds = 60,
+  ): Promise<T> {
+    const token = await this.acquireLease(name, durationSeconds);
+    try {
+      return await handler();
+    } finally {
+      await this.dropLease(name, token);
+    }
+  }
+
   async acquireLease(name: string, durationSeconds = 60) {
     const token = nanoid();
     const client = await this.redisClientFactory.getClient();

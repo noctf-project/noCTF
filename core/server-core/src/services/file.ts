@@ -1,3 +1,1 @@
-export class FileService {
-  
-}
+export class FileService {}

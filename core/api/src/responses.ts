@@ -3,7 +3,6 @@ import { Type } from "@sinclair/typebox";
 import {
   AuditLogEntry,
   AuthMethod,
-  ChallengeSummary,
   PublicChallenge,
   PublicChallengeSummary,
   Team,

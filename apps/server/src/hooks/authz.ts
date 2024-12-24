@@ -1,26 +1,34 @@
 import type { FastifyRequest } from "fastify";
 import { ForbiddenError } from "@noctf/server-core/errors";
+import { LocalCache } from "@noctf/server-core/util/local_cache";
 
-const CACHE_NAMESPACE = "core:hook:authz";
+let cache: LocalCache;
 
 export const AuthzHook = async (request: FastifyRequest) => {
-  const { policyService, cacheService: cacheService } =
-    request.server.container.cradle;
+  if (!cache) {
+    cache = new LocalCache({
+      max: 20000,
+      ttl: 1000,
+      dispose: LocalCache.disposeMetricsHook(
+        request.server.container.cradle.metricsClient,
+        "AuthzHook",
+      ),
+    });
+  }
+  const { policyService } = request.server.container.cradle;
 
   const policy = request.routeOptions.schema?.auth?.policy;
   if (!policy) {
     return;
   }
   const expanded = typeof policy === "function" ? await policy() : policy;
-  const routeKey = `${request.user?.id || 0}:${request.routeOptions.method}:${request.routeOptions.url}`;
-  const result = await cacheService.load(
-    CACHE_NAMESPACE,
-    routeKey,
-    () => policyService.evaluate(request.user?.id, expanded),
-    { expireSeconds: 10 },
-  );
+  const routeKey = `${request.user?.id || 0}${request.routeOptions.method}${request.routeOptions.url}`;
 
-  if (!result) {
+  if (
+    !(await cache.load(routeKey, () =>
+      policyService.evaluate(request.user?.id, expanded),
+    ))
+  ) {
     throw new ForbiddenError("Access denied by policy");
   }
 };

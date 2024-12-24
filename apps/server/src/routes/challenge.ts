@@ -1,7 +1,11 @@
 import { SetupConfig } from "@noctf/api/config";
 import { GetChallengeParams } from "@noctf/api/params";
-import { GetChallengeResponse, ListChallengesResponse } from "@noctf/api/responses";
+import {
+  GetChallengeResponse,
+  ListChallengesResponse,
+} from "@noctf/api/responses";
 import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
+import { LocalCache } from "@noctf/server-core/util/local_cache";
 import type { FastifyInstance } from "fastify";
 
 const CACHE_NAMESPACE = "route:challenge";
@@ -9,10 +13,11 @@ const CACHE_NAMESPACE = "route:challenge";
 export async function routes(fastify: FastifyInstance) {
   const { configService, policyService, cacheService, challengeService } =
     fastify.container.cradle;
-
+  const cache = new LocalCache({ ttl: 1000, max: 5000 });
   const gateAdmin = async (ctime: number, userId?: number) => {
-    const admin = await policyService.evaluate(userId, ["admin.challenge.get"]);
-
+    const admin = await cache.load(userId || 0, () =>
+      policyService.evaluate(userId, ["admin.challenge.get"]),
+    );
     if (!admin) {
       const {
         value: { active, start_time },
@@ -74,8 +79,8 @@ export async function routes(fastify: FastifyInstance) {
         },
         params: GetChallengeParams,
         response: {
-          200: GetChallengeResponse
-        }
+          200: GetChallengeResponse,
+        },
       },
     },
     async (request) => {

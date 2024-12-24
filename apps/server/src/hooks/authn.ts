@@ -39,7 +39,7 @@ export const AuthnHook = async (request: FastifyRequest) => {
   try {
     tokenData = await identityService.validateToken<
       AuthSessionToken | AuthScopedToken
-    >(token, ["scoped", "session"]);
+    >(token, ["scoped", "session"], { localVerifyRevocation: true });
     request.user = {
       id: tokenData.sub,
       token,

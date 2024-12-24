@@ -4,6 +4,7 @@ import type { AuthToken, AuthTokenType } from "@noctf/api/token";
 import { ValidationError } from "../errors.ts";
 import type { ServiceCradle } from "../index.ts";
 import { UserIdentityDAO } from "../dao/user_identity.ts";
+import type { VerifyOptions } from "./token.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -72,10 +73,12 @@ export class IdentityService {
   async validateToken<T extends AuthToken>(
     token: string,
     types: AuthTokenType | AuthTokenType[],
+    options?: Partial<VerifyOptions>,
   ) {
     return this.tokenService.validate(
       token,
       Array.isArray(types) ? types : [types],
+      options,
     ) as unknown as Promise<T>;
   }
 

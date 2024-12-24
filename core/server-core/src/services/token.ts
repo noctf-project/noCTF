@@ -3,9 +3,20 @@ import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import type { ServiceCradle } from "../index.ts";
 import type { SerializableMap } from "../types/primitives.ts";
+import { LocalCache } from "../util/local_cache.ts";
 
 type Props = Pick<ServiceCradle, "cacheService" | "logger"> & {
   secret: string;
+};
+
+export type VerifyOptions = {
+  verifyRevocation: boolean;
+  localVerifyRevocation: boolean;
+};
+
+const DEFAULT_VERIFY_OPTIONS: VerifyOptions = {
+  verifyRevocation: true,
+  localVerifyRevocation: false,
 };
 
 const REVOKE_NS = "core:token:rev";
@@ -13,6 +24,10 @@ export class TokenService {
   private secret: Props["secret"];
   private cacheService: Props["cacheService"];
   private logger: Props["logger"];
+  private localCache = new LocalCache({
+    max: 10000,
+    ttl: 1000,
+  });
 
   constructor({ secret, cacheService: cacheService, logger }: Props) {
     this.secret = secret;
@@ -59,21 +74,41 @@ export class TokenService {
     }
   }
 
-  async validate<T extends { jti: string }>(
+  async validate<T extends { jti: string; exp: number }>(
     token: string,
     audience?: string | string[],
-    verifyRevocation = true,
+    options?: Partial<VerifyOptions>,
   ): Promise<T> {
+    const opts = {
+      ...DEFAULT_VERIFY_OPTIONS,
+      ...options,
+    };
     try {
       const data = jwt.verify(token, this.secret, {
         audience,
         algorithms: ["HS256"],
       }) as T;
-      if (!verifyRevocation) {
+      if (!opts.verifyRevocation) {
         return data;
       }
-      const ttl = await this.cacheService.getTtl(REVOKE_NS, data.jti);
-      if (ttl === -1 || ttl > 0) {
+
+      const checkRevoke = () =>
+        this.cacheService
+          .getTtl(REVOKE_NS, data.jti)
+          .then((t) => t === -1 || t > 0);
+      let revoked;
+      if (!data.jti) {
+        revoked = false;
+      } else if (opts.localVerifyRevocation) {
+        revoked = await this.localCache.load(
+          data.jti,
+          checkRevoke,
+          (v) => v && { ttl: data.exp * 1000 - Date.now() },
+        );
+      } else {
+        revoked = await checkRevoke();
+      }
+      if (revoked) {
         throw new TokenValidationError("Token has been revoked");
       }
       return data;

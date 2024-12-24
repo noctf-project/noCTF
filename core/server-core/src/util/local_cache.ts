@@ -1,0 +1,49 @@
+import TTLCache, { Disposer, TTLOptions } from "@isaacs/ttlcache";
+import { MetricsClient } from "../clients/metrics.ts";
+
+export class LocalCache<K = unknown, V = unknown> {
+  private readonly cache;
+
+  constructor(opts?: TTLCache.Options<K, Promise<V>>) {
+    this.cache = new TTLCache<K, V | Promise<V>>(opts);
+  }
+
+  async load(
+    key: K,
+    loader: () => Promise<V>,
+    setTTL?: ((v: V) => TTLOptions) | TTLOptions,
+  ) {
+    let p = this.cache.get(key);
+    if (typeof p === "undefined") {
+      p = loader();
+      this.cache.set(key, p);
+    } else {
+      return p;
+    }
+    try {
+      const v = await p;
+      this.cache.set(
+        key,
+        v,
+        setTTL && (typeof setTTL === "function" ? setTTL(v) : setTTL),
+      );
+      return v;
+    } catch (e) {
+      this.cache.delete(key);
+    }
+  }
+
+  static disposeMetricsHook<K, V>(
+    metrics: MetricsClient,
+    name: string,
+  ): Disposer<K, V> {
+    const labels = {
+      local_cache: name,
+    };
+    return (_value, _key, reason) => {
+      if (reason === "evict") {
+        metrics.recordAggregate([["EvictedCount", 1]], labels);
+      }
+    };
+  }
+}

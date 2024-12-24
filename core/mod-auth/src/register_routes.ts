@@ -13,7 +13,8 @@ import { Generate } from "./hash_util.ts";
 import type { AssociateIdentity } from "@noctf/server-core/services/identity";
 
 export default async function (fastify: FastifyInstance) {
-  const { identityService, userService } = fastify.container.cradle;
+  const { identityService, userService, lockService } =
+    fastify.container.cradle;
 
   fastify.post<{
     Body: RegisterAuthTokenRequest;
@@ -59,49 +60,58 @@ export default async function (fastify: FastifyInstance) {
         token,
         "register",
       )) as AuthRegisterToken;
-      const roles = parsed.roles;
-      let identity = parsed.identity as AssociateIdentity[];
-      if (
-        identity.length === 1 &&
-        identity[0].provider === "email" &&
-        !password
-      ) {
-        throw new BadRequestError(
-          "UserRegisterError",
-          "A password is required for email registration",
-        );
-      }
-      const tokenEmail = identity.filter(
-        ({ provider }) => provider === "email",
-      )[0]?.provider_id;
-      if (!tokenEmail && !request.body.email) {
-        throw new BadRequestError("UserRegisterError", "An email is required");
-      }
+      const id = await lockService.withLease(
+        `token:register:${parsed.jti}`,
+        async () => {
+          const roles = parsed.roles;
+          let identity = parsed.identity as AssociateIdentity[];
+          if (
+            identity.length === 1 &&
+            identity[0].provider === "email" &&
+            !password
+          ) {
+            throw new BadRequestError(
+              "UserRegisterError",
+              "A password is required for email registration",
+            );
+          }
+          const tokenEmail = identity.filter(
+            ({ provider }) => provider === "email",
+          )[0]?.provider_id;
+          if (!tokenEmail && !request.body.email) {
+            throw new BadRequestError(
+              "UserRegisterError",
+              "An email is required",
+            );
+          }
 
-      const hashed = password && (await Generate(password));
-      identity = identity.map((i) => ({
-        ...i,
-        secret_data: i.provider === "email" && hashed,
-        user_id: 0,
-      }));
+          const hashed = password && (await Generate(password));
+          identity = identity.map((i) => ({
+            ...i,
+            secret_data: i.provider === "email" && hashed,
+            user_id: 0,
+          }));
 
-      const id = await userService.create({
-        name,
-        identities: identity.concat(
-          tokenEmail
-            ? []
-            : [
-                {
-                  provider: "email",
-                  provider_id: request.body.email,
-                  user_id: 0,
-                },
-              ],
-        ),
-        roles,
-      });
+          const id = await userService.create({
+            name,
+            identities: identity.concat(
+              tokenEmail
+                ? []
+                : [
+                    {
+                      provider: "email",
+                      provider_id: request.body.email,
+                      user_id: 0,
+                    },
+                  ],
+            ),
+            roles,
+          });
 
-      await identityService.revokeToken(token);
+          await identityService.revokeToken(token);
+          return id;
+        },
+      );
       // TODO: set as cookie
       return {
         data: {

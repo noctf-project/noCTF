@@ -33,11 +33,11 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "esbuild": "catalog:",
     "pino-pretty": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
-    "tsx": "catalog:"
+    "vitest": "catalog:"
   }
 }

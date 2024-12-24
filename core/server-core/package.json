@@ -15,6 +15,7 @@
     "@noctf/api": "workspace:*",
     "@noctf/schema": "workspace:*",
     "@sinclair/typebox": "catalog:",
+    "@isaacs/ttlcache": "^1.4.1",
     "awilix": "catalog:",
     "cbor2": "^1.8.0",
     "fastify": "catalog:",

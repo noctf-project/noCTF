@@ -33,7 +33,7 @@ export class CacheService {
       ...options,
     };
     const k = `${namespace}:${key}`;
-    const data = await this._get(k) as T;
+    const data = (await this._get(k)) as T;
     if (data) {
       const end = performance.now();
       this.metricsClient.recordAggregate(
@@ -94,8 +94,12 @@ export class CacheService {
     if (value === null) return;
     const client = await this.redisClient;
     const b = await Compress(encode(value));
-    return await client.set(k, Buffer.from(b.buffer, b.byteOffset, b.byteLength), {
-      EX: expireSeconds,
-    });
+    return await client.set(
+      k,
+      Buffer.from(b.buffer, b.byteOffset, b.byteLength),
+      {
+        EX: expireSeconds,
+      },
+    );
   }
 }
