@@ -1,5 +1,6 @@
 import { decode, encode } from "cbor2";
 import type { ServiceCradle } from "../index.ts";
+import { Compress, Decompress } from "../util/message_compression.ts";
 
 type LoadParams = {
   expireSeconds: number;
@@ -32,13 +33,8 @@ export class CacheService {
       ...options,
     };
     const k = `${namespace}:${key}`;
-    const client = await this.redisClient;
-    const data = await client.get(
-      client.commandOptions({ returnBuffers: true }),
-      k,
-    );
+    const data = await this._get(k) as T;
     if (data) {
-      const d = decode(data) as T;
       const end = performance.now();
       this.metricsClient.recordAggregate(
         [
@@ -47,7 +43,7 @@ export class CacheService {
         ],
         { cache_namespace: namespace },
       );
-      return d;
+      return data;
     }
     const result = await fetcher();
     await this._put(k, result, expireSeconds);
@@ -60,6 +56,21 @@ export class CacheService {
       { cache_namespace: namespace },
     );
     return result;
+  }
+
+  async get<T>(namespace: string, key: string): Promise<T> {
+    const k = `${namespace}:${key}`;
+    return this._get(k) as T;
+  }
+
+  private async _get(k: string) {
+    const client = await this.redisClient;
+    const data = await client.get(
+      client.commandOptions({ returnBuffers: true }),
+      k,
+    );
+    if (!data) return null;
+    return decode(await Decompress(data));
   }
 
   async put(namespace: string, key: string, value: unknown, expireSeconds = 0) {
@@ -80,8 +91,10 @@ export class CacheService {
   }
 
   private async _put(k: string, value: unknown, expireSeconds = 0) {
+    if (value === null) return;
     const client = await this.redisClient;
-    return await client.set(k, Buffer.from(encode(value)), {
+    const b = await Compress(encode(value));
+    return await client.set(k, Buffer.from(b.buffer, b.byteOffset, b.byteLength), {
       EX: expireSeconds,
     });
   }

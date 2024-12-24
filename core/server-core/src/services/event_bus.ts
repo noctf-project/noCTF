@@ -11,6 +11,7 @@ import type { NATSClientFactory } from "../clients/nats.ts";
 import type { Metric } from "../clients/metrics.ts";
 import { SimpleMutex } from "nats/lib/nats-base-client/util.js";
 import { decode, encode } from "cbor2";
+import { Compress, Decompress } from "../util/message_compression.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -139,7 +140,7 @@ export class EventBusService {
   }
 
   async publish<T>(subject: string, data: T) {
-    await this.natsClient.publish(subject, encode(data));
+    await this.natsClient.publish(subject, await Compress(encode(data)));
   }
 
   private async listen<T>(
@@ -200,7 +201,7 @@ export class EventBusService {
         subject: message.subject,
         timestamp,
         attempt: message.info.redeliveryCount,
-        data: decode(message.data),
+        data: decode(await Decompress(message.data)),
       });
       await message.ack();
       const elapsed = performance.now() - start;

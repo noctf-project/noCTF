@@ -1,6 +1,6 @@
 import { SetupConfig } from "@noctf/api/config";
 import { GetChallengeParams } from "@noctf/api/params";
-import { ListChallengesResponse } from "@noctf/api/responses";
+import { GetChallengeResponse, ListChallengesResponse } from "@noctf/api/responses";
 import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
 import type { FastifyInstance } from "fastify";
 
@@ -73,6 +73,9 @@ export async function routes(fastify: FastifyInstance) {
           policy: ["OR", "challenge.get", "admin.challenge.get"],
         },
         params: GetChallengeParams,
+        response: {
+          200: GetChallengeResponse
+        }
       },
     },
     async (request) => {

@@ -8,7 +8,7 @@ import type { AuditLogActor } from "../types/audit_log.ts";
 import type {
   Challenge,
   ChallengeSummary,
-  RenderedChallenge,
+  PublicChallenge,
 } from "@noctf/api/datatypes";
 
 type Props = Pick<
@@ -67,11 +67,11 @@ export class ChallengeService {
   async get<R extends boolean>(
     idOrSlug: string | number,
     render = false as R,
-  ): Promise<R extends true ? RenderedChallenge : Challenge> {
+  ): Promise<R extends true ? PublicChallenge : Challenge> {
     const result = await this.dao.get(this.databaseClient.get(), idOrSlug);
     if (render) {
       return (await this.render(result)) as R extends true
-        ? RenderedChallenge
+        ? PublicChallenge
         : never;
     }
     return result as R extends true ? never : Challenge;
@@ -89,7 +89,7 @@ export class ChallengeService {
       );
   }
 
-  private async render(c: Challenge): Promise<RenderedChallenge> {
+  private async render(c: Challenge): Promise<PublicChallenge> {
     return {
       id: c.id,
       slug: c.slug,

@@ -44,7 +44,7 @@ export class ChallengeDAO {
   ): Promise<ChallengeSummary[]> {
     let query = db
       .selectFrom("core.challenge")
-      .select(["id", "slug", "title", "tags", "hidden", "visible_at"]);
+      .select(["id", "slug", "title", "tags", "hidden", "visible_at", "created_at", "updated_at"]);
     if (tags) {
       query = query.where("tags", "@>", tags);
     }

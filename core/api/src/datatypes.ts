@@ -106,18 +106,13 @@ export const Challenge = Type.Object({
 });
 export type Challenge = Static<typeof Challenge>;
 
-export const RenderedChallenge = Type.Intersect([
-  Type.Omit(Challenge, [
-    "private_metadata",
-    "tags",
-    "created_at",
-    "updated_at",
-  ]),
+export const PublicChallenge = Type.Intersect([
+  Type.Omit(Challenge, ["private_metadata", "tags", "created_at", "updated_at"]),
   Type.Object({
     metadata: Type.Any(),
   }),
 ]);
-export type RenderedChallenge = Static<typeof RenderedChallenge>;
+export type PublicChallenge = Static<typeof PublicChallenge>;
 
 export const ChallengeSummary = Type.Pick(Challenge, [
   "id",
@@ -127,8 +122,16 @@ export const ChallengeSummary = Type.Pick(Challenge, [
   "hidden",
   "can_submit",
   "visible_at",
+  "created_at",
+  "updated_at"
 ]);
 export type ChallengeSummary = Static<typeof ChallengeSummary>;
+
+export const PublicChallengeSummary = Type.Omit(ChallengeSummary, [
+  "created_at",
+  "updated_at"
+]);
+export type PublicChallengeSummary = Static<typeof PublicChallengeSummary>;
 
 export const CaptchaValidationString = Type.Optional(
   Type.String({ maxLength: 1024 }),

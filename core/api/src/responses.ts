@@ -4,6 +4,8 @@ import {
   AuditLogEntry,
   AuthMethod,
   ChallengeSummary,
+  PublicChallenge,
+  PublicChallengeSummary,
   Team,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
@@ -76,6 +78,11 @@ export const MeTeamResponse = Type.Object({
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
 
 export const ListChallengesResponse = Type.Object({
-  data: Type.Array(ChallengeSummary),
+  data: Type.Array(PublicChallengeSummary),
 });
 export type ListChallengesResponse = Static<typeof ListChallengesResponse>;
+
+export const GetChallengeResponse = Type.Object({
+  data: PublicChallenge,
+});
+export type GetChallengeResponse = Static<typeof GetChallengeResponse>;
