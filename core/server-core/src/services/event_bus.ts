@@ -104,9 +104,7 @@ export class EventBusService {
     ) {
       throw new Error("cannot listen on both queue and events, or none");
     }
-    const type: StreamType = types
-      .values()
-      .toArray()[0] as unknown as StreamType;
+    const type: StreamType =  Array.from(types.values())[0] as unknown as StreamType;
 
     const manager = await this.natsClient.jetstream().jetstreamManager();
     const stream = STREAMS[type];

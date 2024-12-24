@@ -1,4 +1,4 @@
-import type { TSchema } from "@sinclair/typebox";
+import type { Static, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import type { ServiceCradle } from "../index.ts";
 import { BadRequestError, ValidationError } from "../errors.ts";
@@ -192,17 +192,12 @@ export class ConfigService {
    * @param defaultCfg default config
    * @param validator config validator, this is run when config is updated
    */
-  async register<T extends SerializableMap>(
-    schema: TSchema,
-    defaultCfg: T,
+  async register<T extends TSchema>(
+    schema: T,
+    defaultCfg: Static<T>,
     validator?: Validator<T>,
   ) {
     const namespace = schema.$id;
-    if (this.validators.has(namespace)) {
-      throw new Error(
-        `Config with namespace ${namespace} has already been registered`,
-      );
-    }
     this.validators.set(namespace, [schema, validator || nullValidator]);
     this.logger.info("Registered config namespace %s", namespace);
     const result = await this.databaseClient
@@ -210,7 +205,7 @@ export class ConfigService {
       .insertInto("core.config")
       .values({
         namespace,
-        value: defaultCfg,
+        value: defaultCfg as SerializableMap,
       })
       .onConflict((c) => c.doNothing())
       .executeTakeFirst();

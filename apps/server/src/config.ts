@@ -12,6 +12,8 @@ export const ENABLE_HTTP2 = ["1", "true"].includes(
   (process.env.ENABLE_HTTP2 || "").toLowerCase(),
 );
 
+export const FILE_LOCAL_PATH = process.env.FILE_LOCAL_PATH || "files/";
+
 export const ENABLE_SWAGGER =
   process.env.SWAGGER === undefined ||
   ["1", "true"].includes((process.env.ENABLE_SWAGGER || "").toLowerCase());

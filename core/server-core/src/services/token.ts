@@ -103,7 +103,7 @@ export class TokenService {
         revoked = await this.localCache.load(
           data.jti,
           checkRevoke,
-          (v) => v && { ttl: data.exp * 1000 - Date.now() },
+          (v) => v && data.exp && { ttl: data.exp * 1000 - Date.now() },
         );
       } else {
         revoked = await checkRevoke();

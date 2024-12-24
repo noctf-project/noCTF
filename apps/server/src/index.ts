@@ -1,12 +1,6 @@
 import type { FastifyRequest } from "fastify";
 import fastify from "fastify";
-import {
-  asClass,
-  asFunction,
-  asValue,
-  createContainer,
-  Lifetime,
-} from "awilix";
+import { asClass, asFunction, asValue, createContainer } from "awilix";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
 import { DatabaseClient } from "@noctf/server-core/clients/database";
@@ -42,6 +36,7 @@ import core from "./core.ts";
 import { MetricsClient } from "@noctf/server-core/clients/metrics";
 import { NATSClientFactory } from "@noctf/server-core/clients/nats";
 import { ChallengeService } from "@noctf/server-core/services/challenge";
+import { FileService } from "@noctf/server-core/services/file";
 
 export const server = fastify({
   logger: {
@@ -61,19 +56,17 @@ server.register(async () => {
     logger: asValue(server.log),
     redisClientFactory: asFunction(
       ({ logger }) => new RedisClientFactory(REDIS_URL, logger),
-      { lifetime: Lifetime.SINGLETON },
-    ),
+    ).singleton(),
     databaseClient: asValue(new DatabaseClient(server.log, POSTGRES_URL)),
     natsClientFactory: asValue(new NATSClientFactory(server.log, NATS_URL)),
     metricsClient: asValue(
       new MetricsClient(server.log, METRICS_PATH, METRICS_FILE_NAME_FORMAT),
     ),
-    cacheService: asClass(CacheService, { lifetime: Lifetime.SINGLETON }),
-    challengeService: asClass(ChallengeService, {
-      lifetime: Lifetime.SINGLETON,
-    }),
-    auditLogService: asClass(AuditLogService, { lifetime: Lifetime.SINGLETON }),
-    eventBusService: asClass(EventBusService, { lifetime: Lifetime.SINGLETON }),
+    cacheService: asClass(CacheService).singleton(),
+    challengeService: asClass(ChallengeService).singleton(),
+    auditLogService: asClass(AuditLogService).singleton(),
+    eventBusService: asClass(EventBusService).singleton(),
+    fileService: asClass(FileService).singleton(),
     tokenService: asFunction(
       ({ cacheService, logger }) =>
         new TokenService({
@@ -81,18 +74,15 @@ server.register(async () => {
           logger,
           secret: TOKEN_SECRET,
         }),
-      { lifetime: Lifetime.SINGLETON },
-    ),
-    configService: asClass(ConfigService, { lifetime: Lifetime.SINGLETON }),
-    identityService: asClass(IdentityService, {
-      lifetime: Lifetime.SINGLETON,
-    }),
-    policyService: asClass(PolicyService, { lifetime: Lifetime.SINGLETON }),
-    teamService: asClass(TeamService, { lifetime: Lifetime.SINGLETON }),
-    userService: asClass(UserService, { lifetime: Lifetime.SINGLETON }),
-    lockService: asClass(LockService, { lifetime: Lifetime.SINGLETON }),
+    ).singleton(),
+    configService: asClass(ConfigService).singleton(),
+    identityService: asClass(IdentityService).singleton(),
+    policyService: asClass(PolicyService).singleton(),
+    teamService: asClass(TeamService).singleton(),
+    userService: asClass(UserService).singleton(),
+    lockService: asClass(LockService).singleton(),
   });
-  void server.container.cradle.metricsClient.start();
+  void server.container.cradle.metricsClient.init();
 });
 
 if (ENABLE_SWAGGER) {

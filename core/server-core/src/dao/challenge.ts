@@ -109,25 +109,28 @@ export class ChallengeDAO {
       visible_at: v.visible_at,
       updated_at: new Date(),
     };
-    const result = db
+    const result = await db
       .updateTable("core.challenge")
       .set(FilterUndefined(values))
       .where("id", "=", id)
-      .returning("id")
+      .returning(["id", "slug"])
       .executeTakeFirst();
     if (!result) {
       throw new NotFoundError("Challenge not found");
     }
+    return result;
   }
 
   private resolveIdOrSlug<T extends WhereInterface<DB, "core.challenge">>(
     q: T,
     id_or_slug: string | number,
   ): T {
-    if (typeof id_or_slug === "number") {
-      return q.where("id", "=", id_or_slug) as T;
+    const id =
+      typeof id_or_slug === "number" ? id_or_slug : parseInt(id_or_slug);
+    if (id && Number.isInteger(id)) {
+      return q.where("id", "=", id) as T;
     } else {
-      return q.where("slug", "=", id_or_slug) as T;
+      return q.where("slug", "=", id_or_slug as string) as T;
     }
   }
 }

@@ -6,19 +6,27 @@ import { nanoid } from "nanoid";
 import type { AuditParams } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 import type { UpdateObject } from "kysely";
+import { TeamConfig } from "@noctf/api/config";
 
 type Props = Pick<
   ServiceCradle,
-  "databaseClient" | "cacheService" | "auditLogService"
+  "configService" | "databaseClient" | "cacheService" | "auditLogService"
 >;
 
 export class TeamService {
-  private readonly databaseClient: Props["databaseClient"];
-  private readonly auditLogService: Props["auditLogService"];
+  private readonly databaseClient;
+  private readonly auditLogService;
+  private readonly configService;
 
-  constructor({ databaseClient, auditLogService }: Props) {
+  constructor({ configService, databaseClient, auditLogService }: Props) {
     this.databaseClient = databaseClient;
     this.auditLogService = auditLogService;
+    this.configService = configService;
+    void this.init();
+  }
+
+  async init() {
+    await this.configService.register(TeamConfig, { max_members: 0 });
   }
 
   async create(

@@ -15,6 +15,7 @@ import type { LockService } from "./services/lock.ts";
 import type { MetricsClient } from "./clients/metrics.ts";
 import type { NATSClientFactory } from "./clients/nats.ts";
 import type { ChallengeService } from "./services/challenge.ts";
+import type { FileService } from "./services/file.ts";
 
 export type ServiceCradle = {
   logger: Logger;
@@ -26,6 +27,7 @@ export type ServiceCradle = {
   cacheService: CacheService;
   challengeService: ChallengeService;
   eventBusService: EventBusService;
+  fileService: FileService;
   tokenService: TokenService;
   configService: ConfigService;
   identityService: IdentityService;

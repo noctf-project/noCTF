@@ -78,10 +78,13 @@ export class CacheService {
     return this._put(k, value, expireSeconds);
   }
 
-  async del(namespace: string, key: string) {
-    const k = `${namespace}:${key}`;
+  async del(namespace: string, key: string | string[]) {
     const client = await this.redisClient;
-    return client.del(k);
+    return client.del(
+      Array.isArray(key)
+        ? key.map((k) => `${namespace}:${k}`)
+        : `${namespace}:${key}`,
+    );
   }
 
   async getTtl(namespace: string, key: string) {

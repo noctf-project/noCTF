@@ -1,5 +1,6 @@
 import { routes as adminAuditLog } from "./routes/admin_audit_log.ts";
 import { routes as adminConfig } from "./routes/admin_config.ts";
+import { routes as adminFile } from "./routes/admin_file.ts";
 import { routes as adminSetup } from "./routes/admin_setup.ts";
 import { routes as challenge } from "./routes/challenge.ts";
 import { routes as team } from "./routes/team.ts";
@@ -9,18 +10,21 @@ import { initServer as captcha } from "@noctf/mod-captcha";
 import { initServer as tickets } from "@noctf/mod-tickets";
 
 import type { FastifyInstance } from "fastify";
-import { register as configs } from "./modules/configs.ts";
 import { AuthnHook } from "./hooks/authn.ts";
 import { AuthzHook } from "./hooks/authz.ts";
+import { LocalFileProvider } from "@noctf/server-core/services/file";
+import { FILE_LOCAL_PATH } from "./config.ts";
 
 export default async function (fastify: FastifyInstance) {
   fastify.addHook("preHandler", AuthnHook);
   fastify.addHook("preHandler", AuthzHook);
 
-  fastify.register(configs);
+  const { fileService } = fastify.container.cradle;
+  fileService.register(new LocalFileProvider(FILE_LOCAL_PATH));
 
   fastify.register(adminAuditLog);
   fastify.register(adminConfig);
+  fastify.register(adminFile);
   fastify.register(adminSetup);
 
   fastify.register(team);

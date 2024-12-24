@@ -15,7 +15,7 @@ import { EventBusNonRetryableError } from "@noctf/server-core/services/event_bus
 export async function initServer(fastify: FastifyInstance) {
   initWorker(fastify.container.cradle);
   const { configService } = fastify.container.cradle as ServiceCradle;
-  await configService.register<TicketConfig>(TicketConfig, DEFAULT_CONFIG);
+  await configService.register(TicketConfig, DEFAULT_CONFIG);
 
   fastify.post<{ Request: OpenTicketRequest; Reply: OpenTicketResponse }>(
     "/tickets",

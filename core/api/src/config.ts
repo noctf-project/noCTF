@@ -78,3 +78,16 @@ export const SetupConfig = Type.Object(
   { $id: "core.setup", additionalProperties: false },
 );
 export type SetupConfig = Static<typeof SetupConfig>;
+
+export const FileConfig = Type.Object(
+  {
+    upload: Type.String({
+      title: "File Upload Provider",
+    }),
+    download: Type.String({
+      title: "File Download Provider",
+    }),
+  },
+  { $id: "core.file", additionalProperties: false },
+);
+export type FileConfig = Static<typeof FileConfig>;

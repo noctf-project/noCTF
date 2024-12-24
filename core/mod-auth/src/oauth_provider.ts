@@ -9,6 +9,7 @@ import type { IdentityProvider } from "@noctf/server-core/services/identity";
 
 type StateToken = {
   name: string;
+  exp: number;
   jti: string;
 };
 

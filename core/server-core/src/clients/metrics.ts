@@ -102,7 +102,7 @@ export class MetricsClient {
   /**
    * This function doesn't return normally
    */
-  async start() {
+  async init() {
     if ((!this.pathName && this.pathName !== "") || !this.fileNameFormat)
       return;
     this.periodicMetricsRunning = true;

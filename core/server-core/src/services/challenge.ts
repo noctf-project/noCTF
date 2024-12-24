@@ -16,13 +16,16 @@ type Props = Pick<
   "auditLogService" | "databaseClient" | "cacheService"
 >;
 
+const CACHE_NAMESPACE = "core:svc:challenge";
 export class ChallengeService {
   private readonly auditLogService;
+  private readonly cacheService;
   private readonly databaseClient;
   private readonly dao;
 
-  constructor({ auditLogService, databaseClient }: Props) {
+  constructor({ auditLogService, cacheService, databaseClient }: Props) {
     this.auditLogService = auditLogService;
+    this.cacheService = cacheService;
     this.databaseClient = databaseClient;
     this.dao = new ChallengeDAO();
   }
@@ -42,7 +45,13 @@ export class ChallengeService {
     v: AdminUpdateChallengeRequest,
     actor?: AuditLogActor,
   ) {
-    await this.dao.update(this.databaseClient.get(), id, v);
+    const { slug } = await this.dao.update(this.databaseClient.get(), id, v);
+    await this.cacheService.del(CACHE_NAMESPACE, [
+      `c:${id}`,
+      `c:${slug}`,
+      `m:${id}`,
+      `m:${slug}`,
+    ]);
     await this.auditLogService.log({
       operation: "challenge.update",
       actor,
@@ -64,17 +73,30 @@ export class ChallengeService {
     return summaries;
   }
 
-  async get<R extends boolean>(
-    idOrSlug: string | number,
-    render = false as R,
-  ): Promise<R extends true ? PublicChallenge : Challenge> {
-    const result = await this.dao.get(this.databaseClient.get(), idOrSlug);
-    if (render) {
-      return (await this.render(result)) as R extends true
-        ? PublicChallenge
-        : never;
+  async get(idOrSlug: string | number, cached = false): Promise<Challenge> {
+    if (cached) {
+      return this.cacheService.load(CACHE_NAMESPACE, `c:${idOrSlug}`, () =>
+        this.dao.get(this.databaseClient.get(), idOrSlug),
+      );
     }
-    return result as R extends true ? never : Challenge;
+    return this.dao.get(this.databaseClient.get(), idOrSlug);
+  }
+
+  /**
+   * Gets the metadata of a challenge. Always returns a cached response
+   * @param idOrSlug ID Or Slug
+   * @returns Challenge
+   */
+  async getMetadata(idOrSlug: string | number) {
+    return this.cacheService.load(CACHE_NAMESPACE, `m:${idOrSlug}`, () =>
+      this.get(idOrSlug).then((c) => ({
+        id: c.id,
+        slug: c.slug,
+        private_metadata: c.private_metadata,
+        visible_at: c.visible_at,
+        hidden: c.hidden,
+      })),
+    );
   }
 
   private removePrivateTags(tags: Record<string, string>) {
@@ -89,7 +111,8 @@ export class ChallengeService {
       );
   }
 
-  private async render(c: Challenge): Promise<PublicChallenge> {
+  async getRendered(idOrSlug: string | number): Promise<PublicChallenge> {
+    const c = await this.get(idOrSlug, true);
     return {
       id: c.id,
       slug: c.slug,
