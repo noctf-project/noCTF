@@ -13,7 +13,8 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("name", "varchar", (col) => col.notNull())
     .addColumn("slug", "varchar(64)", (col) => col.notNull().unique())
     .addColumn("description", "text", (col) => col.notNull())
-    .addColumn("flags", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
+    .addColumn("visible", "boolean", (col) => col.notNull().defaultTo(false))
+    .addColumn("joinable", "boolean", (col) => col.notNull().defaultTo(false))
     .execute();
 
   await schema

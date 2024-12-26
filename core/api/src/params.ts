@@ -1,10 +1,9 @@
 import type { Static } from "@sinclair/typebox";
 import { Type } from "@sinclair/typebox";
-import { Slug } from "./datatypes.ts";
 
 export const GetChallengeParams = Type.Object(
   {
-    id_or_slug: Type.Union([Type.Number(), Slug]),
+    id: Type.Number(),
   },
   { additionalProperties: false },
 );
@@ -12,7 +11,7 @@ export type GetChallengeParams = Static<typeof GetChallengeParams>;
 
 export const GetChallengeFileParams = Type.Object(
   {
-    id_or_slug: Type.Union([Type.Number(), Slug]),
+    id: Type.Number(),
     filename: Type.String(),
   },
   { additionalProperties: false },

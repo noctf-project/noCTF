@@ -7,7 +7,7 @@ import type { ServiceCradle } from "../index.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
 import type {
   Challenge,
-  ChallengeSummary,
+  ChallengeMetadata,
   PublicChallenge,
 } from "@noctf/api/datatypes";
 
@@ -21,13 +21,12 @@ export class ChallengeService {
   private readonly auditLogService;
   private readonly cacheService;
   private readonly databaseClient;
-  private readonly dao;
+  private readonly dao = new ChallengeDAO();
 
   constructor({ auditLogService, cacheService, databaseClient }: Props) {
     this.auditLogService = auditLogService;
     this.cacheService = cacheService;
     this.databaseClient = databaseClient;
-    this.dao = new ChallengeDAO();
   }
 
   async create(v: AdminCreateChallengeRequest, actor?: AuditLogActor) {
@@ -59,7 +58,7 @@ export class ChallengeService {
   async list(
     query: Parameters<ChallengeDAO["list"]>[1],
     removePrivateTags = false,
-  ): Promise<ChallengeSummary[]> {
+  ): Promise<ChallengeMetadata[]> {
     const summaries = await this.dao.list(this.databaseClient.get(), query);
     if (removePrivateTags) {
       return summaries.map((c) => {
@@ -86,13 +85,7 @@ export class ChallengeService {
    */
   async getMetadata(id: number) {
     return this.cacheService.load(CACHE_NAMESPACE, `m:${id}`, () =>
-      this.get(id).then((c) => ({
-        id: c.id,
-        slug: c.slug,
-        private_metadata: c.private_metadata,
-        visible_at: c.visible_at,
-        hidden: c.hidden,
-      })),
+      this.dao.getMetadata(this.databaseClient.get(), id),
     );
   }
 

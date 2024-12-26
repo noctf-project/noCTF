@@ -10,7 +10,7 @@ export class LocalCache<K = unknown, V = unknown> {
 
   async load(
     key: K,
-    loader: () => Promise<V>,
+    loader: () => V | Promise<V>,
     setTTL?: ((v: V) => TTLOptions) | TTLOptions,
   ) {
     let p = this.cache.get(key);

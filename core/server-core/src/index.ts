@@ -16,6 +16,7 @@ import type { MetricsClient } from "./clients/metrics.ts";
 import type { NATSClientFactory } from "./clients/nats.ts";
 import type { ChallengeService } from "./services/challenge.ts";
 import type { FileService } from "./services/file.ts";
+import type { ScoreService } from "./services/score.ts";
 
 export type ServiceCradle = {
   logger: Logger;
@@ -32,6 +33,7 @@ export type ServiceCradle = {
   configService: ConfigService;
   identityService: IdentityService;
   policyService: PolicyService;
+  scoreService: ScoreService;
   teamService: TeamService;
   userService: UserService;
   lockService: LockService;

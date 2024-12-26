@@ -77,7 +77,12 @@ export const MeTeamResponse = Type.Object({
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
 
 export const ListChallengesResponse = Type.Object({
-  data: Type.Array(PublicChallengeSummary),
+  data: Type.Object({
+    challenges: Type.Array(PublicChallengeSummary),
+    scores: Type.Array(
+      Type.Object({ id: Type.Number(), score: Type.Number() }),
+    ),
+  }),
 });
 export type ListChallengesResponse = Static<typeof ListChallengesResponse>;
 

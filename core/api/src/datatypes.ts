@@ -69,8 +69,9 @@ export const ChallengePrivateMetadataBase = Type.Object({
   ),
   score: Type.Object(
     {
-      constants: Type.Array(Type.Number()),
+      params: Type.Record(Type.String(), Type.Number()),
       strategy: Type.String(),
+      bonus: Type.Optional(Type.Array(Type.Number())),
     },
     { additionalProperties: false },
   ),
@@ -121,28 +122,36 @@ export const PublicChallenge = Type.Intersect([
 ]);
 export type PublicChallenge = Static<typeof PublicChallenge>;
 
-export const ChallengeSummary = Type.Pick(Challenge, [
+export const ChallengeMetadata = Type.Pick(Challenge, [
   "id",
   "slug",
   "title",
   "tags",
+  "private_metadata",
   "hidden",
   "can_submit",
   "visible_at",
   "created_at",
   "updated_at",
 ]);
+export type ChallengeMetadata = Static<typeof ChallengeMetadata>;
+
+export const ChallengeSummary = Type.Omit(ChallengeMetadata, [
+  "private_metadata",
+]);
 export type ChallengeSummary = Static<typeof ChallengeSummary>;
 
 export const PublicChallengeSummary = Type.Omit(ChallengeSummary, [
   "created_at",
   "updated_at",
+  "visible_at",
+  "hidden",
   "version",
 ]);
 export type PublicChallengeSummary = Static<typeof PublicChallengeSummary>;
 
 export const CaptchaValidationString = Type.Optional(
-  Type.String({ maxLength: 1024 }),
+  Type.String({ maxLength: 512 }),
 );
 export type CaptchaValidationString = Static<typeof CaptchaValidationString>;
 
@@ -156,9 +165,22 @@ export type FileMetadata = Static<typeof FileMetadata>;
 
 export const ScoringStrategy = Type.Object(
   {
-    expr: Type.String({ maxLength: 1024 }),
+    expr: Type.String({ maxLength: 512 }),
     description: Type.String({ maxLength: 256 }),
+    source: Type.Optional(Type.String()),
   },
   { additionalProperties: false },
 );
 export type ScoringStrategy = Static<typeof ScoringStrategy>;
+
+export const Score = Type.Object(
+  {
+    team_id: Type.Number(),
+    hidden: Type.Boolean(),
+    bonus: Type.Optional(Type.Number()),
+    score: Type.Number(),
+    created_at: TypeDate,
+  },
+  { additionalProperties: false },
+);
+export type Score = Static<typeof Score>;

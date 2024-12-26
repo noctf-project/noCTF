@@ -3,12 +3,28 @@ import type {
   AdminUpdateChallengeRequest,
 } from "@noctf/api/requests";
 import type { DBType } from "../clients/database.ts";
-import type { Challenge, ChallengeSummary } from "@noctf/api/datatypes";
+import type {
+  Challenge,
+  ChallengeMetadata,
+  ChallengeSummary,
+} from "@noctf/api/datatypes";
 import { FilterUndefined } from "../util/filter.ts";
 import { NotFoundError } from "../errors.ts";
 import { UpdateObject } from "kysely";
 import { DB } from "@noctf/schema";
+import { SelectExpression } from "kysely";
 
+const METADATA_FIELDS: SelectExpression<DB, "core.challenge">[] = [
+  "id",
+  "slug",
+  "title",
+  "private_metadata",
+  "tags",
+  "hidden",
+  "visible_at",
+  "created_at",
+  "updated_at",
+];
 export class ChallengeDAO {
   async create(db: DBType, v: AdminCreateChallengeRequest): Promise<Challenge> {
     const values = {
@@ -42,19 +58,8 @@ export class ChallengeDAO {
       hidden,
       visible_at,
     }: Partial<Pick<Challenge, "tags" | "hidden" | "visible_at">>,
-  ): Promise<ChallengeSummary[]> {
-    let query = db
-      .selectFrom("core.challenge")
-      .select([
-        "id",
-        "slug",
-        "title",
-        "tags",
-        "hidden",
-        "visible_at",
-        "created_at",
-        "updated_at",
-      ]);
+  ): Promise<ChallengeMetadata[]> {
+    let query = db.selectFrom("core.challenge").select(METADATA_FIELDS);
     if (tags) {
       query = query.where("tags", "@>", tags);
     }
@@ -70,7 +75,20 @@ export class ChallengeDAO {
       );
     }
 
-    return (await query.execute()) as ChallengeSummary[];
+    return (await query.execute()) as ChallengeMetadata[];
+  }
+
+  async getMetadata(db: DBType, id: number): Promise<ChallengeMetadata> {
+    const challenge = await db
+      .selectFrom("core.challenge")
+      .select(METADATA_FIELDS)
+      .where("id", "=", id)
+      .executeTakeFirst();
+
+    if (!challenge) {
+      throw new NotFoundError("Challenge not found");
+    }
+    return challenge as ChallengeMetadata;
   }
 
   async get(db: DBType, id: number): Promise<Challenge> {

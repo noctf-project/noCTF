@@ -18,7 +18,7 @@ export async function routes(fastify: FastifyInstance) {
     policyService,
     cacheService,
     challengeService,
-    fileService,
+    scoreService,
   } = fastify.container.cradle;
   const adminCache = new LocalCache<number, boolean>({ ttl: 1000, max: 5000 });
   const gateAdmin = async (ctime: number, userId?: number) => {
@@ -67,16 +67,26 @@ export async function routes(fastify: FastifyInstance) {
             true,
           ),
       );
+      const visible = challenges.filter(({ visible_at }) =>
+        visible_at ? ctime > visible_at.getTime() : true,
+      );
       return {
-        data: challenges.filter(
-          ({ visible_at }) => ctime > visible_at.getTime(),
-        ),
+        data: {
+          challenges: visible,
+          scores: await Promise.all(
+            visible.map((c) =>
+              scoreService
+                .getChallengeSolves(c)
+                .then(({ score }) => ({ id: c.id, score })),
+            ),
+          ),
+        },
       };
     },
   );
 
   fastify.get<{ Params: GetChallengeParams }>(
-    "/challenges/:id_or_slug",
+    "/challenges/:id",
     {
       schema: {
         tags: ["challenge"],
@@ -93,10 +103,10 @@ export async function routes(fastify: FastifyInstance) {
     async (request) => {
       const ctime = Date.now();
       const admin = await gateAdmin(ctime, request.user?.id);
-      const { id_or_slug } = request.params;
+      const { id } = request.params;
 
       // Cannot cache directly as could be rendered with team_id as param
-      const challenge = await challengeService.getRendered(id_or_slug);
+      const challenge = await challengeService.getRendered(id);
       if (
         !admin &&
         (challenge.hidden ||
@@ -105,7 +115,7 @@ export async function routes(fastify: FastifyInstance) {
       ) {
         throw new NotFoundError("Challenge not found");
       }
-      // TODO: render public metadata
+      // TODO: render public metadata, add type
       return {
         data: challenge,
       };
@@ -113,7 +123,7 @@ export async function routes(fastify: FastifyInstance) {
   );
 
   fastify.get<{ Params: GetChallengeFileParams }>(
-    "/challenges/:id_or_slug/files/:filename",
+    "/challenges/:id/files/:filename",
     {
       schema: {
         security: [{ bearer: [] }],
@@ -121,13 +131,14 @@ export async function routes(fastify: FastifyInstance) {
         auth: {
           policy: ["challenge.get"],
         },
+        params: GetChallengeFileParams,
       },
     },
     async (request, reply) => {
       const ctime = Date.now();
       const admin = await gateAdmin(ctime, request.user?.id);
-      const { id_or_slug } = request.params;
-      const challenge = await challengeService.getMetadata(id_or_slug);
+      const { id } = request.params;
+      const challenge = await challengeService.getMetadata(id);
       if (
         !admin &&
         (challenge.hidden ||

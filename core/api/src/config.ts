@@ -1,5 +1,6 @@
 import type { Static } from "@sinclair/typebox";
 import { Type } from "@sinclair/typebox";
+import { ScoringStrategy } from "./datatypes.ts";
 
 export const TeamConfig = Type.Object(
   {
@@ -91,3 +92,11 @@ export const FileConfig = Type.Object(
   { $id: "core.file", additionalProperties: false },
 );
 export type FileConfig = Static<typeof FileConfig>;
+
+export const ScoreConfig = Type.Object(
+  {
+    strategies: Type.Record(Type.String(), ScoringStrategy),
+  },
+  { $id: "core.score", additionalProperties: false },
+);
+export type ScoreConfig = Static<typeof ScoreConfig>;

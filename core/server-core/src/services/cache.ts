@@ -4,10 +4,12 @@ import { Compress, Decompress } from "../util/message_compression.ts";
 
 type LoadParams = {
   expireSeconds: number;
+  forceFetch: boolean;
 };
 export type LoadOptions = Partial<LoadParams>;
 const DEFAULT_LOAD_PARAMS: LoadParams = {
   expireSeconds: 30,
+  forceFetch: false,
 };
 
 type Props = Pick<ServiceCradle, "redisClientFactory" | "metricsClient">;
@@ -28,22 +30,24 @@ export class CacheService {
     options?: LoadOptions,
   ): Promise<T> {
     const start = performance.now();
-    const { expireSeconds } = {
+    const { expireSeconds, forceFetch } = {
       ...DEFAULT_LOAD_PARAMS,
       ...options,
     };
     const k = `${namespace}:${key}`;
-    const data = (await this._get(k)) as T;
-    if (data) {
-      const end = performance.now();
-      this.metricsClient.recordAggregate(
-        [
-          ["HitCount", 1],
-          ["HitTime", end - start],
-        ],
-        { cache_namespace: namespace },
-      );
-      return data;
+    if (!forceFetch) {
+      const data = (await this._get(k)) as T;
+      if (data) {
+        const end = performance.now();
+        this.metricsClient.recordAggregate(
+          [
+            ["HitCount", 1],
+            ["HitTime", end - start],
+          ],
+          { cache_namespace: namespace },
+        );
+        return data;
+      }
     }
     const result = await fetcher();
     await this._put(k, result, expireSeconds);

@@ -12,3 +12,10 @@ export const get = (obj: any, path: string, defaultValue?: any) => {
   const result = travel(/[,[\]]+?/) || travel(/[,[\].]+?/);
   return result === undefined || result === obj ? defaultValue : result;
 };
+
+export const partition = <T>(arr: T[], x: (t: T) => boolean) => {
+  const truthy: T[] = [];
+  const falsey: T[] = [];
+  arr.forEach((a) => (x(a) ? truthy.push(a) : falsey.push(a)));
+  return [truthy, falsey];
+};

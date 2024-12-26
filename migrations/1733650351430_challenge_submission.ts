@@ -95,7 +95,14 @@ export async function up(db: Kysely<any>): Promise<void> {
 
   await schema
     .createView("solve")
-    .columns(["id", "hidden", "challenge_id", "team_id", "team_flags"])
+    .columns([
+      "id",
+      "hidden",
+      "challenge_id",
+      "team_id",
+      "created_at",
+      "team_flags",
+    ])
     .as(
       db
         .selectFrom("core.submission")
@@ -104,6 +111,7 @@ export async function up(db: Kysely<any>): Promise<void> {
           "hidden",
           "challenge_id",
           "team_id",
+          "core.submission.created_at",
           "core.team.flags",
         ])
         .where("solved", "=", true)
