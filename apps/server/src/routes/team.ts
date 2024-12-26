@@ -25,7 +25,7 @@ export async function routes(fastify: FastifyInstance) {
         tags: ["team"],
         auth: {
           require: true,
-          policy: ["OR", "team.create"],
+          policy: ["team.create"],
         },
         body: CreateTeamRequest,
         response: {
@@ -79,7 +79,7 @@ export async function routes(fastify: FastifyInstance) {
         security: [{ bearer: [] }],
         auth: {
           require: true,
-          policy: ["OR", "team.self.join"],
+          policy: ["team.self.join"],
         },
         body: JoinTeamRequest,
         response: {
@@ -107,7 +107,7 @@ export async function routes(fastify: FastifyInstance) {
         tags: ["team"],
         auth: {
           require: true,
-          policy: ["OR", "team.self.leave"],
+          policy: ["team.self.leave"],
         },
       },
     },
@@ -150,7 +150,7 @@ export async function routes(fastify: FastifyInstance) {
         tags: ["team"],
         auth: {
           require: true,
-          policy: ["OR", "team.owner.update"],
+          policy: ["team.self.update"],
         },
         body: UpdateTeamRequest,
         response: {

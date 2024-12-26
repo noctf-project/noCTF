@@ -6,8 +6,8 @@ import type { DBType } from "../clients/database.ts";
 import type { Challenge, ChallengeSummary } from "@noctf/api/datatypes";
 import { FilterUndefined } from "../util/filter.ts";
 import { NotFoundError } from "../errors.ts";
-import type { WhereInterface } from "kysely";
-import type { DB } from "@noctf/schema";
+import { UpdateObject } from "kysely";
+import { DB } from "@noctf/schema";
 
 export class ChallengeDAO {
   async create(db: DBType, v: AdminCreateChallengeRequest): Promise<Challenge> {
@@ -20,15 +20,16 @@ export class ChallengeDAO {
       hidden: v.hidden,
       visible_at: v.visible_at,
     };
-    const { id, created_at, updated_at } = await db
+    const { id, version, created_at, updated_at } = await db
       .insertInto("core.challenge")
       .values(values)
-      .returning(["id", "created_at", "updated_at"])
+      .returning(["id", "version", "created_at", "updated_at"])
       .executeTakeFirst();
 
     return {
       ...values,
       id,
+      version,
       created_at,
       updated_at,
     };
@@ -72,8 +73,8 @@ export class ChallengeDAO {
     return (await query.execute()) as ChallengeSummary[];
   }
 
-  async get(db: DBType, id_or_slug: string | number): Promise<Challenge> {
-    const query = db
+  async get(db: DBType, id: number): Promise<Challenge> {
+    const challenge = await db
       .selectFrom("core.challenge")
       .select([
         "id",
@@ -86,12 +87,9 @@ export class ChallengeDAO {
         "visible_at",
         "created_at",
         "updated_at",
-      ]);
-
-    const challenge = await this.resolveIdOrSlug(
-      query,
-      id_or_slug,
-    ).executeTakeFirst();
+      ])
+      .where("id", "=", id)
+      .executeTakeFirst();
 
     if (!challenge) {
       throw new NotFoundError("Challenge not found");
@@ -100,7 +98,7 @@ export class ChallengeDAO {
   }
 
   async update(db: DBType, id: number, v: AdminUpdateChallengeRequest) {
-    const values: AdminUpdateChallengeRequest & { updated_at: Date } = {
+    const values: UpdateObject<DB, "core.challenge"> = {
       title: v.title,
       description: v.description,
       private_metadata: v.private_metadata,
@@ -109,28 +107,19 @@ export class ChallengeDAO {
       visible_at: v.visible_at,
       updated_at: new Date(),
     };
-    const result = await db
+    let query = db
       .updateTable("core.challenge")
       .set(FilterUndefined(values))
-      .where("id", "=", id)
-      .returning(["id", "slug"])
-      .executeTakeFirst();
+      .set((eb) => ({ version: eb("version", "+", 1) }))
+      .returning(["id", "version"])
+      .where("id", "=", id);
+    if (v.version) {
+      query = query.where("version", "=", v.version);
+    }
+    const result = await query.executeTakeFirst();
     if (!result) {
-      throw new NotFoundError("Challenge not found");
+      throw new NotFoundError("Challenge and version not found");
     }
     return result;
-  }
-
-  private resolveIdOrSlug<T extends WhereInterface<DB, "core.challenge">>(
-    q: T,
-    id_or_slug: string | number,
-  ): T {
-    const id =
-      typeof id_or_slug === "number" ? id_or_slug : parseInt(id_or_slug);
-    if (id && Number.isInteger(id)) {
-      return q.where("id", "=", id) as T;
-    } else {
-      return q.where("slug", "=", id_or_slug as string) as T;
-    }
   }
 }

@@ -299,6 +299,9 @@ importers:
       cbor2:
         specifier: ^1.8.0
         version: 1.8.0
+      expr-eval:
+        specifier: npm:expr-eval-fork@^2.0.2
+        version: expr-eval-fork@2.0.2
       fastify:
         specifier: 'catalog:'
         version: 5.0.0
@@ -1520,6 +1523,9 @@ packages:
   expect-type@1.1.0:
     resolution: {integrity: sha512-bFi65yM+xZgk+u/KRIpekdSYkTB5W1pEf0Lt8Q8Msh7b+eQ7LXVtIB1Bkm4fvclDEL1b2CZkMhv2mOeF8tMdkA==}
     engines: {node: '>=12.0.0'}
+
+  expr-eval-fork@2.0.2:
+    resolution: {integrity: sha512-NaAnObPVwHEYrODd7Jzp3zzT9pgTAlUUL4MZiZu9XAYPDpx89cPsfyEImFb2XY0vQNbrqg2CG7CLiI+Rs3seaQ==}
 
   fast-copy@3.0.2:
     resolution: {integrity: sha512-dl0O9Vhju8IrcLndv2eU4ldt1ftXMqqfgN4H1cpmGV7P6jeB9FwpN9a2c8DPGE1Ys88rNUJVYDHq73CGAGOPfQ==}
@@ -3752,6 +3758,8 @@ snapshots:
       strip-final-newline: 3.0.0
 
   expect-type@1.1.0: {}
+
+  expr-eval-fork@2.0.2: {}
 
   fast-copy@3.0.2: {}
 

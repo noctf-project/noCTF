@@ -45,18 +45,15 @@ export class ChallengeService {
     v: AdminUpdateChallengeRequest,
     actor?: AuditLogActor,
   ) {
-    const { slug } = await this.dao.update(this.databaseClient.get(), id, v);
-    await this.cacheService.del(CACHE_NAMESPACE, [
-      `c:${id}`,
-      `c:${slug}`,
-      `m:${id}`,
-      `m:${slug}`,
-    ]);
+    const { version } = await this.dao.update(this.databaseClient.get(), id, v);
+    await this.cacheService.del(CACHE_NAMESPACE, [`c:${id}`, `m:${id}`]);
     await this.auditLogService.log({
       operation: "challenge.update",
       actor,
       entities: [`challenge:${id}`],
+      data: `Updated to version ${version}`,
     });
+    return version;
   }
 
   async list(
@@ -73,23 +70,23 @@ export class ChallengeService {
     return summaries;
   }
 
-  async get(idOrSlug: string | number, cached = false): Promise<Challenge> {
+  async get(id: number, cached = false): Promise<Challenge> {
     if (cached) {
-      return this.cacheService.load(CACHE_NAMESPACE, `c:${idOrSlug}`, () =>
-        this.dao.get(this.databaseClient.get(), idOrSlug),
+      return this.cacheService.load(CACHE_NAMESPACE, `c:${id}`, () =>
+        this.dao.get(this.databaseClient.get(), id),
       );
     }
-    return this.dao.get(this.databaseClient.get(), idOrSlug);
+    return this.dao.get(this.databaseClient.get(), id);
   }
 
   /**
    * Gets the metadata of a challenge. Always returns a cached response
-   * @param idOrSlug ID Or Slug
+   * @param id ID Or Slug
    * @returns Challenge
    */
-  async getMetadata(idOrSlug: string | number) {
-    return this.cacheService.load(CACHE_NAMESPACE, `m:${idOrSlug}`, () =>
-      this.get(idOrSlug).then((c) => ({
+  async getMetadata(id: number) {
+    return this.cacheService.load(CACHE_NAMESPACE, `m:${id}`, () =>
+      this.get(id).then((c) => ({
         id: c.id,
         slug: c.slug,
         private_metadata: c.private_metadata,
@@ -111,8 +108,8 @@ export class ChallengeService {
       );
   }
 
-  async getRendered(idOrSlug: string | number): Promise<PublicChallenge> {
-    const c = await this.get(idOrSlug, true);
+  async getRendered(id: number): Promise<PublicChallenge> {
+    const c = await this.get(id, true);
     return {
       id: c.id,
       slug: c.slug,

@@ -68,11 +68,11 @@ export const SetupConfig = Type.Object(
     active: Type.Boolean({
       title: "Global flag to activate/deactivate the CTF",
     }),
-    start_time: Type.Optional(
-      Type.Number({ title: "CTF Start Time (Epoch milliseconds)" }),
+    start_time_s: Type.Optional(
+      Type.Number({ title: "CTF Start Time (Epoch seconds)" }),
     ),
-    end_time: Type.Optional(
-      Type.Number({ title: "CTF End Time (Epoch milliseconds)" }),
+    end_time_s: Type.Optional(
+      Type.Number({ title: "CTF End Time (Epoch seconds)" }),
     ),
   },
   { $id: "core.setup", additionalProperties: false },

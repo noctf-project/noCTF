@@ -125,7 +125,7 @@ export type UpdateTeamRequest = Static<typeof UpdateTeamRequest>;
 
 export const AdminCreateChallengeRequest = Type.Omit(
   Challenge,
-  ["created_at", "updated_at", "id"],
+  ["created_at", "updated_at", "id", "version"],
   { additionalProperties: false },
 );
 export type AdminCreateChallengeRequest = Static<
@@ -133,7 +133,7 @@ export type AdminCreateChallengeRequest = Static<
 >;
 
 export const AdminUpdateChallengeRequest = Type.Omit(
-  Type.Partial(Challenge),
+  Type.Intersect([Type.Partial(Challenge), Type.Pick(Challenge, ["version"])]),
   ["created_at", "updated_at", "id", "slug"],
   { additionalProperties: false },
 );

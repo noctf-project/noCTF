@@ -18,6 +18,7 @@
     "@sinclair/typebox": "catalog:",
     "awilix": "catalog:",
     "cbor2": "^1.8.0",
+    "expr-eval": "npm:expr-eval-fork@^2.0.2",
     "fastify": "catalog:",
     "jsonwebtoken": "^9.0.2",
     "kysely": "catalog:",

@@ -100,6 +100,7 @@ export const Challenge = Type.Object({
     Type.String({ maxLength: 64 }),
   ),
   hidden: Type.Boolean(),
+  version: Type.Number(),
   visible_at: Type.Union([TypeDate, Type.Null()]),
   created_at: TypeDate,
   updated_at: TypeDate,
@@ -110,6 +111,7 @@ export const PublicChallenge = Type.Intersect([
   Type.Omit(Challenge, [
     "private_metadata",
     "tags",
+    "version",
     "created_at",
     "updated_at",
   ]),
@@ -135,6 +137,7 @@ export type ChallengeSummary = Static<typeof ChallengeSummary>;
 export const PublicChallengeSummary = Type.Omit(ChallengeSummary, [
   "created_at",
   "updated_at",
+  "version",
 ]);
 export type PublicChallengeSummary = Static<typeof PublicChallengeSummary>;
 
@@ -150,3 +153,12 @@ export const FileMetadata = Type.Object({
   hash: Type.String(),
 });
 export type FileMetadata = Static<typeof FileMetadata>;
+
+export const ScoringStrategy = Type.Object(
+  {
+    expr: Type.String({ maxLength: 1024 }),
+    description: Type.String({ maxLength: 256 }),
+  },
+  { additionalProperties: false },
+);
+export type ScoringStrategy = Static<typeof ScoringStrategy>;

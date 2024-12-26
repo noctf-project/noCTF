@@ -27,12 +27,12 @@ export async function routes(fastify: FastifyInstance) {
     );
     if (!admin) {
       const {
-        value: { active, start_time },
+        value: { active, start_time_s },
       } = await configService.get<SetupConfig>(SetupConfig.$id);
       if (!active) {
         throw new ForbiddenError("The CTF is not currently active");
       }
-      if (ctime < start_time) {
+      if (ctime < start_time_s * 1000) {
         throw new ForbiddenError("The CTF has not started yet");
       }
     }

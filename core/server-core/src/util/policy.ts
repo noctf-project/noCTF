@@ -54,6 +54,7 @@ const EvaluateScalar = (permission: string, policy: string[]) => {
     }
     p = p.replace(REPLACE_REGEX, "");
   }
+
   return (
     !PredicateMatches("", policy, true) &&
     (allowed || PredicateMatches("", policy, false))
@@ -61,9 +62,10 @@ const EvaluateScalar = (permission: string, policy: string[]) => {
 };
 
 const PredicateMatches = (p: string, policy: string[], neg: boolean) => {
+  if (policy.length === 0) return neg;
   const pidx = BisectLeft(p, policy);
-  const pp = policy[pidx];
-  if (!pp) return neg;
+  let pp = policy[pidx];
+  if (!pp) pp = policy[pidx - 1];
   return (
     pp === p ||
     (!neg && pp === "*") ||
