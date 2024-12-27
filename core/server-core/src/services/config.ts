@@ -4,6 +4,7 @@ import type { ServiceCradle } from "../index.ts";
 import { BadRequestError, ValidationError } from "../errors.ts";
 import type { SerializableMap } from "../types/primitives.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
+import { Ajv, ValidateFunction } from "ajv";
 
 type Validator<T> = (kv: T) => Promise<string | null> | string | null;
 
@@ -25,11 +26,14 @@ const EXPIRY_MS = 2000;
 export class ConfigService {
   // A simple map-based cache is good enough, we want low latency and don't really need
   // to evict stuff, all the config keys are static and there shouldn't be too many.
+  private readonly ajv = new Ajv();
   private readonly logger: Props["logger"];
   private readonly databaseClient: Props["databaseClient"];
   private readonly auditLogService: Props["auditLogService"];
-  private readonly validators: Map<string, [TSchema, Validator<unknown>]> =
-    new Map();
+  private readonly validators: Map<
+    string,
+    [ValidateFunction, Validator<unknown>]
+  > = new Map();
 
   private cache: Map<string, [Promise<ConfigValue<SerializableMap>>, number]> =
     new Map();
@@ -141,9 +145,15 @@ export class ConfigService {
     if (!this.validators.has(namespace)) {
       throw new ValidationError("Config namespace does not exist");
     }
-    const [schema, validator] = this.validators.get(namespace);
-    if (!Value.Check(schema, value)) {
-      throw new ValidationError("Config failed JSONSchema validation");
+    const [av, validator] = this.validators.get(namespace);
+    if (!av(value)) {
+      console.log(av.errors);
+      throw new ValidationError(
+        "JSONSchema: " +
+          av.errors
+            .map((e) => `${e.instancePath || "/"} ${e.message}`)
+            .join(", "),
+      );
     }
     if (!noValidate) {
       const result = await validator(value);
@@ -198,7 +208,10 @@ export class ConfigService {
     validator?: Validator<T>,
   ) {
     const namespace = schema.$id;
-    this.validators.set(namespace, [schema, validator || nullValidator]);
+    this.validators.set(namespace, [
+      this.ajv.compile(schema),
+      validator || nullValidator,
+    ]);
     this.logger.info("Registered config namespace %s", namespace);
     const result = await this.databaseClient
       .get()

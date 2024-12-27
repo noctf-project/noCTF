@@ -1,5 +1,5 @@
 import { UpdateConfigValueRequest } from "@noctf/api/requests";
-import { AdminGetConfigValueResponse } from "@noctf/api/responses";
+import { AdminGetConfigValueResponse, AnyResponse } from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
 import type { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
@@ -11,7 +11,7 @@ export async function routes(fastify: FastifyInstance) {
   const auth = {
     require: true,
     scopes: new Set(["admin"]),
-    policy: ["AND", "admin.config"] as Policy,
+    policy: ["admin.config"] as Policy,
   };
 
   fastify.get(
@@ -21,10 +21,14 @@ export async function routes(fastify: FastifyInstance) {
         tags: ["admin"],
         security: [{ bearer: [] }],
         auth,
+        response: {
+          200: AnyResponse,
+        },
       },
     },
     () => ({ data: configService.getSchemas() }),
   );
+
   fastify.get<{
     Params: {
       namespace: string;
@@ -60,7 +64,10 @@ export async function routes(fastify: FastifyInstance) {
         tags: ["admin"],
         security: [{ bearer: [] }],
         body: UpdateConfigValueRequest,
-        auth,
+        auth: {
+          ...auth,
+          policy: ["admin.config.update"],
+        },
       },
     },
     async (request) => {

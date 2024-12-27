@@ -133,7 +133,7 @@ export type AdminCreateChallengeRequest = Static<
 >;
 
 export const AdminUpdateChallengeRequest = Type.Omit(
-  Type.Intersect([Type.Partial(Challenge), Type.Pick(Challenge, ["version"])]),
+  Type.Partial(Challenge),
   ["created_at", "updated_at", "id", "slug"],
   { additionalProperties: false },
 );

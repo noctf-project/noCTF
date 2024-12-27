@@ -90,9 +90,7 @@ export class FileService {
     return metadata;
   }
 
-  async delete(
-    ref: string,
-  ): Promise<void> {
+  async delete(ref: string): Promise<void> {
     const {
       value: { upload },
     } = await this.configService.get<FileConfig>(FileConfig.$id);
@@ -151,7 +149,7 @@ export class LocalFileProvider implements FileProvider {
       await unlink(join(this.root, LocalFileProvider.METADATA_PATH, ref));
       await unlink(join(this.root, LocalFileProvider.OBJECT_PATH, ref));
     } catch (e) {
-      if (e.code === 'ENOENT') {
+      if (e.code === "ENOENT") {
         throw new NotFoundError("File not found");
       }
       throw e;
@@ -182,7 +180,7 @@ export class LocalFileProvider implements FileProvider {
         ),
       );
     } catch (e) {
-      if (e.code === 'ENOENT') {
+      if (e.code === "ENOENT") {
         throw new NotFoundError("File not found");
       }
       throw e;

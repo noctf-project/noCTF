@@ -37,8 +37,9 @@ import { MetricsClient } from "@noctf/server-core/clients/metrics";
 import { NATSClientFactory } from "@noctf/server-core/clients/nats";
 import { ChallengeService } from "@noctf/server-core/services/challenge";
 import { FileService } from "@noctf/server-core/services/file";
-import { ScoreService } from "@noctf/server-core/services/score";
+import { ScoreboardService } from "@noctf/server-core/services/scoreboard";
 import { fastifyMultipart } from "@fastify/multipart";
+import { ScoreService } from "@noctf/server-core/services/score";
 
 export const server = fastify({
   logger: {
@@ -83,6 +84,7 @@ server.register(async () => {
     policyService: asClass(PolicyService).singleton(),
     teamService: asClass(TeamService).singleton(),
     scoreService: asClass(ScoreService).singleton(),
+    scoreboardService: asClass(ScoreboardService).singleton(),
     userService: asClass(UserService).singleton(),
     lockService: asClass(LockService).singleton(),
   });

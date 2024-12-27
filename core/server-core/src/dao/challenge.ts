@@ -102,6 +102,7 @@ export class ChallengeDAO {
         "private_metadata",
         "tags",
         "hidden",
+        "version",
         "visible_at",
         "created_at",
         "updated_at",
@@ -131,7 +132,8 @@ export class ChallengeDAO {
       .set((eb) => ({ version: eb("version", "+", 1) }))
       .returning(["id", "version"])
       .where("id", "=", id);
-    if (v.version) {
+    console.log(v.version);
+    if (v.version || v.version === 0) {
       query = query.where("version", "=", v.version);
     }
     const result = await query.executeTakeFirst();
@@ -139,5 +141,15 @@ export class ChallengeDAO {
       throw new NotFoundError("Challenge and version not found");
     }
     return result;
+  }
+
+  async delete(db: DBType, id: number) {
+    const { numDeletedRows } = await db
+      .deleteFrom("core.challenge")
+      .where("id", "=", id)
+      .executeTakeFirst();
+    if (!numDeletedRows) {
+      throw new NotFoundError("Challenge not found");
+    }
   }
 }

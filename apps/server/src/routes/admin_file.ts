@@ -6,7 +6,7 @@ import { AdminFileMetadataResponse } from "@noctf/api/responses";
 export async function routes(fastify: FastifyInstance) {
   const { fileService } = fastify.container.cradle;
 
-  fastify.get<{ Params: FileParams, Reply: AdminFileMetadataResponse }>(
+  fastify.get<{ Params: FileParams; Reply: AdminFileMetadataResponse }>(
     "/admin/files/:ref/meta",
     {
       schema: {
@@ -24,7 +24,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       return {
-        data: await fileService.getMetadata(request.params.ref)
+        data: await fileService.getMetadata(request.params.ref),
       };
     },
   );
@@ -39,7 +39,7 @@ export async function routes(fastify: FastifyInstance) {
           require: true,
           policy: ["admin.file.get"],
         },
-        params: FileParams
+        params: FileParams,
       },
     },
     async (request, reply) => {
@@ -57,7 +57,7 @@ export async function routes(fastify: FastifyInstance) {
           require: true,
           policy: ["admin.file.delete"],
         },
-        params: FileParams
+        params: FileParams,
       },
     },
     async (request) => {
@@ -77,16 +77,17 @@ export async function routes(fastify: FastifyInstance) {
           policy: ["admin.file.create"],
         },
         response: {
-          201: AdminFileMetadataResponse
-        }
+          201: AdminFileMetadataResponse,
+        },
       },
     },
     async (request, reply) => {
       const data = await request.file();
       const result = await fileService.upload(data.filename, data.file);
-      return {
-        data: result
-      };
+
+      return reply.status(201).send({
+        data: result,
+      });
     },
   );
 }

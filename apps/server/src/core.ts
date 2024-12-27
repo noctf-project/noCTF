@@ -1,4 +1,5 @@
 import { routes as adminAuditLog } from "./routes/admin_audit_log.ts";
+import { routes as adminChallenge } from "./routes/admin_challenge.ts";
 import { routes as adminConfig } from "./routes/admin_config.ts";
 import { routes as adminFile } from "./routes/admin_file.ts";
 import { routes as adminSetup } from "./routes/admin_setup.ts";
@@ -23,6 +24,7 @@ export default async function (fastify: FastifyInstance) {
   fileService.register(new LocalFileProvider(FILE_LOCAL_PATH));
 
   fastify.register(adminAuditLog);
+  fastify.register(adminChallenge);
   fastify.register(adminConfig);
   fastify.register(adminFile);
   fastify.register(adminSetup);

@@ -55,7 +55,7 @@ export type UserIdentity = Static<typeof UserIdentity>;
 export const ChallengePrivateMetadataBase = Type.Object({
   solve: Type.Object(
     {
-      provider: Type.String({ maxLength: 32 }),
+      source: Type.String({ maxLength: 64 }),
       flags: Type.Optional(
         Type.Array(
           Type.Object({

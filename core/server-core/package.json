@@ -16,6 +16,7 @@
     "@noctf/api": "workspace:*",
     "@noctf/schema": "workspace:*",
     "@sinclair/typebox": "catalog:",
+    "ajv": "catalog:",
     "awilix": "catalog:",
     "cbor2": "^1.8.0",
     "expr-eval": "npm:expr-eval-fork@^2.0.2",

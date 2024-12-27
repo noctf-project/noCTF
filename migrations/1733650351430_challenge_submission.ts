@@ -42,16 +42,17 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
     .addColumn("user_id", "integer", (col) =>
-      col.notNull().references("core.user.id").onDelete("cascade"),
+      col.notNull().references("core.user.id"),
     )
     .addColumn("team_id", "integer", (col) =>
-      col.notNull().references("core.team.id").onDelete("cascade"),
+      col.notNull().references("core.team.id"),
     )
     .addColumn("challenge_id", "integer", (col) =>
-      col.notNull().references("core.challenge.id").onDelete("cascade"),
+      col.notNull().references("core.challenge.id"),
     )
     .addColumn("data", "text")
     .addColumn("comments", "text")
+    .addColumn("checker", "varchar(64)", (col) => col.notNull())
     .addColumn("hidden", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("pending", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("solved", "boolean", (col) => col.notNull().defaultTo(false))
@@ -69,19 +70,19 @@ export async function up(db: Kysely<any>): Promise<void> {
   await schema
     .createIndex("submission_idx_challenge_id_solved")
     .on("submission")
-    .columns(["challenge_id", "solved"])
+    .columns(["solved", "challenge_id", "team_id"])
     .execute();
   await schema
-    .createIndex("submission_idx_team_id_solved")
+    .createIndex("submission_idx_pending_challenge_id")
     .on("submission")
-    .columns(["team_id", "solved"])
+    .columns(["pending", "challenge_id"])
     .execute();
 
   await schema
     .createIndex("submission_uidx_pending_solved")
     .on("submission")
     .unique()
-    .columns(["team_id", "challenge_id"])
+    .columns(["challenge_id", "team_id"])
     .where((eb) =>
       eb.or([eb(sql`pending`, "=", "true"), eb(sql`solved`, "=", "true")]),
     )

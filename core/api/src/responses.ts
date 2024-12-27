@@ -3,6 +3,7 @@ import { Type } from "@sinclair/typebox";
 import {
   AuditLogEntry,
   AuthMethod,
+  Challenge,
   FileMetadata,
   PublicChallenge,
   PublicChallengeSummary,
@@ -81,7 +82,10 @@ export const ListChallengesResponse = Type.Object({
   data: Type.Object({
     challenges: Type.Array(PublicChallengeSummary),
     scores: Type.Array(
-      Type.Object({ id: Type.Number(), score: Type.Number() }),
+      Type.Object({
+        id: Type.Number(),
+        score: Type.Union([Type.Number(), Type.Null()]),
+      }),
     ),
   }),
 });
@@ -95,4 +99,30 @@ export type GetChallengeResponse = Static<typeof GetChallengeResponse>;
 export const AdminFileMetadataResponse = Type.Object({
   data: FileMetadata,
 });
-export type AdminFileMetadataResponse = Static<typeof AdminFileMetadataResponse>;
+export type AdminFileMetadataResponse = Static<
+  typeof AdminFileMetadataResponse
+>;
+
+export const AdminGetChallengeResponse = Type.Object({
+  data: Challenge,
+});
+export type AdminGetChallengeResponse = Static<
+  typeof AdminGetChallengeResponse
+>;
+
+export const AdminUpdateChallengeResponse = Type.Object({
+  data: Type.Object({
+    version: Type.Number(),
+  }),
+});
+export type AdminUpdateChallengeResponse = Static<
+  typeof AdminUpdateChallengeResponse
+>;
+
+export const AnyResponse = Type.Object(
+  {
+    data: Type.Any(),
+  },
+  { additionalProperties: false },
+);
+export type AnyResponse = Static<typeof AnyResponse>;

@@ -18,7 +18,7 @@ export async function routes(fastify: FastifyInstance) {
     policyService,
     cacheService,
     challengeService,
-    scoreService,
+    scoreboardService,
   } = fastify.container.cradle;
   const adminCache = new LocalCache<number, boolean>({ ttl: 1000, max: 5000 });
   const gateAdmin = async (ctime: number, userId?: number) => {
@@ -66,18 +66,28 @@ export async function routes(fastify: FastifyInstance) {
             admin ? {} : { hidden: false, visible_at: new Date(ctime + 60000) },
             true,
           );
-          const scores = await Promise.all(challenges.map((c) => scoreService.getChallengeSolves(c)
-            .then(({ score }) => ({ id: c.id, score }))));
+          const scores = await Promise.all(
+            challenges.map((c) =>
+              scoreboardService
+                .getChallengeSolves(c)
+                .then(({ score }) => ({ id: c.id, score })),
+            ),
+          );
           return { challenges, scores };
-        }
+        },
       );
 
-      const visible = new Set(challenges.filter(({ visible_at }) => visible_at ? ctime > visible_at.getTime() : true)
-        .map(({ id }) => id));
+      const visible = new Set(
+        challenges
+          .filter(({ visible_at }) =>
+            visible_at ? ctime > visible_at.getTime() : true,
+          )
+          .map(({ id }) => id),
+      );
       return {
         data: {
           challenges: challenges.filter(({ id }) => visible.has(id)),
-          scores: scores.filter(({ id }) => visible.has(id))
+          scores: scores.filter(({ id }) => visible.has(id)),
         },
       };
     },
