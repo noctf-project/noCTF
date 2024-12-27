@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { lookup } from "mime-types";
 import { createReadStream, createWriteStream, mkdirSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, unlink } from "node:fs/promises";
 import { FileConfig } from "@noctf/api/config";
 import { ServiceCradle } from "../index.ts";
 import { FileMetadata } from "@noctf/api/datatypes";
@@ -21,6 +21,7 @@ export interface FileProvider {
     start?: number,
     end?: number,
   ): Promise<string | [Readable, FileMetadata]>;
+  delete(ref: string): Promise<void>;
   getMetadata(ref: string): Promise<FileMetadata>;
   setMetadata(ref: string, meta: FileMetadata): Promise<void>;
 }
@@ -58,7 +59,7 @@ export class FileService {
     return provider.getMetadata(ref);
   }
 
-  async upload(filename: string, readStream: Readable): Promise<string> {
+  async upload(filename: string, readStream: Readable): Promise<FileMetadata> {
     const {
       value: { upload },
     } = await this.configService.get<FileConfig>(FileConfig.$id);
@@ -77,14 +78,27 @@ export class FileService {
       this.size(sSize),
       provider.upload(ref, sUpload),
     ]);
-    await provider.setMetadata(ref, {
+    const metadata: FileMetadata = {
       hash,
+      ref,
       size,
       filename,
       mime: lookup(filename) || "application/octet-stream",
-    });
+    };
+    await provider.setMetadata(ref, metadata);
 
-    return ref;
+    return metadata;
+  }
+
+  async delete(
+    ref: string,
+  ): Promise<void> {
+    const {
+      value: { upload },
+    } = await this.configService.get<FileConfig>(FileConfig.$id);
+    const provider = this.providers.get(upload);
+    if (!provider) throw new Error(`Provider ${upload} does not exist`);
+    return provider.delete(ref);
   }
 
   async download(
@@ -132,6 +146,19 @@ export class LocalFileProvider implements FileProvider {
     mkdirSync(join(root, LocalFileProvider.METADATA_PATH), { recursive: true });
   }
 
+  async delete(ref: string): Promise<void> {
+    try {
+      await unlink(join(this.root, LocalFileProvider.METADATA_PATH, ref));
+      await unlink(join(this.root, LocalFileProvider.OBJECT_PATH, ref));
+    } catch (e) {
+      if (e.code === 'ENOENT') {
+        throw new NotFoundError("File not found");
+      }
+      throw e;
+    }
+    return;
+  }
+
   async upload(ref: string, rs: Readable): Promise<void> {
     return pipeline(
       rs,
@@ -155,7 +182,10 @@ export class LocalFileProvider implements FileProvider {
         ),
       );
     } catch (e) {
-      throw new NotFoundError("File not found");
+      if (e.code === 'ENOENT') {
+        throw new NotFoundError("File not found");
+      }
+      throw e;
     }
   }
 

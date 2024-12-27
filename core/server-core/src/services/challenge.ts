@@ -5,11 +5,13 @@ import type {
 import { ChallengeDAO } from "../dao/challenge.ts";
 import type { ServiceCradle } from "../index.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
-import type {
-  Challenge,
-  ChallengeMetadata,
-  PublicChallenge,
+import {
+  ChallengePrivateMetadataBase,
+  type Challenge,
+  type ChallengeMetadata,
+  type PublicChallenge,
 } from "@noctf/api/datatypes";
+import { Value } from "@sinclair/typebox/value";
 
 type Props = Pick<
   ServiceCradle,
@@ -99,6 +101,10 @@ export class ChallengeService {
         },
         {} as Record<string, string>,
       );
+  }
+
+  private validatePrivateMetadata(metadata: Challenge["private_metadata"]) {
+    Value.Assert(ChallengePrivateMetadataBase, metadata);
   }
 
   async getRendered(id: number): Promise<PublicChallenge> {

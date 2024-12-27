@@ -57,29 +57,27 @@ export async function routes(fastify: FastifyInstance) {
       const ctime = Date.now();
       const admin = await gateAdmin(ctime, request.user?.id);
 
-      const challenges = await cacheService.load(
+      const { challenges, scores } = await cacheService.load(
         CACHE_NAMESPACE,
         `list:${admin}`,
-        () =>
-          challengeService.list(
+        async () => {
+          const challenges = await challengeService.list(
             // To account for clock skew
             admin ? {} : { hidden: false, visible_at: new Date(ctime + 60000) },
             true,
-          ),
+          );
+          const scores = await Promise.all(challenges.map((c) => scoreService.getChallengeSolves(c)
+            .then(({ score }) => ({ id: c.id, score }))));
+          return { challenges, scores };
+        }
       );
-      const visible = challenges.filter(({ visible_at }) =>
-        visible_at ? ctime > visible_at.getTime() : true,
-      );
+
+      const visible = new Set(challenges.filter(({ visible_at }) => visible_at ? ctime > visible_at.getTime() : true)
+        .map(({ id }) => id));
       return {
         data: {
-          challenges: visible,
-          scores: await Promise.all(
-            visible.map((c) =>
-              scoreService
-                .getChallengeSolves(c)
-                .then(({ score }) => ({ id: c.id, score })),
-            ),
-          ),
+          challenges: challenges.filter(({ id }) => visible.has(id)),
+          scores: scores.filter(({ id }) => visible.has(id))
         },
       };
     },

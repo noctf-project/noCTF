@@ -38,6 +38,7 @@ import { NATSClientFactory } from "@noctf/server-core/clients/nats";
 import { ChallengeService } from "@noctf/server-core/services/challenge";
 import { FileService } from "@noctf/server-core/services/file";
 import { ScoreService } from "@noctf/server-core/services/score";
+import { fastifyMultipart } from "@fastify/multipart";
 
 export const server = fastify({
   logger: {
@@ -49,6 +50,7 @@ export const server = fastify({
 });
 
 server.register(fastifyCompress);
+server.register(fastifyMultipart);
 
 server.register(async () => {
   server.container = createContainer();
@@ -179,6 +181,10 @@ server.setErrorHandler((error, request, reply) => {
         return reply
           .status(400)
           .send({ error: "UnsupportedMediaTypeError", message: error.message });
+      case "FST_INVALID_MULTIPART_CONTENT_TYPE":
+        return reply
+          .status(400)
+          .send({ error: "NotMultipartError", message: error.message });
       default:
         server.log.warn(
           "unexpected possibly fastify error code: %s",

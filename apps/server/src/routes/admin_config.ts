@@ -1,5 +1,5 @@
 import { UpdateConfigValueRequest } from "@noctf/api/requests";
-import { GetAdminConfigValueResponse } from "@noctf/api/responses";
+import { AdminGetConfigValueResponse } from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
 import type { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
@@ -29,7 +29,7 @@ export async function routes(fastify: FastifyInstance) {
     Params: {
       namespace: string;
     };
-    Reply: GetAdminConfigValueResponse;
+    Reply: AdminGetConfigValueResponse;
   }>(
     "/admin/config/:namespace",
     {
@@ -38,7 +38,7 @@ export async function routes(fastify: FastifyInstance) {
         security: [{ bearer: [] }],
         auth,
         response: {
-          200: GetAdminConfigValueResponse,
+          200: AdminGetConfigValueResponse,
         },
       },
     },

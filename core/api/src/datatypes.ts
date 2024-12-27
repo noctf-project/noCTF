@@ -157,6 +157,7 @@ export type CaptchaValidationString = Static<typeof CaptchaValidationString>;
 
 export const FileMetadata = Type.Object({
   filename: Type.String(),
+  ref: Type.String(),
   mime: Type.String(),
   size: Type.Number(),
   hash: Type.String(),
