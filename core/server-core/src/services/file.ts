@@ -53,7 +53,7 @@ export class FileService {
   async getMetadata(ref: string): Promise<FileMetadata> {
     const {
       value: { upload },
-    } = await this.configService.get<FileConfig>(FileConfig.$id);
+    } = await this.configService.get<FileConfig>(FileConfig.$id!);
     const provider = this.providers.get(upload);
     if (!provider) throw new Error(`Provider ${upload} does not exist`);
     return provider.getMetadata(ref);
@@ -62,7 +62,7 @@ export class FileService {
   async upload(filename: string, readStream: Readable): Promise<FileMetadata> {
     const {
       value: { upload },
-    } = await this.configService.get<FileConfig>(FileConfig.$id);
+    } = await this.configService.get<FileConfig>(FileConfig.$id!);
     const provider = this.providers.get(upload);
     if (!provider) throw new Error(`Provider ${upload} does not exist`);
     const ref = nanoid();
@@ -93,7 +93,7 @@ export class FileService {
   async delete(ref: string): Promise<void> {
     const {
       value: { upload },
-    } = await this.configService.get<FileConfig>(FileConfig.$id);
+    } = await this.configService.get<FileConfig>(FileConfig.$id!);
     const provider = this.providers.get(upload);
     if (!provider) throw new Error(`Provider ${upload} does not exist`);
     return provider.delete(ref);
@@ -106,7 +106,7 @@ export class FileService {
   ): Promise<string | [Readable, FileMetadata]> {
     const {
       value: { download },
-    } = await this.configService.get<FileConfig>(FileConfig.$id);
+    } = await this.configService.get<FileConfig>(FileConfig.$id!);
     const provider = this.providers.get(download);
     if (!provider) throw new Error(`Provider ${download} does not exist`);
     return provider.download(ref, start, end);

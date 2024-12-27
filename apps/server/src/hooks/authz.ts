@@ -26,7 +26,7 @@ export const AuthzHook = async (request: FastifyRequest) => {
 
   if (
     !(await cache.load(routeKey, () =>
-      policyService.evaluate(request.user?.id, expanded),
+      policyService.evaluate(request.user?.id || 0, expanded),
     ))
   ) {
     throw new ForbiddenError("Access denied by policy");

@@ -24,7 +24,7 @@ export class TokenService {
   private secret: Props["secret"];
   private cacheService: Props["cacheService"];
   private logger: Props["logger"];
-  private localCache = new LocalCache({
+  private localCache = new LocalCache<string, boolean>({
     max: 10000,
     ttl: 1000,
   });
@@ -103,7 +103,7 @@ export class TokenService {
         revoked = await this.localCache.load(
           data.jti,
           checkRevoke,
-          (v) => v && data.exp && { ttl: data.exp * 1000 - Date.now() },
+          (v) => (v && data.exp) ? { ttl: data.exp * 1000 - Date.now() } : undefined,
         );
       } else {
         revoked = await checkRevoke();

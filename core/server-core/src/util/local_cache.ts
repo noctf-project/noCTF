@@ -11,8 +11,8 @@ export class LocalCache<K = unknown, V = unknown> {
   async load(
     key: K,
     loader: () => V | Promise<V>,
-    setTTL?: ((v: V) => TTLOptions) | TTLOptions,
-  ) {
+    setTTL?: ((v: V) => TTLOptions | undefined) | TTLOptions | undefined,
+  ): Promise<V> {
     let p = this.cache.get(key);
     if (typeof p === "undefined") {
       p = loader();
@@ -30,6 +30,7 @@ export class LocalCache<K = unknown, V = unknown> {
       return v;
     } catch (e) {
       this.cache.delete(key);
+      throw e;
     }
   }
 

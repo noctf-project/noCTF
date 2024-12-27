@@ -142,24 +142,24 @@ export class TeamService {
    * @param code
    */
   async join(user_id: number, code: string) {
-    const { id: team_id, flags } =
+    const result =
       (await this.databaseClient
         .get()
         .selectFrom("core.team")
         .select(["id", "flags"])
         .where("join_code", "=", code)
-        .executeTakeFirst()) || {};
+        .executeTakeFirst());
     if (
-      !team_id ||
-      flags.includes(TeamFlag.FROZEN) ||
-      flags.includes(TeamFlag.BLOCKED)
+      !result ||
+      !result.flags.includes(TeamFlag.FROZEN) ||
+      !result.flags.includes(TeamFlag.BLOCKED)
     ) {
       throw new NotFoundError("Invalid joining code");
     }
     await this.assignMember(
       {
         user_id,
-        team_id,
+        team_id: result.id,
       },
       {
         actor: {
@@ -169,7 +169,7 @@ export class TeamService {
         message: "Joined using code",
       },
     );
-    return team_id;
+    return result.id;
   }
 
   async getMembership(userId: number) {

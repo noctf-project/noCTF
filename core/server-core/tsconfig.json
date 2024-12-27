@@ -11,6 +11,7 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "noImplicitAny": true,
+    "strictNullChecks": true
   },
   "include": ["src/**/*", "../../apps/server/src/hooks/authn.ts", "../../apps/server/src/hooks/authz.ts"]
 }

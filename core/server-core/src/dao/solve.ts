@@ -1,8 +1,12 @@
+import { DB } from "@noctf/schema";
 import { DBType } from "../clients/database.ts";
+import { AllNonNullable } from "../types/primitives.ts";
 
+
+type DBSolve = AllNonNullable<DB["core.solve"]> & { created_at: Date };
 export class SolveDAO {
-  async getSolvesForChallenge(db: DBType, challenge_id: number) {
-    return await db
+  async getSolvesForChallenge(db: DBType, challenge_id: number): Promise<DBSolve[]> {
+    return (await db
       .selectFrom("core.solve")
       .select([
         "id",
@@ -14,7 +18,7 @@ export class SolveDAO {
       ])
       .where("challenge_id", "=", challenge_id)
       .orderBy("created_at asc")
-      .execute();
+      .execute()) as unknown as DBSolve[];
   }
 
   async getSolveCountForChallenge(db: DBType, challenge_id: number) {
@@ -25,7 +29,7 @@ export class SolveDAO {
         .where("challenge_id", "=", challenge_id)
         .where("hidden", "=", false)
         .where((x) => x.not(x("team_flags", "&&", ["hidden"])))
-        .executeTakeFirst()
+        .executeTakeFirstOrThrow()
     ).count;
   }
 }

@@ -157,7 +157,7 @@ export class ChallengeService {
     if (!valid) {
       throw new ValidationError(
         "JSONSchema: " +
-          this.privateMetadataSchemaValidator.errors
+          (this.privateMetadataSchemaValidator.errors || [])
             .map((e) => `${e.instancePath || "/"} ${e.message}`)
             .join(", "),
       );

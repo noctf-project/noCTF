@@ -73,18 +73,20 @@ export class LockService {
 
   private async executeScript(name: string, keys: string[], args: string[]) {
     const client = await this.redisClientFactory.getClient();
-    if (!this.scriptCache.has(name)) {
-      this.scriptCache.set(name, await client.scriptLoad(SCRIPTS[name]));
+    let sha = this.scriptCache.get(name);
+    if (!sha) {
+      sha = await client.scriptLoad(SCRIPTS[name]);
+      this.scriptCache.set(name, sha);
     }
     try {
-      return await client.evalSha(this.scriptCache.get(name), {
+      return await client.evalSha(sha, {
         keys,
         arguments: args,
       });
     } catch (e) {
       if (e instanceof ErrorReply && e.message.startsWith("NOSCRIPT")) {
         this.scriptCache.set(name, await client.scriptLoad(SCRIPTS[name]));
-        return await client.evalSha(this.scriptCache.get(name), {
+        return await client.evalSha(sha, {
           keys,
           arguments: args,
         });

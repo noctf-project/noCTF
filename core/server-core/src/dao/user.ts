@@ -9,7 +9,7 @@ export class UserDAO {
       .selectFrom("core.user")
       .select(db.fn.countAll().as("count"))
       .where("name", "=", name)
-      .executeTakeFirst();
+      .executeTakeFirstOrThrow();
     const count = result.count as unknown as string | number;
     return count != 0 && count != "0";
   }
@@ -37,6 +37,7 @@ export class UserDAO {
       if (e instanceof pg.DatabaseError && e.constraint) {
         throw new ConflictError("A user already exists with this name");
       }
+      throw e;
     }
   }
 

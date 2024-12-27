@@ -28,7 +28,7 @@ export const AuditLogEntry = Type.Object({
   actor: Type.String(),
   operation: Type.String(),
   entities: Type.Array(Type.String()),
-  data: Type.String(),
+  data: Type.Union([Type.String(), Type.Null()]),
   created_at: TypeDate,
 });
 export type AuditLogEntry = Static<typeof AuditLogEntry>;

@@ -48,7 +48,7 @@ enum StreamType {
   Queue = "queue",
 }
 
-const STREAMS: Record<StreamType, Partial<StreamConfig>> = {
+const STREAMS: Record<StreamType, Pick<StreamConfig, "name" | "retention" | "storage">> = {
   [StreamType.Events]: {
     name: "noctf_events",
     retention: RetentionPolicy.Interest,
@@ -271,7 +271,10 @@ export class EventBusService {
         });
       } catch (e) {
         if (e instanceof NatsError) {
-          await manager.streams.update(stream.name, stream);
+          await manager.streams.update(stream.name, {
+            ...stream,
+            subjects: [`${type}.>`],
+          });
         }
       }
     }

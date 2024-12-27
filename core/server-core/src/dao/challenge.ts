@@ -40,7 +40,7 @@ export class ChallengeDAO {
       .insertInto("core.challenge")
       .values(values)
       .returning(["id", "version", "created_at", "updated_at"])
-      .executeTakeFirst();
+      .executeTakeFirstOrThrow();
 
     return {
       ...values,

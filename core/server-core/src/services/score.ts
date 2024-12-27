@@ -3,6 +3,7 @@ import { LocalCache } from "../util/local_cache.ts";
 import { Expression, Parser } from "expr-eval";
 import { ServiceCradle } from "../index.ts";
 import { ScoringStrategy } from "@noctf/api/datatypes";
+import { ApplicationError } from "../errors.ts";
 
 type ScoreContext = {
   n: number;
@@ -61,7 +62,7 @@ export class ScoreService {
   async getStrategies() {
     const {
       value: { strategies: cfgStrategies },
-    } = await this.configService.get<ScoreConfig>(ScoreConfig.$id);
+    } = await this.configService.get<ScoreConfig>(ScoreConfig.$id!);
     const strategies: Record<string, ScoringStrategy> = {};
     Object.keys(STRATEGIES).map(
       (k) =>
@@ -87,18 +88,19 @@ export class ScoreService {
   ): Promise<number> {
     const {
       value: { start_time_s, end_time_s },
-    } = await this.configService.get<SetupConfig>(SetupConfig.$id);
+    } = await this.configService.get<SetupConfig>(SetupConfig.$id!);
+    const start = start_time_s || 0;
     const ctx: ScoreContext = {
       n,
-      t0: start_time_s || 0,
+      t0: start,
       t: Math.min(
-        end_time_s ? end_time_s - start_time_s : Number.MAX_SAFE_INTEGER,
-        Math.floor(Date.now() / 1000) - start_time_s,
+        end_time_s ? end_time_s - start : Number.MAX_SAFE_INTEGER,
+        Math.floor(Date.now() / 1000) - start,
       ),
     };
     const strategies = await this.getStrategies();
     if (!strategies[strategyName]) {
-      return null;
+      throw new Error(`Scoring strategy ${strategyName} does not exist`);
     }
     const strategy = strategies[strategyName];
     const expr = await this.exprCache.load(strategy.expr, () =>

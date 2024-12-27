@@ -46,7 +46,7 @@ export class MetricsClient {
   private lastFlushToFile = performance.now();
 
   private periodicMetricsRunning = false;
-  private performanceMetricsHistory: PerformanceMetricsHistory;
+  private performanceMetricsHistory: PerformanceMetricsHistory | null;
 
   constructor(
     logger: Logger,

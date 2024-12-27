@@ -1,10 +1,10 @@
 import type { Static, TSchema } from "@sinclair/typebox";
-import { Value } from "@sinclair/typebox/value";
 import type { ServiceCradle } from "../index.ts";
 import { BadRequestError, ValidationError } from "../errors.ts";
 import type { SerializableMap } from "../types/primitives.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
 import { Ajv, ValidateFunction } from "ajv";
+import { JsonObject } from "@noctf/schema";
 
 type Validator<T> = (kv: T) => Promise<string | null> | string | null;
 
@@ -67,8 +67,9 @@ export class ConfigService {
       return this._queryDb(namespace);
     }
     const now = performance.now();
-    if (this.cache.has(namespace)) {
-      const [promise, exp] = this.cache.get(namespace);
+    const v = this.cache.get(namespace);
+    if (v) {
+      const [promise, exp] = v;
       if (exp > now) {
         try {
           return promise as Promise<ConfigValue<T>>;
@@ -142,15 +143,16 @@ export class ConfigService {
     noValidate?: boolean;
     actor?: AuditLogActor;
   }): Promise<ConfigValue<T>> {
-    if (!this.validators.has(namespace)) {
+    const v = this.validators.get(namespace);
+    if (!v) {
       throw new ValidationError("Config namespace does not exist");
     }
-    const [av, validator] = this.validators.get(namespace);
+    const [av, validator] = v;
     if (!av(value)) {
       console.log(av.errors);
       throw new ValidationError(
         "JSONSchema: " +
-          av.errors
+          (av.errors || [])
             .map((e) => `${e.instancePath || "/"} ${e.message}`)
             .join(", "),
       );
@@ -168,7 +170,7 @@ export class ConfigService {
       .get()
       .updateTable("core.config")
       .set((eb) => ({
-        value,
+        value: value as JsonObject,
         updated_at: new Date(),
         version: eb("version", "+", 1),
       }))
@@ -208,6 +210,9 @@ export class ConfigService {
     validator?: Validator<T>,
   ) {
     const namespace = schema.$id;
+    if (!namespace) {
+      throw new Error("schema has no $id field");
+    }
     this.validators.set(namespace, [
       this.ajv.compile(schema),
       validator || nullValidator,
@@ -218,7 +223,7 @@ export class ConfigService {
       .insertInto("core.config")
       .values({
         namespace,
-        value: defaultCfg as SerializableMap,
+        value: defaultCfg as JsonObject,
       })
       .onConflict((c) => c.doNothing())
       .executeTakeFirst();

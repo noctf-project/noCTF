@@ -21,15 +21,16 @@ export class AuditLogService {
 
   async log({
     operation,
-    actor: { type, id } = SYSTEM_ACTOR,
+    actor,
     entities = [],
     data,
   }: {
     operation: string;
-    actor: AuditLogActor;
+    actor?: AuditLogActor;
     entities?: string[];
     data?: string;
   }) {
+    const { type, id } = actor || SYSTEM_ACTOR;
     await this.databaseClient
       .get()
       .insertInto("core.audit_log")
@@ -75,11 +76,15 @@ export class AuditLogService {
     if (operation) {
       query = query.where("operation", "like", operation);
     }
+    if (!limit || limit > MAX_QUERY_LIMIT) {
+      query = query.limit(MAX_QUERY_LIMIT);
+    } else {
+      query = query.limit(limit);
+    }
 
     return await query
       .orderBy("created_at desc")
       .offset(offset || 0)
-      .limit(limit > MAX_QUERY_LIMIT ? MAX_QUERY_LIMIT : limit)
       .execute();
   }
 }

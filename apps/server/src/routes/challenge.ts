@@ -23,7 +23,7 @@ export async function routes(fastify: FastifyInstance) {
   const adminCache = new LocalCache<number, boolean>({ ttl: 1000, max: 5000 });
   const gateAdmin = async (ctime: number, userId?: number) => {
     const admin = await adminCache.load(userId || 0, () =>
-      policyService.evaluate(userId, ["admin.challenge.get"]),
+      policyService.evaluate(userId || 0, ["admin.challenge.get"]),
     );
     if (!admin) {
       const {

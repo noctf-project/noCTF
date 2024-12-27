@@ -17,17 +17,14 @@ export enum StaticRole {
 }
 
 export class PolicyService {
-  private readonly auditLogService;
   private readonly cacheService;
   private readonly databaseClient;
   private readonly policyDAO;
 
   constructor({
-    auditLogService,
     cacheService: cacheService,
     databaseClient,
   }: Props) {
-    this.auditLogService = auditLogService;
     this.cacheService = cacheService;
     this.databaseClient = databaseClient;
     this.policyDAO = new PolicyDAO();
@@ -56,7 +53,7 @@ export class PolicyService {
     );
   }
 
-  async evaluate(userId: number | null, policy: Policy) {
+  async evaluate(userId: number, policy: Policy) {
     const roles = await (userId
       ? this.getPermissionsForUser(userId)
       : this.getPermissionsForPublic());
