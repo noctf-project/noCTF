@@ -27,7 +27,7 @@ export class DatabaseClient {
     cb: (t: Transaction<DB>) => Promise<T>,
     isolation?: IsolationLevel,
   ) {
-    let tx = this.client.transaction();
+    let tx = this.client.withSchema("public").transaction();
     if (isolation) {
       tx = tx.setIsolationLevel(isolation);
     }
@@ -35,6 +35,6 @@ export class DatabaseClient {
   }
 
   get() {
-    return this.client;
+    return this.client.withSchema("public");
   }
 }

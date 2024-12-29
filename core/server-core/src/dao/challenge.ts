@@ -3,18 +3,14 @@ import type {
   AdminUpdateChallengeRequest,
 } from "@noctf/api/requests";
 import type { DBType } from "../clients/database.ts";
-import type {
-  Challenge,
-  ChallengeMetadata,
-  ChallengeSummary,
-} from "@noctf/api/datatypes";
+import type { Challenge, ChallengeMetadata } from "@noctf/api/datatypes";
 import { FilterUndefined } from "../util/filter.ts";
 import { NotFoundError } from "../errors.ts";
 import { UpdateObject } from "kysely";
 import { DB } from "@noctf/schema";
 import { SelectExpression } from "kysely";
 
-const METADATA_FIELDS: SelectExpression<DB, "core.challenge">[] = [
+const METADATA_FIELDS: SelectExpression<DB, "challenge">[] = [
   "id",
   "slug",
   "title",
@@ -37,7 +33,7 @@ export class ChallengeDAO {
       visible_at: v.visible_at,
     };
     const { id, version, created_at, updated_at } = await db
-      .insertInto("core.challenge")
+      .insertInto("challenge")
       .values(values)
       .returning(["id", "version", "created_at", "updated_at"])
       .executeTakeFirstOrThrow();
@@ -59,7 +55,7 @@ export class ChallengeDAO {
       visible_at,
     }: Partial<Pick<Challenge, "tags" | "hidden" | "visible_at">>,
   ): Promise<ChallengeMetadata[]> {
-    let query = db.selectFrom("core.challenge").select(METADATA_FIELDS);
+    let query = db.selectFrom("challenge").select(METADATA_FIELDS);
     if (tags) {
       query = query.where("tags", "@>", tags);
     }
@@ -80,7 +76,7 @@ export class ChallengeDAO {
 
   async getMetadata(db: DBType, id: number): Promise<ChallengeMetadata> {
     const challenge = await db
-      .selectFrom("core.challenge")
+      .selectFrom("challenge")
       .select(METADATA_FIELDS)
       .where("id", "=", id)
       .executeTakeFirst();
@@ -93,7 +89,7 @@ export class ChallengeDAO {
 
   async get(db: DBType, id: number): Promise<Challenge> {
     const challenge = await db
-      .selectFrom("core.challenge")
+      .selectFrom("challenge")
       .select([
         "id",
         "slug",
@@ -117,7 +113,7 @@ export class ChallengeDAO {
   }
 
   async update(db: DBType, id: number, v: AdminUpdateChallengeRequest) {
-    const values: UpdateObject<DB, "core.challenge"> = {
+    const values: UpdateObject<DB, "challenge"> = {
       title: v.title,
       description: v.description,
       private_metadata: v.private_metadata,
@@ -127,7 +123,7 @@ export class ChallengeDAO {
       updated_at: new Date(),
     };
     let query = db
-      .updateTable("core.challenge")
+      .updateTable("challenge")
       .set(FilterUndefined(values))
       .set((eb) => ({ version: eb("version", "+", 1) }))
       .returning(["id", "version"])
@@ -145,7 +141,7 @@ export class ChallengeDAO {
 
   async delete(db: DBType, id: number) {
     const { numDeletedRows } = await db
-      .deleteFrom("core.challenge")
+      .deleteFrom("challenge")
       .where("id", "=", id)
       .executeTakeFirst();
     if (!numDeletedRows) {

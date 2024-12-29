@@ -4,7 +4,7 @@ import { sql, type Kysely } from "kysely";
 export async function up(db: Kysely<any>): Promise<void> {
   await db.schema.createSchema("core").execute();
 
-  const schema = db.schema.withSchema("core");
+  const schema = db.schema;
 
   await schema
     .createTable("config")
@@ -42,10 +42,8 @@ export async function up(db: Kysely<any>): Promise<void> {
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
-  const schema = db.schema.withSchema("core");
+  const schema = db.schema;
 
   await schema.dropTable("audit_log").execute();
   await schema.dropTable("config").execute();
-
-  await db.schema.dropSchema("core").execute();
 }

@@ -100,10 +100,8 @@ export class TokenService {
       if (!data.jti) {
         revoked = false;
       } else if (opts.localVerifyRevocation) {
-        revoked = await this.localCache.load(
-          data.jti,
-          checkRevoke,
-          (v) => (v && data.exp) ? { ttl: data.exp * 1000 - Date.now() } : undefined,
+        revoked = await this.localCache.load(data.jti, checkRevoke, (v) =>
+          v && data.exp ? { ttl: data.exp * 1000 - Date.now() } : undefined,
         );
       } else {
         revoked = await checkRevoke();

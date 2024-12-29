@@ -33,7 +33,7 @@ export class AuditLogService {
     const { type, id } = actor || SYSTEM_ACTOR;
     await this.databaseClient
       .get()
-      .insertInto("core.audit_log")
+      .insertInto("audit_log")
       .values({
         actor: id ? `${type}:${id}` : type,
         operation,
@@ -54,7 +54,7 @@ export class AuditLogService {
   }: QueryAuditLogRequest): Promise<AuditLogEntry[]> {
     let query = this.databaseClient
       .get()
-      .selectFrom("core.audit_log")
+      .selectFrom("audit_log")
       .select(["actor", "operation", "entities", "data", "created_at"]);
 
     if (start_time) {

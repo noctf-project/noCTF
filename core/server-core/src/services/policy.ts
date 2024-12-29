@@ -21,10 +21,7 @@ export class PolicyService {
   private readonly databaseClient;
   private readonly policyDAO;
 
-  constructor({
-    cacheService: cacheService,
-    databaseClient,
-  }: Props) {
+  constructor({ cacheService: cacheService, databaseClient }: Props) {
     this.cacheService = cacheService;
     this.databaseClient = databaseClient;
     this.policyDAO = new PolicyDAO();

@@ -16,7 +16,9 @@ export type StringOrSet = string | Set<string>;
 
 export type AtLeast<T, K extends keyof T> = Partial<T> & Pick<T, K>;
 
-export type AllNonNullable<T> = { [P in keyof T]: NonNullable<T[P] extends (boolean | null) ? boolean : T[P]>; };
+export type AllNonNullable<T> = {
+  [P in keyof T]: NonNullable<T[P] extends boolean | null ? boolean : T[P]>;
+};
 
 export interface LogFn {
   /* eslint-disable @typescript-eslint/no-explicit-any */

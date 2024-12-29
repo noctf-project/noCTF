@@ -95,7 +95,7 @@ export class ConfigService {
   ): Promise<ConfigValue<T>> {
     const config = await this.databaseClient
       .get()
-      .selectFrom("core.config")
+      .selectFrom("config")
       .select(["version", "value"])
       .where("namespace", "=", namespace)
       .executeTakeFirst();
@@ -168,7 +168,7 @@ export class ConfigService {
 
     let query = this.databaseClient
       .get()
-      .updateTable("core.config")
+      .updateTable("config")
       .set((eb) => ({
         value: value as JsonObject,
         updated_at: new Date(),
@@ -220,7 +220,7 @@ export class ConfigService {
     this.logger.info("Registered config namespace %s", namespace);
     const result = await this.databaseClient
       .get()
-      .insertInto("core.config")
+      .insertInto("config")
       .values({
         namespace,
         value: defaultCfg as JsonObject,

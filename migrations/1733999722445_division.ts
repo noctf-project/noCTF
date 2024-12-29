@@ -3,7 +3,7 @@ import { sql, type Kysely } from "kysely";
 /** Divisions are custom scoreboards */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
-  const schema = db.schema.withSchema("core");
+  const schema = db.schema;
 
   await schema
     .createTable("division")
@@ -20,10 +20,10 @@ export async function up(db: Kysely<any>): Promise<void> {
   await schema
     .createTable("team_division")
     .addColumn("team_id", "integer", (col) =>
-      col.notNull().references("core.team.id").onDelete("cascade"),
+      col.notNull().references("team.id").onDelete("cascade"),
     )
     .addColumn("division_id", "integer", (col) =>
-      col.notNull().references("core.division.id").onDelete("cascade"),
+      col.notNull().references("division.id").onDelete("cascade"),
     )
     .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
@@ -33,7 +33,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
-  const schema = db.schema.withSchema("core");
+  const schema = db.schema;
 
   await schema.dropTable("team_division").execute();
   await schema.dropTable("division").execute();

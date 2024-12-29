@@ -19,7 +19,7 @@ export class TicketDAO {
     }: Partial<Ticket>,
   ): Promise<Ticket> {
     const { id, created_at } = await db
-      .insertInto("core.ticket")
+      .insertInto("ticket")
       .values({
         state: TicketState.Created,
         category,
@@ -51,7 +51,7 @@ export class TicketDAO {
 
   async get(db: DBType, id: number) {
     const result = await db
-      .selectFrom("core.ticket")
+      .selectFrom("ticket")
       .select([
         "id",
         "state",
@@ -75,7 +75,7 @@ export class TicketDAO {
 
   async getState(db: DBType, id: number) {
     const data = await db
-      .selectFrom("core.ticket")
+      .selectFrom("ticket")
       .select("state")
       .where("id", "=", id)
       .executeTakeFirst();
@@ -87,7 +87,7 @@ export class TicketDAO {
 
   async update(db: DBType, id: number, properties: UpdateTicket) {
     const { numUpdatedRows } = await db
-      .updateTable("core.ticket")
+      .updateTable("ticket")
       .set(FilterUndefined(properties))
       .where("id", "=", id)
       .executeTakeFirst();

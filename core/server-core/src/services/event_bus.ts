@@ -48,7 +48,10 @@ enum StreamType {
   Queue = "queue",
 }
 
-const STREAMS: Record<StreamType, Pick<StreamConfig, "name" | "retention" | "storage">> = {
+const STREAMS: Record<
+  StreamType,
+  Pick<StreamConfig, "name" | "retention" | "storage">
+> = {
   [StreamType.Events]: {
     name: "noctf_events",
     retention: RetentionPolicy.Interest,

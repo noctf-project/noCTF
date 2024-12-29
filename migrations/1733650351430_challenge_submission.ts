@@ -2,7 +2,7 @@ import { sql, type Kysely } from "kysely";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
-  const schema = db.schema.withSchema("core");
+  const schema = db.schema;
 
   await schema
     .createTable("challenge")
@@ -42,13 +42,13 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
     .addColumn("user_id", "integer", (col) =>
-      col.notNull().references("core.user.id"),
+      col.notNull().references("user.id"),
     )
     .addColumn("team_id", "integer", (col) =>
-      col.notNull().references("core.team.id"),
+      col.notNull().references("team.id"),
     )
     .addColumn("challenge_id", "integer", (col) =>
-      col.notNull().references("core.challenge.id"),
+      col.notNull().references("challenge.id"),
     )
     .addColumn("data", "text")
     .addColumn("comments", "text")
@@ -106,17 +106,17 @@ export async function up(db: Kysely<any>): Promise<void> {
     ])
     .as(
       db
-        .selectFrom("core.submission")
+        .selectFrom("submission")
         .select([
-          "core.submission.id",
+          "submission.id",
           "hidden",
           "challenge_id",
           "team_id",
-          "core.submission.created_at",
-          "core.team.flags",
+          "submission.created_at",
+          "team.flags",
         ])
         .where("solved", "=", true)
-        .innerJoin("core.team", "core.team.id", "core.submission.team_id"),
+        .innerJoin("team", "team.id", "submission.team_id"),
     )
     .execute();
 
@@ -128,7 +128,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("value", "integer")
     .addColumn("title", "varchar(128)", (col) => col.notNull())
     .addColumn("team_id", "integer", (col) =>
-      col.notNull().references("core.team.id").onDelete("cascade"),
+      col.notNull().references("team.id").onDelete("cascade"),
     )
     .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
@@ -137,7 +137,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
-  const schema = db.schema.withSchema("core");
+  const schema = db.schema;
 
   await schema.dropTable("award").execute();
   await schema.dropView("solve").execute();

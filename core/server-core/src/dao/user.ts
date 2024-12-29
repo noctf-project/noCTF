@@ -6,7 +6,7 @@ import { ConflictError, NotFoundError } from "../errors.ts";
 export class UserDAO {
   async checkNameExists(db: Kysely<DB>, name: string) {
     const result = await db
-      .selectFrom("core.user")
+      .selectFrom("user")
       .select(db.fn.countAll().as("count"))
       .where("name", "=", name)
       .executeTakeFirstOrThrow();
@@ -20,11 +20,11 @@ export class UserDAO {
       name,
       bio,
       roles,
-    }: Pick<Insertable<DB["core.user"]>, "name" | "bio" | "roles">,
+    }: Pick<Insertable<DB["user"]>, "name" | "bio" | "roles">,
   ) {
     try {
       const { id } = await db
-        .insertInto("core.user")
+        .insertInto("user")
         .values({
           name,
           bio,
@@ -48,10 +48,10 @@ export class UserDAO {
       name,
       bio,
       roles,
-    }: Pick<Updateable<DB["core.user"]>, "name" | "bio" | "roles">,
+    }: Pick<Updateable<DB["user"]>, "name" | "bio" | "roles">,
   ) {
     const { numUpdatedRows } = await db
-      .updateTable("core.user")
+      .updateTable("user")
       .set({
         name,
         bio,

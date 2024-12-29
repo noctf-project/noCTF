@@ -2,7 +2,7 @@ import { sql, type Kysely } from "kysely";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
-  const schema = db.schema.withSchema("core");
+  const schema = db.schema;
 
   await schema
     .createTable("ticket")
@@ -10,11 +10,9 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
     .addColumn("state", "varchar(32)", (col) => col.notNull())
-    .addColumn("team_id", "integer", (col) => col.references("core.team.id"))
-    .addColumn("user_id", "integer", (col) => col.references("core.user.id"))
-    .addColumn("assignee_id", "integer", (col) =>
-      col.references("core.user.id"),
-    )
+    .addColumn("team_id", "integer", (col) => col.references("team.id"))
+    .addColumn("user_id", "integer", (col) => col.references("user.id"))
+    .addColumn("assignee_id", "integer", (col) => col.references("user.id"))
     .addColumn("category", "varchar(64)")
     .addColumn("item", "varchar(64)")
     .addColumn("provider", "varchar(64)", (col) => col.notNull())
@@ -47,15 +45,15 @@ export async function up(db: Kysely<any>): Promise<void> {
   await schema
     .createIndex("ticket_uidx_thread")
     .unique()
-    .on("core.ticket")
+    .on("ticket")
     .columns(["category", "item", "team_id", "user_id"])
     .nullsNotDistinct()
     .execute();
 
   await schema
     .createTable("ticket_ban")
-    .addColumn("team_id", "integer", (col) => col.references("core.team.id"))
-    .addColumn("user_id", "integer", (col) => col.references("core.user.id"))
+    .addColumn("team_id", "integer", (col) => col.references("team.id"))
+    .addColumn("user_id", "integer", (col) => col.references("user.id"))
     .addColumn("until", "timestamptz")
     .addColumn("reason", "text", (col) => col.notNull())
     .addColumn("created_at", "timestamptz", (col) =>
@@ -70,7 +68,7 @@ export async function up(db: Kysely<any>): Promise<void> {
   await schema
     .createTable("ticket_event")
     .addColumn("ticket_id", "integer", (col) =>
-      col.notNull().references("core.ticket.id").onDelete("cascade"),
+      col.notNull().references("ticket.id").onDelete("cascade"),
     )
     .addColumn("operation", "varchar(64)", (col) => col.notNull())
     .addColumn("actor", "varchar(64)", (col) => col.notNull())
@@ -81,7 +79,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
-  const schema = db.schema.withSchema("core");
+  const schema = db.schema;
 
   await schema.dropTable("ticket_event").execute();
   await schema.dropTable("ticket_ban").execute();

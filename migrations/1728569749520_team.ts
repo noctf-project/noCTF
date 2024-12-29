@@ -2,7 +2,7 @@ import { sql, type Kysely } from "kysely";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
-  const schema = db.schema.withSchema("core");
+  const schema = db.schema;
 
   await schema
     .createTable("team")
@@ -26,12 +26,12 @@ export async function up(db: Kysely<any>): Promise<void> {
   await schema
     .createTable("team_member")
     .addColumn("user_id", "integer", (col) =>
-      col.primaryKey().references("core.user.id").onDelete("cascade"),
+      col.primaryKey().references("user.id").onDelete("cascade"),
     )
     .addColumn("team_id", "integer", (col) =>
-      col.notNull().references("core.team.id").onDelete("cascade"),
+      col.notNull().references("team.id").onDelete("cascade"),
     )
-    .addColumn("role", sql`core.team_member_role`, (col) =>
+    .addColumn("role", sql`team_member_role`, (col) =>
       col.notNull().defaultTo("member"),
     )
     .addColumn("created_at", "timestamptz", (col) =>
@@ -54,7 +54,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
-  const schema = db.schema.withSchema("core");
+  const schema = db.schema;
 
   await schema.dropTable("team_member").execute();
   await schema.dropType("team_member_role").execute();

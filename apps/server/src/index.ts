@@ -163,6 +163,16 @@ server.addHook("onRequestAbort", async (request) => {
 });
 
 server.setErrorHandler((error, request, reply) => {
+  if (
+    error instanceof SyntaxError &&
+    request.headers["content-type"] &&
+    request.headers["content-type"].startsWith("application/json")
+  ) {
+    reply
+      .status(400)
+      .send({ error: "BadRequestError", message: "Invalid JSON" });
+    return;
+  }
   if (error instanceof ApplicationError) {
     reply
       .status(error.status)

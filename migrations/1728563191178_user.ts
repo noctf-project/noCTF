@@ -2,7 +2,7 @@ import { sql, type Kysely } from "kysely";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
-  const schema = db.schema.withSchema("core");
+  const schema = db.schema;
 
   await schema
     .createTable("user")
@@ -20,7 +20,7 @@ export async function up(db: Kysely<any>): Promise<void> {
   await schema
     .createTable("user_identity")
     .addColumn("user_id", "integer", (col) =>
-      col.notNull().references("core.user.id").onDelete("cascade"),
+      col.notNull().references("user.id").onDelete("cascade"),
     )
     .addColumn("provider", "varchar(64)", (col) => col.notNull())
     .addColumn("provider_id", "varchar", (col) => col.notNull())
@@ -84,7 +84,6 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .execute();
   await db
-    .withSchema("core")
     .insertInto("policy")
     .values([
       {
@@ -126,7 +125,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
-  const schema = db.schema.withSchema("core");
+  const schema = db.schema;
 
   await schema.dropTable("policy").execute();
   await schema.dropTable("oauth_provider").execute();

@@ -1,6 +1,6 @@
 import { ConflictError, NotFoundError } from "../errors.ts";
 import { TeamFlag } from "../types/enums.ts";
-import type { CoreTeamMemberRole, DB } from "@noctf/schema";
+import type { TeamMemberRole, DB } from "@noctf/schema";
 import type { ServiceCradle } from "../index.ts";
 import { nanoid } from "nanoid";
 import type { AuditParams } from "../types/audit_log.ts";
@@ -45,7 +45,7 @@ export class TeamService {
     const join_code = generate_join_code ? nanoid() : null;
     const { id, bio, created_at } = await this.databaseClient
       .get()
-      .insertInto("core.team")
+      .insertInto("team")
       .values({
         name,
         join_code,
@@ -84,7 +84,7 @@ export class TeamService {
     },
     { actor, message }: AuditParams = {},
   ) {
-    const set: UpdateObject<DB, "core.team", "core.team"> = {
+    const set: UpdateObject<DB, "team", "team"> = {
       name,
       flags,
       bio,
@@ -97,7 +97,7 @@ export class TeamService {
 
     await this.databaseClient
       .get()
-      .updateTable("core.team")
+      .updateTable("team")
       .set(set)
       .where("id", "=", id)
       .executeTakeFirstOrThrow();
@@ -113,7 +113,7 @@ export class TeamService {
   async get(id: number) {
     return await this.databaseClient
       .get()
-      .selectFrom("core.team")
+      .selectFrom("team")
       .select(["id", "name", "bio", "join_code", "flags", "created_at"])
       .where("id", "=", id)
       .executeTakeFirst();
@@ -122,7 +122,7 @@ export class TeamService {
   async delete(id: number, { actor, message }: AuditParams = {}) {
     const { numDeletedRows } = await this.databaseClient
       .get()
-      .deleteFrom("core.team")
+      .deleteFrom("team")
       .where("id", "=", id)
       .executeTakeFirst();
     if (numDeletedRows === 0n) {
@@ -142,13 +142,12 @@ export class TeamService {
    * @param code
    */
   async join(user_id: number, code: string) {
-    const result =
-      (await this.databaseClient
-        .get()
-        .selectFrom("core.team")
-        .select(["id", "flags"])
-        .where("join_code", "=", code)
-        .executeTakeFirst());
+    const result = await this.databaseClient
+      .get()
+      .selectFrom("team")
+      .select(["id", "flags"])
+      .where("join_code", "=", code)
+      .executeTakeFirst();
     if (
       !result ||
       !result.flags.includes(TeamFlag.FROZEN) ||
@@ -175,7 +174,7 @@ export class TeamService {
   async getMembership(userId: number) {
     const result = await this.databaseClient
       .get()
-      .selectFrom("core.team_member")
+      .selectFrom("team_member")
       .select(["team_id", "role"])
       .where("user_id", "=", userId)
       .executeTakeFirst();
@@ -194,13 +193,13 @@ export class TeamService {
     }: {
       user_id: number;
       team_id: number;
-      role?: CoreTeamMemberRole;
+      role?: TeamMemberRole;
     },
     { actor, message }: AuditParams = {},
   ) {
     const { numInsertedOrUpdatedRows } = await this.databaseClient
       .get()
-      .insertInto("core.team_member")
+      .insertInto("team_member")
       .values({
         user_id,
         team_id,
@@ -210,8 +209,8 @@ export class TeamService {
         b
           .column("user_id")
           .doUpdateSet({ role })
-          .where("core.team_member.team_id", "=", team_id)
-          .where("core.team_member.role", "!=", role),
+          .where("team_member.team_id", "=", team_id)
+          .where("team_member.role", "!=", role),
       )
       .executeTakeFirst();
     if (numInsertedOrUpdatedRows === 0n) {
@@ -242,7 +241,7 @@ export class TeamService {
   ) {
     let query = this.databaseClient
       .get()
-      .deleteFrom("core.team_member")
+      .deleteFrom("team_member")
       .where("user_id", "=", user_id)
       .where("team_id", "=", team_id);
     if (check_owner) {
@@ -250,7 +249,7 @@ export class TeamService {
         op.or([
           op(
             op
-              .selectFrom("core.team_member")
+              .selectFrom("team_member")
               .select((o) => o.fn.countAll().as("cnt"))
               .where("team_id", "=", team_id)
               .where("user_id", "!=", user_id)
@@ -260,7 +259,7 @@ export class TeamService {
           ),
           op(
             op
-              .selectFrom("core.team_member")
+              .selectFrom("team_member")
               .select((o) => o.fn.countAll().as("cnt"))
               .where("team_id", "=", team_id),
             "=",
@@ -287,7 +286,7 @@ export class TeamService {
   async getMembers(teamId: number) {
     return await this.databaseClient
       .get()
-      .selectFrom("core.team_member")
+      .selectFrom("team_member")
       .select(["user_id", "role"])
       .where("team_id", "=", teamId)
       .execute();

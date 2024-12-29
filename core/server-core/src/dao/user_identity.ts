@@ -15,7 +15,7 @@ export class UserIdentityDAO {
   ) {
     try {
       await db
-        .insertInto("core.user_identity")
+        .insertInto("user_identity")
         .values({ user_id, provider, provider_id, secret_data })
         .onConflict((oc) =>
           oc.columns(["user_id", "provider"]).doUpdateSet({
@@ -39,7 +39,7 @@ export class UserIdentityDAO {
     { user_id, provider }: Pick<UserIdentity, "user_id" | "provider">,
   ) {
     return await db
-      .deleteFrom("core.user_identity")
+      .deleteFrom("user_identity")
       .where("user_id", "=", user_id)
       .where("provider", "=", provider)
       .executeTakeFirst();
@@ -47,7 +47,7 @@ export class UserIdentityDAO {
 
   async listProvidersForUser(db: DBType, user_id: number) {
     return await db
-      .selectFrom("core.user_identity")
+      .selectFrom("user_identity")
       .select(["provider", "provider_id"])
       .where("user_id", "=", user_id)
       .execute();
@@ -75,7 +75,7 @@ export class UserIdentityDAO {
 
   private selectIdentity(db: DBType) {
     return db
-      .selectFrom("core.user_identity")
+      .selectFrom("user_identity")
       .select([
         "user_id",
         "provider",
