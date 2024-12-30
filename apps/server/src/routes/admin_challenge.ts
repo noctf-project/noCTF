@@ -131,7 +131,7 @@ export async function routes(fastify: FastifyInstance) {
   );
 
   fastify.get(
-    "/admin/challenges/private_metadata",
+    "/admin/challenges/schema/private_metadata",
     {
       schema: {
         tags: ["admin"],

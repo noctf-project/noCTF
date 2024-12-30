@@ -130,6 +130,43 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
+  fastify.get<{ Params: GetChallengeParams }>(
+    "/challenges/:id/solves",
+    {
+      schema: {
+        tags: ["challenge"],
+        security: [{ bearer: [] }],
+        auth: {
+          policy: ["OR", "challenge.solves.get", "admin.challenge.get"],
+        },
+        params: GetChallengeParams,
+        response: {
+          200: GetChallengeResponse,
+        },
+      },
+    },
+    async (request) => {
+      const ctime = Date.now();
+      const admin = await gateAdmin(ctime, request.user?.id);
+      const { id } = request.params;
+
+      // Cannot cache directly as could be rendered with team_id as param
+      const challenge = await challengeService.getRendered(id);
+      if (
+        !admin &&
+        (challenge.hidden ||
+          (challenge.visible_at !== null &&
+            ctime < challenge.visible_at.getTime()))
+      ) {
+        throw new NotFoundError("Challenge not found");
+      }
+      // TODO: render public metadata, add type
+      return {
+        data: challenge,
+      };
+    },
+  );
+
   fastify.get<{ Params: GetChallengeFileParams }>(
     "/challenges/:id/files/:filename",
     {

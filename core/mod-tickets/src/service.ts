@@ -109,9 +109,9 @@ export class TicketService {
   async dropLease(id: number, token: string) {
     try {
       await this.lockService.dropLease(`ticket:${id}`, token);
-    } catch (e) {
+    } catch (err) {
       this.logger.warn(
-        { stack: e.stack },
+        err,
         "Ticket has invalid lease token, however will ignore",
       );
     }
@@ -134,15 +134,12 @@ export class TicketService {
         properties,
         id,
       } as TicketApplyMessage);
-    } catch (e) {
-      this.logger.error(
-        { stack: e.stack },
-        "Could not update and apply properties",
-      );
+    } catch (err) {
+      this.logger.error(err, "Could not update and apply properties");
       if (lease) {
         await this.dropLease(id, lease);
       }
-      throw e;
+      throw err;
     }
   }
 }

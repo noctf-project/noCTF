@@ -2,10 +2,9 @@ import type { AuditLogEntry } from "@noctf/api/datatypes";
 import type { QueryAuditLogRequest } from "@noctf/api/requests";
 import type { ServiceCradle } from "../index.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
-import { sql } from "kysely";
 import { ActorType } from "../types/enums.ts";
+import { AuditLogDAO } from "../clients/audit_log.ts";
 
-const MAX_QUERY_LIMIT = 100;
 type Props = Pick<ServiceCradle, "databaseClient">;
 
 export const SYSTEM_ACTOR: AuditLogActor = {
@@ -13,78 +12,29 @@ export const SYSTEM_ACTOR: AuditLogActor = {
 };
 
 export class AuditLogService {
-  private readonly databaseClient: Props["databaseClient"];
+  private readonly databaseClient;
+  private readonly dao = new AuditLogDAO();
 
   constructor({ databaseClient }: Props) {
     this.databaseClient = databaseClient;
   }
 
-  async log({
-    operation,
-    actor,
-    entities = [],
-    data,
-  }: {
+  async log(v: {
     operation: string;
     actor?: AuditLogActor;
     entities?: string[];
     data?: string;
   }) {
-    const { type, id } = actor || SYSTEM_ACTOR;
-    await this.databaseClient
-      .get()
-      .insertInto("audit_log")
-      .values({
-        actor: id ? `${type}:${id}` : type,
-        operation,
-        entities,
-        data,
-      })
-      .execute();
+    const { type, id } = v.actor || SYSTEM_ACTOR;
+    return this.dao.create(this.databaseClient.get(), {
+      operation: v.operation,
+      data: v.data || null,
+      entities: v.entities || [],
+      actor: id ? `${type}:${id}` : type,
+    });
   }
 
-  async query({
-    start_time,
-    end_time,
-    actor,
-    entities,
-    operation,
-    offset,
-    limit,
-  }: QueryAuditLogRequest): Promise<AuditLogEntry[]> {
-    let query = this.databaseClient
-      .get()
-      .selectFrom("audit_log")
-      .select(["actor", "operation", "entities", "data", "created_at"]);
-
-    if (start_time) {
-      query = query.where("created_at", ">=", start_time);
-    }
-    if (end_time) {
-      query = query.where("created_at", "<=", end_time);
-    }
-    if (actor) {
-      query = query.where("actor", "=", actor);
-    }
-    if (entities && entities.length) {
-      query = query.where(
-        "entities",
-        "&&",
-        sql<string[]>`ARRAY[${sql.join(entities)}]`,
-      );
-    }
-    if (operation) {
-      query = query.where("operation", "like", operation);
-    }
-    if (!limit || limit > MAX_QUERY_LIMIT) {
-      query = query.limit(MAX_QUERY_LIMIT);
-    } else {
-      query = query.limit(limit);
-    }
-
-    return await query
-      .orderBy("created_at desc")
-      .offset(offset || 0)
-      .execute();
+  async query(q: QueryAuditLogRequest): Promise<AuditLogEntry[]> {
+    return this.dao.query(this.databaseClient.get(), q);
   }
 }

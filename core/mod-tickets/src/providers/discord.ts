@@ -196,11 +196,8 @@ export class DiscordProvider {
             embeds: [embed],
           } as RESTPatchAPIChannelMessageJSONBody,
         });
-      } catch (e) {
-        this.logger.error(
-          { stack: e.stack },
-          "Could not update message, ignoring error.",
-        );
+      } catch (err) {
+        this.logger.error(err, "Could not update message, ignoring error.");
       }
     } else {
       const result = await client.post<RESTPostAPIChannelMessageResult>(
@@ -276,7 +273,7 @@ export class DiscordProvider {
       const members = [ticket.user_id];
       await this.addUsers(ticket.provider_id, members, newTicket);
     } else if (ticket.team_id) {
-      const members = (await this.teamService.getMembers(ticket.team_id)).map(
+      const members = (await this.teamService.listMembers(ticket.team_id)).map(
         ({ user_id }) => user_id,
       );
       await this.addUsers(ticket.provider_id, members, newTicket);

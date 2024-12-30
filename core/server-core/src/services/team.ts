@@ -1,12 +1,11 @@
-import { ConflictError, NotFoundError } from "../errors.ts";
+import { NotFoundError } from "../errors.ts";
 import { TeamFlag } from "../types/enums.ts";
-import type { TeamMemberRole, DB } from "@noctf/schema";
 import type { ServiceCradle } from "../index.ts";
 import { nanoid } from "nanoid";
 import type { AuditParams } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
-import type { UpdateObject } from "kysely";
 import { TeamConfig } from "@noctf/api/config";
+import { TeamDAO } from "../dao/team.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -17,6 +16,7 @@ export class TeamService {
   private readonly databaseClient;
   private readonly auditLogService;
   private readonly configService;
+  private readonly dao = new TeamDAO();
 
   constructor({ configService, databaseClient, auditLogService }: Props) {
     this.databaseClient = databaseClient;
@@ -43,30 +43,19 @@ export class TeamService {
     { actor, message }: AuditParams = {},
   ) {
     const join_code = generate_join_code ? nanoid() : null;
-    const { id, bio, created_at } = await this.databaseClient
-      .get()
-      .insertInto("team")
-      .values({
-        name,
-        join_code,
-        flags: flags || [],
-      })
-      .returning(["id", "bio", "created_at"])
-      .executeTakeFirstOrThrow();
+    const team = await this.dao.create(this.databaseClient.get(), {
+      name,
+      join_code,
+      flags: flags || [],
+    });
+
     await this.auditLogService.log({
       operation: "team.create",
       actor,
       data: message,
-      entities: [`${ActorType.TEAM}:${id}`],
+      entities: [`${ActorType.TEAM}:${team.id}`],
     });
-    return {
-      id,
-      name,
-      bio,
-      join_code,
-      flags: flags || [],
-      created_at,
-    };
+    return team;
   }
 
   async update(
@@ -84,24 +73,19 @@ export class TeamService {
     },
     { actor, message }: AuditParams = {},
   ) {
-    const set: UpdateObject<DB, "team", "team"> = {
-      name,
-      flags,
-      bio,
-    };
+    let j: string | null | undefined;
     if (join_code === "refresh") {
-      set.join_code = nanoid();
+      j = nanoid();
     } else if (join_code === "remove") {
-      set.join_code = null;
+      j = null;
     }
 
-    await this.databaseClient
-      .get()
-      .updateTable("team")
-      .set(set)
-      .where("id", "=", id)
-      .executeTakeFirstOrThrow();
-
+    await this.dao.update(this.databaseClient.get(), id, {
+      name,
+      bio,
+      join_code: j,
+      flags,
+    });
     await this.auditLogService.log({
       operation: "team.update",
       actor,
@@ -111,23 +95,11 @@ export class TeamService {
   }
 
   async get(id: number) {
-    return await this.databaseClient
-      .get()
-      .selectFrom("team")
-      .select(["id", "name", "bio", "join_code", "flags", "created_at"])
-      .where("id", "=", id)
-      .executeTakeFirst();
+    return this.dao.get(this.databaseClient.get(), id);
   }
 
   async delete(id: number, { actor, message }: AuditParams = {}) {
-    const { numDeletedRows } = await this.databaseClient
-      .get()
-      .deleteFrom("team")
-      .where("id", "=", id)
-      .executeTakeFirst();
-    if (numDeletedRows === 0n) {
-      throw new NotFoundError("Team does not exist");
-    }
+    await this.dao.delete(this.databaseClient.get(), id);
     await this.auditLogService.log({
       actor,
       operation: "team.delete",
@@ -142,153 +114,73 @@ export class TeamService {
    * @param code
    */
   async join(user_id: number, code: string) {
-    const result = await this.databaseClient
-      .get()
-      .selectFrom("team")
-      .select(["id", "flags"])
-      .where("join_code", "=", code)
-      .executeTakeFirst();
+    const result = await this.dao.findUsingJoinCode(
+      this.databaseClient.get(),
+      code,
+    );
     if (
-      !result ||
       !result.flags.includes(TeamFlag.FROZEN) ||
       !result.flags.includes(TeamFlag.BLOCKED)
     ) {
-      throw new NotFoundError("Invalid joining code");
+      throw new NotFoundError("Team not found");
     }
-    await this.assignMember(
-      {
-        user_id,
-        team_id: result.id,
+    await this.dao.assign(this.databaseClient.get(), {
+      user_id,
+      team_id: result.id,
+      role: "member",
+    });
+    await this.auditLogService.log({
+      actor: {
+        type: ActorType.USER,
+        id: user_id,
       },
-      {
-        actor: {
-          type: ActorType.USER,
-          id: user_id,
-        },
-        message: "Joined using code",
-      },
-    );
+      operation: "team.member.assign",
+      entities: [
+        `${ActorType.TEAM}:${result.id}`,
+        `${ActorType.USER}:${user_id}`,
+      ],
+      data: "Joined using code",
+    });
+
     return result.id;
   }
 
-  async getMembership(userId: number) {
-    const result = await this.databaseClient
-      .get()
-      .selectFrom("team_member")
-      .select(["team_id", "role"])
-      .where("user_id", "=", userId)
-      .executeTakeFirst();
-
-    if (!result) {
-      return null;
-    }
-    return result;
+  async getMembershipForUser(userId: number) {
+    return this.dao.getMembershipForUser(this.databaseClient.get(), userId);
   }
 
   async assignMember(
-    {
-      user_id,
-      team_id,
-      role = "member",
-    }: {
-      user_id: number;
-      team_id: number;
-      role?: TeamMemberRole;
-    },
+    v: Parameters<TeamDAO["assign"]>[1],
     { actor, message }: AuditParams = {},
   ) {
-    const { numInsertedOrUpdatedRows } = await this.databaseClient
-      .get()
-      .insertInto("team_member")
-      .values({
-        user_id,
-        team_id,
-        role,
-      })
-      .onConflict((b) =>
-        b
-          .column("user_id")
-          .doUpdateSet({ role })
-          .where("team_member.team_id", "=", team_id)
-          .where("team_member.role", "!=", role),
-      )
-      .executeTakeFirst();
-    if (numInsertedOrUpdatedRows === 0n) {
-      throw new ConflictError("User has already joined a team.");
-    }
+    await this.dao.assign(this.databaseClient.get(), v);
     await this.auditLogService.log({
       actor,
       operation: "team.member.assign",
       entities: [
-        `${ActorType.TEAM}:${team_id}`,
-        `${ActorType.USER}:${user_id}`,
+        `${ActorType.TEAM}:${v.team_id}`,
+        `${ActorType.USER}:${v.user_id}`,
       ],
       data: message,
     });
   }
 
-  async removeMember(
-    {
-      user_id,
-      team_id,
-      check_owner,
-    }: {
-      user_id: number;
-      team_id: number;
-      check_owner?: boolean;
-    },
+  async unassignMember(
+    v: Parameters<TeamDAO["unassign"]>[1],
     { actor, message }: AuditParams,
   ) {
-    let query = this.databaseClient
-      .get()
-      .deleteFrom("team_member")
-      .where("user_id", "=", user_id)
-      .where("team_id", "=", team_id);
-    if (check_owner) {
-      query = query.where((op) =>
-        op.or([
-          op(
-            op
-              .selectFrom("team_member")
-              .select((o) => o.fn.countAll().as("cnt"))
-              .where("team_id", "=", team_id)
-              .where("user_id", "!=", user_id)
-              .where("role", "=", "owner"),
-            "!=",
-            0,
-          ),
-          op(
-            op
-              .selectFrom("team_member")
-              .select((o) => o.fn.countAll().as("cnt"))
-              .where("team_id", "=", team_id),
-            "=",
-            1,
-          ),
-        ]),
-      );
-    }
-    const { numDeletedRows } = await query.executeTakeFirst();
-    if (!numDeletedRows) {
-      throw new NotFoundError("User's membership does not exist.");
-    }
     await this.auditLogService.log({
       actor,
       operation: "team.member.remove",
       entities: [
-        `${ActorType.TEAM}:${team_id}`,
-        `${ActorType.USER}:${user_id}`,
+        `${ActorType.TEAM}:${v.team_id}`,
+        `${ActorType.USER}:${v.user_id}`,
       ],
       data: message,
     });
   }
 
-  async getMembers(teamId: number) {
-    return await this.databaseClient
-      .get()
-      .selectFrom("team_member")
-      .select(["user_id", "role"])
-      .where("team_id", "=", teamId)
-      .execute();
+  async listMembers(teamId: number) {
+    return await this.dao.listMembers(this.databaseClient.get(), teamId);
   }
 }

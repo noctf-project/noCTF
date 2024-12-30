@@ -188,8 +188,8 @@ export class EventBusService {
     const interval = setInterval(async () => {
       try {
         await message.working();
-      } catch (e) {
-        this.logger.warn({ stack: e.stack }, "Failed to heartbeat message");
+      } catch (err) {
+        this.logger.warn(err, "Failed to heartbeat message");
       }
     }, 30 * 1000);
     const start = performance.now();
@@ -217,20 +217,20 @@ export class EventBusService {
         ["Success", 1],
         ["ProcessTime", elapsed],
       );
-    } catch (e) {
+    } catch (err) {
       const elapsed = performance.now() - start;
-      if (e instanceof EventBusNonRetryableError) {
+      if (err instanceof EventBusNonRetryableError) {
         this.logger.error(
           {
             consumer,
             subject: message.subject,
             id: message.seq,
-            stack: e.stack,
+            err,
             elapsed,
           },
           "Failed to process message and a non-retryable error was thrown",
         );
-        await message.term(e.message);
+        await message.term(err.message);
         metrics.push(
           ["QueueToFinishTime", Date.now() - timestamp],
           ["NonRetryableError", 1],
@@ -241,7 +241,7 @@ export class EventBusService {
             consumer,
             subject: message.subject,
             id: message.seq,
-            stack: e.stack,
+            err,
             elapsed,
           },
           "Failed to process message, requeueing",

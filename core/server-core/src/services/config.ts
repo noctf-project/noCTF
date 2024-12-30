@@ -6,6 +6,7 @@ import type { AuditLogActor } from "../types/audit_log.ts";
 import type { ValidateFunction } from "ajv";
 import { Ajv } from "ajv";
 import type { JsonObject } from "@noctf/schema";
+import { ConfigDAO } from "../dao/config.ts";
 
 type Validator<T> = (kv: T) => Promise<string | null> | string | null;
 
@@ -28,9 +29,10 @@ export class ConfigService {
   // A simple map-based cache is good enough, we want low latency and don't really need
   // to evict stuff, all the config keys are static and there shouldn't be too many.
   private readonly ajv = new Ajv();
-  private readonly logger: Props["logger"];
-  private readonly databaseClient: Props["databaseClient"];
-  private readonly auditLogService: Props["auditLogService"];
+  private readonly dao = new ConfigDAO();
+  private readonly logger;
+  private readonly databaseClient;
+  private readonly auditLogService;
   private readonly validators: Map<
     string,
     [ValidateFunction, Validator<unknown>]
@@ -65,7 +67,7 @@ export class ConfigService {
       throw new ValidationError("Config namespace does not exist");
     }
     if (noCache) {
-      return this._queryDb(namespace);
+      return this.dao.get(this.databaseClient.get(), namespace);
     }
     const now = performance.now();
     const v = this.cache.get(namespace);
@@ -83,33 +85,12 @@ export class ConfigService {
         }
       }
     }
-    const newPromise = this._queryDb<T>(namespace);
+    const newPromise = this.dao.get<T>(this.databaseClient.get(), namespace);
     this.cache.set(namespace, [newPromise, now + EXPIRY_MS]);
     const result = await newPromise;
     // Update expiry time since we just fetched the object
     this.cache.set(namespace, [newPromise, performance.now() + EXPIRY_MS]);
     return result;
-  }
-
-  private async _queryDb<T extends SerializableMap>(
-    namespace: string,
-  ): Promise<ConfigValue<T>> {
-    const config = await this.databaseClient
-      .get()
-      .selectFrom("config")
-      .select(["version", "value"])
-      .where("namespace", "=", namespace)
-      .executeTakeFirst();
-    if (config) {
-      return {
-        version: config.version,
-        value: config.value as T,
-      };
-    }
-    return {
-      version: 0,
-      value: {} as T,
-    };
   }
 
   /**
@@ -150,7 +131,6 @@ export class ConfigService {
     }
     const [av, validator] = v;
     if (!av(value)) {
-      console.log(av.errors);
       throw new ValidationError(
         "JSONSchema: " +
           (av.errors || [])
@@ -167,23 +147,12 @@ export class ConfigService {
       }
     }
 
-    let query = this.databaseClient
-      .get()
-      .updateTable("config")
-      .set((eb) => ({
-        value: value as JsonObject,
-        updated_at: new Date(),
-        version: eb("version", "+", 1),
-      }))
-      .where("namespace", "=", namespace)
-      .returning(["version"]);
-    if (version || version === 0) {
-      query = query.where("version", "=", version);
-    }
-    const result = await query.executeTakeFirst();
-    if (!result) {
-      throw new BadRequestError("config version mismatch");
-    }
+    const updated = await this.dao.update(
+      this.databaseClient.get(),
+      namespace,
+      value,
+      version,
+    );
     await this.auditLogService.log({
       actor,
       operation: "config.update",
@@ -191,7 +160,7 @@ export class ConfigService {
       data: JSON.stringify(value),
     });
     const promise = Promise.resolve({
-      version: result.version,
+      version: updated,
       value,
     });
     this.cache.set(namespace, [promise, performance.now() + EXPIRY_MS]);

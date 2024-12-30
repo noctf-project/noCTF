@@ -9,7 +9,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
-    .addColumn("name", "varchar(64)", (col) => col.unique())
+    .addColumn("name", "varchar(64)", (col) => col.notNull().unique())
     .addColumn("bio", "varchar", (col) => col.notNull().defaultTo(""))
     .addColumn("join_code", "varchar", (col) => col.unique().nullsNotDistinct())
     .addColumn("flags", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))

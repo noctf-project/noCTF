@@ -37,7 +37,7 @@ export const Team = Type.Object({
   id: Type.Number(),
   name: Type.String({ maxLength: 64 }),
   bio: Type.String({ maxLength: 256 }),
-  join_code: Type.String({ maxLength: 256 }),
+  join_code: Type.Union([Type.String({ maxLength: 64 }), Type.Null()]),
   flags: Type.Array(Type.String()),
   created_at: TypeDate,
 });
@@ -95,7 +95,7 @@ export const Challenge = Type.Object({
   slug: Slug,
   title: Type.String({ maxLength: 128 }),
   description: Type.String(),
-  private_metadata: Type.Any(),
+  private_metadata: Type.Any({ type: "object", additionalProperties: true }),
   tags: Type.Record(
     Type.String({ maxLength: 64 }),
     Type.String({ maxLength: 64 }),

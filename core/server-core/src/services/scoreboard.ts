@@ -6,6 +6,7 @@ import type {
 import type { ServiceCradle } from "../index.ts";
 import { SolveDAO } from "../dao/solve.ts";
 import { partition } from "../util/object.ts";
+import pLimit from "p-limit";
 
 type Props = Pick<
   ServiceCradle,
@@ -22,6 +23,7 @@ export type ChallengeSolvesResult = {
 };
 
 const CACHE_NAMESPACE = "core:svc:score";
+const PARALLEL_CHALLENGE_LIMIT = 8;
 
 export class ScoreboardService {
   private readonly logger;
@@ -98,13 +100,13 @@ export class ScoreboardService {
         score: base,
         solves: rv.concat(rh),
       };
-    } catch (e) {
+    } catch (err) {
       this.logger.warn(
         {
-          stack: e.stack,
+          err,
           challenge_id: challenge.id,
         },
-        "Failed to calculate scores for challenge.",
+        "Failed to calculate scores for challenge",
       );
       return {
         score: null,
@@ -120,10 +122,10 @@ export class ScoreboardService {
     });
     // score, followed by date of last solve for tiebreak purposes
     const teamScores: Map<number, [number, number]> = new Map();
-
+    const limit = pLimit(PARALLEL_CHALLENGE_LIMIT);
     const computed = await Promise.all(
       challenges.map((x) =>
-        this.getChallengeSolves(x).then(
+        limit(() => this.getChallengeSolves(x)).then(
           ({ solves }) => [x.id, solves] as [number, Score[]],
         ),
       ),

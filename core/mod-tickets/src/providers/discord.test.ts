@@ -112,7 +112,7 @@ describe("Discord Tickets Provider", async () => {
       .mockResolvedValueOnce(postNotification)
       .mockResolvedValueOnce(postNotification);
 
-    teamService.getMembers.mockResolvedValue([
+    teamService.listMembers.mockResolvedValue([
       { user_id: 1, role: "member" },
       { user_id: 2, role: "member" },
       { user_id: 3, role: "member" },
@@ -444,7 +444,7 @@ describe("Discord Tickets Provider", async () => {
     threadMembersResponse.json.mockResolvedValueOnce(apiThreadMembers);
     mockKy.get.mockResolvedValueOnce(threadMembersResponse);
 
-    vi.mocked(teamService).getMembers.mockResolvedValue([
+    vi.mocked(teamService).listMembers.mockResolvedValue([
       { user_id: 1, role: "member" },
       { user_id: 2, role: "member" },
       { user_id: 3, role: "member" },

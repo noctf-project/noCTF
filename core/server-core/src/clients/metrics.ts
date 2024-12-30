@@ -230,9 +230,9 @@ export class MetricsClient {
           );
         }
       }
-    } catch (e) {
+    } catch (err) {
       this.logger.warn(
-        { stack: e.stack },
+        err,
         "Error flushing metrics, some of them may have been lost.",
       );
     } finally {
