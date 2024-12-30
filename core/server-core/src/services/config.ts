@@ -3,8 +3,9 @@ import type { ServiceCradle } from "../index.ts";
 import { BadRequestError, ValidationError } from "../errors.ts";
 import type { SerializableMap } from "../types/primitives.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
-import { Ajv, ValidateFunction } from "ajv";
-import { JsonObject } from "@noctf/schema";
+import type { ValidateFunction } from "ajv";
+import { Ajv } from "ajv";
+import type { JsonObject } from "@noctf/schema";
 
 type Validator<T> = (kv: T) => Promise<string | null> | string | null;
 

@@ -11,10 +11,11 @@ import {
   type ChallengeMetadata,
   type PublicChallenge,
 } from "@noctf/api/datatypes";
-import { Ajv, ValidateFunction } from "ajv";
+import type { ValidateFunction } from "ajv";
+import { Ajv } from "ajv";
 import { ValidationError } from "../errors.ts";
-import { TSchema } from "@sinclair/typebox";
-import { SomeJSONSchema } from "ajv/dist/types/json-schema.js";
+import type { TSchema } from "@sinclair/typebox";
+import type { SomeJSONSchema } from "ajv/dist/types/json-schema.js";
 
 type Props = Pick<
   ServiceCradle,
@@ -162,7 +163,7 @@ export class ChallengeService {
             .join(", "),
       );
     }
-    for (const [plugin, { validator }] of this.plugins) {
+    for (const [_plugin, { validator }] of this.plugins) {
       await validator(metadata);
     }
   }

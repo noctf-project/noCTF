@@ -1,4 +1,5 @@
-import { Readable, PassThrough } from "node:stream";
+import type { Readable } from "node:stream";
+import { PassThrough } from "node:stream";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
@@ -6,8 +7,8 @@ import { lookup } from "mime-types";
 import { createReadStream, createWriteStream, mkdirSync } from "node:fs";
 import { readFile, writeFile, unlink } from "node:fs/promises";
 import { FileConfig } from "@noctf/api/config";
-import { ServiceCradle } from "../index.ts";
-import { FileMetadata } from "@noctf/api/datatypes";
+import type { ServiceCradle } from "../index.ts";
+import type { FileMetadata } from "@noctf/api/datatypes";
 import { nanoid } from "nanoid";
 import { BadRequestError, NotFoundError } from "../errors.ts";
 

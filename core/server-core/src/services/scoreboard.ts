@@ -1,19 +1,19 @@
-import {
+import type {
   ChallengeMetadata,
   ChallengePrivateMetadataBase,
   Score,
-  ScoringStrategy,
 } from "@noctf/api/datatypes";
-import { ServiceCradle } from "../index.ts";
-import { ScoreConfig, SetupConfig } from "@noctf/api/config";
+import type { ServiceCradle } from "../index.ts";
 import { SolveDAO } from "../dao/solve.ts";
-import { Parser, Expression } from "expr-eval";
-import { LocalCache } from "../util/local_cache.ts";
 import { partition } from "../util/object.ts";
 
 type Props = Pick<
   ServiceCradle,
-  "cacheService" | "challengeService" | "scoreService" | "databaseClient"
+  | "cacheService"
+  | "challengeService"
+  | "scoreService"
+  | "databaseClient"
+  | "logger"
 >;
 
 export type ChallengeSolvesResult = {
@@ -24,6 +24,7 @@ export type ChallengeSolvesResult = {
 const CACHE_NAMESPACE = "core:svc:score";
 
 export class ScoreboardService {
+  private readonly logger;
   private readonly cacheService;
   private readonly challengeService;
   private readonly databaseClient;
@@ -36,7 +37,9 @@ export class ScoreboardService {
     challengeService,
     databaseClient,
     scoreService,
+    logger,
   }: Props) {
+    this.logger = logger;
     this.cacheService = cacheService;
     this.challengeService = challengeService;
     this.databaseClient = databaseClient;
@@ -96,6 +99,13 @@ export class ScoreboardService {
         solves: rv.concat(rh),
       };
     } catch (e) {
+      this.logger.warn(
+        {
+          stack: e.stack,
+          challenge_id: challenge.id,
+        },
+        "Failed to calculate scores for challenge.",
+      );
       return {
         score: null,
         solves: [],
@@ -118,7 +128,6 @@ export class ScoreboardService {
         ),
       ),
     );
-    // TODO: Could parallelise this loop maybe
     for (const [_id, solves] of computed) {
       for (const solve of solves) {
         if (solve.hidden) continue;

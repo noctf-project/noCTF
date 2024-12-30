@@ -1,5 +1,5 @@
 import { SetupConfig } from "@noctf/api/config";
-import { ChallengePrivateMetadataBase } from "@noctf/api/datatypes";
+import type { ChallengePrivateMetadataBase } from "@noctf/api/datatypes";
 import { GetChallengeFileParams, GetChallengeParams } from "@noctf/api/params";
 import {
   GetChallengeResponse,

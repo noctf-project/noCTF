@@ -1,5 +1,6 @@
-import TTLCache, { Disposer, TTLOptions } from "@isaacs/ttlcache";
-import { MetricsClient } from "../clients/metrics.ts";
+import type { Disposer, TTLOptions } from "@isaacs/ttlcache";
+import TTLCache from "@isaacs/ttlcache";
+import type { MetricsClient } from "../clients/metrics.ts";
 
 export class LocalCache<K = unknown, V = unknown> {
   private readonly cache;

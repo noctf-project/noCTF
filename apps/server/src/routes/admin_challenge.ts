@@ -9,7 +9,7 @@ import {
   AnyResponse,
 } from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 
 export async function routes(fastify: FastifyInstance) {
   const { challengeService } = fastify.container.cradle;

@@ -1,9 +1,9 @@
 import { ScoreConfig, SetupConfig } from "@noctf/api/config";
 import { LocalCache } from "../util/local_cache.ts";
-import { Expression, Parser } from "expr-eval";
-import { ServiceCradle } from "../index.ts";
-import { ScoringStrategy } from "@noctf/api/datatypes";
-import { ApplicationError } from "../errors.ts";
+import type { Expression } from "expr-eval";
+import { Parser } from "expr-eval";
+import type { ServiceCradle } from "../index.ts";
+import type { ScoringStrategy } from "@noctf/api/datatypes";
 
 type ScoreContext = {
   n: number;

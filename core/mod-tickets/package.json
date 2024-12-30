@@ -16,7 +16,7 @@
     "@noctf/schema": "workspace:*",
     "@noctf/server-core": "workspace:*",
     "@sinclair/typebox": "catalog:",
-    "discord-api-types": "^0.37.111",
+    "discord-api-types": "^0.37.114",
     "fastify": "catalog:",
     "ky": "catalog:"
   },

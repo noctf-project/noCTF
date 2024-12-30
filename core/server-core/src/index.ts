@@ -16,7 +16,7 @@ import type { MetricsClient } from "./clients/metrics.ts";
 import type { NATSClientFactory } from "./clients/nats.ts";
 import type { ChallengeService } from "./services/challenge.ts";
 import type { FileService } from "./services/file.ts";
-import { ScoreService } from "./services/score.ts";
+import type { ScoreService } from "./services/score.ts";
 import type { ScoreboardService } from "./services/scoreboard.ts";
 
 export type ServiceCradle = {

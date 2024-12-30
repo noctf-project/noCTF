@@ -1,5 +1,5 @@
 import { BadRequestError } from "@noctf/server-core/errors";
-import { FastifyReply, FastifyRequest, RouteHandlerMethod } from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
 
 export const ServeFileHandler = async (
   ref: string,
@@ -13,8 +13,8 @@ export const ServeFileHandler = async (
     if (!matches) {
       throw new Error("Invalid Range format");
     }
-    let start = matches[1] ? parseInt(matches[1], 10) : null;
-    let end = matches[2] ? parseInt(matches[2], 10) : null;
+    const start = matches[1] ? parseInt(matches[1], 10) : null;
+    const end = matches[2] ? parseInt(matches[2], 10) : null;
 
     if (start === null && end === null) {
       throw new BadRequestError("Range must specify at least start or end");

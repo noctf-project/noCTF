@@ -1,6 +1,6 @@
-import { DB } from "@noctf/schema";
-import { DBType } from "../clients/database.ts";
-import { AllNonNullable } from "../types/primitives.ts";
+import type { DB } from "@noctf/schema";
+import type { DBType } from "../clients/database.ts";
+import type { AllNonNullable } from "../types/primitives.ts";
 
 type DBSolve = AllNonNullable<DB["solve"]> & { created_at: Date };
 export class SolveDAO {

@@ -1,5 +1,5 @@
 import { FileParams } from "@noctf/api/params";
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { ServeFileHandler } from "../hooks/file.ts";
 import { AdminFileMetadataResponse } from "@noctf/api/responses";
 

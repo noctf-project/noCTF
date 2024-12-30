@@ -24,8 +24,9 @@
     "jsonwebtoken": "^9.0.2",
     "kysely": "catalog:",
     "mime-types": "^2.1.35",
-    "nanoid": "^5.0.7",
+    "nanoid": "catalog:",
     "nats": "^2.28.2",
+    "p-limit": "catalog:",
     "redis": "^4.7.0"
   },
   "devDependencies": {

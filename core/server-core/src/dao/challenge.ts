@@ -6,9 +6,9 @@ import type { DBType } from "../clients/database.ts";
 import type { Challenge, ChallengeMetadata } from "@noctf/api/datatypes";
 import { FilterUndefined } from "../util/filter.ts";
 import { NotFoundError } from "../errors.ts";
-import { UpdateObject } from "kysely";
-import { DB } from "@noctf/schema";
-import { SelectExpression } from "kysely";
+import type { UpdateObject } from "kysely";
+import type { DB } from "@noctf/schema";
+import type { SelectExpression } from "kysely";
 
 const METADATA_FIELDS: SelectExpression<DB, "challenge">[] = [
   "id",
