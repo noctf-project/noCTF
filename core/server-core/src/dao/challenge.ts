@@ -71,7 +71,7 @@ export class ChallengeDAO {
       );
     }
 
-    return (await query.execute()) as ChallengeMetadata[];
+    return (await query.execute()) as unknown as ChallengeMetadata[];
   }
 
   async getMetadata(db: DBType, id: number): Promise<ChallengeMetadata> {
@@ -84,7 +84,7 @@ export class ChallengeDAO {
     if (!challenge) {
       throw new NotFoundError("Challenge not found");
     }
-    return challenge as ChallengeMetadata;
+    return challenge as unknown as ChallengeMetadata;
   }
 
   async get(db: DBType, id: number): Promise<Challenge> {

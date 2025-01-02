@@ -42,16 +42,14 @@ const parser = new Parser({
 
 export class ScoreService {
   private readonly configService;
-  private readonly logger;
 
   private readonly exprCache = new LocalCache<string, Expression>({
     max: 1000,
     ttl: 3600 * 1000,
   });
 
-  constructor({ configService, logger }: Props) {
+  constructor({ configService }: Props) {
     this.configService = configService;
-    this.logger = logger;
     void this.init();
   }
 

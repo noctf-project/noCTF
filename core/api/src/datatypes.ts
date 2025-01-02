@@ -52,11 +52,16 @@ export const UserIdentity = Type.Object({
 });
 export type UserIdentity = Static<typeof UserIdentity>;
 
+export enum ChallengeSolveInputType {
+  Text = "text",
+  TextArea = "textarea",
+  None = "none"
+};
 export const ChallengePrivateMetadataBase = Type.Object({
   solve: Type.Object(
     {
       source: Type.String({ maxLength: 64 }),
-      flags: Type.Optional(
+      flag: Type.Optional(
         Type.Array(
           Type.Object({
             data: Type.String(),
@@ -64,6 +69,10 @@ export const ChallengePrivateMetadataBase = Type.Object({
           }),
         ),
       ),
+      manual: Type.Optional(Type.Object({
+        allow_cancel: Type.Boolean(),
+        input_type: Type.Enum(ChallengeSolveInputType)
+      }))
     },
     { additionalProperties: false },
   ),
@@ -85,9 +94,23 @@ export const ChallengePrivateMetadataBase = Type.Object({
       { additionalProperties: false },
     ),
   ),
-});
+}, { additionalProperties: true });
 export type ChallengePrivateMetadataBase = Static<
   typeof ChallengePrivateMetadataBase
+>;
+
+export const ChallengePublicMetadataBase = Type.Object({
+  solve: Type.Object({
+    input_type: Type.Enum(ChallengeSolveInputType)
+  }),
+  files: Type.Array(Type.Object({
+    name: Type.String(),
+    size: Type.Number(),
+    hash: Type.String()
+  }))
+}, { additionalProperties: true });
+export type ChallengePublicMetadataBase = Static<
+  typeof ChallengePublicMetadataBase
 >;
 
 export const Challenge = Type.Object({
@@ -95,7 +118,7 @@ export const Challenge = Type.Object({
   slug: Slug,
   title: Type.String({ maxLength: 128 }),
   description: Type.String(),
-  private_metadata: Type.Any({ type: "object", additionalProperties: true }),
+  private_metadata: ChallengePrivateMetadataBase,
   tags: Type.Record(
     Type.String({ maxLength: 64 }),
     Type.String({ maxLength: 64 }),
@@ -117,7 +140,7 @@ export const PublicChallenge = Type.Intersect([
     "updated_at",
   ]),
   Type.Object({
-    metadata: Type.Any(),
+    metadata: ChallengePublicMetadataBase,
   }),
 ]);
 export type PublicChallenge = Static<typeof PublicChallenge>;

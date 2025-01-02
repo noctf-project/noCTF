@@ -23,7 +23,9 @@ export type ChallengeSolvesResult = {
 };
 
 const CACHE_NAMESPACE = "core:svc:score";
-const PARALLEL_CHALLENGE_LIMIT = 8;
+const PARALLEL_CHALLENGE_LIMIT = 16;
+const PARALLEL_CHALLENGE_LIMITER = pLimit(PARALLEL_CHALLENGE_LIMIT);
+
 
 export class ScoreboardService {
   private readonly logger;
@@ -122,10 +124,9 @@ export class ScoreboardService {
     });
     // score, followed by date of last solve for tiebreak purposes
     const teamScores: Map<number, [number, number]> = new Map();
-    const limit = pLimit(PARALLEL_CHALLENGE_LIMIT);
     const computed = await Promise.all(
       challenges.map((x) =>
-        limit(() => this.getChallengeSolves(x)).then(
+        PARALLEL_CHALLENGE_LIMITER(() => this.getChallengeSolves(x)).then(
           ({ solves }) => [x.id, solves] as [number, Score[]],
         ),
       ),

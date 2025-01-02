@@ -12,7 +12,7 @@ import type { FileMetadata } from "@noctf/api/datatypes";
 import { nanoid } from "nanoid";
 import { BadRequestError, NotFoundError } from "../errors.ts";
 
-type Props = Pick<ServiceCradle, "configService">;
+type Props = Pick<ServiceCradle, "cacheService" | "configService">;
 
 export interface FileProvider {
   name: string;
@@ -27,12 +27,16 @@ export interface FileProvider {
   setMetadata(ref: string, meta: FileMetadata): Promise<void>;
 }
 
+const CACHE_METADATA_NAMESPACE = "core:file:metadata";
+
 export class FileService {
   private readonly configService;
+  private readonly cacheService;
   private readonly providers: Map<string, FileProvider> = new Map();
 
-  constructor({ configService }: Props) {
+  constructor({ configService, cacheService }: Props) {
     this.configService = configService;
+    this.cacheService = cacheService;
     void this.init();
   }
 
@@ -57,7 +61,7 @@ export class FileService {
     } = await this.configService.get<FileConfig>(FileConfig.$id!);
     const provider = this.providers.get(upload);
     if (!provider) throw new Error(`Provider ${upload} does not exist`);
-    return provider.getMetadata(ref);
+    return this.cacheService.load(CACHE_METADATA_NAMESPACE, ref, () => provider.getMetadata(ref));
   }
 
   async upload(filename: string, readStream: Readable): Promise<FileMetadata> {
@@ -97,7 +101,8 @@ export class FileService {
     } = await this.configService.get<FileConfig>(FileConfig.$id!);
     const provider = this.providers.get(upload);
     if (!provider) throw new Error(`Provider ${upload} does not exist`);
-    return provider.delete(ref);
+    await provider.delete(ref);
+    await this.cacheService.del(CACHE_METADATA_NAMESPACE, ref);
   }
 
   async download(

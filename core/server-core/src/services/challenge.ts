@@ -7,6 +7,8 @@ import type { ServiceCradle } from "../index.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
 import {
   ChallengePrivateMetadataBase,
+  ChallengePublicMetadataBase,
+  ChallengeSolveInputType,
   type Challenge,
   type ChallengeMetadata,
   type PublicChallenge,
@@ -16,6 +18,7 @@ import { Ajv } from "ajv";
 import { ValidationError } from "../errors.ts";
 import type { TSchema } from "@sinclair/typebox";
 import type { SomeJSONSchema } from "ajv/dist/types/json-schema.js";
+import pLimit from "p-limit";
 
 type Props = Pick<
   ServiceCradle,
@@ -27,9 +30,13 @@ type Props = Pick<
 >;
 
 type PluginInstance = {
-  schema: TSchema;
+  private_schema: TSchema;
+  renderer?: (m: Challenge["private_metadata"]) => Promise<object>;
   validator: (m: Challenge["private_metadata"]) => Promise<void>;
 };
+
+const FILE_METADATA_LIMIT = 16;
+const FILE_METADATA_LIMITER = pLimit(FILE_METADATA_LIMIT);
 
 const CACHE_NAMESPACE = "core:svc:challenge";
 export class ChallengeService {
@@ -47,7 +54,8 @@ export class ChallengeService {
     [
       "core",
       {
-        schema: ChallengePrivateMetadataBase,
+        private_schema: ChallengePrivateMetadataBase,
+        renderer: this.renderCore.bind(this),
         validator: this.validateCore.bind(this),
       },
     ],
@@ -176,7 +184,7 @@ export class ChallengeService {
       type: "object",
       allOf: this.plugins
         .entries()
-        .map(([_, { schema }]) => schema)
+        .map(([_, { private_schema: schema }]) => schema)
         .toArray(),
       required: [],
     };
@@ -184,6 +192,22 @@ export class ChallengeService {
       this.privateMetadataSchema,
     );
   }
+
+  private async renderCore(m: ChallengePrivateMetadataBase): Promise<ChallengePublicMetadataBase> {
+    return {
+      solve: {
+        input_type: m.solve.source === 'flag'
+          ? ChallengeSolveInputType.Text
+          : (m.solve.source === 'manual' ? m.solve.manual!.input_type : ChallengeSolveInputType.None)
+      },
+      files: await Promise.all(
+        Object.keys(m.files)
+          .map((name) => FILE_METADATA_LIMITER(() => this.fileService.getMetadata(m.files[name].ref))
+          .then(({ hash, size }) => ({ name, hash, size }))),
+      )
+    };
+  }
+
 
   private async validateCore(m: ChallengePrivateMetadataBase) {
     try {
@@ -194,10 +218,15 @@ export class ChallengeService {
           e.message,
       );
     }
+    if (m.solve.source === "flag" && !m.solve.flag) {
+      throw new ValidationError("Solve configuration for source 'flag' is missing");
+    } else if (m.solve.source === "manual" && !m.solve.manual) {
+      throw new ValidationError("Solve configuration for source 'manual' is missing");
+    }
 
     const keys = Object.keys(m.files);
     const filePromises = await Promise.allSettled(
-      keys.map((k) => this.fileService.getMetadata(m.files[k].ref)),
+      keys.map((k) => FILE_METADATA_LIMITER(() => this.fileService.getMetadata(m.files[k].ref))),
     );
     const filesFailed = filePromises
       .map(({ status }, i) => status === "rejected" && keys[i])
@@ -209,14 +238,19 @@ export class ChallengeService {
     }
   }
 
+
   async getRendered(id: number): Promise<PublicChallenge> {
     const c = await this.get(id, true);
+    let metadata: unknown = {};
+    for (const [_plugin, { renderer }] of this.plugins) {
+      if (renderer) metadata = {...(await renderer(c.private_metadata))};
+    }
     return {
       id: c.id,
       slug: c.slug,
       title: c.title,
       description: c.description,
-      metadata: {}, // TODO
+      metadata: metadata as unknown as ChallengePublicMetadataBase,
       hidden: c.hidden,
       visible_at: c.visible_at,
     };
