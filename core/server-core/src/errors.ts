@@ -53,6 +53,12 @@ export class ForbiddenError extends ApplicationError {
   }
 }
 
+export class NotImplementedError extends ApplicationError {
+  constructor(message?: string, options?: ErrorOptions) {
+    super(501, "NotImplementedError", message || "Not Implemented", options);
+  }
+}
+
 export class ValidationError extends ApplicationError {
   constructor(message?: string, options?: ErrorOptions) {
     super(400, "ValidationError", message || "Validation Error", options);

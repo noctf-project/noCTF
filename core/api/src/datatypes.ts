@@ -55,60 +55,70 @@ export type UserIdentity = Static<typeof UserIdentity>;
 export enum ChallengeSolveInputType {
   Text = "text",
   TextArea = "textarea",
-  None = "none"
-};
-export const ChallengePrivateMetadataBase = Type.Object({
-  solve: Type.Object(
-    {
-      source: Type.String({ maxLength: 64 }),
-      flag: Type.Optional(
-        Type.Array(
+  None = "none",
+}
+export const ChallengePrivateMetadataBase = Type.Object(
+  {
+    solve: Type.Object(
+      {
+        source: Type.String({ maxLength: 64 }),
+        flag: Type.Optional(
+          Type.Array(
+            Type.Object({
+              data: Type.String(),
+              strategy: Type.String(),
+            }),
+          ),
+        ),
+        manual: Type.Optional(
           Type.Object({
-            data: Type.String(),
-            strategy: Type.String(),
+            allow_cancel: Type.Boolean(),
+            input_type: Type.Enum(ChallengeSolveInputType),
           }),
         ),
-      ),
-      manual: Type.Optional(Type.Object({
-        allow_cancel: Type.Boolean(),
-        input_type: Type.Enum(ChallengeSolveInputType)
-      }))
-    },
-    { additionalProperties: false },
-  ),
-  score: Type.Object(
-    {
-      params: Type.Record(Type.String(), Type.Number()),
-      strategy: Type.String(),
-      bonus: Type.Optional(Type.Array(Type.Number())),
-    },
-    { additionalProperties: false },
-  ),
-  files: Type.Record(
-    Type.String(),
-    Type.Object(
-      {
-        ref: Type.String(),
-        is_attachment: Type.Boolean(),
       },
       { additionalProperties: false },
     ),
-  ),
-}, { additionalProperties: true });
+    score: Type.Object(
+      {
+        params: Type.Record(Type.String(), Type.Number()),
+        strategy: Type.String(),
+        bonus: Type.Optional(Type.Array(Type.Number())),
+      },
+      { additionalProperties: false },
+    ),
+    files: Type.Record(
+      Type.String(),
+      Type.Object(
+        {
+          ref: Type.String(),
+          is_attachment: Type.Boolean(),
+        },
+        { additionalProperties: false },
+      ),
+    ),
+  },
+  { additionalProperties: true },
+);
 export type ChallengePrivateMetadataBase = Static<
   typeof ChallengePrivateMetadataBase
 >;
 
-export const ChallengePublicMetadataBase = Type.Object({
-  solve: Type.Object({
-    input_type: Type.Enum(ChallengeSolveInputType)
-  }),
-  files: Type.Array(Type.Object({
-    name: Type.String(),
-    size: Type.Number(),
-    hash: Type.String()
-  }))
-}, { additionalProperties: true });
+export const ChallengePublicMetadataBase = Type.Object(
+  {
+    solve: Type.Object({
+      input_type: Type.Enum(ChallengeSolveInputType),
+    }),
+    files: Type.Array(
+      Type.Object({
+        name: Type.String(),
+        size: Type.Number(),
+        hash: Type.String(),
+      }),
+    ),
+  },
+  { additionalProperties: true },
+);
 export type ChallengePublicMetadataBase = Static<
   typeof ChallengePublicMetadataBase
 >;
@@ -208,3 +218,9 @@ export const Score = Type.Object(
   { additionalProperties: false },
 );
 export type Score = Static<typeof Score>;
+
+export enum ChallengeSolveStatus {
+  Queued = "queued",
+  Incorrect = "incorrect",
+  Correct = "correct",
+}

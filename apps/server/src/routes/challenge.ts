@@ -3,12 +3,15 @@ import type { ChallengePrivateMetadataBase } from "@noctf/api/datatypes";
 import { GetChallengeFileParams, GetChallengeParams } from "@noctf/api/params";
 import {
   GetChallengeResponse,
+  GetChallengeSolvesResponse,
   ListChallengesResponse,
+  SolveChallengeResponse,
 } from "@noctf/api/responses";
 import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
 import { LocalCache } from "@noctf/server-core/util/local_cache";
 import type { FastifyInstance } from "fastify";
 import { ServeFileHandler } from "../hooks/file.ts";
+import { SolveChallengeRequest } from "@noctf/api/requests";
 
 const CACHE_NAMESPACE = "route:challenge";
 
@@ -17,6 +20,7 @@ export async function routes(fastify: FastifyInstance) {
     configService,
     policyService,
     cacheService,
+    teamService,
     challengeService,
     scoreboardService,
   } = fastify.container.cradle;
@@ -130,7 +134,10 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{ Params: GetChallengeParams }>(
+  fastify.get<{
+    Params: GetChallengeParams;
+    Reply: GetChallengeSolvesResponse;
+  }>(
     "/challenges/:id/solves",
     {
       schema: {
@@ -141,7 +148,7 @@ export async function routes(fastify: FastifyInstance) {
         },
         params: GetChallengeParams,
         response: {
-          200: GetChallengeResponse,
+          200: GetChallengeSolvesResponse,
         },
       },
     },
@@ -151,7 +158,7 @@ export async function routes(fastify: FastifyInstance) {
       const { id } = request.params;
 
       // Cannot cache directly as could be rendered with team_id as param
-      const challenge = await challengeService.getRendered(id);
+      const challenge = await challengeService.getMetadata(id);
       if (
         !admin &&
         (challenge.hidden ||
@@ -162,7 +169,59 @@ export async function routes(fastify: FastifyInstance) {
       }
       // TODO: render public metadata, add type
       return {
-        data: challenge,
+        data: (await scoreboardService.getChallengeSolves(challenge)).solves,
+      };
+    },
+  );
+
+  fastify.post<{
+    Body: SolveChallengeRequest;
+    Params: GetChallengeParams;
+    Reply: SolveChallengeResponse;
+  }>(
+    "/challenges/:id/solves",
+    {
+      schema: {
+        tags: ["challenge"],
+        security: [{ bearer: [] }],
+        auth: {
+          require: true,
+          policy: ["OR", "challenge.solves.create"],
+        },
+        params: GetChallengeParams,
+        body: SolveChallengeRequest,
+        response: {
+          200: SolveChallengeResponse,
+        },
+      },
+    },
+    async (request) => {
+      const ctime = Date.now();
+      const admin = await gateAdmin(ctime, request.user?.id);
+      const { id } = request.params;
+
+      // Cannot cache directly as could be rendered with team_id as param
+      const metadata = await challengeService.getMetadata(id);
+      if (
+        !admin &&
+        (metadata.hidden ||
+          (metadata.visible_at !== null &&
+            ctime < metadata.visible_at.getTime()))
+      ) {
+        throw new NotFoundError("Challenge not found");
+      }
+      const team = await teamService.getMembershipForUser(request.user.id);
+      if (!team) {
+        throw new ForbiddenError("You are not currently part of a team");
+      }
+
+      return {
+        data: await challengeService.solve(
+          metadata,
+          team.team_id,
+          request.user.id,
+          request.body.data,
+        ),
       };
     },
   );

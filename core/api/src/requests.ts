@@ -140,3 +140,11 @@ export const AdminUpdateChallengeRequest = Type.Omit(
 export type AdminUpdateChallengeRequest = Static<
   typeof AdminUpdateChallengeRequest
 >;
+
+export const SolveChallengeRequest = Type.Object(
+  {
+    data: Type.String(),
+  },
+  { additionalProperties: false },
+);
+export type SolveChallengeRequest = Static<typeof SolveChallengeRequest>;

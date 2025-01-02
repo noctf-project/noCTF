@@ -26,7 +26,6 @@ const CACHE_NAMESPACE = "core:svc:score";
 const PARALLEL_CHALLENGE_LIMIT = 16;
 const PARALLEL_CHALLENGE_LIMITER = pLimit(PARALLEL_CHALLENGE_LIMIT);
 
-
 export class ScoreboardService {
   private readonly logger;
   private readonly cacheService;

@@ -1,6 +1,6 @@
-import { JsonObject } from "@noctf/schema";
-import { DBType } from "../clients/database.ts";
-import { SerializableMap } from "../types/primitives.ts";
+import type { JsonObject } from "@noctf/schema";
+import type { DBType } from "../clients/database.ts";
+import type { SerializableMap } from "../types/primitives.ts";
 import { BadRequestError } from "../errors.ts";
 
 export class ConfigDAO {

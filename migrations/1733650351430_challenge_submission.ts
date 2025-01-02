@@ -41,9 +41,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
-    .addColumn("user_id", "integer", (col) =>
-      col.notNull().references("user.id"),
-    )
+    .addColumn("user_id", "integer", (col) => col.references("user.id"))
     .addColumn("team_id", "integer", (col) =>
       col.notNull().references("team.id"),
     )
@@ -52,9 +50,9 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .addColumn("data", "text")
     .addColumn("comments", "text")
-    .addColumn("checker", "varchar(64)", (col) => col.notNull())
+    .addColumn("source", "varchar(64)", (col) => col.notNull())
     .addColumn("hidden", "boolean", (col) => col.notNull().defaultTo(false))
-    .addColumn("pending", "boolean", (col) => col.notNull().defaultTo(false))
+    .addColumn("queued", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("solved", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
@@ -63,8 +61,8 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.defaultTo(sql`now()`).notNull(),
     )
     .addCheckConstraint(
-      "submission_chk_oneof_pending_solved",
-      sql`NOT (pending IS TRUE AND solved IS TRUE)`,
+      "submission_chk_oneof_queued_solved",
+      sql`NOT (queued IS TRUE AND solved IS TRUE)`,
     )
     .execute();
   await schema
@@ -73,18 +71,18 @@ export async function up(db: Kysely<any>): Promise<void> {
     .columns(["solved", "challenge_id", "team_id"])
     .execute();
   await schema
-    .createIndex("submission_idx_pending_challenge_id")
+    .createIndex("submission_idx_queued_challenge_id")
     .on("submission")
-    .columns(["pending", "challenge_id"])
+    .columns(["queued", "challenge_id"])
     .execute();
 
   await schema
-    .createIndex("submission_uidx_pending_solved")
+    .createIndex("submission_uidx_queued_solved")
     .on("submission")
     .unique()
     .columns(["challenge_id", "team_id"])
     .where((eb) =>
-      eb.or([eb(sql`pending`, "=", "true"), eb(sql`solved`, "=", "true")]),
+      eb.or([eb(sql`queued`, "=", "true"), eb(sql`solved`, "=", "true")]),
     )
     .execute();
 

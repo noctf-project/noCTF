@@ -61,7 +61,9 @@ export class FileService {
     } = await this.configService.get<FileConfig>(FileConfig.$id!);
     const provider = this.providers.get(upload);
     if (!provider) throw new Error(`Provider ${upload} does not exist`);
-    return this.cacheService.load(CACHE_METADATA_NAMESPACE, ref, () => provider.getMetadata(ref));
+    return this.cacheService.load(CACHE_METADATA_NAMESPACE, ref, () =>
+      provider.getMetadata(ref),
+    );
   }
 
   async upload(filename: string, readStream: Readable): Promise<FileMetadata> {

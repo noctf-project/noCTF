@@ -7,7 +7,9 @@ import {
   FileMetadata,
   PublicChallenge,
   PublicChallengeSummary,
+  ChallengeSolveStatus,
   Team,
+  TypeDate,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 
@@ -96,6 +98,19 @@ export const GetChallengeResponse = Type.Object({
 });
 export type GetChallengeResponse = Static<typeof GetChallengeResponse>;
 
+export const GetChallengeSolvesResponse = Type.Object({
+  data: Type.Array(
+    Type.Object({
+      team_id: Type.Number(),
+      score: Type.Number(),
+      created_at: TypeDate,
+    }),
+  ),
+});
+export type GetChallengeSolvesResponse = Static<
+  typeof GetChallengeSolvesResponse
+>;
+
 export const AdminFileMetadataResponse = Type.Object({
   data: FileMetadata,
 });
@@ -126,3 +141,11 @@ export const AnyResponse = Type.Object(
   { additionalProperties: false },
 );
 export type AnyResponse = Static<typeof AnyResponse>;
+
+export const SolveChallengeResponse = Type.Object(
+  {
+    data: Type.Enum(ChallengeSolveStatus),
+  },
+  { additionalProperties: false },
+);
+export type SolveChallengeResponse = Static<typeof SolveChallengeResponse>;

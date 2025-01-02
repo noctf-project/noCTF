@@ -1,6 +1,6 @@
 import type { Static, TSchema } from "@sinclair/typebox";
 import type { ServiceCradle } from "../index.ts";
-import { BadRequestError, ValidationError } from "../errors.ts";
+import { ValidationError } from "../errors.ts";
 import type { SerializableMap } from "../types/primitives.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
 import type { ValidateFunction } from "ajv";
