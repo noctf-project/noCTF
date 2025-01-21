@@ -51,7 +51,7 @@
   <div class="navbar-end">
     {#if !isAuthenticated && page.url.pathname !== '/auth'}
       <a href="/auth" class="btn btn-primary px-8">Login</a>
-    {:else}
+    {:else if isAuthenticated}
       <div>user</div>
     {/if}
   </div>
