@@ -1,6 +1,6 @@
-import createClient from '@noctf/api-client'
+import createClient from "@noctf/api-client";
 
-const API_BASE_URL = 'http://localhost:8000/'
-const client = createClient({ baseUrl: API_BASE_URL })
+const API_BASE_URL = "http://localhost:8000/";
+const client = createClient({ baseUrl: API_BASE_URL });
 
-export default client
+export default client;

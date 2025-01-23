@@ -1,2 +1,2 @@
-export const isAuthenticated = $state(true)
-export const isAdmin = $state(true)
+export const isAuthenticated = $state(true);
+export const isAdmin = $state(true);
