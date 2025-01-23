@@ -15,7 +15,7 @@ dependencies such as PostgreSQL and Redis. The development applications will not
 # Install the dependencies
 pnpm i
 
-# Start the docker dependencides
+# Start the docker dependencies
 ./dev.sh start
 
 # Run the database migrations
@@ -26,8 +26,20 @@ cd core/schema
 pnpm build --env-file ../../.env
 cd ../..
 
+# Generate the API schema file
+cd apps/server
+pnpm generate:swagger
+
+# Build the API client
+cd core/api-client
+pnpm build
+
 # Finally run the server
 cd apps/server
+pnpm dev
+
+# And the frontend
+cd apps/web
 pnpm dev
 ```
 

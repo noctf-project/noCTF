@@ -1,5 +1,6 @@
 import type { FastifyRequest } from "fastify";
 import fastify from "fastify";
+import fs from "fs";
 import { asClass, asFunction, asValue, createContainer } from "awilix";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
@@ -12,6 +13,7 @@ import { CacheService } from "@noctf/server-core/services/cache";
 import Swagger from "@fastify/swagger";
 import SwaggerUI from "@fastify/swagger-ui";
 import { fastifyCompress } from "@fastify/compress";
+import { fastifyCors } from "@fastify/cors";
 import { nanoid } from "nanoid/non-secure";
 import { AuditLogService } from "@noctf/server-core/services/audit_log";
 import { PolicyService } from "@noctf/server-core/services/policy";
@@ -31,6 +33,8 @@ import {
   NATS_URL,
   REDIS_URL,
   ENABLE_SWAGGER,
+  ALLOWED_ORIGINS,
+  SWAGGER_OUTPUT_FILE,
 } from "./config.ts";
 import core from "./core.ts";
 import { MetricsClient } from "@noctf/server-core/clients/metrics";
@@ -52,6 +56,10 @@ export const server = fastify({
 
 server.register(fastifyCompress);
 server.register(fastifyMultipart);
+server.register(fastifyCors, {
+  origin: ALLOWED_ORIGINS,
+  credentials: true,
+});
 
 server.register(async () => {
   server.container = createContainer();
@@ -117,6 +125,13 @@ if (ENABLE_SWAGGER) {
       deepLinking: false,
     },
   });
+
+  if (SWAGGER_OUTPUT_FILE) {
+    server.ready(() => {
+      fs.writeFileSync(SWAGGER_OUTPUT_FILE, JSON.stringify(server.swagger()));
+      process.exit(0);
+    });
+  }
 }
 
 server.register(core);

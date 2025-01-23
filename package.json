@@ -15,13 +15,17 @@
   "devDependencies": {
     "@eslint/js": "catalog:",
     "@types/pg": "catalog:",
+    "@typescript-eslint/parser": "^8.20.0",
     "eslint": "catalog:",
     "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-svelte": "^2.46.1",
     "globals": "^15.14.0",
     "kysely": "catalog:",
     "kysely-ctl": "^0.10.1",
     "pg": "catalog:",
     "prettier": "^3.4.2",
+    "prettier-plugin-svelte": "^3.3.3",
+    "svelte-eslint-parser": "^0.43.0",
     "typescript-eslint": "catalog:"
   },
   "packageManager": "pnpm@9.12.2+sha512.22721b3a11f81661ae1ec68ce1a7b879425a1ca5b991c975b074ac220b187ce56c708fe5db69f4c962c989452eee76c82877f4ee80f474cebd61ee13461b6228"
