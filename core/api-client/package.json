@@ -1,0 +1,23 @@
+{
+  "name": "@noctf/api-client",
+  "version": "0.1.0",
+  "description": "openapi-fetch API client",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "openapi-typescript ../../apps/server/swagger.json -o src/schema.d.ts",
+    "release": "pnpm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "openapi-typescript": "catalog:",
+    "openapi-fetch": "catalog:"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

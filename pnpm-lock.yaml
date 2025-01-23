@@ -48,6 +48,12 @@ catalogs:
     nanoid:
       specifier: ^5.0.9
       version: 5.0.9
+    openapi-fetch:
+      specifier: ^0.13.4
+      version: 0.13.4
+    openapi-typescript:
+      specifier: ^7.5.2
+      version: 7.5.2
     p-limit:
       specifier: ^6.2.0
       version: 6.2.0
@@ -205,6 +211,9 @@ importers:
       '@iconify/svelte':
         specifier: ^4.2.0
         version: 4.2.0(svelte@5.17.3)
+      '@noctf/api-client':
+        specifier: 'workspace:'
+        version: link:../../core/api-client
       '@sveltejs/adapter-static':
         specifier: ^3.0.6
         version: 3.0.8(@sveltejs/kit@2.15.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)))
@@ -226,12 +235,6 @@ importers:
       globals:
         specifier: ^15.0.0
         version: 15.14.0
-      openapi-fetch:
-        specifier: ^0.13.4
-        version: 0.13.4
-      openapi-typescript:
-        specifier: ^7.5.2
-        version: 7.5.2(typescript@5.7.2)
       svelte:
         specifier: ^5.0.0
         version: 5.17.3
@@ -257,6 +260,18 @@ importers:
         specifier: 'catalog:'
         version: 0.34.13
     devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 5.7.2
+
+  core/api-client:
+    devDependencies:
+      openapi-fetch:
+        specifier: 'catalog:'
+        version: 0.13.4
+      openapi-typescript:
+        specifier: 'catalog:'
+        version: 7.5.2(typescript@5.7.2)
       typescript:
         specifier: 'catalog:'
         version: 5.7.2

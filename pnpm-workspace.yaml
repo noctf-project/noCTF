@@ -29,3 +29,5 @@ catalog:
   "p-limit": ^6.2.0
   "@vitest/coverage-v8": ^2.1.8
   "vitest-mock-extended": ^2.0.2
+  "openapi-typescript": "^7.5.2"
+  "openapi-fetch": "^0.13.4"

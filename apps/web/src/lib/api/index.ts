@@ -1,7 +1,6 @@
-import createClient from 'openapi-fetch'
-import type { paths } from './schema'
+import createClient from '@noctf/api-client'
 
 const API_BASE_URL = 'http://localhost:8000/'
-const client = createClient<paths>({ baseUrl: API_BASE_URL })
+const client = createClient({ baseUrl: API_BASE_URL })
 
 export default client
