@@ -24,6 +24,7 @@
     "kysely-ctl": "^0.10.1",
     "pg": "catalog:",
     "prettier": "^3.4.2",
+    "prettier-plugin-svelte": "^3.3.3",
     "svelte-eslint-parser": "^0.43.0",
     "typescript-eslint": "catalog:"
   },
