@@ -57,8 +57,8 @@ export const server = fastify({
 server.register(fastifyCompress);
 server.register(fastifyMultipart);
 server.register(fastifyCors, {
-    origin: ALLOWED_ORIGINS,
-    credentials: true,
+  origin: ALLOWED_ORIGINS,
+  credentials: true,
 });
 
 server.register(async () => {
@@ -129,8 +129,8 @@ if (ENABLE_SWAGGER) {
   if (SWAGGER_OUTPUT_FILE) {
     server.ready(() => {
       fs.writeFileSync(SWAGGER_OUTPUT_FILE, JSON.stringify(server.swagger()));
-      process.exit(0)
-    })
+      process.exit(0);
+    });
   }
 }
 
