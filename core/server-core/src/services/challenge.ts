@@ -317,7 +317,7 @@ export class ChallengeService {
       .filter((t) => !t.startsWith("noctf:"))
       .reduce(
         (p, v) => {
-          p[v] = v;
+          p[v] = tags[v];
           return p;
         },
         {} as Record<string, string>,
