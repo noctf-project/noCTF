@@ -1,3 +1,21 @@
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
+
+@layer utilities {
+    .pop {
+        @apply border;
+        @apply border-base-500;
+        @apply shadow-solid;
+    }
+}
+
+.markdown-body {
+  @apply prose;
+}
+
+.carta-font-code {
+  font-family: '...', monospace;
+  font-size: 1.1rem;
+  line-height: 32px;
+}
