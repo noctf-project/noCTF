@@ -87,6 +87,7 @@ export const ListChallengesResponse = Type.Object({
         PublicChallengeSummary,
         Type.Object({
           score: Type.Union([Type.Number(), Type.Null()]),
+          solve_count: Type.Number(),
           solved_by_me: Type.Boolean(),
         }),
       ]),

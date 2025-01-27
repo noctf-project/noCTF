@@ -87,6 +87,7 @@ export async function routes(fastify: FastifyInstance) {
                   c.id,
                   {
                     score: s.score,
+                    solve_count: s.solves.length,
                     solved_by_me: !!s.solves.find(
                       ({ team_id }) => team_id == team?.team_id,
                     ),
