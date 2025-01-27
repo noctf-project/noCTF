@@ -82,12 +82,14 @@ export type MeTeamResponse = Static<typeof MeTeamResponse>;
 
 export const ListChallengesResponse = Type.Object({
   data: Type.Object({
-    challenges: Type.Array(PublicChallengeSummary),
-    scores: Type.Array(
-      Type.Object({
-        id: Type.Number(),
-        score: Type.Union([Type.Number(), Type.Null()]),
-      }),
+    challenges: Type.Array(
+      Type.Composite([
+        PublicChallengeSummary,
+        Type.Object({
+          score: Type.Union([Type.Number(), Type.Null()]),
+          solved_by_me: Type.Boolean(),
+        }),
+      ]),
     ),
   }),
 });

@@ -61,23 +61,40 @@ export async function routes(fastify: FastifyInstance) {
       const ctime = Date.now();
       const admin = await gateAdmin(ctime, request.user?.id);
 
-      const { challenges, scores } = await cacheService.load(
+      const challenges = await cacheService.load(
         CACHE_NAMESPACE,
         `list:${admin}`,
         async () => {
-          const challenges = await challengeService.list(
+          return await challengeService.list(
             // To account for clock skew
             admin ? {} : { hidden: false, visible_at: new Date(ctime + 60000) },
             true,
           );
-          const scores = await Promise.all(
-            challenges.map((c) =>
-              scoreboardService
-                .getChallengeSolves(c)
-                .then(({ score }) => ({ id: c.id, score })),
+        },
+      );
+
+      const team = request.user?.id
+        ? await teamService.getMembershipForUser(request.user?.id)
+        : undefined;
+      const scores = await cacheService.load(
+        CACHE_NAMESPACE,
+        `scores:${team?.team_id}`,
+        async () => {
+          return Object.fromEntries(
+            await Promise.all(
+              challenges.map((c) =>
+                scoreboardService.getChallengeSolves(c).then((s) => [
+                  c.id,
+                  {
+                    score: s.score,
+                    solved_by_me: !!s.solves.find(
+                      ({ team_id }) => team_id == team?.team_id,
+                    ),
+                  },
+                ]),
+              ),
             ),
           );
-          return { challenges, scores };
         },
       );
 
@@ -90,8 +107,9 @@ export async function routes(fastify: FastifyInstance) {
       );
       return {
         data: {
-          challenges: challenges.filter(({ id }) => visible.has(id)),
-          scores: scores.filter(({ id }) => visible.has(id)),
+          challenges: challenges
+            .filter(({ id }) => visible.has(id))
+            .map((c) => ({ ...c, ...scores[c.id] })),
         },
       };
     },
