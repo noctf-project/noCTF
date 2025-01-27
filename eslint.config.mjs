@@ -14,20 +14,20 @@ export default [
     files: ["**/*.{js,mjs,cjs,ts}"],
   },
   {
-        languageOptions: {
-            globals: {
-                ...globals.browser,
-                ...globals.node
-            }
-        }
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
     },
-  ...eslintPluginSvelte.configs['flat/recommended'],
+  },
+  ...eslintPluginSvelte.configs["flat/recommended"],
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
   eslintConfigPrettier,
   {
     languageOptions: {
-        parser: tsParser,
+      parser: tsParser,
     },
     rules: {
       "no-case-declarations": "off",
@@ -42,17 +42,17 @@ export default [
     },
   },
   {
-    files: ['**/*.svelte'],
-    ignores: ['**/.svelte-kit/', '**/dist/index.d.ts'],
+    files: ["**/*.svelte"],
+    ignores: ["**/.svelte-kit/", "**/dist/index.d.ts"],
 
     languageOptions: {
-        parser: svelteParser,
-        parserOptions: {
-            parser: {
-                ts: tsParser,
-                typescript: tsParser,
-            },
+      parser: svelteParser,
+      parserOptions: {
+        parser: {
+          ts: tsParser,
+          typescript: tsParser,
         },
+      },
     },
   },
 ];

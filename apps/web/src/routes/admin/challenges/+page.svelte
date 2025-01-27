@@ -1,7 +1,13 @@
 <script lang="ts">
   import Icon from "@iconify/svelte";
   import api, { wrapLoadable } from "$lib/api/index.svelte";
-  import { getDifficultyFromTags, getCategoriesFromTags, categoryToIcon, difficultyToBgColour, type Difficulty } from "$lib/utils/challenges";
+  import {
+    getDifficultyFromTags,
+    getCategoriesFromTags,
+    categoryToIcon,
+    difficultyToBgColour,
+    type Difficulty,
+  } from "$lib/utils/challenges";
 
   const challenges = wrapLoadable(api.GET("/challenges"));
 
@@ -22,7 +28,8 @@
       return;
     }
 
-    challenges.r!.data!.data.challenges = challenges.r!.data!.data.challenges.filter((v) => v.id !== id)
+    challenges.r!.data!.data.challenges =
+      challenges.r!.data!.data.challenges.filter((v) => v.id !== id);
   }
 </script>
 
@@ -50,8 +57,12 @@
         <thead>
           <tr class="bg-base-300 border-b-2 border-base-400">
             <th scope="col" class="w-10 border-r-2 border-base-400">ID</th>
-            <th scope="col" class="w-24 border-r-2 border-base-400">Difficulty</th>
-            <th scope="col" class="w-32 border-r-2 border-base-400 text-center">Categories</th>
+            <th scope="col" class="w-24 border-r-2 border-base-400"
+              >Difficulty</th
+            >
+            <th scope="col" class="w-32 border-r-2 border-base-400 text-center"
+              >Categories</th
+            >
             <th scope="col" class="w-auto border-r-2 border-base-400">Title</th>
             <th scope="col" class="w-32 text-center pr-8">Actions</th>
           </tr>
@@ -61,12 +72,16 @@
             {@const difficulty = getDifficultyFromTags(challenge.tags)}
             <tr class="border border-r border-base-300">
               <td class="border-r border-base-400">{challenge.id}</td>
-              <td class={"border-r border-base-400" + difficulty ? difficultyToBgColour(difficulty as Difficulty) : ""}>{difficulty}</td>
+              <td
+                class={"border-r border-base-400" + difficulty
+                  ? difficultyToBgColour(difficulty as Difficulty)
+                  : ""}>{difficulty}</td
+              >
               <td class="border-x border-base-400 align-bottom text-center">
                 {#each getCategoriesFromTags(challenge.tags) as cat}
-                <div class="tooltip" data-tip={cat}>
+                  <div class="tooltip" data-tip={cat}>
                     <Icon icon={categoryToIcon(cat)} class="text-xl" />
-                </div>
+                  </div>
                 {/each}
               </td>
               <td class="border-r border-base-400">{challenge.title}</td>

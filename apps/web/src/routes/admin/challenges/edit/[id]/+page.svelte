@@ -1,8 +1,14 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import ChallengeCreateEdit, { type ChallData } from "$lib/components/challenges/ChallengeCreateEdit.svelte";
+  import ChallengeCreateEdit, {
+    type ChallData,
+  } from "$lib/components/challenges/ChallengeCreateEdit.svelte";
   import api, { wrapLoadable } from "$lib/api/index.svelte";
-  import { getCategoriesFromTags, getDifficultyFromTags, type Difficulty } from "$lib/utils/challenges";
+  import {
+    getCategoriesFromTags,
+    getDifficultyFromTags,
+    type Difficulty,
+  } from "$lib/utils/challenges";
 
   const challData = wrapLoadable(
     api.GET("/admin/challenges/{id}", {
@@ -13,7 +19,6 @@
       },
     }),
   );
-
 </script>
 
 {#if challData.loading}
@@ -22,8 +27,21 @@
     <p class="text-center">Loading challenge data...</p>
   </div>
 {:else}
-  {@const { id, title, description, hidden, visible_at, tags, private_metadata, version } = challData.r.data!.data}
-  {@const { solve: { flag }, score, files } = private_metadata}
+  {@const {
+    id,
+    title,
+    description,
+    hidden,
+    visible_at,
+    tags,
+    private_metadata,
+    version,
+  } = challData.r.data!.data}
+  {@const {
+    solve: { flag },
+    score,
+    files,
+  } = private_metadata}
   {@const editChallData: ChallData = {
     id, title, description,
     isHidden: hidden,

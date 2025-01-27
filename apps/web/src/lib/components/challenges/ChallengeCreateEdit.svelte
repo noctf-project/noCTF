@@ -561,7 +561,7 @@
           <span class="label-text">Challenge Files</span>
         </label>
         <div class="flex-grow"></div>
-        {#if mode == 'edit'}
+        {#if mode == "edit"}
           <div class="flex flex-row gap-4 items-center">
             <span class="badge badge-secondary rounded-md flex flex-row gap-2">
               existing file
