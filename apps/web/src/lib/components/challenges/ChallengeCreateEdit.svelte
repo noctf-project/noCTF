@@ -156,7 +156,7 @@
     if (difficulty) {
       tags["difficulty"] = difficulty;
     }
-    tags["categories"] = JSON.stringify(categories);
+    tags["categories"] = categories.join(",");
     return tags;
   }
 
@@ -626,9 +626,9 @@
       <button
         type="submit"
         class="btn btn-primary border pop"
-        aria-label="Create challenge"
+        aria-label={(mode == "create" ? "Create" : "Edit") + " challenge"}
       >
-        Create Challenge
+        {mode == "create" ? "Create" : "Edit"} challenge
       </button>
     </div>
   </form>
@@ -651,7 +651,7 @@
         {:else if creationStep === "Done"}
           <div class="alert alert-success mb-4">
             <Icon icon="material-symbols:success" class="text-xl" />
-            <span>Challenge created!</span>
+            <span>Challenge {mode == "create" ? "created" : "edited"}!</span>
           </div>
           <div class="modal-action">
             <button class="btn" onclick={() => (isCreating = false)}>

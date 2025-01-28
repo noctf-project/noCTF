@@ -25,11 +25,7 @@ export const getDifficultyFromTags = (tags: { [k in string]: string }) => {
 };
 
 export const getCategoriesFromTags = (tags: { [k in string]: string }) => {
-  try {
-    return JSON.parse(tags["categories"] ?? "[]");
-  } catch {
-    return [];
-  }
+  return tags?.["categories"]?.split(",") ?? [];
 };
 
 export const slugify = (title: string) => {
