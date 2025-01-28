@@ -10,6 +10,7 @@ import {
   ChallengeSolveStatus,
   Team,
   TypeDate,
+  ScoringStrategy,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 
@@ -125,6 +126,24 @@ export type AdminGetChallengeResponse = Static<
   typeof AdminGetChallengeResponse
 >;
 
+export const AdminListChallengesResponse = Type.Object({
+  data: Type.Array(
+    Type.Pick(Challenge, [
+      "id",
+      "slug",
+      "title",
+      "tags",
+      "hidden",
+      "visible_at",
+      "created_at",
+      "updated_at",
+    ]),
+  ),
+});
+export type AdminListChallengesResponse = Static<
+  typeof AdminListChallengesResponse
+>;
+
 export const AdminUpdateChallengeResponse = Type.Object({
   data: Type.Object({
     version: Type.Number(),
@@ -149,3 +168,11 @@ export const SolveChallengeResponse = Type.Object(
   { additionalProperties: false },
 );
 export type SolveChallengeResponse = Static<typeof SolveChallengeResponse>;
+
+export const AdminGetScoringStrategiesResponse = Type.Object(
+  { data: Type.Record(Type.String(), ScoringStrategy) },
+  { additionalProperties: false },
+);
+export type AdminGetScoringStrategiesResponse = Static<
+  typeof AdminGetScoringStrategiesResponse
+>;
