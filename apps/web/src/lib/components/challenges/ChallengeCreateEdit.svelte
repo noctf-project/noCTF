@@ -1,4 +1,6 @@
 <script module>
+  import type { Difficulty } from "$lib/constants/difficulties";
+
   interface Flag {
     value: string;
     type: "static" | "regex";
@@ -47,12 +49,11 @@
 
   import api from "$lib/api/index.svelte";
   import {
-    CATEGORIES,
     categoryToIcon,
-    type Difficulty,
     difficultyToBgColour,
     slugify,
   } from "$lib/utils/challenges";
+  import { CATEGORIES } from "$lib/constants/categories";
 
   const { mode, challData }: Props = $props();
 
