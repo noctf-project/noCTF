@@ -36,6 +36,9 @@ catalogs:
     eslint:
       specifier: ^9.17.0
       version: 9.17.0
+    expr-eval:
+      specifier: npm:expr-eval-fork@^2.0.2
+      version: 2.0.2
     fastify:
       specifier: ^5.2.0
       version: 5.2.0
@@ -216,6 +219,9 @@ importers:
       carta-md:
         specifier: ^4.6.7
         version: 4.6.7(svelte@5.17.3)
+      expr-eval:
+        specifier: 'catalog:'
+        version: expr-eval-fork@2.0.2
     devDependencies:
       '@iconify/svelte':
         specifier: ^4.2.0
@@ -412,7 +418,7 @@ importers:
         specifier: ^1.8.0
         version: 1.8.0
       expr-eval:
-        specifier: npm:expr-eval-fork@^2.0.2
+        specifier: 'catalog:'
         version: expr-eval-fork@2.0.2
       fastify:
         specifier: 'catalog:'

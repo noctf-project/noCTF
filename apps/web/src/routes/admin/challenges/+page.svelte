@@ -6,10 +6,10 @@
     getCategoriesFromTags,
     categoryToIcon,
     difficultyToBgColour,
-    type Difficulty,
   } from "$lib/utils/challenges";
+  import { type Difficulty } from "$lib/constants/difficulties";
 
-  const challenges = wrapLoadable(api.GET("/challenges"));
+  const challenges = wrapLoadable(api.GET("/admin/challenges"));
 
   async function deleteChallenge(id: number, title: string) {
     if (!confirm(`Are you sure you want to delete "${title}"`)) {
@@ -28,8 +28,9 @@
       return;
     }
 
-    challenges.r!.data!.data.challenges =
-      challenges.r!.data!.data.challenges.filter((v) => v.id !== id);
+    challenges.r!.data!.data = challenges.r!.data!.data.filter(
+      (v) => v.id !== id,
+    );
   }
 </script>
 
@@ -56,24 +57,36 @@
       >
         <thead>
           <tr class="bg-base-300 border-b-2 border-base-400">
-            <th scope="col" class="w-10 border-r-2 border-base-400">ID</th>
-            <th scope="col" class="w-24 border-r-2 border-base-400"
-              >Difficulty</th
+            <th scope="col" class="w-10 border-r-2 border-base-400 text-center"
+              >ID</th
             >
-            <th scope="col" class="w-32 border-r-2 border-base-400 text-center"
-              >Categories</th
-            >
+            <th scope="col" class="w-24 border-r-2 border-base-400 text-center">
+              Difficulty
+            </th>
+            <th scope="col" class="w-32 border-r-2 border-base-400 text-center">
+              Categories
+            </th>
             <th scope="col" class="w-auto border-r-2 border-base-400">Title</th>
+            <th scope="col" class="w-60 border-r-2 border-base-400 text-center">
+              Visibility
+            </th>
             <th scope="col" class="w-32 text-center pr-8">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {#each challenges.r.data!.data.challenges as challenge}
+          {#each challenges.r.data!.data as challenge}
             {@const difficulty = getDifficultyFromTags(challenge.tags)}
+            {@const isVisible = challenge.hidden
+              ? false
+              : !challenge.visible_at ||
+                Date.now() > new Date(challenge.visible_at).getTime()}
+            {@const isHidden = challenge.hidden}
             <tr class="border border-r border-base-300">
-              <td class="border-r border-base-400">{challenge.id}</td>
+              <td class="border-r border-base-400 text-center"
+                >{challenge.id}</td
+              >
               <td
-                class={"border-r border-base-400" + difficulty
+                class={"border-r border-base-400 text-center " + difficulty
                   ? difficultyToBgColour(difficulty as Difficulty)
                   : ""}>{difficulty}</td
               >
@@ -85,6 +98,20 @@
                 {/each}
               </td>
               <td class="border-r border-base-400">{challenge.title}</td>
+              <td
+                class={"border-r border-base-400 text-center " +
+                  (isHidden
+                    ? "bg-error text-error-content"
+                    : isVisible
+                      ? "bg-primary text-primary-content"
+                      : "bg-warning text-warning-content")}
+                >{isHidden
+                  ? "Hidden"
+                  : isVisible
+                    ? "Visible"
+                    : "Visible at " +
+                      new Date(challenge.visible_at!).toLocaleString()}</td
+              >
               <td class="text-center">
                 <a
                   href="/admin/challenges/edit/{challenge.id}"

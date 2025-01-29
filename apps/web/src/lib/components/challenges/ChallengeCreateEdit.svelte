@@ -13,7 +13,7 @@
       }
     | {
         mode: "create";
-        challData: undefined;
+        challData?: ChallData;
       };
 
   export interface ScoringStrat {
@@ -46,8 +46,9 @@
   import axios from "axios";
   import { Carta, MarkdownEditor } from "carta-md";
   import "carta-md/default.css";
+  import { Parser } from "expr-eval";
 
-  import api from "$lib/api/index.svelte";
+  import api, { wrapLoadable } from "$lib/api/index.svelte";
   import {
     categoryToIcon,
     difficultyToBgColour,
@@ -56,8 +57,6 @@
   import { CATEGORIES } from "$lib/constants/categories";
 
   const { mode, challData }: Props = $props();
-
-  type ScoringAlgorithm = "static" | "quadratic";
 
   let challengeName = $state<string>(challData?.title ?? "");
   const slug = $derived(slugify(challengeName));
@@ -79,20 +78,18 @@
   let creationCurrentFile = $state<string>("");
   let creationFileUploadProgress = $state<number>(0);
 
-  let scoringType = $state<ScoringAlgorithm>(
-    (challData?.score?.strategy as ScoringAlgorithm) ?? "static",
+  const scoringStrategies = wrapLoadable(api.GET("/admin/scoring_strategies"));
+  let scoringType = $state<string>(challData?.score?.strategy ?? "");
+  let scoringParams = $state<{ [k in string]: number }>(
+    challData?.score?.params ?? {},
   );
-  let basePoints = $state<number>(challData?.score?.params?.base ?? 500);
-  let topPoints = $state<number>(challData?.score?.params?.top ?? 500);
-  let decayFactor = $state<number>(challData?.score?.params?.decay ?? 100);
-  const resetScoreParams = () => {
-    if (scoringType === "static") {
-      basePoints = 500;
-    } else {
-      basePoints = 100;
-      topPoints = 500;
-      decayFactor = 100;
-    }
+  const resetScoringParams = () => {
+    scoringParams = {};
+  };
+  const paramsFromStrategy = (strategy: string) => {
+    if (!scoringStrategies.r) return [];
+    const p = Parser.parse(scoringStrategies.r.data!.data[strategy]!.expr);
+    return p.variables().filter((v) => v !== "ctx");
   };
 
   const carta = new Carta({
@@ -169,17 +166,6 @@
       }
     }
 
-    const scoringParams: { [k in string]: number } =
-      scoringType == "static"
-        ? {
-            base: basePoints,
-          }
-        : {
-            base: basePoints,
-            top: topPoints,
-            decay: decayFactor,
-          };
-
     isCreating = true;
     creationError = null;
     creationStep =
@@ -201,7 +187,7 @@
       title: challengeName,
       description,
       hidden: isHidden,
-      visible_at: visibleAt,
+      visible_at: visibleAt ? new Date(visibleAt).toISOString() : "",
       tags: createTags(),
       private_metadata,
     };
@@ -452,65 +438,54 @@
 
     <div>
       <h2 class="text-lg mb-4">Scoring Configuration</h2>
-      <div class="flex flex-col md:flex-row gap-4">
-        <div class="form-control md:w-1/4">
-          <label for="scoring-type" class="label">
-            <span class="label-text">Scoring Algorithm</span>
-          </label>
-          <select
-            id="scoring-type"
-            bind:value={scoringType}
-            onchange={resetScoreParams}
-            class="select select-bordered w-full"
-          >
-            <option value="static">Static</option>
-            <option value="quadratic">Quadratic</option>
-          </select>
-        </div>
-
-        <div class="form-control md:w-1/4">
-          <label for="base-points" class="label">
-            <span class="label-text">Base Points</span>
-          </label>
-          <input
-            type="number"
-            id="base-points"
-            bind:value={basePoints}
-            class="input input-bordered w-full"
-            min="0"
-            aria-label="Challenge base points"
-          />
-        </div>
-
-        {#if scoringType === "quadratic"}
-          <div class="form-control md:w-1/4">
-            <label for="top-points" class="label">
-              <span class="label-text">Top Points</span>
-            </label>
-            <input
-              type="number"
-              id="top-points"
-              bind:value={topPoints}
-              class="input input-bordered w-full"
-              min="0"
-              aria-label="Challenge top points"
-            />
+      {#if scoringStrategies.loading}
+        Loading...
+      {:else}
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-row justify-between">
+            <div class="form-control md:w-1/4">
+              <label for="scoring-type" class="label">
+                <span class="label-text">Scoring Algorithm</span>
+              </label>
+              <select
+                id="scoring-type"
+                bind:value={scoringType}
+                onchange={resetScoringParams}
+                required
+                class="select select-bordered w-full"
+              >
+                {#each Object.keys(scoringStrategies.r.data!.data!) as strategy}
+                  <option value={strategy}>{strategy}</option>
+                {/each}
+              </select>
+            </div>
+            <div class="p-4 w-8/12 text-sm self-center">
+              {scoringStrategies.r.data!.data[scoringType]?.description}
+            </div>
           </div>
-          <div class="form-control md:w-1/4">
-            <label for="decay-factor" class="label">
-              <span class="label-text">Decay Factor</span>
-            </label>
-            <input
-              type="number"
-              id="decay-factor"
-              bind:value={decayFactor}
-              class="input input-bordered w-full"
-              min="0"
-              aria-label="Challenge decay factor"
-            />
-          </div>
-        {/if}
-      </div>
+
+          {#if scoringType}
+            <div class="flex flex-row gap-2">
+              {#each paramsFromStrategy(scoringType) as p}
+                <div class="form-control flex flex-col">
+                  <label for={p} class="label">
+                    <span class="label-text">{p}</span>
+                  </label>
+                  <input
+                    type="number"
+                    id={p}
+                    required
+                    bind:value={scoringParams[p]}
+                    class="input input-bordered w-full"
+                    min="0"
+                    aria-label={p}
+                  />
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </div>
+      {/if}
     </div>
 
     <div>
