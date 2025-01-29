@@ -5,14 +5,67 @@ import {
 } from "@noctf/api/requests";
 import {
   AdminGetChallengeResponse,
+  AdminGetScoringStrategiesResponse,
+  AdminListChallengesResponse,
   AdminUpdateChallengeResponse,
   AnyResponse,
 } from "@noctf/api/responses";
+import { FilterChallengesQuery } from "@noctf/api/query";
 import { ActorType } from "@noctf/server-core/types/enums";
 import type { FastifyInstance } from "fastify";
 
 export async function routes(fastify: FastifyInstance) {
-  const { challengeService } = fastify.container.cradle;
+  const { challengeService, scoreService } = fastify.container.cradle;
+
+  fastify.get<{
+    Reply: AdminGetScoringStrategiesResponse;
+  }>(
+    "/admin/scoring_strategies",
+    {
+      schema: {
+        tags: ["admin"],
+        security: [{ bearer: [] }],
+        auth: {
+          require: true,
+          policy: ["admin.challenge.get"],
+        },
+        response: {
+          200: AdminGetScoringStrategiesResponse,
+        },
+      },
+    },
+    async (request) => {
+      return {
+        data: await scoreService.getStrategies(),
+      };
+    },
+  );
+
+  fastify.get<{
+    Querystring: FilterChallengesQuery;
+    Reply: AdminListChallengesResponse;
+  }>(
+    "/admin/challenges",
+    {
+      schema: {
+        tags: ["admin"],
+        security: [{ bearer: [] }],
+        auth: {
+          require: true,
+          policy: ["admin.challenge.get"],
+        },
+        querystring: FilterChallengesQuery,
+        response: {
+          200: AdminListChallengesResponse,
+        },
+      },
+    },
+    async (request) => {
+      return {
+        data: await challengeService.list(request.query, false),
+      };
+    },
+  );
 
   fastify.post<{
     Body: AdminCreateChallengeRequest;

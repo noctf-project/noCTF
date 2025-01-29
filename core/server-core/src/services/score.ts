@@ -22,7 +22,7 @@ const STRATEGIES: Record<string, ScoringStrategy> = {
     expr: "max(base, (((base - top) / (decay ^ 2)) * (ctx.n ^ 2)) + top)",
     description:
       "Based on CTFd's dynamic scoring formula. base is the minimum score, top is the" +
-      "maximum score, and decay is the number of solves before the score becomes zero.",
+      " maximum score, and decay is the number of solves before the score becomes zero.",
   },
   exponential: {
     expr: "base + (top - base) / (1 + (max(0, ctx.n - 1)/k) ^ j)",
@@ -64,14 +64,14 @@ export class ScoreService {
     const strategies: Record<string, ScoringStrategy> = {};
     Object.keys(STRATEGIES).map(
       (k) =>
-        (strategies[k] = {
+        (strategies[`core:${k}`] = {
           ...STRATEGIES[k],
           source: "core",
         }),
     );
     Object.keys(cfgStrategies).map(
       (k) =>
-        (strategies[k] = {
+        (strategies[`config:${k}`] = {
           ...STRATEGIES[k],
           source: "config",
         }),
