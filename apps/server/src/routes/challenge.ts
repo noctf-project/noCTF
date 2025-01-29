@@ -76,27 +76,21 @@ export async function routes(fastify: FastifyInstance) {
       const team = request.user?.id
         ? await teamService.getMembershipForUser(request.user?.id)
         : undefined;
-      const scores = await cacheService.load(
-        CACHE_NAMESPACE,
-        `scores:${team?.team_id}`,
-        async () => {
-          return Object.fromEntries(
-            await Promise.all(
-              challenges.map((c) =>
-                scoreboardService.getChallengeSolves(c).then((s) => [
-                  c.id,
-                  {
-                    score: s.score,
-                    solve_count: s.solves.length,
-                    solved_by_me: !!s.solves.find(
-                      ({ team_id }) => team_id == team?.team_id,
-                    ),
-                  },
-                ]),
-              ),
-            ),
-          );
-        },
+      const scores = Object.fromEntries(
+        await Promise.all(
+          challenges.map((c) =>
+            scoreboardService.getChallengeSolves(c).then((s) => [
+              c.id,
+              {
+                score: s.score,
+                solve_count: s.solves.length,
+                solved_by_me: !!s.solves.find(
+                  ({ team_id }) => team_id == team?.team_id,
+                ),
+              },
+            ]),
+          ),
+        ),
       );
 
       const visible = new Set(

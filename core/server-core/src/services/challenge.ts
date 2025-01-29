@@ -25,6 +25,7 @@ import type { TSchema } from "@sinclair/typebox";
 import type { SomeJSONSchema } from "ajv/dist/types/json-schema.js";
 import pLimit from "p-limit";
 import { SubmissionDAO } from "../dao/submission.ts";
+import { CACHE_SCORE_NAMESPACE } from "./scoreboard.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -285,6 +286,7 @@ export class ChallengeService {
         continue;
       }
       this.logger.debug({ name: name() }, "Matched presolve plugin");
+      const solved = state.status === ChallengeSolveStatus.Correct;
       this.submissionDAO.create(this.databaseClient.get(), {
         team_id: teamId,
         user_id: userId,
@@ -292,9 +294,12 @@ export class ChallengeService {
         source: challenge.private_metadata.solve.source,
         data,
         queued: state.status === ChallengeSolveStatus.Queued,
-        solved: state.status === ChallengeSolveStatus.Correct,
+        solved,
         comments: state.comment,
       });
+      if (solved) {
+        this.cacheService.del(CACHE_SCORE_NAMESPACE, `c:${challenge.id}`);
+      }
       return state.status;
       // TODO: queueing, currently it is just marked as queued
     }
