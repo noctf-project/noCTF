@@ -54,14 +54,10 @@ export class ScoreboardService {
   ): Promise<ChallengeSolvesResult> {
     const isId = typeof c === "number";
     const cacheKey = isId ? `c:${c}` : `c:${c.id}`;
-    return this.cacheService.load(
-      CACHE_SCORE_NAMESPACE,
-      cacheKey,
-      async () => {
-        const challenge = isId ? await this.challengeService.getMetadata(c) : c;
-        return this.computeScoresForChallenge(challenge);
-      },
-    );
+    return this.cacheService.load(CACHE_SCORE_NAMESPACE, cacheKey, async () => {
+      const challenge = isId ? await this.challengeService.getMetadata(c) : c;
+      return this.computeScoresForChallenge(challenge);
+    });
   }
 
   private async computeScoresForChallenge(

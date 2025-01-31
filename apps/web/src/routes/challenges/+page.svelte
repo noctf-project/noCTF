@@ -28,15 +28,15 @@
     if (allChallenges) {
       challenges = allChallenges.sort((a, b) => b.solves - a.solves);
     }
-  })
+  });
 </script>
 
 <div class="w-11/12 m-auto h-auto mt-8">
   <div class="self-center text-center text-4xl font-black pb-4">Challenges</div>
   {#if apiChallenges.loading}
     <div class="flex flex-col items-center gap-4 mt-16">
-        <div class="loading loading-spinner loading-lg text-primary"></div>
-        <p class="text-center">Loading challenges...</p>
+      <div class="loading loading-spinner loading-lg text-primary"></div>
+      <p class="text-center">Loading challenges...</p>
     </div>
   {:else}
     <div class="grid grid-cols-[min(25%,20rem)_75%] gap-4 px-16 py-8">
