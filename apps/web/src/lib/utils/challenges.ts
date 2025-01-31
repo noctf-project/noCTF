@@ -1,29 +1,39 @@
-const ICON_MAP: { [k in string]: string } = {
-  all: "material-symbols:background-dot-small",
-  pwn: "material-symbols:bug-report-rounded",
-  crypto: "material-symbols:key",
-  web: "tabler:world",
-  rev: "material-symbols:fast-rewind",
-  misc: "mdi:puzzle",
-};
+import {
+  CATEGORY_UNKNOWN_ICON,
+  ICON_MAP,
+  type Category,
+} from "$lib/constants/categories";
+import {
+  DIFFICULTY_BG_MAP,
+  type Difficulty,
+} from "$lib/constants/difficulties";
 
 export const categoryToIcon = (category: string) => {
   const c = category.toLowerCase();
   if (!(c in ICON_MAP)) {
-    return "carbon:unknown-filled";
+    return CATEGORY_UNKNOWN_ICON;
   }
-  return ICON_MAP[c] as string;
+  return ICON_MAP[c as Category] as string;
 };
-
-const DIFFICULTY_BG_MAP: { [k in Difficulty]: string } = {
-  beginner: "bg-diff-beginner",
-  easy: "bg-diff-easy",
-  medium: "bg-diff-medium",
-  hard: "bg-diff-hard",
-};
-export const DIFFICULTIES = ["beginner", "easy", "medium", "hard"] as const;
-export type Difficulty = (typeof DIFFICULTIES)[number];
 
 export const difficultyToBgColour = (difficulty: Difficulty) => {
   return DIFFICULTY_BG_MAP[difficulty];
+};
+
+export const getDifficultyFromTags = (tags: { [k in string]: string }) => {
+  return tags["difficulty"] ?? "";
+};
+
+export const getCategoriesFromTags = (tags: { [k in string]: string }) => {
+  return tags?.["categories"]?.split(",") ?? [];
+};
+
+export const slugify = (title: string) => {
+  const s = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 64)
+    .replace(/-$/g, "");
+  return /^\d/.test(s) ? `n-${s}`.slice(0, 64) : s;
 };

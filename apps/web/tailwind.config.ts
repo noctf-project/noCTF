@@ -38,6 +38,7 @@ export default {
           "--base-400": "#8a8b90",
           "--base-500": "#3a3b40",
           primary: "#706ce4",
+          secondary: "#6c9ee4",
           "primary-content": "#e6e6f7",
           "--diff-beginner": "#8cd5fa",
           "--diff-easy": "#a1d593",
@@ -48,7 +49,7 @@ export default {
       {
         dark: {
           primary: "#6ea84f",
-          secondary: "#e8da63",
+          secondary: "#65ac99",
           accent: "#49d9b1",
           neutral: "#020405",
           "base-100": "#1a1b1e",

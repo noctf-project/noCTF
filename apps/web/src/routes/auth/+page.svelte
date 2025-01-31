@@ -1,5 +1,5 @@
 <script lang="ts">
-  import api from "$lib/api";
+  import api from "$lib/api/index.svelte";
 
   let activeTab: "login" | "register" = $state("login");
   let email = $state("");

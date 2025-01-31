@@ -19,7 +19,7 @@
     "ajv": "catalog:",
     "awilix": "catalog:",
     "cbor2": "^1.8.0",
-    "expr-eval": "npm:expr-eval-fork@^2.0.2",
+    "expr-eval": "catalog:",
     "fastify": "catalog:",
     "jsonwebtoken": "^9.0.2",
     "kysely": "catalog:",
