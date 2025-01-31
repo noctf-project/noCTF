@@ -12,6 +12,7 @@
 <script lang="ts">
   import Icon from "@iconify/svelte";
   import { categoryToIcon, difficultyToBgColour } from "$lib/utils/challenges";
+  import { type Difficulty } from "$lib/constants/difficulties";
 
   const {
     title,
@@ -33,7 +34,7 @@
     <div class="flex flex-row items-center gap-3">
       {#if difficulty}
         <div
-          class={`badge badge-sm rounded-xl text-xs font-black border-base-content shadow-solid ${difficultyToBgColour(difficulty)}`}
+          class={`badge badge-sm rounded-xl text-xs font-black border-base-content shadow-solid ${difficultyToBgColour(difficulty as Difficulty)}`}
         >
           {difficulty}
         </div>
