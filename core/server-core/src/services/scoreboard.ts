@@ -22,7 +22,7 @@ export type ChallengeSolvesResult = {
   solves: Score[];
 };
 
-const CACHE_NAMESPACE = "core:svc:score";
+export const CACHE_SCORE_NAMESPACE = "core:svc:score";
 const PARALLEL_CHALLENGE_LIMIT = 16;
 const PARALLEL_CHALLENGE_LIMITER = pLimit(PARALLEL_CHALLENGE_LIMIT);
 
@@ -52,15 +52,16 @@ export class ScoreboardService {
   async getChallengeSolves(
     c: number | ChallengeMetadata,
   ): Promise<ChallengeSolvesResult> {
-    if (typeof c === "number") {
-      return this.cacheService.load(CACHE_NAMESPACE, `c:${c}`, async () => {
-        const challenge = await this.challengeService.getMetadata(c);
+    const isId = typeof c === "number";
+    const cacheKey = isId ? `c:${c}` : `c:${c.id}`;
+    return this.cacheService.load(
+      CACHE_SCORE_NAMESPACE,
+      cacheKey,
+      async () => {
+        const challenge = isId ? await this.challengeService.getMetadata(c) : c;
         return this.computeScoresForChallenge(challenge);
-      });
-    }
-    return this.cacheService.load(CACHE_NAMESPACE, `c:${c.id}`, async () => {
-      return this.computeScoresForChallenge(c);
-    });
+      },
+    );
   }
 
   private async computeScoresForChallenge(
