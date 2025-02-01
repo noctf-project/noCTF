@@ -11,6 +11,7 @@ import { BadRequestError } from "@noctf/server-core/errors";
 import type { FastifyInstance } from "fastify";
 import { Generate } from "./hash_util.ts";
 import type { AssociateIdentity } from "@noctf/server-core/services/identity";
+import { NOCTF_SESSION_COOKIE } from "./const.ts";
 
 export default async function (fastify: FastifyInstance) {
   const { identityService, userService, lockService } =
@@ -54,7 +55,7 @@ export default async function (fastify: FastifyInstance) {
         },
       },
     },
-    async (request) => {
+    async (request, reply) => {
       const { password, name, token } = request.body;
       const parsed = (await identityService.validateToken(
         token,
@@ -112,14 +113,21 @@ export default async function (fastify: FastifyInstance) {
           return id;
         },
       );
-      // TODO: set as cookie
+
+      const sessionToken = identityService.generateToken({
+        aud: "session",
+        sub: id,
+      });
+      reply.setCookie(NOCTF_SESSION_COOKIE, sessionToken, {
+        path: "/",
+        secure: true,
+        httpOnly: true,
+        sameSite: true,
+      });
       return {
         data: {
           type: "session",
-          token: identityService.generateToken({
-            aud: "session",
-            sub: id,
-          }),
+          token: sessionToken,
         },
       };
     },

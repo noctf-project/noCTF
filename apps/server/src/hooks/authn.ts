@@ -4,6 +4,7 @@ import {
   AuthenticationError,
   TokenValidationError,
 } from "@noctf/server-core/errors";
+import { NOCTF_SESSION_COOKIE } from "@noctf/mod-auth/const";
 
 const parseCookie = (str: string) =>
   str
@@ -26,7 +27,7 @@ export const AuthnHook = async (request: FastifyRequest) => {
   ) {
     token = request.headers["authorization"].substring(7);
   } else if (request.headers["cookie"]) {
-    token = parseCookie(request.headers["cookie"])["noctf-session"];
+    token = parseCookie(request.headers["cookie"])[NOCTF_SESSION_COOKIE];
   }
   if (!token && require) {
     throw new AuthenticationError("no cookie or authorization header supplied");
