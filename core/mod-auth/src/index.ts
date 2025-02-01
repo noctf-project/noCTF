@@ -1,3 +1,4 @@
+import fastifyCookie from "@fastify/cookie";
 import type { ListAuthMethodsResponse } from "@noctf/api/responses";
 import { DEFAULT_CONFIG } from "./const.ts";
 import password_routes from "./password_routes.ts";
@@ -10,6 +11,7 @@ import "@noctf/server-core/types/fastify";
 export async function initServer(fastify: FastifyInstance) {
   const { identityService, configService, logger } = fastify.container.cradle;
   await configService.register(AuthConfig, DEFAULT_CONFIG);
+  fastify.register(fastifyCookie);
   fastify.register(oauth_routes);
   fastify.register(password_routes);
   fastify.register(register_routes);

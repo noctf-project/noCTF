@@ -14,8 +14,6 @@
           email,
         },
       });
-      // @ts-expect-error /auth/email/init returns two 2XX codes, and the
-      // first one is parsed into the response data type
       const token = data?.data?.token;
       if (token) {
         const { data } = await api.POST("/auth/register/finish", {
@@ -27,7 +25,9 @@
             captcha: "",
           },
         });
-        console.log(data);
+        if (data?.data?.type == "session") {
+          window.location.href = "/";
+        }
       } else {
         alert("some error occurred...");
       }
@@ -38,7 +38,9 @@
           password,
         },
       });
-      console.log(r.data?.data);
+      if (r.data?.data?.type == "session") {
+        window.location.href = "/";
+      }
     }
   }
 </script>

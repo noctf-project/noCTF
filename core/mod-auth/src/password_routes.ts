@@ -5,6 +5,7 @@ import {
 import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
 import { PasswordProvider } from "./password_provider.ts";
 import type { FastifyInstance } from "fastify";
+import { NOCTF_SESSION_COOKIE } from "./const.ts";
 
 export default async function (fastify: FastifyInstance) {
   const { identityService } = fastify.container.cradle;
@@ -22,8 +23,8 @@ export default async function (fastify: FastifyInstance) {
           "Checks if an email exists, returning a message or registration token if not",
         body: InitAuthEmailRequest,
         response: {
-          200: BaseResponse,
           201: FinishAuthResponse,
+          default: BaseResponse,
         },
       },
     },
@@ -68,15 +69,23 @@ export default async function (fastify: FastifyInstance) {
         },
       },
     },
-    async (request) => {
+    async (request, reply) => {
       const email = request.body.email.toLowerCase();
       const password = request.body.password;
       const token = await passwordProvider.authenticate(email, password);
 
+      const sessionToken = identityService.generateToken(token);
+      reply.setCookie(NOCTF_SESSION_COOKIE, sessionToken, {
+        path: "/",
+        secure: true,
+        httpOnly: true,
+        sameSite: true,
+      });
+
       return {
         data: {
           type: "session",
-          token: identityService.generateToken(token),
+          token: sessionToken,
         },
       };
     },
