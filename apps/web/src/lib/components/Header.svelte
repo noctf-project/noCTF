@@ -1,19 +1,25 @@
 <script lang="ts">
   import { page } from "$app/state";
-
-  import { isAuthenticated, isAdmin } from "$lib/state/auth.svelte";
+  import authState from "$lib/state/auth.svelte";
+  import Icon from "@iconify/svelte";
+  import { onMount } from "svelte";
 
   const isActive = (path: string) => {
     return page.url.pathname === path
-      ? "bg-primary text-primary-content font-bold"
+      ? "rounded-md bg-primary text-primary-content font-bold"
       : "";
   };
+
+  onMount(async () => {
+    if (!authState.isInitialised) {
+      authState.fetchState();
+    }
+  });
 </script>
 
 <div class="navbar bg-base-200 py-8 px-12 min-h-24">
   <div class="navbar-start">
-    <!-- Mobile menu -->
-    {#if isAuthenticated}
+    {#if authState.isAuthenticated}
       <div class="dropdown">
         <div
           tabindex="0"
@@ -44,8 +50,7 @@
           <li>
             <a href="/scoreboard" class={isActive("/scoreboard")}>Scoreboard</a>
           </li>
-          <li><a href="/profile" class={isActive("/profile")}>Profile</a></li>
-          {#if isAdmin}
+          {#if authState.isAdmin}
             <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
           {/if}
         </ul>
@@ -59,9 +64,9 @@
   </div>
 
   <div class="navbar-center hidden lg:block">
-    {#if isAuthenticated}
+    {#if authState.isAuthenticated}
       <ul
-        class="menu menu-horizontal border border-base-500 shadow-solid p-1 bg-base-100 rounded-lg flex gap-2"
+        class="menu menu-horizontal pop p-1 bg-base-100 rounded-lg flex gap-2"
       >
         <li>
           <a href="/challenges" class={isActive("/challenges")}>Challenges</a>
@@ -69,8 +74,7 @@
         <li>
           <a href="/scoreboard" class={isActive("/scoreboard")}>Scoreboard</a>
         </li>
-        <li><a href="/profile" class={isActive("/profile")}>Profile</a></li>
-        {#if isAdmin}
+        {#if authState.isAdmin}
           <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
         {/if}
       </ul>
@@ -78,10 +82,36 @@
   </div>
 
   <div class="navbar-end">
-    {#if !isAuthenticated && page.url.pathname !== "/auth"}
+    {#if !authState.isAuthenticated && page.url.pathname !== "/auth"}
       <a href="/auth" class="btn btn-primary px-8">Login</a>
-    {:else if isAuthenticated}
-      <div>user</div>
+    {:else if authState.isAuthenticated}
+      <div class="dropdown dropdown-end">
+        <div
+          tabindex="0"
+          role="button"
+          class="btn hover:pop pop flex flex-row gap-0 px-2 bg-base-100"
+        >
+          <Icon
+            icon="material-symbols:account-circle"
+            class="text-4xl text-neutral-600"
+          />
+          <div class="flex flex-col items-start pl-2 lg:min-w-32 gap-0">
+            <div class="text-left text-[1rem]">{authState.user?.name}</div>
+            <div class="text-neutral-400">
+              {authState.user?.team_name}
+            </div>
+          </div>
+        </div>
+        <ul
+          class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52 gap-1"
+        >
+          <li><a href="/profile" class={isActive("/profile")}>Profile</a></li>
+          <li>
+            <button onclick={authState.logout} class="text-error">Logout</button
+            >
+          </li>
+        </ul>
+      </div>
     {/if}
   </div>
 </div>

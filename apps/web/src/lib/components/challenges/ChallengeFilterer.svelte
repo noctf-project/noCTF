@@ -61,7 +61,7 @@
 
 {#snippet categoryBtn(category: string, solved: number, total: number)}
   {@const btnClass =
-    "btn btn-ghost font-bold border border-base-500 shadow-solid w-9/12 max-w-64 flex flex-row pl-2 gap-3 justify-start"}
+    "btn btn-ghost font-bold hover:pop pop w-9/12 max-w-64 flex flex-row pl-2 gap-3 justify-start"}
   {@const selected =
     (category == "All" && anyFilter) || categoryFilters[category]}
   <button
