@@ -1,10 +1,12 @@
-import type { Insertable, Kysely, Updateable } from "kysely";
+import type { Insertable, Updateable } from "kysely";
 import pg from "pg";
 import type { DB } from "@noctf/schema";
 import { ConflictError, NotFoundError } from "../errors.ts";
+import type { DBType } from "../clients/database.ts";
+import type { User } from "@noctf/api/datatypes";
 
 export class UserDAO {
-  async checkNameExists(db: Kysely<DB>, name: string) {
+  async checkNameExists(db: DBType, name: string) {
     const result = await db
       .selectFrom("user")
       .select(db.fn.countAll().as("count"))
@@ -14,8 +16,20 @@ export class UserDAO {
     return count != 0 && count != "0";
   }
 
+  async get(db: DBType, id: number): Promise<User> {
+    const result = await db
+      .selectFrom("user")
+      .select(["id", "name", "bio", "created_at"])
+      .where("id", "=", id)
+      .executeTakeFirst();
+    if (!result) {
+      throw new NotFoundError("User not found");
+    }
+    return result;
+  }
+
   async create(
-    db: Kysely<DB>,
+    db: DBType,
     {
       name,
       bio,
@@ -42,7 +56,7 @@ export class UserDAO {
   }
 
   async update(
-    db: Kysely<DB>,
+    db: DBType,
     id: number,
     {
       name,

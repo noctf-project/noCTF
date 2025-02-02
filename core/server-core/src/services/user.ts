@@ -28,6 +28,10 @@ export class UserService {
     this.userIdentityDAO = new UserIdentityDAO();
   }
 
+  async get(id: number) {
+    return this.userDAO.get(this.databaseClient.get(), id);
+  }
+
   async update(
     id: number,
     {

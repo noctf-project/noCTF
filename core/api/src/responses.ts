@@ -11,6 +11,7 @@ import {
   Team,
   TypeDate,
   ScoringStrategy,
+  User,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 
@@ -80,6 +81,17 @@ export const MeTeamResponse = Type.Object({
   data: Team,
 });
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
+
+export const MeUserResponse = Type.Object({
+  data: Type.Composite([
+    User,
+    Type.Object({
+      team_id: Type.Union([Type.Number(), Type.Null()]),
+      team_name: Type.Union([Type.String(), Type.Null()]),
+    }),
+  ]),
+});
+export type MeUserResponse = Static<typeof MeUserResponse>;
 
 export const ListChallengesResponse = Type.Object({
   data: Type.Object({
