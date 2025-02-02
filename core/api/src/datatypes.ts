@@ -43,6 +43,15 @@ export const Team = Type.Object({
 });
 export type Team = Static<typeof Team>;
 
+export const User = Type.Object({
+  id: Type.Number(),
+  name: Type.String({ maxLength: 64 }),
+  bio: Type.String({ maxLength: 256 }),
+  roles: Type.Array(Type.String()),
+  created_at: TypeDate,
+});
+export type User = Static<typeof User>;
+
 export const UserIdentity = Type.Object({
   user_id: Type.Number(),
   provider: Type.String(),
