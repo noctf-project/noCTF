@@ -19,7 +19,7 @@ export class UserDAO {
   async get(db: DBType, id: number): Promise<User> {
     const result = await db
       .selectFrom("user")
-      .select(["id", "name", "bio", "created_at"])
+      .select(["id", "name", "bio", "roles", "created_at"])
       .where("id", "=", id)
       .executeTakeFirst();
     if (!result) {
