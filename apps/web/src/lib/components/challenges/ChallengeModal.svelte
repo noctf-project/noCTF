@@ -264,7 +264,9 @@
                   <tr>
                     <th class="border-base-400 border-b w-8">#</th>
                     <th class="border-base-400 border-b w-full">Team</th>
-                    <th class="border-base-400 border-b whitespace-nowrap w-20">Solved</th>
+                    <th class="border-base-400 border-b whitespace-nowrap w-20"
+                      >Solved</th
+                    >
                   </tr>
                 </thead>
                 <tbody>

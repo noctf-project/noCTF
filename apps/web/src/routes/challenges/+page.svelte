@@ -7,10 +7,12 @@
     getDifficultyFromTags,
   } from "$lib/utils/challenges";
   import ChallengeCard from "$lib/components/challenges/ChallengeCard.svelte";
-  import ChallengeModal, { type ChallDetails } from "$lib/components/challenges/ChallengeModal.svelte";
+  import ChallengeModal, {
+    type ChallDetails,
+  } from "$lib/components/challenges/ChallengeModal.svelte";
 
   let apiChallenges = wrapLoadable(api.GET("/challenges"));
-  let challDetailsMap: { [id in number]: ChallDetails } = {}
+  let challDetailsMap: { [id in number]: ChallDetails } = {};
 
   let allChallenges: ChallengeCardData[] | undefined = $derived(
     apiChallenges.r?.data
@@ -33,10 +35,10 @@
     }
   });
 
-  let modalVisible = $state(false)
-  let modalLoading = $state(false)
-  let modalChallData: ChallengeCardData | undefined = $state()
-  let modalChallDetails: ChallDetails | undefined = $state()
+  let modalVisible = $state(false);
+  let modalLoading = $state(false);
+  let modalChallData: ChallengeCardData | undefined = $state();
+  let modalChallDetails: ChallDetails | undefined = $state();
 
   async function onChallengeClicked(challData: ChallengeCardData) {
     modalVisible = true;
@@ -45,7 +47,9 @@
       modalChallDetails = challDetailsMap[challData.id];
     } else {
       modalLoading = true;
-      const r = await api.GET("/challenges/{id}", { params: { path: { id: challData.id }}});
+      const r = await api.GET("/challenges/{id}", {
+        params: { path: { id: challData.id } },
+      });
       if (r.data) {
         const challDetails: ChallDetails = {
           description: r.data.data.description,
@@ -81,6 +85,12 @@
         {/each}
       </div>
     </div>
-    <ChallengeModal challData={modalChallData} challDetails={modalChallDetails} loading={modalLoading} visible={modalVisible} onClose={() => modalVisible = false} />
+    <ChallengeModal
+      challData={modalChallData}
+      challDetails={modalChallDetails}
+      loading={modalLoading}
+      visible={modalVisible}
+      onClose={() => (modalVisible = false)}
+    />
   {/if}
 </div>
