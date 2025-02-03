@@ -12,6 +12,12 @@
     loading: boolean;
     onClose: () => void;
   }
+
+  interface ScoreEntry {
+    teamId: number;
+    teamName: string;
+    time: Date;
+  }
 </script>
 
 <script lang="ts">
@@ -21,7 +27,8 @@
   import { type Difficulty } from "$lib/constants/difficulties";
   import { fade, fly } from "svelte/transition";
   import { onMount } from "svelte";
-  import { API_BASE_URL } from "$lib/api/index.svelte";
+  import api, { API_BASE_URL } from "$lib/api/index.svelte";
+  import { getRelativeTime } from "$lib/utils/time";
 
   let {
     challData,
@@ -34,6 +41,8 @@
   let flagInput = $state("");
   let scoreModalVisible = $state(false);
   let scoreModalRef: HTMLElement | undefined = $state();
+  let scoresLoading = $state(false);
+  let scoresData: ScoreEntry[] | undefined = $state(undefined);
 
   let knowsSolvesClick = localStorage.getItem("knowsSolvesClick") == "1";
   let showHint = $state(!knowsSolvesClick);
@@ -51,6 +60,8 @@
 
   function performClose() {
     scoreModalVisible = false;
+    scoresData = undefined;
+    scoresLoading = false;
     onClose();
   }
 
@@ -84,6 +95,23 @@
       document.removeEventListener("keydown", keyDownHandler);
     };
   });
+
+  async function toggleScores() {
+    scoreModalVisible = !scoreModalVisible;
+    if (scoreModalVisible && !scoresLoading && !scoresData && challData) {
+      const r = await api.GET("/challenges/{id}/solves", {
+        params: { path: { id: challData.id } },
+      });
+      scoresLoading = false;
+      if (r.data) {
+        scoresData = r.data.data.map(({ team_id, team_name, created_at }) => ({
+          teamId: team_id,
+          teamName: team_name,
+          time: new Date(created_at),
+        }));
+      }
+    }
+  }
 </script>
 
 {#if visible}
@@ -99,7 +127,7 @@
     >
       {/* @ts-expect-error use directive incorrect typing */ null}
       <div
-        class="bg-base-200 rounded-lg pop w-full p-6"
+        class="bg-base-200 rounded-lg pop w-full p-6 h-fit"
         use:outsideClickHandler
       >
         <div class="mb-6 w-full">
@@ -128,7 +156,7 @@
                     if (!knowsSolvesClick) {
                       localStorage.setItem("knowsSolvesClick", "1");
                     }
-                    scoreModalVisible = !scoreModalVisible;
+                    toggleScores();
                   }}
                 >
                   <Icon icon="material-symbols:flag" class="text-3xl" />
@@ -175,8 +203,9 @@
                 <ul class="flex flex-row gap-4">
                   {#each challDetails!.files as file}
                     <li>
-                      <a href="{API_BASE_URL}/challenges/{challData?.id}/files/{file}" class="link text-primary font-semibold"
-                        >{file}</a
+                      <a
+                        href="{API_BASE_URL}/challenges/{challData?.id}/files/{file}"
+                        class="link text-primary font-semibold">{file}</a
                       >
                     </li>
                   {/each}
@@ -186,34 +215,88 @@
           {/if}
         </div>
 
-        <div class="flex gap-2">
-          <input
-            bind:value={flagInput}
-            type="text"
-            placeholder={"noCTF{...}"}
-            class="input input-bordered flex-grow pop !bg-base-100"
-          />
-          <button onclick={submitFlag} class="btn pop btn-primary"
-            >Submit</button
-          >
-        </div>
-        <!-- <div class="flex gap-2"> -->
-        <!--     <input -->
-        <!--     bind:value={flagInput} -->
-        <!--     type="text" -->
-        <!--     placeholder={"You've solved this challenge!"} -->
-        <!--     class="input input-bordered flex-grow !bg-base-100" -->
-        <!--     disabled -->
-        <!--     /> -->
-        <!--     <button on:click={submitFlag} class="btn btn-primary btn-disabled">Submit</button> -->
-        <!-- </div> -->
+        {#if challData?.isSolved}
+          <div class="flex gap-2">
+            <input
+              type="text"
+              placeholder={"You've solved this challenge!"}
+              class="input input-bordered flex-grow !bg-base-100"
+              disabled
+            />
+            <button disabled class="btn btn-primary btn-disabled">Submit</button
+            >
+          </div>
+        {:else}
+          <div class="flex gap-2">
+            <input
+              bind:value={flagInput}
+              type="text"
+              placeholder={"noCTF{...}"}
+              class="input input-bordered flex-grow pop !bg-base-100"
+            />
+            <button onclick={submitFlag} class="btn pop btn-primary"
+              >Submit</button
+            >
+          </div>
+        {/if}
       </div>
       {#if scoreModalVisible}
         <div
-          class="bg-base-200 rounded-lg pop w-full md:w-[32rem] p-6 h-full"
+          class="bg-base-200 rounded-lg pop w-full md:w-[32rem] p-6 px-3 h-full"
           bind:this={scoreModalRef}
         >
-          scores go here
+          <h2 class="text-center text-xl font-semibold">Solves</h2>
+          {#if scoresLoading}
+            <div class="flex flex-col items-center gap-4 my-16">
+              <div
+                class="loading loading-spinner loading-lg text-primary"
+              ></div>
+              <p class="text-center">Loading solves...</p>
+            </div>
+          {:else if scoresData?.length == 0}
+            <div class="mt-4 text-center items-center align-center">
+              No solves yet, be the first!
+            </div>
+          {:else}
+            <div class="overflow-x-hidden overflow-y-auto max-h-[46vh]">
+              <table class="table table-fixed table-bordered">
+                <thead class="h-4">
+                  <tr>
+                    <th class="border-base-400 border-b w-8">#</th>
+                    <th class="border-base-400 border-b w-full">Team</th>
+                    <th class="border-base-400 border-b whitespace-nowrap w-20">Solved</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each scoresData! as { teamId, teamName, time }, index}
+                    <tr class="border-base-300 border-b">
+                      <td class="font-medium text-left">
+                        {#if index <= 2}
+                          {["🥇", "🥈", "🥉"][index]}
+                        {:else}
+                          {index + 1}
+                        {/if}
+                      </td>
+                      <td class="font-medium text-primary max-w-0">
+                        <a
+                          href="/team/{teamId}"
+                          class="block truncate hover:text-primary-focus"
+                        >
+                          {teamName}
+                        </a>
+                      </td>
+                      <td
+                        class="text-neutral-400 whitespace-nowrap tooltip tooltip-left"
+                        data-tip={`${time.toLocaleDateString()} ${time.toLocaleTimeString()}`}
+                      >
+                        {getRelativeTime(time)}
+                      </td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          {/if}
         </div>
       {/if}
     </div>
