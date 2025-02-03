@@ -1,11 +1,11 @@
 <script lang="ts">
-  import type { ChallengeCardProps } from "./ChallengeCard.svelte";
+  import type { ChallengeCardData } from "./ChallengeCard.svelte";
   import { categoryToIcon } from "$lib/utils/challenges";
   import Icon from "@iconify/svelte";
 
   interface ChallengeFiltererProps {
-    challenges: ChallengeCardProps[];
-    onFilter: (filteredChallenges: ChallengeCardProps[]) => void;
+    challenges: ChallengeCardData[];
+    onFilter: (filteredChallenges: ChallengeCardData[]) => void;
   }
 
   let { challenges, onFilter }: ChallengeFiltererProps = $props();

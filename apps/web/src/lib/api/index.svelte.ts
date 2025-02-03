@@ -1,6 +1,6 @@
 import createClient from "@noctf/api-client";
 
-const API_BASE_URL = "http://localhost:8000/";
+export const API_BASE_URL = "http://localhost:8000";
 const client = createClient({ baseUrl: API_BASE_URL, credentials: "include" });
 
 type Loadable<T> =

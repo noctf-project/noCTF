@@ -19,3 +19,8 @@
   font-size: 1.1rem;
   line-height: 32px;
 }
+
+.markdown-body :where(code):not(:where([class~="not-prose"] *, pre *)) {
+  border-radius: 0.3rem;
+  color: var(--fallback-p,oklch(var(--p)/var(--tw-text-opacity, 1)));
+}
