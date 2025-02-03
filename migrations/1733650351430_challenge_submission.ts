@@ -99,8 +99,9 @@ export async function up(db: Kysely<any>): Promise<void> {
       "hidden",
       "challenge_id",
       "team_id",
-      "created_at",
+      "team_name",
       "team_flags",
+      "created_at",
     ])
     .as(
       db
@@ -110,8 +111,9 @@ export async function up(db: Kysely<any>): Promise<void> {
           "hidden",
           "challenge_id",
           "team_id",
-          "submission.created_at",
+          "team.name",
           "team.flags",
+          "submission.created_at",
         ])
         .where("solved", "=", true)
         .innerJoin("team", "team.id", "submission.team_id"),
