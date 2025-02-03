@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 PROJECT_NAME=noctf_dev
 
 get-ip() {
@@ -7,7 +7,7 @@ get-ip() {
 }
 
 start() {
-  docker-compose -p "${PROJECT_NAME}" up -d
+  docker compose -p "${PROJECT_NAME}" up -d
 
   cat << EOF > .env
 POSTGRES_URL=postgres://postgres:noctf@`get-ip postgres`/noctf
@@ -18,14 +18,14 @@ EOF
 }
 
 stop() {
-  docker-compose -p "${PROJECT_NAME}" stop
+  docker compose -p "${PROJECT_NAME}" stop
   rm .env
   echo "Stopped $PROJECT_NAME"
 }
 
 clean() {
-  docker-compose -p "${PROJECT_NAME}" down -v
-  docker-compose -p "${PROJECT_NAME}" rm -f -v
+  docker compose -p "${PROJECT_NAME}" down -v
+  docker compose -p "${PROJECT_NAME}" rm -f -v
   rm .env
   echo "Cleaned $PROJECT_NAME"
 }
