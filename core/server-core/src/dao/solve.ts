@@ -13,6 +13,7 @@ export class SolveDAO {
       .select([
         "id",
         "team_id",
+        "team_name",
         "challenge_id",
         "team_flags",
         "hidden",

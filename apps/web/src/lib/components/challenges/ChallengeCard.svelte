@@ -1,11 +1,17 @@
 <script module lang="ts">
-  export interface ChallengeCardProps {
+  export interface ChallengeCardData {
+    id: number;
     title: string;
     categories: string[];
     solves: number;
     points: number;
     isSolved: boolean;
     difficulty?: string;
+  }
+
+  export interface ChallengeCardProps {
+    data: ChallengeCardData,
+    onclick: (c: ChallengeCardData) => void,
   }
 </script>
 
@@ -14,6 +20,7 @@
   import { categoryToIcon, difficultyToBgColour } from "$lib/utils/challenges";
   import { type Difficulty } from "$lib/constants/difficulties";
 
+  const { data, onclick }: ChallengeCardProps = $props();
   const {
     title,
     categories,
@@ -21,11 +28,12 @@
     points,
     isSolved,
     difficulty,
-  }: ChallengeCardProps = $props();
+  } = data;
 </script>
 
-<div
-  class={`card w-60 h-32 border border-base-500 shadow-solid ${isSolved ? "bg-primary text-primary-content" : "bg-base-100"} rounded-lg shadow-black`}
+<button
+  class={`text-left card w-60 h-32 pop ${isSolved ? "bg-primary text-primary-content" : "bg-base-100"} rounded-lg shadow-black`}
+  onclick={() => onclick(data)}
 >
   <div class="card-body p-3 flex flex-col">
     <div class="card-title line-clamp-1 font-black">
@@ -71,4 +79,4 @@
       </div>
     </div>
   </div>
-</div>
+</button>

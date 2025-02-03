@@ -118,6 +118,7 @@ export const GetChallengeSolvesResponse = Type.Object({
   data: Type.Array(
     Type.Object({
       team_id: Type.Number(),
+      team_name: Type.String(),
       score: Type.Number(),
       created_at: TypeDate,
     }),

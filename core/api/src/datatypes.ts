@@ -219,6 +219,7 @@ export type ScoringStrategy = Static<typeof ScoringStrategy>;
 export const Score = Type.Object(
   {
     team_id: Type.Number(),
+    team_name: Type.String(),
     hidden: Type.Boolean(),
     bonus: Type.Optional(Type.Number()),
     score: Type.Number(),

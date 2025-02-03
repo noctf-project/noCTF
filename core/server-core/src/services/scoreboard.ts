@@ -81,15 +81,17 @@ export class ScoreboardService {
         valid.length,
       );
 
-      const rv: Score[] = valid.map(({ team_id, created_at }, i) => ({
+      const rv: Score[] = valid.map(({ team_id, team_name, created_at }, i) => ({
         team_id,
+        team_name,
         bonus: bonus && i + 1,
         hidden: false,
         score: base + ((bonus && Math.round(bonus[i])) || 0),
         created_at,
       }));
-      const rh: Score[] = hidden.map(({ team_id, created_at }) => ({
+      const rh: Score[] = hidden.map(({ team_id, team_name, created_at }) => ({
         team_id,
+        team_name,
         hidden: true,
         score: base,
         created_at,
