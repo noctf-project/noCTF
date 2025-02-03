@@ -34,7 +34,7 @@ export async function routes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request) => {
+    async () => {
       return {
         data: await scoreService.getStrategies(),
       };

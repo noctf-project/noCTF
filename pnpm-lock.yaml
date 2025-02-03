@@ -9,6 +9,9 @@ catalogs:
     '@eslint/js':
       specifier: ^9.17.0
       version: 9.17.0
+    '@fastify/cookie':
+      specifier: ^11.0.2
+      version: 11.0.2
     '@fastify/swagger':
       specifier: ^9.3.0
       version: 9.4.0
@@ -294,7 +297,7 @@ importers:
   core/mod-auth:
     dependencies:
       '@fastify/cookie':
-        specifier: ^11.0.2
+        specifier: 'catalog:'
         version: 11.0.2
       '@noctf/api':
         specifier: workspace:*

@@ -10,8 +10,8 @@
   }
 
   export interface ChallengeCardProps {
-    data: ChallengeCardData,
-    onclick: (c: ChallengeCardData) => void,
+    data: ChallengeCardData;
+    onclick: (c: ChallengeCardData) => void;
   }
 </script>
 
@@ -21,14 +21,7 @@
   import { type Difficulty } from "$lib/constants/difficulties";
 
   const { data, onclick }: ChallengeCardProps = $props();
-  const {
-    title,
-    categories,
-    solves,
-    points,
-    isSolved,
-    difficulty,
-  } = data;
+  const { title, categories, solves, points, isSolved, difficulty } = data;
 </script>
 
 <button
