@@ -39,7 +39,7 @@ import {
 import core from "./core.ts";
 import { MetricsClient } from "@noctf/server-core/clients/metrics";
 import { NATSClientFactory } from "@noctf/server-core/clients/nats";
-import { ChallengeService } from "@noctf/server-core/services/challenge";
+import { ChallengeService } from "@noctf/server-core/services/challenge/index";
 import { FileService } from "@noctf/server-core/services/file";
 import { ScoreboardService } from "@noctf/server-core/services/scoreboard";
 import { fastifyMultipart } from "@fastify/multipart";
