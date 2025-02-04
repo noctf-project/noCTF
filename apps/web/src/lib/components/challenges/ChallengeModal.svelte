@@ -11,6 +11,7 @@
     visible: boolean;
     loading: boolean;
     onClose: () => void;
+    onSolve: () => void;
   }
 
   interface ScoreEntry {
@@ -25,6 +26,8 @@
   import { categoryToIcon, difficultyToBgColour } from "$lib/utils/challenges";
   import Icon from "@iconify/svelte";
   import { type Difficulty } from "$lib/constants/difficulties";
+  import { Tween } from "svelte/motion";
+  import { cubicInOut } from "svelte/easing";
   import { fade, fly } from "svelte/transition";
   import { onMount } from "svelte";
   import api, { API_BASE_URL } from "$lib/api/index.svelte";
@@ -36,9 +39,12 @@
     visible,
     loading,
     onClose,
+    onSolve,
   }: ChallengeModalProps = $props();
 
   let flagInput = $state("");
+  let flagSubmitStatus: undefined | "incorrect" | "correct" | "queued" =
+    $state();
   let scoreModalVisible = $state(false);
   let scoreModalRef: HTMLElement | undefined = $state();
   let scoresLoading = $state(false);
@@ -54,14 +60,36 @@
     sanitizer: false,
   });
 
-  function submitFlag() {
-    alert(`Flag submitted: ${flagInput}`);
+  const correctAnim = new Tween(0, {
+    duration: 600,
+    easing: cubicInOut,
+  });
+  async function submitFlag() {
+    flagSubmitStatus = undefined;
+
+    // TODO: better progress and error handling
+    const r = await api.POST("/challenges/{id}/solves", {
+      params: { path: { id: challData!.id } },
+      body: {
+        data: flagInput.trim(),
+      },
+    });
+    if (r.data) {
+      flagSubmitStatus = r.data.data;
+      if (flagSubmitStatus == "correct") {
+        correctAnim.set(1);
+        onSolve();
+      }
+    }
   }
 
   function performClose() {
+    flagSubmitStatus = undefined;
     scoreModalVisible = false;
     scoresData = undefined;
     scoresLoading = false;
+    flagInput = "";
+    correctAnim.set(0);
     onClose();
   }
 
@@ -227,17 +255,59 @@
             >
           </div>
         {:else}
-          <div class="flex gap-2">
-            <input
-              bind:value={flagInput}
-              type="text"
-              placeholder={"noCTF{...}"}
-              class="input input-bordered flex-grow pop !bg-base-100"
-            />
-            <button onclick={submitFlag} class="btn pop btn-primary"
-              >Submit</button
+          <form class="flex gap-2 w-full">
+            <div class="relative w-full">
+              <input
+                bind:value={flagInput}
+                oninput={() => (flagSubmitStatus = undefined)}
+                type="text"
+                placeholder={"noCTF{...}"}
+                class={"w-full input input-bordered flex-grow pop duration-200 transition-colors focus:outline-none focus:pop focus:ring-0 focus:ring-offset-0 " +
+                  (flagSubmitStatus == "incorrect"
+                    ? "bg-error shake text-base-content/30"
+                    : "bg-base-100")}
+              />
+              {#if flagSubmitStatus == "correct"}
+                <div
+                  class="absolute inset-0 overflow-hidden rounded-lg pointer-events-none pop"
+                >
+                  <div
+                    class="absolute left-0 top-0 h-full bg-success"
+                    style="width: {correctAnim.current * 100}%"
+                  ></div>
+                </div>
+
+                <div
+                  class="absolute inset-0 flex items-center justify-center"
+                  transition:fade={{ duration: 400 }}
+                >
+                  <span
+                    class="text-success-content font-bold"
+                    in:fly={{ y: 40, duration: 400 }}
+                  >
+                    Correct! 🎉
+                  </span>
+                </div>
+              {:else if flagSubmitStatus == "incorrect"}
+                <div
+                  class="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  transition:fade={{ duration: 400 }}
+                >
+                  <span
+                    class="text-error-content font-bold"
+                    in:fly={{ y: 40, duration: 400 }}
+                  >
+                    Incorrect...
+                  </span>
+                </div>
+              {/if}
+            </div>
+            <button
+              type="submit"
+              onclick={submitFlag}
+              class="btn pop btn-primary">Submit</button
             >
-          </div>
+          </form>
         {/if}
       </div>
       {#if scoreModalVisible}
@@ -304,3 +374,29 @@
     </div>
   </div>
 {/if}
+
+<style lang="postcss">
+  .shake {
+    animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+
+  @keyframes shake {
+    10%,
+    90% {
+      transform: translate3d(-1px, 0, 0);
+    }
+    20%,
+    80% {
+      transform: translate3d(2px, 0, 0);
+    }
+    30%,
+    50%,
+    70% {
+      transform: translate3d(-2px, 0, 0);
+    }
+    40%,
+    60% {
+      transform: translate3d(2px, 0, 0);
+    }
+  }
+</style>
