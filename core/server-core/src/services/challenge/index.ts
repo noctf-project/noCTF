@@ -181,7 +181,10 @@ export class ChallengeService {
       if (!state) {
         continue;
       }
-      this.logger.debug({ name: impl.name() }, "Presolve plugin returned a valid result");
+      this.logger.debug(
+        { name: impl.name() },
+        "Presolve plugin returned a valid result",
+      );
       const solved = state.status === ChallengeSolveStatus.Correct;
       this.submissionDAO.create(this.databaseClient.get(), {
         team_id: teamId,
