@@ -46,11 +46,6 @@
   );
 
   let challenges: ChallengeCardData[] | undefined = $state();
-  $effect(() => {
-    if (allChallenges) {
-      challenges = allChallenges.sort((a, b) => b.solves - a.solves);
-    }
-  });
 
   let modalVisible = $state(false);
   let modalLoading = $state(false);
