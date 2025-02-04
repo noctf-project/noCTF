@@ -65,6 +65,10 @@
     easing: cubicInOut,
   });
   async function submitFlag() {
+    if (!flagInput) {
+      return;
+    }
+
     flagSubmitStatus = undefined;
 
     // TODO: better progress and error handling
@@ -262,6 +266,7 @@
                 oninput={() => (flagSubmitStatus = undefined)}
                 type="text"
                 placeholder={"noCTF{...}"}
+                required
                 class={"w-full input input-bordered flex-grow pop duration-200 transition-colors focus:outline-none focus:pop focus:ring-0 focus:ring-offset-0 " +
                   (flagSubmitStatus == "incorrect"
                     ? "bg-error shake text-base-content/30"
