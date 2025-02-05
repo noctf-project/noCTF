@@ -42,7 +42,7 @@ const FLAG_STRATEGIES: Record<
     solved: !!candidate.match(spec),
   }),
   regex_insensitive: (spec, _teamId, candidate) => ({
-    solved: !!candidate.match(new RegExp(spec, 'i')),
+    solved: !!candidate.match(new RegExp(spec, "i")),
   }),
 };
 
@@ -65,11 +65,7 @@ export class CoreChallengePlugin implements ChallengePlugin {
     return ChallengePrivateMetadataBase;
   }
 
-  preSolve = async (
-    c: ChallengeMetadata,
-    teamId: number,
-    data: string,
-  ) => {
+  preSolve = async (c: ChallengeMetadata, teamId: number, data: string) => {
     const m = c.private_metadata;
     switch (m.solve.source) {
       case "manual":

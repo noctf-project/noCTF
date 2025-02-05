@@ -1,9 +1,13 @@
 <script module>
   import type { Difficulty } from "$lib/constants/difficulties";
 
-  interface Flag {
-    value: string;
-    type: "static" | "regex";
+  export interface Flag {
+    data: string;
+    strategy:
+      | "case_sensitive"
+      | "case_insensitive"
+      | "regex_sensitive"
+      | "regex_insensitive";
   }
 
   type Props =
@@ -69,7 +73,7 @@
   let files = $state<File[]>([]);
   let existingFiles = $state<ExistingFile[]>(challData?.files ?? []);
   let flags = $state<Flag[]>(
-    challData?.flags ?? [{ value: "", type: "static" }],
+    challData?.flags ?? [{ data: "", strategy: "case_sensitive" }],
   );
 
   let isCreating = $state<boolean>(false);
@@ -142,7 +146,7 @@
   }
 
   function addFlag(): void {
-    flags = [...flags, { value: "", type: "static" }];
+    flags = [...flags, { data: "", strategy: "case_sensitive" }];
   }
   function removeFlag(index: number): void {
     flags = flags.filter((_, i) => i !== index);
@@ -160,7 +164,7 @@
   async function handleSubmit(event: Event): Promise<void> {
     event.preventDefault();
 
-    if (flags.filter((f) => f.value).length == 0) {
+    if (flags.filter((f) => f.data).length == 0) {
       if (!confirm("No flags set, are you sure you want to proceed?")) {
         return;
       }
@@ -174,7 +178,7 @@
     const private_metadata = {
       solve: {
         source: "flag",
-        flag: flags.map((f) => ({ data: f.value, strategy: f.type })),
+        flag: flags.filter((f) => f.data), // don't allow empty flags
       },
       score: {
         strategy: scoringType,
@@ -227,6 +231,7 @@
       }
       challengeId = challData.id;
       version = res.data.data.version;
+      challData.version = version;
     }
 
     if (files.length > 0) {
@@ -437,7 +442,7 @@
     </div>
 
     <div>
-      <h2 class="text-lg mb-4">Scoring Configuration</h2>
+      <h2 class="text-lg mb-4 font-semibold">Scoring Configuration</h2>
       {#if scoringStrategies.loading}
         Loading...
       {:else}
@@ -489,19 +494,23 @@
     </div>
 
     <div>
-      <h2 class="text-lg mb-4">Flags</h2>
+      <h2 class="text-lg mb-4 font-semibold">Flags</h2>
       <div role="list" aria-label="Challenge flags">
         {#each flags as flag, index}
-          <div class="flex gap-4 mb-4" role="listitem">
+          <div class="form-control flex flex-row gap-4 mb-4" role="listitem">
             <label for={`flag-type-${index}`} class="sr-only">Flag type</label>
             <select
               id={`flag-type-${index}`}
-              bind:value={flag.type}
+              bind:value={flag.strategy}
               class="select select-bordered w-32"
               aria-label={`Flag ${index + 1} type`}
             >
-              <option value="static">Static</option>
-              <option value="regex">Regex</option>
+              <option value="case_sensitive">Static (case sensitive)</option>
+              <option value="case_insensitive">Static (case insensitive)</option
+              >
+              <option value="regex_sensitive">Regex (case sensitive)</option>
+              <option value="regex_insensitive">Regex (case insensitive)</option
+              >
             </select>
 
             <label for={`flag-value-${index}`} class="sr-only">Flag value</label
@@ -509,7 +518,7 @@
             <input
               type="text"
               id={`flag-value-${index}`}
-              bind:value={flag.value}
+              bind:value={flag.data}
               class="input input-bordered flex-1"
               placeholder="Enter flag..."
               aria-label={`Flag ${index + 1} value`}

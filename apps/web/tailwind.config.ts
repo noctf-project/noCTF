@@ -39,6 +39,8 @@ export default {
           "--base-500": "#3a3b40",
           primary: "#706ce4",
           secondary: "#6c9ee4",
+          success: "#72ca72",
+          error: "#c75658",
           "primary-content": "#e6e6f7",
           "--diff-beginner": "#8cd5fa",
           "--diff-easy": "#a1d593",

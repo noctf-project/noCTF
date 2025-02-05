@@ -10,9 +10,26 @@
   import ChallengeModal, {
     type ChallDetails,
   } from "$lib/components/challenges/ChallengeModal.svelte";
+  import { onMount } from "svelte";
 
   let apiChallenges = wrapLoadable(api.GET("/challenges"));
   let challDetailsMap: { [id in number]: ChallDetails } = {};
+
+  const refreshChallenges = async () => {
+    const r = await api.GET("/challenges");
+    apiChallenges.r = r;
+  };
+
+  onMount(() => {
+    const refresh = setInterval(
+      refreshChallenges,
+      20000 + Math.floor(Math.random() * 10000),
+    );
+
+    return () => {
+      clearInterval(refresh);
+    };
+  });
 
   let allChallenges: ChallengeCardData[] | undefined = $derived(
     apiChallenges.r?.data
@@ -29,11 +46,6 @@
   );
 
   let challenges: ChallengeCardData[] | undefined = $state();
-  $effect(() => {
-    if (allChallenges) {
-      challenges = allChallenges.sort((a, b) => b.solves - a.solves);
-    }
-  });
 
   let modalVisible = $state(false);
   let modalLoading = $state(false);
@@ -80,7 +92,7 @@
         />
       </div>
       <div class="flex flex-row flex-wrap gap-3 content-start">
-        {#each challenges! as challenge (challenge.id)}
+        {#each challenges! as challenge (challenge)}
           <ChallengeCard data={challenge} onclick={onChallengeClicked} />
         {/each}
       </div>
@@ -91,6 +103,7 @@
       loading={modalLoading}
       visible={modalVisible}
       onClose={() => (modalVisible = false)}
+      onSolve={refreshChallenges}
     />
   {/if}
 </div>

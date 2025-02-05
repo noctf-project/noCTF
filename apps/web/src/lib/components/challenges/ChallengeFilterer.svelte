@@ -55,7 +55,8 @@
           );
           return chal.categories.find((c) => f.has(c));
         });
-    onFilter(filtered);
+    const sorted = filtered.sort((a, b) => b.solves - a.solves);
+    onFilter(sorted);
   });
 </script>
 

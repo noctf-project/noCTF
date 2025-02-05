@@ -2,13 +2,14 @@
   import { page } from "$app/state";
   import ChallengeCreateEdit, {
     type ChallData,
+    type Flag,
   } from "$lib/components/challenges/ChallengeCreateEdit.svelte";
   import api, { wrapLoadable } from "$lib/api/index.svelte";
   import {
     getCategoriesFromTags,
     getDifficultyFromTags,
-    type Difficulty,
   } from "$lib/utils/challenges";
+  import type { Difficulty } from "$lib/constants/difficulties";
 
   const challData = wrapLoadable(
     api.GET("/admin/challenges/{id}", {
@@ -49,7 +50,7 @@
     difficulty: getDifficultyFromTags(tags) as Difficulty | "",
     categories: getCategoriesFromTags(tags),
     score,
-    flags: flag?.map((f) => ({ type: f.strategy as "static"|"regex", value: f.data })) ?? [],
+    flags: flag as Flag[] ?? [],
     files: Object.keys(files).map((filename) => ({ filename, ref: files[filename]!.ref })),
     version,
   }}
