@@ -2,6 +2,7 @@
   import type { ChallengeCardData } from "./ChallengeCard.svelte";
   import { categoryToIcon } from "$lib/utils/challenges";
   import Icon from "@iconify/svelte";
+  import { untrack } from "svelte";
 
   interface ChallengeFiltererProps {
     challenges: ChallengeCardData[];
@@ -9,14 +10,14 @@
   }
 
   let { challenges, onFilter }: ChallengeFiltererProps = $props();
-  const allChallenges = challenges.slice();
-  const allSolveCount = allChallenges.filter((c) => c.isSolved).length;
-  const allCount = allChallenges.length;
-  const categories = new Set(allChallenges.flatMap((c) => c.categories));
+  const allChallenges = $derived(challenges.slice());
+  const allSolveCount = $derived(allChallenges.filter((c) => c.isSolved).length);
+  const allCount = $derived(allChallenges.length);
+  const categories = $derived(new Set(allChallenges.flatMap((c) => c.categories)));
 
   let anyFilter = $state(true);
   const allFalse = Object.fromEntries(
-    Array.from(categories).map((k) => [k, false]),
+    Array.from(untrack(() => categories)).map((k) => [k, false]),
   );
   let categoryFilters = $state(allFalse);
 
