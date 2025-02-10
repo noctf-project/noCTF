@@ -2,6 +2,7 @@
   import Icon from "@iconify/svelte";
   import api, { wrapLoadable } from "$lib/api/index.svelte";
   import { getCategoriesFromTags } from "$lib/utils/challenges";
+  import { getRelativeTime } from "$lib/utils/time";
 
   interface ScoreboardEntry {
     id: number;
@@ -28,11 +29,12 @@
     title: c.title,
     points: c.score!,
     categories: getCategoriesFromTags(c.tags),
-  })).sort((a, b) => a.points - b.points) || [])
+  })).sort((a, b) => b.points - a.points) || [])
 
   const scoreboard: ScoreboardEntry[] = $derived(apiScoreboard.r?.data?.data.map((s, i) => ({
     rank: i+1,
     ...s,
+    time: new Date(s.time),
   })) || []);
 
   function hasSolved(team: ScoreboardEntry, challengeId: number): boolean {
@@ -50,7 +52,7 @@
     </div>
   {:else}
     <div class="overflow-x-auto">
-      <div class="flex flex-row gap-0 w-auto ml-[26.5rem]">
+      <div class="flex flex-row gap-0 w-auto ml-[34.5rem]">
         {#each challenges as challenge}
           <div class="relative">
             <div
@@ -87,15 +89,10 @@
         <thead class="h-4">
           <tr>
             <th class="border border-base-300 bg-base-200 px-2 py-1 w-8">#</th>
-            <th class="border border-base-300 bg-base-200 px-2 py-1 w-64">Team</th
-            >
-            <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
-              >Score</th
-            >
-            <th class="border border-base-300 bg-base-200 px-2 py-1 w-14"
-              >Flags</th
-            >
-
+            <th class="border border-base-300 bg-base-200 px-4 py-1 w-64 text-left">Team</th>
+            <th class="border border-base-300 bg-base-200 px-2 py-1 w-32">Last Solve</th>
+            <th class="border border-base-300 bg-base-200 px-2 py-1 w-20">Score</th>
+            <th class="border border-base-300 bg-base-200 px-2 py-1 w-14">Flags</th>
             {#each challenges as challenge}
               <th
                 class="border border-base-300 bg-base-200 w-12 text-center text-sm"
@@ -117,7 +114,10 @@
                   {entry.name}
                 </a>
               </td>
-              <td class="border border-base-300 px-4 text-right">
+              <td class="border border-base-300 px-4 text-center" title={entry.time.toLocaleString()}>
+                {getRelativeTime(entry.time)}
+              </td>
+              <td class="border border-base-300 px-4 text-center">
                 {entry.score}
               </td>
               <td class="border border-base-300 px-4 text-center">
