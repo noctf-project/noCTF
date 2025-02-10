@@ -50,7 +50,7 @@
     </div>
   {:else}
     <div class="overflow-x-auto">
-      <div class="flex flex-row gap-0 w-full ml-[26.5rem]">
+      <div class="flex flex-row gap-0 w-auto ml-[26.5rem]">
         {#each challenges as challenge}
           <div class="relative">
             <div
