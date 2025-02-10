@@ -125,7 +125,7 @@ export class ScoreboardService {
     // score, followed by date of last solve for tiebreak purposes
     const teamScores: Map<
       number,
-      { name: string; score: number; time: Date; solvedChallenges: number[] }
+      { name: string; score: number; time: Date; solves: number[] }
     > = new Map();
     const computed = await Promise.all(
       challenges.map((x) =>
@@ -143,14 +143,14 @@ export class ScoreboardService {
             name: solve.team_name,
             score: 0,
             time: new Date(0),
-            solvedChallenges: [],
+            solves: [],
           };
           teamScores.set(solve.team_id, team);
         }
         // using side effects
         team.score += solve.score;
         team.time = new Date(Math.max(team.time.getTime(), solve.created_at.getTime()));
-        team.solvedChallenges.push(id);
+        team.solves.push(id);
       }
     }
     const scoreboard = Array.from(teamScores.entries().map(([id, teamScore]) => ({ id, ... teamScore })));

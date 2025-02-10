@@ -240,6 +240,6 @@ export const ScoreboardEntry = Type.Object({
     name: Type.String(),
     score: Type.Number(),
     time: TypeDate,
-    solvedChallenges: Type.Array(Type.Number()),
+    solves: Type.Array(Type.Number()),
 });
 export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
