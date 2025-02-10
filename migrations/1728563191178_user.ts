@@ -89,7 +89,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       {
         name: "public",
         description: "Public user permissions",
-        permissions: ["challenge.get", "team.get"],
+        permissions: ["challenge.get", "team.get", "scoreboard.get"],
         public: true,
       },
       {

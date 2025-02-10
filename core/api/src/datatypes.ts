@@ -234,3 +234,12 @@ export enum ChallengeSolveStatus {
   Incorrect = "incorrect",
   Correct = "correct",
 }
+
+export const ScoreboardEntry = Type.Object({
+    id: Type.Number(),
+    name: Type.String(),
+    score: Type.Number(),
+    time: TypeDate,
+    solvedChallenges: Type.Array(Type.Number()),
+});
+export type ScoreboardEntry = Static<typeof ScoreboardEntry>;

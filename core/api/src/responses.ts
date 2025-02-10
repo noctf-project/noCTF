@@ -12,6 +12,7 @@ import {
   TypeDate,
   ScoringStrategy,
   User,
+  ScoreboardEntry,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 
@@ -192,3 +193,8 @@ export const AdminGetScoringStrategiesResponse = Type.Object(
 export type AdminGetScoringStrategiesResponse = Static<
   typeof AdminGetScoringStrategiesResponse
 >;
+
+export const ScoreboardResponse = Type.Object({
+    data: Type.Array(ScoreboardEntry),
+});
+export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
