@@ -14,7 +14,7 @@ import type { EventBusService } from "./services/event_bus.ts";
 import type { LockService } from "./services/lock.ts";
 import type { MetricsClient } from "./clients/metrics.ts";
 import type { NATSClientFactory } from "./clients/nats.ts";
-import type { ChallengeService } from "./services/challenge/challenge.ts";
+import type { ChallengeService } from "./services/challenge/index.ts";
 import type { FileService } from "./services/file.ts";
 import type { ScoreService } from "./services/score.ts";
 import type { ScoreboardService } from "./services/scoreboard.ts";
