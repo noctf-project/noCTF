@@ -123,7 +123,10 @@ export class ScoreboardService {
       visible_at: new Date(),
     });
     // score, followed by date of last solve for tiebreak purposes
-    const teamScores: Map<number, [number, number]> = new Map();
+    const teamScores: Map<
+      number,
+      { name: string; score: number; time: Date; solves: number[] }
+    > = new Map();
     const computed = await Promise.all(
       challenges.map((x) =>
         PARALLEL_CHALLENGE_LIMITER(() => this.getChallengeSolves(x)).then(
@@ -131,19 +134,27 @@ export class ScoreboardService {
         ),
       ),
     );
-    for (const [_id, solves] of computed) {
+    for (const [id, solves] of computed) {
       for (const solve of solves) {
         if (solve.hidden) continue;
         let team = teamScores.get(solve.team_id);
         if (!team) {
-          team = [0, 0];
+          team = {
+            name: solve.team_name,
+            score: 0,
+            time: new Date(0),
+            solves: [],
+          };
           teamScores.set(solve.team_id, team);
         }
         // using side effects
-        team[0] += solve.score;
-        team[1] = Math.max(team[1], solve.created_at.getTime());
+        team.score += solve.score;
+        team.time = new Date(Math.max(team.time.getTime(), solve.created_at.getTime()));
+        team.solves.push(id);
       }
     }
-    return teamScores;
+    const scoreboard = Array.from(teamScores.entries().map(([id, teamScore]) => ({ id, ... teamScore })));
+    scoreboard.sort((a, b) => a.score - b.score || a.time.getTime() - b.time.getTime());
+    return scoreboard;
   }
 }
