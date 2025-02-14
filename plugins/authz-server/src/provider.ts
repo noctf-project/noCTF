@@ -30,7 +30,7 @@ export class OAuthProvider {
     if (!client) {
       return false;
     }
-    return client.redirect_uri === redirectUri;
+    return !!client.redirect_uri.find((r) => r === redirectUri);
   }
 
   generateAuthorizationCode(userId: number, clientId: string, scope: string) {
