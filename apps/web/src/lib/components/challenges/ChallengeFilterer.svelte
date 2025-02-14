@@ -11,9 +11,13 @@
 
   let { challenges, onFilter }: ChallengeFiltererProps = $props();
   const allChallenges = $derived(challenges.slice());
-  const allSolveCount = $derived(allChallenges.filter((c) => c.isSolved).length);
+  const allSolveCount = $derived(
+    allChallenges.filter((c) => c.isSolved).length,
+  );
   const allCount = $derived(allChallenges.length);
-  const categories = $derived(new Set(allChallenges.flatMap((c) => c.categories)));
+  const categories = $derived(
+    new Set(allChallenges.flatMap((c) => c.categories)),
+  );
 
   let anyFilter = $state(true);
   const allFalse = Object.fromEntries(

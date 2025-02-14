@@ -24,18 +24,24 @@
   const apiScoreboard = wrapLoadable(api.GET("/scoreboard"));
   const loading = $derived(apiChallenges.loading || apiScoreboard.loading);
 
-  const challenges: ChallengeEntry[] = $derived(apiChallenges.r?.data?.data.challenges.map((c) => ({
-    id: c.id,
-    title: c.title,
-    points: c.score!,
-    categories: getCategoriesFromTags(c.tags),
-  })).sort((a, b) => b.points - a.points) || [])
+  const challenges: ChallengeEntry[] = $derived(
+    apiChallenges.r?.data?.data.challenges
+      .map((c) => ({
+        id: c.id,
+        title: c.title,
+        points: c.score!,
+        categories: getCategoriesFromTags(c.tags),
+      }))
+      .sort((a, b) => b.points - a.points) || [],
+  );
 
-  const scoreboard: ScoreboardEntry[] = $derived(apiScoreboard.r?.data?.data.map((s, i) => ({
-    rank: i+1,
-    ...s,
-    time: new Date(s.time),
-  })) || []);
+  const scoreboard: ScoreboardEntry[] = $derived(
+    apiScoreboard.r?.data?.data.map((s, i) => ({
+      rank: i + 1,
+      ...s,
+      time: new Date(s.time),
+    })) || [],
+  );
 
   function hasSolved(team: ScoreboardEntry, challengeId: number): boolean {
     return team.solves.includes(challengeId);
@@ -89,10 +95,19 @@
         <thead class="h-4">
           <tr>
             <th class="border border-base-300 bg-base-200 px-2 py-1 w-8">#</th>
-            <th class="border border-base-300 bg-base-200 px-4 py-1 w-64 text-left">Team</th>
-            <th class="border border-base-300 bg-base-200 px-2 py-1 w-32">Last Solve</th>
-            <th class="border border-base-300 bg-base-200 px-2 py-1 w-20">Score</th>
-            <th class="border border-base-300 bg-base-200 px-2 py-1 w-14">Flags</th>
+            <th
+              class="border border-base-300 bg-base-200 px-4 py-1 w-64 text-left"
+              >Team</th
+            >
+            <th class="border border-base-300 bg-base-200 px-2 py-1 w-32"
+              >Last Solve</th
+            >
+            <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
+              >Score</th
+            >
+            <th class="border border-base-300 bg-base-200 px-2 py-1 w-14"
+              >Flags</th
+            >
             {#each challenges as challenge}
               <th
                 class="border border-base-300 bg-base-200 w-12 text-center text-sm"
@@ -110,11 +125,18 @@
                 {entry.rank}
               </td>
               <td class="border border-base-300 px-4">
-                <a href="/team/{entry.id}" class="truncate block" title={entry.name}>
+                <a
+                  href="/team/{entry.id}"
+                  class="truncate block"
+                  title={entry.name}
+                >
                   {entry.name}
                 </a>
               </td>
-              <td class="border border-base-300 px-4 text-center" title={entry.time.toLocaleString()}>
+              <td
+                class="border border-base-300 px-4 text-center"
+                title={entry.time.toLocaleString()}
+              >
                 {getRelativeTime(entry.time)}
               </td>
               <td class="border border-base-300 px-4 text-center">
