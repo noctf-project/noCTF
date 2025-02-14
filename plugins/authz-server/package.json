@@ -1,0 +1,29 @@
+{
+  "name": "@noctf/authz-server",
+  "version": "0.1.0",
+  "description": "authorization server plugin",
+  "scripts": {
+    "build": "tsc",
+    "dev": "echo 'Nothing to do' && exit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/formbody": "catalog:",
+    "@noctf/api": "workspace:*",
+    "@noctf/schema": "workspace:*",
+    "@noctf/server-core": "workspace:*",
+    "@sinclair/typebox": "catalog:",
+    "fastify": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  }
+}

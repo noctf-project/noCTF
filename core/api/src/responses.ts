@@ -195,6 +195,6 @@ export type AdminGetScoringStrategiesResponse = Static<
 >;
 
 export const ScoreboardResponse = Type.Object({
-    data: Type.Array(ScoreboardEntry),
+  data: Type.Array(ScoreboardEntry),
 });
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
