@@ -83,6 +83,11 @@ export const MeTeamResponse = Type.Object({
 });
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
 
+export const GetTeamResponse = Type.Object({
+  data: Type.Omit(Team, ["join_code", "flags"]),
+});
+export type GetTeamResponse = Static<typeof MeTeamResponse>;
+
 export const MeUserResponse = Type.Object({
   data: Type.Composite([
     User,

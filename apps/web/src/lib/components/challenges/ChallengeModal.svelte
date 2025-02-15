@@ -16,7 +16,6 @@
 
   interface ScoreEntry {
     teamId: number;
-    teamName: string;
     time: Date;
   }
 </script>
@@ -32,6 +31,7 @@
   import { onMount } from "svelte";
   import api, { API_BASE_URL } from "$lib/api/index.svelte";
   import { getRelativeTime } from "$lib/utils/time";
+  import TeamService from "$lib/state/team.svelte";
 
   let {
     challData,
@@ -136,9 +136,8 @@
       });
       scoresLoading = false;
       if (r.data) {
-        scoresData = r.data.data.map(({ team_id, team_name, created_at }) => ({
+        scoresData = r.data.data.map(({ team_id, created_at }) => ({
           teamId: team_id,
-          teamName: team_name,
           time: new Date(created_at),
         }));
       }
@@ -345,7 +344,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {#each scoresData! as { teamId, teamName, time }, index}
+                  {#each scoresData! as { teamId, time }, index}
                     <tr class="border-base-300 border-b">
                       <td class="font-medium text-left">
                         {#if index <= 2}
@@ -359,7 +358,11 @@
                           href="/team/{teamId}"
                           class="block truncate hover:text-primary-focus"
                         >
-                          {teamName}
+                          {#await TeamService.getTeamName(teamId)}
+                            loading...
+                          {:then name}
+                            {name}
+                          {/await}
                         </a>
                       </td>
                       <td

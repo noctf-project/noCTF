@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from "@iconify/svelte";
   import api, { wrapLoadable } from "$lib/api/index.svelte";
+  import TeamService from "$lib/state/team.svelte";
   import { getCategoriesFromTags } from "$lib/utils/challenges";
   import { getRelativeTime } from "$lib/utils/time";
 
@@ -37,8 +38,8 @@
 
   const scoreboard: ScoreboardEntry[] = $derived(
     apiScoreboard.r?.data?.data.map((s, i) => ({
-      rank: i + 1,
       ...s,
+      rank: i + 1,
       time: new Date(s.time),
     })) || [],
   );
@@ -125,12 +126,12 @@
                 {entry.rank}
               </td>
               <td class="border border-base-300 px-4">
-                <a
-                  href="/team/{entry.id}"
-                  class="truncate block"
-                  title={entry.name}
-                >
-                  {entry.name}
+                <a href="/team/{entry.id}" class="truncate block">
+                  {#await TeamService.getTeamName(entry.id)}
+                    loading...
+                  {:then name}
+                    {name}
+                  {/await}
                 </a>
               </td>
               <td

@@ -9,6 +9,14 @@ export const GetChallengeParams = Type.Object(
 );
 export type GetChallengeParams = Static<typeof GetChallengeParams>;
 
+export const GetTeamParams = Type.Object(
+  {
+    id: Type.Number(),
+  },
+  { additionalProperties: false },
+);
+export type GetTeamParams = Static<typeof GetTeamParams>;
+
 export const GetChallengeFileParams = Type.Object(
   {
     id: Type.Number(),

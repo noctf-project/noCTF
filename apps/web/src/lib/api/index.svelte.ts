@@ -1,7 +1,11 @@
-import createClient from "@noctf/api-client";
+import createClient from "openapi-fetch";
+import type { paths } from "@noctf/openapi-spec";
 
 export const API_BASE_URL = "http://localhost:8000";
-const client = createClient({ baseUrl: API_BASE_URL, credentials: "include" });
+const client = createClient<paths>({
+  baseUrl: API_BASE_URL,
+  credentials: "include",
+});
 
 type Loadable<T> =
   | {
