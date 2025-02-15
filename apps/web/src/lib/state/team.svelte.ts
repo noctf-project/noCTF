@@ -7,6 +7,7 @@ export type Team = PathResponse<"/team/id/{id}", "get">["data"];
 export class TeamService {
   private readonly cache = new LRUCache<number, Team>({
     max: 4096,
+    ttl: 900000, // 15 minutes
     fetchMethod: (id) => this.fetchTeamById(id),
   });
 
