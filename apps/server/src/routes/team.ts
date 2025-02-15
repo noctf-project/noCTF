@@ -11,8 +11,13 @@ import {
   JoinTeamRequest,
   UpdateTeamRequest,
 } from "@noctf/api/requests";
-import { MeTeamResponse, SuccessResponse } from "@noctf/api/responses";
+import {
+  GetTeamResponse,
+  MeTeamResponse,
+  SuccessResponse,
+} from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
+import { GetTeamParams } from "@noctf/api/params";
 
 export async function routes(fastify: FastifyInstance) {
   const { teamService } = fastify.container.cradle as ServiceCradle;
@@ -182,20 +187,31 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get(
+  fastify.get<{ Params: GetTeamParams; Reply: GetTeamResponse }>(
     "/team/id/:id",
     {
       schema: {
         security: [{ bearer: [] }],
         tags: ["team"],
+        params: GetTeamParams,
+        response: {
+          200: GetTeamResponse,
+        },
         auth: {
           require: true,
           policy: ["OR", "team.get"],
         },
       },
     },
-    async () => {
-      return "stub";
+    async (request) => {
+      const team = await teamService.get(request.params.id);
+      if (!team || team.flags.includes("hidden")) {
+        throw new NotFoundError("Team not found");
+      }
+
+      return {
+        data: team,
+      };
     },
   );
 }

@@ -8,7 +8,7 @@
     "typecheck": "tsc -noEmit",
     "build": "node esbuild.mjs",
     "release": "pnpm run typecheck && pnpm run build /build && pnpm run test --run",
-    "generate:swagger": "SWAGGER_OUTPUT_FILE=swagger.json tsx --env-file=../../.env src",
+    "generate:swagger": "tsx --env-file=../../.env src/generate_swagger.ts dist/swagger.json",
     "dev": "tsx watch --env-file=../../.env src | pino-pretty",
     "dev:shell": "tsx -i --env-file=../../.env src/shell.ts"
   },

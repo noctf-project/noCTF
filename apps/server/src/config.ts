@@ -18,7 +18,6 @@ export const FILE_LOCAL_PATH = process.env.FILE_LOCAL_PATH || "files/";
 export const ENABLE_SWAGGER =
   process.env.SWAGGER === undefined ||
   ["1", "true"].includes((process.env.ENABLE_SWAGGER || "").toLowerCase());
-export const SWAGGER_OUTPUT_FILE = process.env.SWAGGER_OUTPUT_FILE;
 
 export const METRICS_PATH = process.env.METRICS_PATH;
 export const METRICS_FILE_NAME_FORMAT =
