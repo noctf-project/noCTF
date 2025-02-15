@@ -15,7 +15,8 @@
     "@noctf/schema": "workspace:*",
     "@noctf/server-core": "workspace:*",
     "@sinclair/typebox": "catalog:",
-    "fastify": "catalog:"
+    "fastify": "catalog:",
+    "nanoid": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:",

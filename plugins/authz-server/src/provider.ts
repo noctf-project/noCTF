@@ -1,6 +1,6 @@
 import { ServiceCradle } from "@noctf/server-core";
-import crypto from "crypto";
 import { AuthzServerConfig } from "./schema/config.ts";
+import { nanoid } from "nanoid";
 
 interface AuthorizationCodeContext {
   userId: number;
@@ -34,7 +34,7 @@ export class OAuthProvider {
   }
 
   generateAuthorizationCode(userId: number, clientId: string, scope: string) {
-    const code = crypto.randomBytes(16).toString("hex");
+    const code = nanoid();
     this.cacheService.put(
       CACHE_NAMESPACE,
       `code:${code}`,
