@@ -78,6 +78,7 @@ export class OAuthProvider {
     await this.cacheService.del(CACHE_NAMESPACE, `code:${code}`);
     const token = this.identityService.generateToken({
       aud: "scoped",
+      jti: code,
       sub: authorizationCodeContext.userId,
       scopes: [authorizationCodeContext.scope],
     });

@@ -36,11 +36,12 @@ export class TokenService {
   }
 
   sign(data: SerializableMap, audience: string, expirySeconds: number = 3600) {
+    const jti = data.jti || nanoid();
     return jwt.sign(
       {
         ...data,
         iss: "noctf",
-        jti: nanoid(),
+        jti,
       },
       this.secret,
       {
