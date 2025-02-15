@@ -219,7 +219,6 @@ export type ScoringStrategy = Static<typeof ScoringStrategy>;
 export const Score = Type.Object(
   {
     team_id: Type.Number(),
-    team_name: Type.String(),
     hidden: Type.Boolean(),
     bonus: Type.Optional(Type.Number()),
     score: Type.Number(),
@@ -237,7 +236,6 @@ export enum ChallengeSolveStatus {
 
 export const ScoreboardEntry = Type.Object({
   id: Type.Number(),
-  name: Type.String(),
   score: Type.Number(),
   time: TypeDate,
   solves: Type.Array(Type.Number()),

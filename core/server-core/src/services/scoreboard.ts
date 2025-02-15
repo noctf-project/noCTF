@@ -81,19 +81,15 @@ export class ScoreboardService {
         valid.length,
       );
 
-      const rv: Score[] = valid.map(
-        ({ team_id, team_name, created_at }, i) => ({
-          team_id,
-          team_name,
-          bonus: bonus && i + 1,
-          hidden: false,
-          score: base + ((bonus && Math.round(bonus[i])) || 0),
-          created_at,
-        }),
-      );
-      const rh: Score[] = hidden.map(({ team_id, team_name, created_at }) => ({
+      const rv: Score[] = valid.map(({ team_id, created_at }, i) => ({
         team_id,
-        team_name,
+        bonus: bonus && i + 1,
+        hidden: false,
+        score: base + ((bonus && Math.round(bonus[i])) || 0),
+        created_at,
+      }));
+      const rh: Score[] = hidden.map(({ team_id, created_at }) => ({
+        team_id,
         hidden: true,
         score: base,
         created_at,
@@ -125,7 +121,7 @@ export class ScoreboardService {
     // score, followed by date of last solve for tiebreak purposes
     const teamScores: Map<
       number,
-      { name: string; score: number; time: Date; solves: number[] }
+      { score: number; time: Date; solves: number[] }
     > = new Map();
     const computed = await Promise.all(
       challenges.map((x) =>
@@ -140,7 +136,6 @@ export class ScoreboardService {
         let team = teamScores.get(solve.team_id);
         if (!team) {
           team = {
-            name: solve.team_name,
             score: 0,
             time: new Date(0),
             solves: [],
