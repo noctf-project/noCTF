@@ -4,7 +4,7 @@ import { Type } from "@sinclair/typebox";
 export const AuthzServerClientConfig = Type.Object({
   client_id: Type.String(),
   client_secret: Type.String(),
-  redirect_uri: Type.Array(Type.String()),
+  redirect_uris: Type.Array(Type.String()),
 });
 export type AuthzServerClientConfig = Static<typeof AuthzServerClientConfig>;
 

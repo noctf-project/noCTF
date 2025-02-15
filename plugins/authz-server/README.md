@@ -10,7 +10,7 @@ Clients are configurable under the `plugin:authz_server` config namespace:
         {
             "client_id": "asdf",
             "client_secret": "zxcv",
-            "redirect_uri": "https://yourapp/oauth/callback",
+            "redirect_uris": ["https://yourapp/oauth/callback"],
         }
     ]
 }
