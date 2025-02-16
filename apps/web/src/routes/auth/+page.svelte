@@ -1,10 +1,22 @@
 <script lang="ts">
   import api from "$lib/api/index.svelte";
+  import { performRedirect } from "$lib/utils/url";
 
   let activeTab: "login" | "register" = $state("login");
   let email = $state("");
   let name = $state("");
   let password = $state("");
+  let urlParams = new URLSearchParams(window.location.search);
+  let clientId = urlParams.get("client_id");
+
+  function successRedirect() {
+    const redir = urlParams.get("redirect_to");
+    if (redir) {
+      performRedirect(redir)
+    } else {
+      window.location.replace("/");
+    }
+  }
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
@@ -26,7 +38,7 @@
           },
         });
         if (data?.data?.type == "session") {
-          window.location.href = "/";
+          successRedirect();
         }
       } else {
         alert("some error occurred...");
@@ -39,13 +51,18 @@
         },
       });
       if (r.data?.data?.type == "session") {
-        window.location.href = "/";
+        successRedirect();
       }
     }
   }
 </script>
 
-<div class="h-full flex items-center justify-center">
+<div class="h-full flex flex-col gap-8 items-center justify-center">
+  {#if clientId}
+    <h2 class="text text-xl">
+      Log in to grant access to <span class="font-bold">{clientId}</span>
+    </h2>
+  {/if}
   <div class="card w-96 bg-base-100 shadow-solid border border-base-500">
     <div class="card-body">
       <div class="tabs tabs-boxed mb-4">

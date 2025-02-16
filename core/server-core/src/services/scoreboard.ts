@@ -149,12 +149,18 @@ export class ScoreboardService {
         }
         // using side effects
         team.score += solve.score;
-        team.time = new Date(Math.max(team.time.getTime(), solve.created_at.getTime()));
+        team.time = new Date(
+          Math.max(team.time.getTime(), solve.created_at.getTime()),
+        );
         team.solves.push(id);
       }
     }
-    const scoreboard = Array.from(teamScores.entries().map(([id, teamScore]) => ({ id, ... teamScore })));
-    scoreboard.sort((a, b) => a.score - b.score || a.time.getTime() - b.time.getTime());
+    const scoreboard = Array.from(
+      teamScores.entries().map(([id, teamScore]) => ({ id, ...teamScore })),
+    );
+    scoreboard.sort(
+      (a, b) => a.score - b.score || a.time.getTime() - b.time.getTime(),
+    );
     return scoreboard;
   }
 }

@@ -11,6 +11,7 @@ import { routes as scoreboard } from "./routes/scoreboard.ts";
 import { initServer as auth } from "@noctf/mod-auth";
 import { initServer as captcha } from "@noctf/mod-captcha";
 import { initServer as tickets } from "@noctf/mod-tickets";
+import { initServer as authzServer } from "@noctf/authz-server";
 
 import type { FastifyInstance } from "fastify";
 import { AuthnHook } from "./hooks/authn.ts";
@@ -39,4 +40,5 @@ export default async function (fastify: FastifyInstance) {
   fastify.register(captcha);
   fastify.register(challenge);
   fastify.register(tickets);
+  fastify.register(authzServer);
 }

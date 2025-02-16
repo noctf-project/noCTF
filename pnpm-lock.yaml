@@ -12,6 +12,9 @@ catalogs:
     '@fastify/cookie':
       specifier: ^11.0.2
       version: 11.0.2
+    '@fastify/formbody':
+      specifier: ^8.0.2
+      version: 8.0.2
     '@fastify/swagger':
       specifier: ^9.3.0
       version: 9.4.0
@@ -152,6 +155,9 @@ importers:
       '@noctf/api':
         specifier: workspace:*
         version: link:../../core/api
+      '@noctf/authz-server':
+        specifier: workspace:*
+        version: link:../../plugins/authz-server
       '@noctf/mod-auth':
         specifier: workspace:*
         version: link:../../core/mod-auth
@@ -457,6 +463,43 @@ importers:
       '@types/mime-types':
         specifier: ^2.1.4
         version: 2.1.4
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 2.1.8(vitest@2.1.8(@types/node@22.10.2))
+      typescript:
+        specifier: 'catalog:'
+        version: 5.7.2
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.8(@types/node@22.10.2)
+      vitest-mock-extended:
+        specifier: 'catalog:'
+        version: 2.0.2(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2))
+
+  plugins/authz-server:
+    dependencies:
+      '@fastify/formbody':
+        specifier: 'catalog:'
+        version: 8.0.2
+      '@noctf/api':
+        specifier: workspace:*
+        version: link:../../core/api
+      '@noctf/schema':
+        specifier: workspace:*
+        version: link:../../core/schema
+      '@noctf/server-core':
+        specifier: workspace:*
+        version: link:../../core/server-core
+      '@sinclair/typebox':
+        specifier: 'catalog:'
+        version: 0.34.13
+      fastify:
+        specifier: 'catalog:'
+        version: 5.2.0
+      nanoid:
+        specifier: 'catalog:'
+        version: 5.0.9
+    devDependencies:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 2.1.8(vitest@2.1.8(@types/node@22.10.2))
@@ -996,6 +1039,9 @@ packages:
 
   '@fastify/fast-json-stringify-compiler@5.0.1':
     resolution: {integrity: sha512-f2d3JExJgFE3UbdFcpPwqNUEoHWmt8pAKf8f+9YuLESdefA0WgqxeT6DrGL4Yrf/9ihXNSKOqpjEmurV405meA==}
+
+  '@fastify/formbody@8.0.2':
+    resolution: {integrity: sha512-84v5J2KrkXzjgBpYnaNRPqwgMsmY7ZDjuj0YVuMR3NXCJRCgKEZy/taSP1wUYGn0onfxJpLyRGDLa+NMaDJtnA==}
 
   '@fastify/merge-json-schemas@0.1.1':
     resolution: {integrity: sha512-fERDVz7topgNjtXsJTTW1JKLy0rhuLRcquYqNR9rF7OcVpCa2OVW49ZPDIhaRRCaUuvVxI+N416xUoF76HNSXA==}
@@ -4052,6 +4098,11 @@ snapshots:
   '@fastify/fast-json-stringify-compiler@5.0.1':
     dependencies:
       fast-json-stringify: 6.0.0
+
+  '@fastify/formbody@8.0.2':
+    dependencies:
+      fast-querystring: 1.1.2
+      fastify-plugin: 5.0.1
 
   '@fastify/merge-json-schemas@0.1.1':
     dependencies:
