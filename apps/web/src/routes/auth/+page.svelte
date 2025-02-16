@@ -12,7 +12,7 @@
   function successRedirect() {
     const redir = urlParams.get("redirect_to");
     if (redir) {
-      performRedirect(redir)
+      performRedirect(redir);
     } else {
       window.location.replace("/");
     }

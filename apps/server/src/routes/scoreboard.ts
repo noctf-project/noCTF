@@ -1,12 +1,13 @@
 import type { ServiceCradle } from "@noctf/server-core";
 import type { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
-import { ScoreboardResponse } from "@noctf/api/responses";
-import { CACHE_SCORE_NAMESPACE } from "@noctf/server-core/services/scoreboard";
+import {
+  ScoreboardResponse,
+  ScoreboardSolvesResponse,
+} from "@noctf/api/responses";
 
 export async function routes(fastify: FastifyInstance) {
-  const { cacheService, scoreboardService } = fastify.container
-    .cradle as ServiceCradle;
+  const { scoreboardService } = fastify.container.cradle as ServiceCradle;
 
   fastify.get<{ Reply: ScoreboardResponse }>(
     "/scoreboard",
@@ -23,16 +24,33 @@ export async function routes(fastify: FastifyInstance) {
         },
       },
     },
-    async (_request) => {
-      const scoreboard = await cacheService.load(
-        CACHE_SCORE_NAMESPACE,
-        "scoreboard",
-        async () => {
-          return scoreboardService.computeScoreboard();
-        },
-      );
+    async () => {
+      const { scoreboard } = await scoreboardService.getScoreboard();
       return {
         data: scoreboard,
+      };
+    },
+  );
+
+  fastify.get<{ Reply: ScoreboardSolvesResponse }>(
+    "/solves",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["scoreboard"],
+        auth: {
+          require: true,
+          policy: ["scoreboard.solves.get"],
+        },
+        response: {
+          200: ScoreboardSolvesResponse,
+        },
+      },
+    },
+    async () => {
+      const { solves } = await scoreboardService.getScoreboard();
+      return {
+        data: solves,
       };
     },
   );

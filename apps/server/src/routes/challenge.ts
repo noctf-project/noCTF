@@ -182,7 +182,9 @@ export async function routes(fastify: FastifyInstance) {
       }
       // TODO: render public metadata, add type
       return {
-        data: (await scoreboardService.getChallengeSolves(challenge)).solves,
+        data: (
+          await scoreboardService.getChallengeSolves(challenge)
+        ).solves.filter(({ hidden }) => admin || !hidden),
       };
     },
   );

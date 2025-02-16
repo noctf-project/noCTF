@@ -13,6 +13,7 @@ import {
   ScoringStrategy,
   User,
   ScoreboardEntry,
+  PublicTeam,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 
@@ -84,9 +85,14 @@ export const MeTeamResponse = Type.Object({
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
 
 export const GetTeamResponse = Type.Object({
-  data: Type.Omit(Team, ["join_code", "flags"]),
+  data: PublicTeam,
 });
-export type GetTeamResponse = Static<typeof MeTeamResponse>;
+export type GetTeamResponse = Static<typeof GetTeamResponse>;
+
+export const ListTeamsResponse = Type.Object({
+  data: Type.Array(PublicTeam),
+});
+export type ListTeamsResponse = Static<typeof ListTeamsResponse>;
 
 export const MeUserResponse = Type.Object({
   data: Type.Composite([
@@ -126,6 +132,7 @@ export const GetChallengeSolvesResponse = Type.Object({
       team_id: Type.Number(),
       score: Type.Number(),
       created_at: TypeDate,
+      hidden: Type.Optional(Type.Boolean()),
     }),
   ),
 });
@@ -202,3 +209,16 @@ export const ScoreboardResponse = Type.Object({
   data: Type.Array(ScoreboardEntry),
 });
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
+
+export const ScoreboardSolvesResponse = Type.Object({
+  data: Type.Array(
+    Type.Object({
+      team_id: Type.Number(),
+      score: Type.Number(),
+      challenge_id: Type.Number(),
+      created_at: TypeDate,
+      hidden: Type.Optional(Type.Boolean()),
+    }),
+  ),
+});
+export type ScoreboardSolvesResponse = Static<typeof ScoreboardSolvesResponse>;

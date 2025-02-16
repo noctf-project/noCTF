@@ -113,32 +113,40 @@ export class ScoreboardService {
     }
   }
 
-  async computeScoreboard() {
+  async getScoreboard(hiddenSolves = false) {
+    return this.cacheService.load(
+      CACHE_SCORE_NAMESPACE,
+      `all:${hiddenSolves}`,
+      async () => {
+        return this.computeScoreboard(hiddenSolves);
+      },
+    );
+  }
+
+  async computeScoreboard(hiddenSolves: boolean) {
     const challenges = await this.challengeService.list({
       hidden: false,
       visible_at: new Date(),
     });
     // score, followed by date of last solve for tiebreak purposes
-    const teamScores: Map<
-      number,
-      { score: number; time: Date; solves: number[] }
-    > = new Map();
+    const teamScores: Map<number, { score: number; time: Date }> = new Map();
     const computed = await Promise.all(
       challenges.map((x) =>
-        PARALLEL_CHALLENGE_LIMITER(() => this.getChallengeSolves(x)).then(
-          ({ solves }) => [x.id, solves] as [number, Score[]],
-        ),
+        PARALLEL_CHALLENGE_LIMITER(() =>
+          this.computeScoresForChallenge(x),
+        ).then(({ solves }) => [x.id, solves] as [number, Score[]]),
       ),
     );
-    for (const [id, solves] of computed) {
+    const allSolves = [];
+    for (const [challenge_id, solves] of computed) {
       for (const solve of solves) {
-        if (solve.hidden) continue;
+        if (!hiddenSolves && solve.hidden) continue;
+        allSolves.push({ ...solve, challenge_id });
         let team = teamScores.get(solve.team_id);
         if (!team) {
           team = {
             score: 0,
             time: new Date(0),
-            solves: [],
           };
           teamScores.set(solve.team_id, team);
         }
@@ -147,15 +155,22 @@ export class ScoreboardService {
         team.time = new Date(
           Math.max(team.time.getTime(), solve.created_at.getTime()),
         );
-        team.solves.push(id);
       }
     }
     const scoreboard = Array.from(
-      teamScores.entries().map(([id, teamScore]) => ({ id, ...teamScore })),
+      teamScores.entries().map(([id, teamScore]) => ({
+        ...teamScore,
+        id,
+      })),
     );
-    scoreboard.sort(
-      (a, b) => a.score - b.score || a.time.getTime() - b.time.getTime(),
-    );
-    return scoreboard;
+
+    return {
+      scoreboard: scoreboard.sort(
+        (a, b) => a.score - b.score || a.time.getTime() - b.time.getTime(),
+      ),
+      solves: allSolves.sort(
+        (a, b) => a.created_at.getTime() - b.created_at.getTime(),
+      ),
+    };
   }
 }

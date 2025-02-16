@@ -7,7 +7,6 @@
 
   interface ScoreboardEntry {
     id: number;
-    name: string;
     rank: number;
     score: number;
     time: Date;
@@ -23,7 +22,14 @@
 
   const apiChallenges = wrapLoadable(api.GET("/challenges"));
   const apiScoreboard = wrapLoadable(api.GET("/scoreboard"));
-  const loading = $derived(apiChallenges.loading || apiScoreboard.loading);
+  const apiSolves = wrapLoadable(api.GET("/solves"));
+  const loading = $derived(
+    apiChallenges.loading || apiScoreboard.loading || apiSolves.loading,
+  );
+
+  const solves = $derived(
+    Object.groupBy(apiSolves.r?.data?.data || [], ({ team_id }) => team_id),
+  );
 
   const challenges: ChallengeEntry[] = $derived(
     apiChallenges.r?.data?.data.challenges
@@ -40,6 +46,7 @@
     apiScoreboard.r?.data?.data.map((s, i) => ({
       ...s,
       rank: i + 1,
+      solves: (solves[s.id] || []).map(({ challenge_id }) => challenge_id),
       time: new Date(s.time),
     })) || [],
   );
@@ -107,7 +114,7 @@
               >Score</th
             >
             <th class="border border-base-300 bg-base-200 px-2 py-1 w-14"
-              >Flags</th
+              >Solves</th
             >
             {#each challenges as challenge}
               <th

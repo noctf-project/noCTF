@@ -9,7 +9,7 @@ import { TeamDAO } from "../dao/team.ts";
 
 type Props = Pick<
   ServiceCradle,
-  "configService" | "databaseClient" | "cacheService" | "auditLogService"
+  "configService" | "databaseClient" | "auditLogService"
 >;
 
 export class TeamService {
@@ -96,6 +96,10 @@ export class TeamService {
 
   async get(id: number) {
     return this.dao.get(this.databaseClient.get(), id);
+  }
+
+  async list(flags?: string[]) {
+    return this.dao.list(this.databaseClient.get(), flags);
   }
 
   async delete(id: number, { actor, message }: AuditParams = {}) {

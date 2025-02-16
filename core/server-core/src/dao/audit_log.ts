@@ -1,5 +1,5 @@
 import type { QueryAuditLogRequest } from "@noctf/api/requests";
-import type { DBType } from "./database.ts";
+import type { DBType } from "../clients/database.ts";
 import { sql } from "kysely";
 import type { AuditLogEntry } from "@noctf/api/datatypes";
 
