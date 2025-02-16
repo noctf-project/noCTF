@@ -23,11 +23,7 @@ describe("OAuthProvider", () => {
   let oauthProvider: OAuthProvider;
 
   beforeEach(() => {
-    mockCacheService.put.mockReset();
-    mockCacheService.get.mockReset();
-    mockCacheService.del.mockReset();
-    mockConfigService.get.mockReset();
-    mockIdentityService.generateToken.mockReset();
+    vi.clearAllMocks();
 
     oauthProvider = new OAuthProvider(
       mockCacheService,
