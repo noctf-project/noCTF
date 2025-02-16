@@ -500,12 +500,18 @@ importers:
         specifier: 'catalog:'
         version: 5.0.9
     devDependencies:
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 2.1.8(vitest@2.1.8(@types/node@22.10.2))
       typescript:
         specifier: 'catalog:'
         version: 5.7.2
       vitest:
         specifier: 'catalog:'
         version: 2.1.8(@types/node@22.10.2)
+      vitest-mock-extended:
+        specifier: 'catalog:'
+        version: 2.0.2(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2))
 
 packages:
 

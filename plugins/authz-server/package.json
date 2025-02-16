@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "authorization server plugin",
   "scripts": {
+    "test:unit": "vitest --coverage",
     "build": "tsc",
     "dev": "echo 'Nothing to do' && exit"
   },
@@ -20,7 +21,9 @@
   },
   "devDependencies": {
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "vitest-mock-extended": "catalog:"
   },
   "type": "module",
   "exports": {
