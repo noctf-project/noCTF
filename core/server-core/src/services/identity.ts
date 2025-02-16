@@ -57,7 +57,11 @@ export class IdentityService {
           24 * 3600 * 7,
         );
       case "scoped":
-        return this.tokenService.sign({ sub: result.sub, jti: result.jti }, "scoped", 2 * 3600);
+        return this.tokenService.sign(
+          { sub: result.sub, jti: result.jti },
+          "scoped",
+          2 * 3600,
+        );
       case "associate":
       case "register":
         return this.tokenService.sign(

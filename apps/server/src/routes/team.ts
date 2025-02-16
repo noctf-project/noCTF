@@ -13,6 +13,7 @@ import {
 } from "@noctf/api/requests";
 import {
   GetTeamResponse,
+  ListTeamsResponse,
   MeTeamResponse,
   SuccessResponse,
 } from "@noctf/api/responses";
@@ -183,6 +184,31 @@ export async function routes(fastify: FastifyInstance) {
       });
       return {
         data: true,
+      };
+    },
+  );
+
+  fastify.get<{ Reply: ListTeamsResponse }>(
+    "/team",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["team"],
+        response: {
+          200: ListTeamsResponse,
+        },
+        auth: {
+          require: true,
+          policy: ["OR", "team.get"],
+        },
+      },
+    },
+    async (_request, reply) => {
+      const teams = await teamService.list();
+
+      reply.header("cache-control", "private, max-age=900");
+      return {
+        data: teams.filter(({ flags }) => !flags.includes("hidden")),
       };
     },
   );

@@ -238,7 +238,6 @@ export const ScoreboardEntry = Type.Object({
   id: Type.Number(),
   score: Type.Number(),
   time: TypeDate,
-  solves: Type.Array(Type.Number()),
 });
 export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 
