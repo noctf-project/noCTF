@@ -1,5 +1,6 @@
 <script lang="ts">
-  import api, { API_BASE_URL } from "$lib/api/index.svelte";
+  import api from "$lib/api/index.svelte";
+  import { performRedirect } from "$lib/utils/url";
 
   let activeTab: "login" | "register" = $state("login");
   let email = $state("");
@@ -10,10 +11,10 @@
 
   function successRedirect() {
     const redir = urlParams.get("redirect_to");
-    if (redir && redir.startsWith("/")) {
-      window.location.replace(API_BASE_URL + redir);
+    if (redir) {
+      performRedirect(redir)
     } else {
-      window.location.href = "/";
+      window.location.replace("/");
     }
   }
 

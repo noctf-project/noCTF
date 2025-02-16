@@ -44,7 +44,7 @@ export async function initServer(fastify: FastifyInstance) {
         const url = new URL(WEB_URL);
         url.pathname = "/auth";
         url.searchParams.set("client_id", client_id);
-        url.searchParams.set("redirect_to", request.url);
+        url.searchParams.set("redirect_to",  "api" + request.url);
         return reply.redirect(url.toString());
       }
 
