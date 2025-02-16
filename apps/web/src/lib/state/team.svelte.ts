@@ -2,7 +2,7 @@ import client from "$lib/api/index.svelte";
 import type { PathResponse } from "$lib/api/types";
 import { LRUCache } from "lru-cache";
 
-export type Team = PathResponse<"/team/id/{id}", "get">["data"];
+export type Team = PathResponse<"/teams/{id}", "get">["data"];
 
 export class TeamService {
   private isLoaded = false;
@@ -44,7 +44,7 @@ export class TeamService {
   }
 
   private async preloadAll() {
-    const { data, error } = await client.GET("/team", {});
+    const { data, error } = await client.GET("/teams", {});
     if (error) {
       throw new Error("Error fetching teams", { cause: error });
     }
@@ -54,7 +54,7 @@ export class TeamService {
   }
 
   private async fetchTeamById(id: number): Promise<Team> {
-    const { data, error } = await client.GET("/team/id/{id}", {
+    const { data, error } = await client.GET("/teams/{id}", {
       params: {
         path: { id },
       },

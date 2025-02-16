@@ -9,7 +9,7 @@ import { TeamDAO } from "../dao/team.ts";
 
 type Props = Pick<
   ServiceCradle,
-  "configService" | "databaseClient" | "cacheService" | "auditLogService"
+  "configService" | "databaseClient" | "auditLogService"
 >;
 
 export class TeamService {

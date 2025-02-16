@@ -5,6 +5,7 @@ import type { DB, TeamMemberRole } from "@noctf/schema";
 import { FilterUndefined } from "../util/filter.ts";
 import { ConflictError, NotFoundError } from "../errors.ts";
 import { sql } from "kysely";
+import { partition } from "../util/object.ts";
 
 export class TeamDAO {
   async create(
@@ -60,12 +61,17 @@ export class TeamDAO {
     let query = db
       .selectFrom("team")
       .select(["id", "name", "bio", "join_code", "flags", "created_at"]);
-    if (flags && flags.length) {
-      query = query.where(
-        "flags",
-        "&&",
-        sql<string[]>`ARRAY[${sql.join(flags)}]`,
-      );
+    if (flags) {
+      const [no, yes] = partition(flags, (f) => f.startsWith("!"));
+
+      if (yes.length) {
+        query = query.where("flags", "&&", sql.val(yes));
+      }
+      if (no.length) {
+        query = query.where((eb) =>
+          eb.not(eb("flags", "&&", eb.val(no.map((f) => f.substring(1))))),
+        );
+      }
     }
     return query.execute();
   }
