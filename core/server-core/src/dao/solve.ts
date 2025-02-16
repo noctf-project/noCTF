@@ -18,8 +18,8 @@ export class SolveDAO {
         "hidden",
         "created_at",
       ])
-      .where("challenge_id", "=", challenge_id)
       .orderBy("created_at asc")
+      .where("challenge_id", "=", challenge_id)
       .execute()) as unknown as DBSolve[];
   }
 

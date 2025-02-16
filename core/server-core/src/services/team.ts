@@ -98,6 +98,10 @@ export class TeamService {
     return this.dao.get(this.databaseClient.get(), id);
   }
 
+  async list(flags?: string[]) {
+    return this.dao.list(this.databaseClient.get(), flags);
+  }
+
   async delete(id: number, { actor, message }: AuditParams = {}) {
     await this.dao.delete(this.databaseClient.get(), id);
     await this.auditLogService.log({

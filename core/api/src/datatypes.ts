@@ -241,3 +241,6 @@ export const ScoreboardEntry = Type.Object({
   solves: Type.Array(Type.Number()),
 });
 export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
+
+export const PublicTeam = Type.Omit(Team, ["join_code", "flags"]);
+export type PublicTeam = Static<typeof PublicTeam>;

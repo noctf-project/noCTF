@@ -4,6 +4,7 @@ import type { Team } from "@noctf/api/datatypes";
 import type { DB, TeamMemberRole } from "@noctf/schema";
 import { FilterUndefined } from "../util/filter.ts";
 import { ConflictError, NotFoundError } from "../errors.ts";
+import { sql } from "kysely";
 
 export class TeamDAO {
   async create(
@@ -53,6 +54,20 @@ export class TeamDAO {
       throw new NotFoundError("Team not found");
     }
     return result;
+  }
+
+  async list(db: DBType, flags?: string[]): Promise<Team[]> {
+    let query = db
+      .selectFrom("team")
+      .select(["id", "name", "bio", "join_code", "flags", "created_at"]);
+    if (flags && flags.length) {
+      query = query.where(
+        "flags",
+        "&&",
+        sql<string[]>`ARRAY[${sql.join(flags)}]`,
+      );
+    }
+    return query.execute();
   }
 
   async update(db: DBType, id: number, v: Updateable<DB["team"]>) {
