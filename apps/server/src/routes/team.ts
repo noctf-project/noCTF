@@ -203,12 +203,13 @@ export async function routes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request) => {
+    async (request, reply) => {
       const team = await teamService.get(request.params.id);
       if (!team || team.flags.includes("hidden")) {
         throw new NotFoundError("Team not found");
       }
 
+      reply.header("cache-control", "private, max-age=900");
       return {
         data: team,
       };
