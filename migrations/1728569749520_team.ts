@@ -5,6 +5,34 @@ export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
 
   await schema
+    .createTable("division")
+    .addColumn("id", "integer", (col) =>
+      col.primaryKey().generatedByDefaultAsIdentity(),
+    )
+    .addColumn("name", "varchar", (col) => col.notNull())
+    .addColumn("slug", "varchar(64)", (col) => col.notNull().unique())
+    .addColumn("description", "text", (col) => col.notNull())
+    .addColumn("is_visible", "boolean", (col) => col.notNull().defaultTo(false))
+    .addColumn("is_joinable", "boolean", (col) =>
+      col.notNull().defaultTo(false),
+    )
+    .addColumn("created_at", "timestamptz", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
+    .execute();
+
+  await db
+    .insertInto("division")
+    .values({
+      name: "Default",
+      slug: "default",
+      description: "Default",
+      is_visible: true,
+      is_joinable: true,
+    })
+    .execute();
+
+  await schema
     .createTable("team")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
@@ -13,6 +41,9 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("bio", "varchar", (col) => col.notNull().defaultTo(""))
     .addColumn("join_code", "varchar", (col) => col.unique().nullsNotDistinct())
     .addColumn("flags", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
+    .addColumn("division_id", sql`integer`, (col) =>
+      col.notNull().references("division.id"),
+    )
     .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
@@ -59,4 +90,5 @@ export async function down(db: Kysely<any>): Promise<void> {
   await schema.dropTable("team_member").execute();
   await schema.dropType("team_member_role").execute();
   await schema.dropTable("team").execute();
+  await schema.dropType("division").execute();
 }

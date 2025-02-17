@@ -2,25 +2,48 @@ import type { DB } from "@noctf/schema";
 import type { DBType } from "../clients/database.ts";
 import type { AllNonNullable } from "../types/primitives.ts";
 
-type DBSolve = AllNonNullable<DB["solve"]> & { created_at: Date };
+export type DBSolve = AllNonNullable<DB["solve"]> & { created_at: Date };
 export class SolveDAO {
   async getSolvesForChallenge(
     db: DBType,
     challenge_id: number,
+    division_id?: number,
   ): Promise<DBSolve[]> {
-    return (await db
+    let query = this.getBaseSolveQuery(db).where(
+      "solve.challenge_id",
+      "=",
+      challenge_id,
+    );
+    if (division_id) {
+      query = query
+        .innerJoin("division", "division.id", "division_id")
+        .where("division_id", "=", division_id);
+    }
+    return (await query.execute()) as unknown as DBSolve[];
+  }
+
+  async getAllSolves(db: DBType, division_id?: number): Promise<DBSolve[]> {
+    let query = this.getBaseSolveQuery(db);
+    if (division_id) {
+      query = query
+        .innerJoin("division", "division.id", "division_id")
+        .where("division_id", "=", division_id);
+    }
+    return (await query.execute()) as unknown as DBSolve[];
+  }
+
+  private getBaseSolveQuery(db: DBType) {
+    return db
       .selectFrom("solve")
       .select([
-        "id",
-        "team_id",
-        "challenge_id",
-        "team_flags",
-        "hidden",
-        "created_at",
+        "solve.id as id",
+        "solve.team_id as team_id",
+        "solve.challenge_id as challenge_id",
+        "solve.team_flags as team_flags",
+        "solve.hidden as hidden",
+        "solve.created_at as created_at",
       ])
-      .orderBy("created_at asc")
-      .where("challenge_id", "=", challenge_id)
-      .execute()) as unknown as DBSolve[];
+      .orderBy("solve.created_at asc");
   }
 
   async getSolveCountForChallenge(db: DBType, challenge_id: number) {

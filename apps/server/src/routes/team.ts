@@ -54,6 +54,7 @@ export async function routes(fastify: FastifyInstance) {
       const team = await teamService.create(
         {
           name: request.body.name,
+          division_id: request.body.division_id,
           generate_join_code: true,
         },
         {

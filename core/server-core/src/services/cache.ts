@@ -77,7 +77,12 @@ export class CacheService {
     return decode(await Decompress(data));
   }
 
-  async put(namespace: string, key: string, value: unknown, expireSeconds = 0) {
+  async put<T>(
+    namespace: string,
+    key: string,
+    value: T,
+    expireSeconds?: number,
+  ) {
     const k = `${namespace}:${key}`;
     return this._put(k, value, expireSeconds);
   }
@@ -97,7 +102,7 @@ export class CacheService {
     return client.ttl(k);
   }
 
-  private async _put(k: string, value: unknown, expireSeconds = 0) {
+  private async _put(k: string, value: unknown, expireSeconds?: number) {
     if (value === null) return;
     const client = await this.redisClient;
     const b = await Compress(encode(value));

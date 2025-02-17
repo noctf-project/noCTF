@@ -87,7 +87,7 @@ export type QueryAuditLogRequest = Static<typeof QueryAuditLogRequest>;
 
 export const CreateTeamRequest = Type.Composite(
   [
-    Type.Pick(Team, ["name"]),
+    Type.Pick(Team, ["name", "division_id"]),
     Type.Object({
       captcha: CaptchaValidationString,
     }),

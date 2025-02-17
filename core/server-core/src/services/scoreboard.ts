@@ -1,12 +1,14 @@
 import type {
   ChallengeMetadata,
   ChallengePrivateMetadataBase,
-  Score,
+  ScoreboardEntry,
+  Solve,
 } from "@noctf/api/datatypes";
 import type { ServiceCradle } from "../index.ts";
-import { SolveDAO } from "../dao/solve.ts";
+import { DBSolve, SolveDAO } from "../dao/solve.ts";
 import { partition } from "../util/object.ts";
 import pLimit from "p-limit";
+import { DivisionDAO } from "../dao/division.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -19,7 +21,12 @@ type Props = Pick<
 
 export type ChallengeSolvesResult = {
   score: number | null;
-  solves: Score[];
+  solves: Solve[];
+};
+
+type UpdatedContainer<T> = {
+  data: T;
+  updated_at: Date;
 };
 
 export const CACHE_SCORE_NAMESPACE = "core:svc:score";
@@ -34,6 +41,7 @@ export class ScoreboardService {
   private readonly scoreService;
 
   private readonly solveDAO = new SolveDAO();
+  private readonly divisionDAO = new DivisionDAO();
 
   constructor({
     cacheService,
@@ -51,28 +59,32 @@ export class ScoreboardService {
 
   async getChallengeSolves(
     c: number | ChallengeMetadata,
+    solve_base_id?: number,
   ): Promise<ChallengeSolvesResult> {
     const isId = typeof c === "number";
     const cacheKey = isId ? `c:${c}` : `c:${c.id}`;
     return this.cacheService.load(CACHE_SCORE_NAMESPACE, cacheKey, async () => {
       const challenge = isId ? await this.challengeService.getMetadata(c) : c;
-      return this.computeScoresForChallenge(challenge);
+      const solves = await this.solveDAO.getSolvesForChallenge(
+        this.databaseClient.get(),
+        challenge.id,
+        solve_base_id,
+      );
+      return this.computeScoresForChallenge(challenge, solves);
     });
   }
 
   private async computeScoresForChallenge(
     challenge: ChallengeMetadata,
+    solves: DBSolve[],
   ): Promise<ChallengeSolvesResult> {
     const {
       score: { strategy, params, bonus },
     } = challenge.private_metadata as ChallengePrivateMetadataBase;
-    const solves = await this.solveDAO.getSolvesForChallenge(
-      this.databaseClient.get(),
-      challenge.id,
-    );
+
     const [valid, hidden] = partition(
       solves,
-      ({ team_flags, hidden }) => !(team_flags.includes("hidden") || hidden),
+      ({ team_flags, hidden }) => !(team_flags?.includes("hidden") || hidden),
     );
     try {
       const base = await this.scoreService.evaluate(
@@ -81,15 +93,17 @@ export class ScoreboardService {
         valid.length,
       );
 
-      const rv: Score[] = valid.map(({ team_id, created_at }, i) => ({
+      const rv: Solve[] = valid.map(({ team_id, created_at }, i) => ({
         team_id,
+        challenge_id: challenge.id,
         bonus: bonus && i + 1,
         hidden: false,
         score: base + ((bonus && Math.round(bonus[i])) || 0),
         created_at,
       }));
-      const rh: Score[] = hidden.map(({ team_id, created_at }) => ({
+      const rh: Solve[] = hidden.map(({ team_id, created_at }) => ({
         team_id,
+        challenge_id: challenge.id,
         hidden: true,
         score: base,
         created_at,
@@ -113,35 +127,87 @@ export class ScoreboardService {
     }
   }
 
-  async getScoreboard(hiddenSolves = false) {
-    return this.cacheService.load(
-      CACHE_SCORE_NAMESPACE,
-      `all:${hiddenSolves}`,
-      async () => {
-        return this.computeScoreboard(hiddenSolves);
-      },
-    );
+  async getScoreboard(division_id: number) {
+    const scoreboard = this.cacheService.get<
+      UpdatedContainer<ScoreboardEntry[]>
+    >(CACHE_SCORE_NAMESPACE, `scoreboard:${division_id}`);
+    if (!scoreboard) {
+      return null;
+    }
+    return scoreboard;
   }
 
-  async computeScoreboard(hiddenSolves: boolean) {
+  async getDivisionSolves(division_id: number) {
+    const scoreboard = this.cacheService.get<UpdatedContainer<Solve[]>>(
+      CACHE_SCORE_NAMESPACE,
+      `solves:${division_id}`,
+    );
+    if (!scoreboard) {
+      return null;
+    }
+    return scoreboard;
+  }
+
+  async computeAndSaveScoreboards() {
     const challenges = await this.challengeService.list({
       hidden: false,
       visible_at: new Date(),
     });
+    const divisions = await this.divisionDAO.listDivisions(
+      this.databaseClient.get(),
+    );
+    for (const { id } of divisions) {
+      const solveList = await this.solveDAO.getAllSolves(
+        this.databaseClient.get(),
+        id,
+      );
+      const solvesByChallenge = Object.groupBy(
+        solveList || [],
+        ({ challenge_id }) => challenge_id,
+      ) as Record<number, DBSolve[]>;
+
+      const { scoreboard, solves } = await this.computeScoreboardByDivision(
+        challenges,
+        solvesByChallenge,
+      );
+      const updated_at = new Date();
+      await this.cacheService.put<UpdatedContainer<ScoreboardEntry[]>>(
+        CACHE_SCORE_NAMESPACE,
+        `scoreboard:${id}`,
+        {
+          data: scoreboard,
+          updated_at,
+        },
+      );
+      await this.cacheService.put<UpdatedContainer<Solve[]>>(
+        CACHE_SCORE_NAMESPACE,
+        `solves:${id}`,
+        {
+          data: solves,
+          updated_at,
+        },
+      );
+    }
+  }
+
+  private async computeScoreboardByDivision(
+    challenges: ChallengeMetadata[],
+    solvesByChallenge: Record<number, DBSolve[]>,
+  ) {
     // score, followed by date of last solve for tiebreak purposes
     const teamScores: Map<number, { score: number; time: Date }> = new Map();
     const computed = await Promise.all(
       challenges.map((x) =>
         PARALLEL_CHALLENGE_LIMITER(() =>
-          this.computeScoresForChallenge(x),
-        ).then(({ solves }) => [x.id, solves] as [number, Score[]]),
+          this.computeScoresForChallenge(x, solvesByChallenge[x.id] || []),
+        ).then(({ solves }) => [x.id, solves] as [number, Solve[]]),
       ),
     );
     const allSolves = [];
-    for (const [challenge_id, solves] of computed) {
+    for (const [_challenge_id, solves] of computed) {
       for (const solve of solves) {
-        if (!hiddenSolves && solve.hidden) continue;
-        allSolves.push({ ...solve, challenge_id });
+        if (solve.hidden) continue;
+        allSolves.push(solve);
         let team = teamScores.get(solve.team_id);
         if (!team) {
           team = {
@@ -158,9 +224,9 @@ export class ScoreboardService {
       }
     }
     const scoreboard = Array.from(
-      teamScores.entries().map(([id, teamScore]) => ({
+      teamScores.entries().map(([team_id, teamScore]) => ({
         ...teamScore,
-        id,
+        team_id,
       })),
     );
 

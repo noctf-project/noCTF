@@ -36,7 +36,8 @@ pnpm build
 
 # Finally run the server
 cd apps/server
-pnpm dev
+pnpm dev:www
+pnpm dev:worker # required in a separate tab for scoreboard calculations
 
 # And the frontend
 cd apps/web
