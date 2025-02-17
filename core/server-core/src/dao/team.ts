@@ -10,7 +10,7 @@ import { partition } from "../util/object.ts";
 export class TeamDAO {
   async create(
     db: DBType,
-    { name, bio, join_code, flags }: Insertable<DB["team"]>,
+    { name, bio, join_code, division_id, flags }: Insertable<DB["team"]>,
   ): Promise<Team> {
     const { id, created_at } = await db
       .insertInto("team")
@@ -18,6 +18,7 @@ export class TeamDAO {
         name,
         bio,
         join_code,
+        division_id,
         flags,
       })
       .returning(["id", "created_at"])
@@ -28,6 +29,7 @@ export class TeamDAO {
       name,
       bio: bio || "",
       join_code: join_code || null,
+      division_id,
       flags: flags || [],
       created_at,
     };
@@ -48,7 +50,15 @@ export class TeamDAO {
   async get(db: DBType, id: number): Promise<Team> {
     const result = await db
       .selectFrom("team")
-      .select(["id", "name", "bio", "join_code", "flags", "created_at"])
+      .select([
+        "id",
+        "name",
+        "bio",
+        "join_code",
+        "division_id",
+        "flags",
+        "created_at",
+      ])
       .where("id", "=", id)
       .executeTakeFirst();
     if (!result) {
@@ -60,7 +70,15 @@ export class TeamDAO {
   async list(db: DBType, flags?: string[]): Promise<Team[]> {
     let query = db
       .selectFrom("team")
-      .select(["id", "name", "bio", "join_code", "flags", "created_at"]);
+      .select([
+        "id",
+        "name",
+        "bio",
+        "join_code",
+        "division_id",
+        "flags",
+        "created_at",
+      ]);
     if (flags) {
       const [no, yes] = partition(flags, (f) => f.startsWith("!"));
 

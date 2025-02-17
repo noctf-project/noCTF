@@ -25,9 +25,9 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async () => {
-      const { scoreboard } = await scoreboardService.getScoreboard();
+      const scoreboard = await scoreboardService.getScoreboard(1);
       return {
-        data: scoreboard,
+        data: scoreboard.data,
       };
     },
   );
@@ -48,9 +48,9 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async () => {
-      const { solves } = await scoreboardService.getScoreboard();
+      const solves = await scoreboardService.getDivisionSolves(1);
       return {
-        data: solves,
+        data: solves.data,
       };
     },
   );

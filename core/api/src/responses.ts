@@ -9,11 +9,11 @@ import {
   PublicChallengeSummary,
   ChallengeSolveStatus,
   Team,
-  TypeDate,
   ScoringStrategy,
   User,
   ScoreboardEntry,
   PublicTeam,
+  Solve,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 
@@ -127,14 +127,7 @@ export const GetChallengeResponse = Type.Object({
 export type GetChallengeResponse = Static<typeof GetChallengeResponse>;
 
 export const GetChallengeSolvesResponse = Type.Object({
-  data: Type.Array(
-    Type.Object({
-      team_id: Type.Number(),
-      score: Type.Number(),
-      created_at: TypeDate,
-      hidden: Type.Optional(Type.Boolean()),
-    }),
-  ),
+  data: Type.Array(Type.Pick(Solve, ["team_id", "created_at"])),
 });
 export type GetChallengeSolvesResponse = Static<
   typeof GetChallengeSolvesResponse
@@ -211,14 +204,6 @@ export const ScoreboardResponse = Type.Object({
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
 
 export const ScoreboardSolvesResponse = Type.Object({
-  data: Type.Array(
-    Type.Object({
-      team_id: Type.Number(),
-      score: Type.Number(),
-      challenge_id: Type.Number(),
-      created_at: TypeDate,
-      hidden: Type.Optional(Type.Boolean()),
-    }),
-  ),
+  data: Type.Array(Solve),
 });
 export type ScoreboardSolvesResponse = Static<typeof ScoreboardSolvesResponse>;

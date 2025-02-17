@@ -66,6 +66,9 @@ catalogs:
     pg:
       specifier: ^8.13.1
       version: 8.13.1
+    pino:
+      specifier: ^9.6.0
+      version: 9.6.0
     pino-pretty:
       specifier: ^13.0.0
       version: 13.0.0
@@ -280,6 +283,37 @@ importers:
       vite:
         specifier: ^5.4.11
         version: 5.4.11(@types/node@22.10.2)
+
+  apps/worker:
+    dependencies:
+      '@noctf/authz-server':
+        specifier: workspace:*
+        version: link:../../plugins/authz-server
+      '@noctf/server-core':
+        specifier: workspace:*
+        version: link:../../core/server-core
+      '@sinclair/typebox':
+        specifier: 'catalog:'
+        version: 0.34.13
+      awilix:
+        specifier: 'catalog:'
+        version: 12.0.4
+      kysely:
+        specifier: 'catalog:'
+        version: 0.27.5
+      nanoid:
+        specifier: 'catalog:'
+        version: 5.0.9
+      pino:
+        specifier: 'catalog:'
+        version: 9.6.0
+    devDependencies:
+      pino-pretty:
+        specifier: 'catalog:'
+        version: 13.0.0
+      tsx:
+        specifier: 'catalog:'
+        version: 4.19.2
 
   core/api:
     dependencies:

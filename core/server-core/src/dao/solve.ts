@@ -16,20 +16,18 @@ export class SolveDAO {
     );
     if (division_id) {
       query = query
-        .innerJoin("team_division", "team_division.team_id", "solve.team_id")
-        .innerJoin("division", "division.id", "team_division.division_id")
-        .where("division.id", "=", division_id);
+        .innerJoin("division", "division.id", "division_id")
+        .where("division_id", "=", division_id);
     }
     return (await query.execute()) as unknown as DBSolve[];
   }
 
-  async getAllSolves(db: DBType, solve_base_id?: number): Promise<DBSolve[]> {
+  async getAllSolves(db: DBType, division_id?: number): Promise<DBSolve[]> {
     let query = this.getBaseSolveQuery(db);
-    if (solve_base_id) {
+    if (division_id) {
       query = query
-        .innerJoin("team_division", "team_division.team_id", "solve.team_id")
-        .innerJoin("division", "division.id", "team_division.division_id")
-        .where("division.solve_base_id", "=", solve_base_id);
+        .innerJoin("division", "division.id", "division_id")
+        .where("division_id", "=", division_id);
     }
     return (await query.execute()) as unknown as DBSolve[];
   }

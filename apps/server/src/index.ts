@@ -22,8 +22,6 @@ import { LockService } from "@noctf/server-core/services/lock";
 
 import {
   POSTGRES_URL,
-  HOST,
-  PORT,
   TOKEN_SECRET,
   ENABLE_HTTP2,
   LOG_LEVEL,
@@ -67,11 +65,16 @@ server.register(async () => {
     redisClientFactory: asFunction(
       ({ logger }) => new RedisClientFactory(REDIS_URL, logger),
     ).singleton(),
-    databaseClient: asValue(new DatabaseClient(server.log, POSTGRES_URL)),
-    natsClientFactory: asValue(new NATSClientFactory(server.log, NATS_URL)),
-    metricsClient: asValue(
-      new MetricsClient(server.log, METRICS_PATH, METRICS_FILE_NAME_FORMAT),
-    ),
+    databaseClient: asFunction(
+      ({ logger }) => new DatabaseClient(logger, POSTGRES_URL),
+    ).singleton(),
+    natsClientFactory: asFunction(
+      ({ logger }) => new NATSClientFactory(logger, NATS_URL),
+    ).singleton(),
+    metricsClient: asFunction(
+      ({ logger }) =>
+        new MetricsClient(logger, METRICS_PATH, METRICS_FILE_NAME_FORMAT),
+    ).singleton(),
     cacheService: asClass(CacheService).singleton(),
     challengeService: asClass(ChallengeService).singleton(),
     auditLogService: asClass(AuditLogService).singleton(),
@@ -218,16 +221,3 @@ server.setErrorHandler((error, request, reply) => {
     .status(500)
     .send({ error: "InternalServerError", message: "Internal Server Error" });
 });
-
-server.listen(
-  {
-    port: PORT,
-    host: HOST,
-  },
-  (err) => {
-    if (err) {
-      console.error(err);
-      process.exit(1);
-    }
-  },
-);

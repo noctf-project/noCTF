@@ -6,7 +6,7 @@
   import { getRelativeTime } from "$lib/utils/time";
 
   interface ScoreboardEntry {
-    id: number;
+    team_id: number;
     rank: number;
     score: number;
     time: Date;
@@ -46,7 +46,7 @@
     apiScoreboard.r?.data?.data.map((s, i) => ({
       ...s,
       rank: i + 1,
-      solves: (solves[s.id] || []).map(({ challenge_id }) => challenge_id),
+      solves: (solves[s.team_id] || []).map(({ challenge_id }) => challenge_id),
       time: new Date(s.time),
     })) || [],
   );
@@ -133,8 +133,8 @@
                 {entry.rank}
               </td>
               <td class="border border-base-300 px-4">
-                <a href="/team/{entry.id}" class="truncate block">
-                  {#await TeamService.getTeamName(entry.id)}
+                <a href="/team/{entry.team_id}" class="truncate block">
+                  {#await TeamService.getTeamName(entry.team_id)}
                     loading...
                   {:then name}
                     {name}

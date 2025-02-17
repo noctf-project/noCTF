@@ -32,10 +32,12 @@ export class TeamService {
   async create(
     {
       name,
+      division_id,
       flags,
       generate_join_code,
     }: {
       name: string;
+      division_id: number;
       flags?: string[];
       generate_join_code?: boolean;
       audit?: AuditParams;
@@ -46,6 +48,7 @@ export class TeamService {
     const team = await this.dao.create(this.databaseClient.get(), {
       name,
       join_code,
+      division_id,
       flags: flags || [],
     });
 
@@ -64,11 +67,13 @@ export class TeamService {
       name,
       bio,
       join_code,
+      division_id,
       flags,
     }: {
       name?: string;
       bio?: string;
       flags?: string[];
+      division_id?: number;
       join_code?: "refresh" | "remove";
     },
     { actor, message }: AuditParams = {},
@@ -84,6 +89,7 @@ export class TeamService {
       name,
       bio,
       join_code: j,
+      division_id,
       flags,
     });
     await this.auditLogService.log({
