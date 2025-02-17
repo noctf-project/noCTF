@@ -4,6 +4,18 @@ import { sql, type Kysely } from "kysely";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
+  await schema
+    .createTable("solve_base")
+    .addColumn("id", "integer", (col) =>
+      col.primaryKey().generatedByDefaultAsIdentity(),
+    )
+    .addColumn("name", "varchar", (col) => col.notNull())
+    .addColumn("slug", "varchar(64)", (col) => col.notNull().unique())
+    .addColumn("description", "text", (col) => col.notNull())
+    .addColumn("created_at", "timestamptz", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
+    .execute();
 
   await schema
     .createTable("division")
@@ -13,8 +25,35 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("name", "varchar", (col) => col.notNull())
     .addColumn("slug", "varchar(64)", (col) => col.notNull().unique())
     .addColumn("description", "text", (col) => col.notNull())
+    .addColumn("solve_base_id", "integer", (col) =>
+      col.notNull().references("solve_base.id"),
+    )
     .addColumn("visible", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("joinable", "boolean", (col) => col.notNull().defaultTo(false))
+    .addColumn("created_at", "timestamptz", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
+    .execute();
+
+  const solve_base = await db
+    .insertInto("solve_base")
+    .values({
+      name: "Default",
+      slug: "default",
+      description: "Default Solve Base",
+    })
+    .returning("id")
+    .executeTakeFirst();
+
+  await db
+    .insertInto("division")
+    .values({
+      name: "Global",
+      slug: "global",
+      description: "Global",
+      visible: true,
+      solve_base_id: solve_base?.id,
+    })
     .execute();
 
   await schema
@@ -37,4 +76,5 @@ export async function down(db: Kysely<any>): Promise<void> {
 
   await schema.dropTable("team_division").execute();
   await schema.dropTable("division").execute();
+  await schema.dropTable("solve_base").execute();
 }

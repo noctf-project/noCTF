@@ -75,6 +75,11 @@ export const SetupConfig = Type.Object(
     end_time_s: Type.Optional(
       Type.Number({ title: "CTF End Time (Epoch seconds)" }),
     ),
+    default_division_id: Type.Optional(
+      Type.Number({
+        title: "Default Division for new users",
+      }),
+    ),
   },
   { $id: "core.setup", additionalProperties: false },
 );

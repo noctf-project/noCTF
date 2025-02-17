@@ -4,9 +4,10 @@ import type {
   Score,
 } from "@noctf/api/datatypes";
 import type { ServiceCradle } from "../index.ts";
-import { SolveDAO } from "../dao/solve.ts";
+import { DBSolve, SolveDAO } from "../dao/solve.ts";
 import { partition } from "../util/object.ts";
 import pLimit from "p-limit";
+import { DivisionDAO } from "../dao/division.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -34,6 +35,7 @@ export class ScoreboardService {
   private readonly scoreService;
 
   private readonly solveDAO = new SolveDAO();
+  private readonly divisionDAO = new DivisionDAO();
 
   constructor({
     cacheService,
@@ -51,28 +53,32 @@ export class ScoreboardService {
 
   async getChallengeSolves(
     c: number | ChallengeMetadata,
+    solve_base_id?: number,
   ): Promise<ChallengeSolvesResult> {
     const isId = typeof c === "number";
     const cacheKey = isId ? `c:${c}` : `c:${c.id}`;
     return this.cacheService.load(CACHE_SCORE_NAMESPACE, cacheKey, async () => {
       const challenge = isId ? await this.challengeService.getMetadata(c) : c;
-      return this.computeScoresForChallenge(challenge);
+      const solves = await this.solveDAO.getSolvesForChallenge(
+        this.databaseClient.get(),
+        challenge.id,
+        solve_base_id,
+      );
+      return this.computeScoresForChallenge(challenge, solves);
     });
   }
 
   private async computeScoresForChallenge(
     challenge: ChallengeMetadata,
+    solves: DBSolve[],
   ): Promise<ChallengeSolvesResult> {
     const {
       score: { strategy, params, bonus },
     } = challenge.private_metadata as ChallengePrivateMetadataBase;
-    const solves = await this.solveDAO.getSolvesForChallenge(
-      this.databaseClient.get(),
-      challenge.id,
-    );
+
     const [valid, hidden] = partition(
       solves,
-      ({ team_flags, hidden }) => !(team_flags.includes("hidden") || hidden),
+      ({ team_flags, hidden }) => !(team_flags?.includes("hidden") || hidden),
     );
     try {
       const base = await this.scoreService.evaluate(
@@ -118,22 +124,67 @@ export class ScoreboardService {
       CACHE_SCORE_NAMESPACE,
       `all:${hiddenSolves}`,
       async () => {
-        return this.computeScoreboard(hiddenSolves);
+        return this.computeScoreboards(hiddenSolves);
       },
     );
   }
 
-  async computeScoreboard(hiddenSolves: boolean) {
+  async computeScoreboards(hiddenSolves: boolean) {
     const challenges = await this.challengeService.list({
       hidden: false,
       visible_at: new Date(),
     });
+    const solveBases = await this.divisionDAO.getAllTeamSolveBases(
+      this.databaseClient.get(),
+    );
+    const solves = await this.solveDAO.getAllSolves(this.databaseClient.get());
+    const solvesByChallenge = Object.groupBy(
+      solves,
+      ({ challenge_id }) => challenge_id,
+    ) as Record<number, DBSolve[]>;
+    const teamsBySolveBase = solveBases.reduce(
+      (prev, { team_id, solve_base_id }) => {
+        if (!prev[solve_base_id]) {
+          prev[solve_base_id] = new Set();
+        }
+        prev[solve_base_id]?.add(team_id);
+        return prev;
+      },
+      {} as Record<number, Set<number>>,
+    );
+
+    const bases = [];
+    for (const teams of Object.values(teamsBySolveBase)) {
+      bases.push(
+        await this.computeScoreboardByBase(
+          challenges,
+          teams,
+          solvesByChallenge,
+          hiddenSolves,
+        ),
+      );
+    }
+    // TODO: save each solve base in a separate redis key
+    return bases[0];
+  }
+
+  private async computeScoreboardByBase(
+    challenges: ChallengeMetadata[],
+    teams: Set<number>,
+    solvesByChallenge: Record<number, DBSolve[]>,
+    hiddenSolves: boolean,
+  ) {
     // score, followed by date of last solve for tiebreak purposes
     const teamScores: Map<number, { score: number; time: Date }> = new Map();
     const computed = await Promise.all(
       challenges.map((x) =>
         PARALLEL_CHALLENGE_LIMITER(() =>
-          this.computeScoresForChallenge(x),
+          this.computeScoresForChallenge(
+            x,
+            solvesByChallenge[x.id].filter(({ team_id }) =>
+              teams.has(team_id),
+            ) || [],
+          ),
         ).then(({ solves }) => [x.id, solves] as [number, Score[]]),
       ),
     );
