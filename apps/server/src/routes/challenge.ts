@@ -76,21 +76,19 @@ export async function routes(fastify: FastifyInstance) {
       const team = request.user?.id
         ? await teamService.getMembershipForUser(request.user?.id)
         : undefined;
+      const { data: scoreObj } = await scoreboardService.getChallengeScores(1);
       const scores = Object.fromEntries(
-        await Promise.all(
-          challenges.map((c) =>
-            scoreboardService.getChallengeSolves(c).then((s) => [
-              c.id,
-              {
-                score: s.score,
-                solve_count: s.solves.length,
-                solved_by_me: !!s.solves.find(
-                  ({ team_id }) => team_id == team?.team_id,
-                ),
-              },
-            ]),
-          ),
-        ),
+        challenges.map((c) => [
+          c.id,
+          {
+            score: scoreObj[c.id]?.score,
+            solve_count:
+              scoreObj[c.id]?.solves?.filter((x) => !x.hidden).length || 0,
+            solved_by_me: !!scoreObj[c.id]?.solves?.find(
+              ({ team_id }) => team_id == team?.team_id,
+            ),
+          },
+        ]),
       );
 
       const visible = new Set(
@@ -180,11 +178,12 @@ export async function routes(fastify: FastifyInstance) {
       ) {
         throw new NotFoundError("Challenge not found");
       }
-      // TODO: render public metadata, add type
+      // TODO: fix up all division ids, currently everything
+      // is requesting division ID=1
       return {
-        data: (
-          await scoreboardService.getChallengeSolves(challenge)
-        ).solves.filter(({ hidden }) => admin || !hidden),
+        data: (await scoreboardService.getChallengeScores(1)).data[
+          id
+        ]?.solves?.filter(({ hidden }) => !hidden),
       };
     },
   );
