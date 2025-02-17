@@ -12,11 +12,10 @@ export const SYSTEM_ACTOR: AuditLogActor = {
 };
 
 export class AuditLogService {
-  private readonly databaseClient;
-  private readonly dao = new AuditLogDAO();
+  private readonly dao;
 
   constructor({ databaseClient }: Props) {
-    this.databaseClient = databaseClient;
+    this.dao = new AuditLogDAO(databaseClient.get());
   }
 
   async log(v: {
@@ -26,7 +25,7 @@ export class AuditLogService {
     data?: string;
   }) {
     const { type, id } = v.actor || SYSTEM_ACTOR;
-    return this.dao.create(this.databaseClient.get(), {
+    return this.dao.create({
       operation: v.operation,
       data: v.data || null,
       entities: v.entities || [],
@@ -35,6 +34,6 @@ export class AuditLogService {
   }
 
   async query(q: QueryAuditLogRequest): Promise<AuditLogEntry[]> {
-    return this.dao.query(this.databaseClient.get(), q);
+    return this.dao.query(q);
   }
 }

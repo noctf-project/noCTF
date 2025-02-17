@@ -37,11 +37,10 @@ export class ScoreboardService {
   private readonly logger;
   private readonly cacheService;
   private readonly challengeService;
-  private readonly databaseClient;
   private readonly scoreService;
 
-  private readonly solveDAO = new SolveDAO();
-  private readonly divisionDAO = new DivisionDAO();
+  private readonly solveDAO;
+  private readonly divisionDAO;
 
   constructor({
     cacheService,
@@ -53,8 +52,10 @@ export class ScoreboardService {
     this.logger = logger;
     this.cacheService = cacheService;
     this.challengeService = challengeService;
-    this.databaseClient = databaseClient;
     this.scoreService = scoreService;
+
+    this.solveDAO = new SolveDAO(databaseClient.get());
+    this.divisionDAO = new DivisionDAO(databaseClient.get());
   }
 
   async getChallengeSolves(
@@ -66,7 +67,6 @@ export class ScoreboardService {
     return this.cacheService.load(CACHE_SCORE_NAMESPACE, cacheKey, async () => {
       const challenge = isId ? await this.challengeService.getMetadata(c) : c;
       const solves = await this.solveDAO.getSolvesForChallenge(
-        this.databaseClient.get(),
         challenge.id,
         solve_base_id,
       );
@@ -153,14 +153,9 @@ export class ScoreboardService {
       hidden: false,
       visible_at: new Date(),
     });
-    const divisions = await this.divisionDAO.listDivisions(
-      this.databaseClient.get(),
-    );
+    const divisions = await this.divisionDAO.listDivisions();
     for (const { id } of divisions) {
-      const solveList = await this.solveDAO.getAllSolves(
-        this.databaseClient.get(),
-        id,
-      );
+      const solveList = await this.solveDAO.getAllSolves(id);
       const solvesByChallenge = Object.groupBy(
         solveList || [],
         ({ challenge_id }) => challenge_id,

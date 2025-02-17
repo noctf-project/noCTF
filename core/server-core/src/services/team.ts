@@ -13,15 +13,14 @@ type Props = Pick<
 >;
 
 export class TeamService {
-  private readonly databaseClient;
   private readonly auditLogService;
   private readonly configService;
-  private readonly dao = new TeamDAO();
+  private readonly dao;
 
   constructor({ configService, databaseClient, auditLogService }: Props) {
-    this.databaseClient = databaseClient;
     this.auditLogService = auditLogService;
     this.configService = configService;
+    this.dao = new TeamDAO(databaseClient.get());
     void this.init();
   }
 
@@ -45,7 +44,7 @@ export class TeamService {
     { actor, message }: AuditParams = {},
   ) {
     const join_code = generate_join_code ? nanoid() : null;
-    const team = await this.dao.create(this.databaseClient.get(), {
+    const team = await this.dao.create({
       name,
       join_code,
       division_id,
@@ -85,7 +84,7 @@ export class TeamService {
       j = null;
     }
 
-    await this.dao.update(this.databaseClient.get(), id, {
+    await this.dao.update(id, {
       name,
       bio,
       join_code: j,
@@ -101,15 +100,15 @@ export class TeamService {
   }
 
   async get(id: number) {
-    return this.dao.get(this.databaseClient.get(), id);
+    return this.dao.get(id);
   }
 
   async list(flags?: string[]) {
-    return this.dao.list(this.databaseClient.get(), flags);
+    return this.dao.list(flags);
   }
 
   async delete(id: number, { actor, message }: AuditParams = {}) {
-    await this.dao.delete(this.databaseClient.get(), id);
+    await this.dao.delete(id);
     await this.auditLogService.log({
       actor,
       operation: "team.delete",
@@ -124,17 +123,14 @@ export class TeamService {
    * @param code
    */
   async join(user_id: number, code: string) {
-    const result = await this.dao.findUsingJoinCode(
-      this.databaseClient.get(),
-      code,
-    );
+    const result = await this.dao.findUsingJoinCode(code);
     if (
       !result.flags.includes(TeamFlag.FROZEN) ||
       !result.flags.includes(TeamFlag.BLOCKED)
     ) {
       throw new NotFoundError("Team not found");
     }
-    await this.dao.assign(this.databaseClient.get(), {
+    await this.dao.assign({
       user_id,
       team_id: result.id,
       role: "member",
@@ -156,14 +152,14 @@ export class TeamService {
   }
 
   async getMembershipForUser(userId: number) {
-    return this.dao.getMembershipForUser(this.databaseClient.get(), userId);
+    return this.dao.getMembershipForUser(userId);
   }
 
   async assignMember(
-    v: Parameters<TeamDAO["assign"]>[1],
+    v: Parameters<TeamDAO["assign"]>[0],
     { actor, message }: AuditParams = {},
   ) {
-    await this.dao.assign(this.databaseClient.get(), v);
+    await this.dao.assign(v);
     await this.auditLogService.log({
       actor,
       operation: "team.member.assign",
@@ -176,7 +172,7 @@ export class TeamService {
   }
 
   async unassignMember(
-    v: Parameters<TeamDAO["unassign"]>[1],
+    v: Parameters<TeamDAO["unassign"]>[0],
     { actor, message }: AuditParams,
   ) {
     await this.auditLogService.log({
@@ -191,6 +187,6 @@ export class TeamService {
   }
 
   async listMembers(teamId: number) {
-    return await this.dao.listMembers(this.databaseClient.get(), teamId);
+    return await this.dao.listMembers(teamId);
   }
 }

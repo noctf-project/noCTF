@@ -42,10 +42,9 @@ export class ChallengeService {
   private readonly logger;
   private readonly auditLogService;
   private readonly cacheService;
-  private readonly databaseClient;
   private readonly eventBusService;
-  private readonly challengeDAO = new ChallengeDAO();
-  private readonly submissionDAO = new SubmissionDAO();
+  private readonly challengeDAO;
+  private readonly submissionDAO;
   private readonly ajv = new Ajv();
   private privateMetadataSchema: SomeJSONSchema;
   private privateMetadataSchemaValidator: ValidateFunction;
@@ -64,8 +63,10 @@ export class ChallengeService {
     this.logger = logger;
     this.auditLogService = auditLogService;
     this.cacheService = cacheService;
-    this.databaseClient = databaseClient;
     this.eventBusService = eventBusService;
+
+    this.challengeDAO = new ChallengeDAO(databaseClient.get());
+    this.submissionDAO = new SubmissionDAO(databaseClient.get());
 
     // TODO: plugin loader
     this.register(
@@ -87,10 +88,7 @@ export class ChallengeService {
 
   async create(v: AdminCreateChallengeRequest, actor?: AuditLogActor) {
     await this.validatePrivateMetadata(v.private_metadata);
-    const challenge = await this.challengeDAO.create(
-      this.databaseClient.get(),
-      v,
-    );
+    const challenge = await this.challengeDAO.create(v);
     await this.auditLogService.log({
       operation: "challenge.create",
       actor,
@@ -106,11 +104,7 @@ export class ChallengeService {
   ) {
     if (v.private_metadata)
       await this.validatePrivateMetadata(v.private_metadata);
-    const { version } = await this.challengeDAO.update(
-      this.databaseClient.get(),
-      id,
-      v,
-    );
+    const { version } = await this.challengeDAO.update(id, v);
     await this.cacheService.del(CACHE_NAMESPACE, [`c:${id}`, `m:${id}`]);
     await this.auditLogService.log({
       operation: "challenge.update",
@@ -126,13 +120,10 @@ export class ChallengeService {
   }
 
   async list(
-    query: Parameters<ChallengeDAO["list"]>[1],
+    query: Parameters<ChallengeDAO["list"]>[0],
     removePrivateTags = false,
   ): Promise<ChallengeMetadata[]> {
-    const summaries = await this.challengeDAO.list(
-      this.databaseClient.get(),
-      query,
-    );
+    const summaries = await this.challengeDAO.list(query);
     if (removePrivateTags) {
       return summaries.map((c) => {
         c.tags = this.removePrivateTags(c.tags);
@@ -145,14 +136,14 @@ export class ChallengeService {
   async get(id: number, cached = false): Promise<Challenge> {
     if (cached) {
       return this.cacheService.load(CACHE_NAMESPACE, `c:${id}`, () =>
-        this.challengeDAO.get(this.databaseClient.get(), id),
+        this.challengeDAO.get(id),
       );
     }
-    return this.challengeDAO.get(this.databaseClient.get(), id);
+    return this.challengeDAO.get(id);
   }
 
   async delete(id: number) {
-    return this.challengeDAO.delete(this.databaseClient.get(), id);
+    return this.challengeDAO.delete(id);
   }
 
   async solve(
@@ -168,7 +159,6 @@ export class ChallengeService {
       challenge = ch;
     }
     const submission = await this.submissionDAO.getCurrentMetadata(
-      this.databaseClient.get(),
       challenge.id,
       teamId,
     );
@@ -186,7 +176,7 @@ export class ChallengeService {
         "Presolve plugin returned a valid result",
       );
       const solved = state.status === ChallengeSolveStatus.Correct;
-      this.submissionDAO.create(this.databaseClient.get(), {
+      this.submissionDAO.create({
         team_id: teamId,
         user_id: userId,
         challenge_id: challenge.id,
@@ -215,7 +205,7 @@ export class ChallengeService {
    */
   async getMetadata(id: number) {
     return this.cacheService.load(CACHE_NAMESPACE, `m:${id}`, () =>
-      this.challengeDAO.getMetadata(this.databaseClient.get(), id),
+      this.challengeDAO.getMetadata(id),
     );
   }
 

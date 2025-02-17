@@ -18,21 +18,18 @@ export enum StaticRole {
 
 export class PolicyService {
   private readonly cacheService;
-  private readonly databaseClient;
   private readonly policyDAO;
 
   constructor({ cacheService: cacheService, databaseClient }: Props) {
     this.cacheService = cacheService;
-    this.databaseClient = databaseClient;
-    this.policyDAO = new PolicyDAO();
+    this.policyDAO = new PolicyDAO(databaseClient.get());
   }
 
   async getPermissionsForUser(userId: number) {
     return this.cacheService.load(
       CACHE_NAMESPACE,
       `user:${userId}`,
-      () =>
-        this.policyDAO.getPermissionsForUser(this.databaseClient.get(), userId),
+      () => this.policyDAO.getPermissionsForUser(userId),
       {
         expireSeconds: 10,
       },
@@ -43,7 +40,7 @@ export class PolicyService {
     return this.cacheService.load(
       CACHE_NAMESPACE,
       `public`,
-      () => this.policyDAO.getPermissionsForPublic(this.databaseClient.get()),
+      () => this.policyDAO.getPermissionsForPublic(),
       {
         expireSeconds: 10,
       },
