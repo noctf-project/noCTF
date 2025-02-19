@@ -5,7 +5,6 @@ import type { SerializableMap } from "../types/primitives.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
 import type { ValidateFunction } from "ajv";
 import { Ajv } from "ajv";
-import type { JsonObject } from "@noctf/schema";
 import { ConfigDAO } from "../dao/config.ts";
 
 type Validator<T> = (kv: T) => Promise<string | null> | string | null;
@@ -29,9 +28,8 @@ export class ConfigService {
   // A simple map-based cache is good enough, we want low latency and don't really need
   // to evict stuff, all the config keys are static and there shouldn't be too many.
   private readonly ajv = new Ajv();
-  private readonly dao = new ConfigDAO();
+  private readonly dao;
   private readonly logger;
-  private readonly databaseClient;
   private readonly auditLogService;
   private readonly validators: Map<
     string,
@@ -43,8 +41,8 @@ export class ConfigService {
 
   constructor({ logger, databaseClient, auditLogService }: Props) {
     this.logger = logger;
-    this.databaseClient = databaseClient;
     this.auditLogService = auditLogService;
+    this.dao = new ConfigDAO(databaseClient.get());
   }
 
   /**
@@ -67,7 +65,7 @@ export class ConfigService {
       throw new ValidationError("Config namespace does not exist");
     }
     if (noCache) {
-      return this.dao.get(this.databaseClient.get(), namespace);
+      return this.dao.get(namespace);
     }
     const now = performance.now();
     const v = this.cache.get(namespace);
@@ -85,7 +83,7 @@ export class ConfigService {
         }
       }
     }
-    const newPromise = this.dao.get<T>(this.databaseClient.get(), namespace);
+    const newPromise = this.dao.get<T>(namespace);
     this.cache.set(namespace, [newPromise, now + EXPIRY_MS]);
     const result = await newPromise;
     // Update expiry time since we just fetched the object
@@ -147,12 +145,7 @@ export class ConfigService {
       }
     }
 
-    const updated = await this.dao.update(
-      this.databaseClient.get(),
-      namespace,
-      value,
-      version,
-    );
+    const updated = await this.dao.update(namespace, value, version);
     await this.auditLogService.log({
       actor,
       operation: "config.update",
@@ -188,17 +181,8 @@ export class ConfigService {
       validator || nullValidator,
     ]);
     this.logger.info("Registered config namespace %s", namespace);
-    const result = await this.databaseClient
-      .get()
-      .insertInto("config")
-      .values({
-        namespace,
-        value: defaultCfg as JsonObject,
-      })
-      .onConflict((c) => c.doNothing())
-      .executeTakeFirst();
 
-    if (result.numInsertedOrUpdatedRows) {
+    if (await this.dao.register(namespace, defaultCfg as SerializableMap)) {
       this.logger.info("Populated default values into namespace %s", namespace);
     }
   }

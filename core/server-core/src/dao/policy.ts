@@ -1,9 +1,9 @@
-import type { DB } from "@noctf/schema";
-import type { Kysely } from "kysely";
+import { DBType } from "../clients/database.ts";
 
 export class PolicyDAO {
-  async getPermissionsForUser(db: Kysely<DB>, userId: number) {
-    return await db
+  constructor(private readonly db: DBType) {}
+  async getPermissionsForUser(userId: number) {
+    return await this.db
       .selectFrom("policy")
       .select(["policy.id", "policy.permissions"])
       .innerJoin("user", (join) =>
@@ -21,8 +21,8 @@ export class PolicyDAO {
       .execute();
   }
 
-  async getPermissionsForPublic(db: Kysely<DB>) {
-    return await db
+  async getPermissionsForPublic() {
+    return await this.db
       .selectFrom("policy")
       .select(["id", "permissions"])
       .where("public", "=", true)

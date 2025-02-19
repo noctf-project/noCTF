@@ -6,18 +6,20 @@ import type { DBType } from "../clients/database.ts";
 import type { User } from "@noctf/api/datatypes";
 
 export class UserDAO {
-  async checkNameExists(db: DBType, name: string) {
-    const result = await db
+  constructor(private readonly db: DBType) {}
+
+  async checkNameExists(name: string) {
+    const result = await this.db
       .selectFrom("user")
-      .select(db.fn.countAll().as("count"))
+      .select(this.db.fn.countAll().as("count"))
       .where("name", "=", name)
       .executeTakeFirstOrThrow();
     const count = result.count as unknown as string | number;
     return count != 0 && count != "0";
   }
 
-  async get(db: DBType, id: number): Promise<User> {
-    const result = await db
+  async get(id: number): Promise<User> {
+    const result = await this.db
       .selectFrom("user")
       .select(["id", "name", "bio", "roles", "created_at"])
       .where("id", "=", id)
@@ -28,16 +30,13 @@ export class UserDAO {
     return result;
   }
 
-  async create(
-    db: DBType,
-    {
-      name,
-      bio,
-      roles,
-    }: Pick<Insertable<DB["user"]>, "name" | "bio" | "roles">,
-  ) {
+  async create({
+    name,
+    bio,
+    roles,
+  }: Pick<Insertable<DB["user"]>, "name" | "bio" | "roles">) {
     try {
-      const { id } = await db
+      const { id } = await this.db
         .insertInto("user")
         .values({
           name,
@@ -56,7 +55,6 @@ export class UserDAO {
   }
 
   async update(
-    db: DBType,
     id: number,
     {
       name,
@@ -64,7 +62,7 @@ export class UserDAO {
       roles,
     }: Pick<Updateable<DB["user"]>, "name" | "bio" | "roles">,
   ) {
-    const { numUpdatedRows } = await db
+    const { numUpdatedRows } = await this.db
       .updateTable("user")
       .set({
         name,

@@ -6,16 +6,14 @@ import type { AuditLogEntry } from "@noctf/api/datatypes";
 const MAX_QUERY_LIMIT = 100;
 
 export class AuditLogDAO {
-  async create(
-    db: DBType,
-    {
-      operation,
-      actor,
-      entities,
-      data,
-    }: Pick<AuditLogEntry, "actor" | "data" | "operation" | "entities">,
-  ) {
-    return db
+  constructor(private readonly db: DBType) {}
+  async create({
+    operation,
+    actor,
+    entities,
+    data,
+  }: Pick<AuditLogEntry, "actor" | "data" | "operation" | "entities">) {
+    return this.db
       .insertInto("audit_log")
       .values({
         actor,
@@ -26,19 +24,16 @@ export class AuditLogDAO {
       .execute();
   }
 
-  async query(
-    db: DBType,
-    {
-      start_time,
-      end_time,
-      actor,
-      entities,
-      operation,
-      offset,
-      limit,
-    }: QueryAuditLogRequest,
-  ): Promise<AuditLogEntry[]> {
-    let query = db
+  async query({
+    start_time,
+    end_time,
+    actor,
+    entities,
+    operation,
+    offset,
+    limit,
+  }: QueryAuditLogRequest): Promise<AuditLogEntry[]> {
+    let query = this.db
       .selectFrom("audit_log")
       .select(["actor", "operation", "entities", "data", "created_at"]);
 

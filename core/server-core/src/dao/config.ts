@@ -4,8 +4,9 @@ import type { SerializableMap } from "../types/primitives.ts";
 import { BadRequestError } from "../errors.ts";
 
 export class ConfigDAO {
-  async get<T extends SerializableMap>(db: DBType, namespace: string) {
-    const config = await db
+  constructor(private readonly db: DBType) {}
+  async get<T extends SerializableMap>(namespace: string) {
+    const config = await this.db
       .selectFrom("config")
       .select(["version", "value"])
       .where("namespace", "=", namespace)
@@ -23,12 +24,11 @@ export class ConfigDAO {
   }
 
   async update<T extends SerializableMap>(
-    db: DBType,
     namespace: string,
     value: T,
     version?: number,
   ) {
-    let query = db
+    let query = this.db
       .updateTable("config")
       .set((eb) => ({
         value: value as JsonObject,
@@ -45,5 +45,17 @@ export class ConfigDAO {
       throw new BadRequestError("config version mismatch");
     }
     return result.version;
+  }
+
+  async register<T extends SerializableMap>(namespace: string, value: T) {
+    const result = await this.db
+      .insertInto("config")
+      .values({
+        namespace,
+        value: value as JsonObject,
+      })
+      .onConflict((c) => c.doNothing())
+      .executeTakeFirst();
+    return !!result.numInsertedOrUpdatedRows;
   }
 }

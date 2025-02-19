@@ -8,11 +8,16 @@ import { sql } from "kysely";
 import { partition } from "../util/object.ts";
 
 export class TeamDAO {
-  async create(
-    db: DBType,
-    { name, bio, join_code, division_id, flags }: Insertable<DB["team"]>,
-  ): Promise<Team> {
-    const { id, created_at } = await db
+  constructor(private readonly db: DBType) {}
+
+  async create({
+    name,
+    bio,
+    join_code,
+    division_id,
+    flags,
+  }: Insertable<DB["team"]>): Promise<Team> {
+    const { id, created_at } = await this.db
       .insertInto("team")
       .values({
         name,
@@ -35,8 +40,8 @@ export class TeamDAO {
     };
   }
 
-  async findUsingJoinCode(db: DBType, join_code: string) {
-    const result = await db
+  async findUsingJoinCode(join_code: string) {
+    const result = await this.db
       .selectFrom("team")
       .select(["id", "flags"])
       .where("join_code", "=", join_code)
@@ -47,8 +52,8 @@ export class TeamDAO {
     return result;
   }
 
-  async get(db: DBType, id: number): Promise<Team> {
-    const result = await db
+  async get(id: number): Promise<Team> {
+    const result = await this.db
       .selectFrom("team")
       .select([
         "id",
@@ -67,8 +72,8 @@ export class TeamDAO {
     return result;
   }
 
-  async list(db: DBType, flags?: string[]): Promise<Team[]> {
-    let query = db
+  async list(flags?: string[]): Promise<Team[]> {
+    let query = this.db
       .selectFrom("team")
       .select([
         "id",
@@ -94,16 +99,16 @@ export class TeamDAO {
     return query.execute();
   }
 
-  async update(db: DBType, id: number, v: Updateable<DB["team"]>) {
-    await db
+  async update(id: number, v: Updateable<DB["team"]>) {
+    await this.db
       .updateTable("team")
       .set(FilterUndefined(v))
       .where("id", "=", id)
       .executeTakeFirstOrThrow();
   }
 
-  async delete(db: DBType, id: number) {
-    const { numDeletedRows } = await db
+  async delete(id: number) {
+    const { numDeletedRows } = await this.db
       .deleteFrom("team")
       .where("id", "=", id)
       .executeTakeFirst();
@@ -112,15 +117,16 @@ export class TeamDAO {
     }
   }
 
-  async assign(
-    db: DBType,
-    {
-      user_id,
-      team_id,
-      role,
-    }: { user_id: number; team_id: number; role?: TeamMemberRole },
-  ) {
-    const { numInsertedOrUpdatedRows } = await db
+  async assign({
+    user_id,
+    team_id,
+    role,
+  }: {
+    user_id: number;
+    team_id: number;
+    role?: TeamMemberRole;
+  }) {
+    const { numInsertedOrUpdatedRows } = await this.db
       .insertInto("team_member")
       .values({
         user_id,
@@ -140,19 +146,16 @@ export class TeamDAO {
     }
   }
 
-  async unassign(
-    db: DBType,
-    {
-      user_id,
-      team_id,
-      check_owner,
-    }: {
-      user_id: number;
-      team_id: number;
-      check_owner?: boolean;
-    },
-  ) {
-    let query = db
+  async unassign({
+    user_id,
+    team_id,
+    check_owner,
+  }: {
+    user_id: number;
+    team_id: number;
+    check_owner?: boolean;
+  }) {
+    let query = this.db
       .deleteFrom("team_member")
       .where("user_id", "=", user_id)
       .where("team_id", "=", team_id);
@@ -186,8 +189,8 @@ export class TeamDAO {
     }
   }
 
-  async getMembershipForUser(db: DBType, user_id: number) {
-    const result = await db
+  async getMembershipForUser(user_id: number) {
+    const result = await this.db
       .selectFrom("team_member")
       .select(["team_id", "role"])
       .where("user_id", "=", user_id)
@@ -199,8 +202,8 @@ export class TeamDAO {
     return result;
   }
 
-  async listMembers(db: DBType, id: number) {
-    return db
+  async listMembers(id: number) {
+    return this.db
       .selectFrom("team_member")
       .select(["user_id", "role"])
       .where("team_id", "=", id)

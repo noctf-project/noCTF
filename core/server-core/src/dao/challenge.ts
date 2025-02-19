@@ -22,7 +22,9 @@ const METADATA_FIELDS: SelectExpression<DB, "challenge">[] = [
   "updated_at",
 ];
 export class ChallengeDAO {
-  async create(db: DBType, v: AdminCreateChallengeRequest): Promise<Challenge> {
+  constructor(private readonly db: DBType) {}
+
+  async create(v: AdminCreateChallengeRequest): Promise<Challenge> {
     const values = {
       slug: v.slug,
       title: v.title,
@@ -32,7 +34,7 @@ export class ChallengeDAO {
       hidden: v.hidden,
       visible_at: v.visible_at,
     };
-    const { id, version, created_at, updated_at } = await db
+    const { id, version, created_at, updated_at } = await this.db
       .insertInto("challenge")
       .values(values)
       .returning(["id", "version", "created_at", "updated_at"])
@@ -47,15 +49,14 @@ export class ChallengeDAO {
     };
   }
 
-  async list(
-    db: DBType,
-    {
-      tags,
-      hidden,
-      visible_at,
-    }: Partial<Pick<Challenge, "tags" | "hidden" | "visible_at">>,
-  ): Promise<ChallengeMetadata[]> {
-    let query = db.selectFrom("challenge").select(METADATA_FIELDS);
+  async list({
+    tags,
+    hidden,
+    visible_at,
+  }: Partial<Pick<Challenge, "tags" | "hidden" | "visible_at">>): Promise<
+    ChallengeMetadata[]
+  > {
+    let query = this.db.selectFrom("challenge").select(METADATA_FIELDS);
     if (tags) {
       query = query.where("tags", "@>", tags);
     }
@@ -74,8 +75,8 @@ export class ChallengeDAO {
     return (await query.execute()) as unknown as ChallengeMetadata[];
   }
 
-  async getMetadata(db: DBType, id: number): Promise<ChallengeMetadata> {
-    const challenge = await db
+  async getMetadata(id: number): Promise<ChallengeMetadata> {
+    const challenge = await this.db
       .selectFrom("challenge")
       .select(METADATA_FIELDS)
       .where("id", "=", id)
@@ -87,8 +88,8 @@ export class ChallengeDAO {
     return challenge as unknown as ChallengeMetadata;
   }
 
-  async get(db: DBType, id: number): Promise<Challenge> {
-    const challenge = await db
+  async get(id: number): Promise<Challenge> {
+    const challenge = await this.db
       .selectFrom("challenge")
       .select([
         "id",
@@ -112,7 +113,7 @@ export class ChallengeDAO {
     return challenge as Challenge;
   }
 
-  async update(db: DBType, id: number, v: AdminUpdateChallengeRequest) {
+  async update(id: number, v: AdminUpdateChallengeRequest) {
     const values: UpdateObject<DB, "challenge"> = {
       title: v.title,
       description: v.description,
@@ -122,7 +123,7 @@ export class ChallengeDAO {
       visible_at: v.visible_at,
       updated_at: new Date(),
     };
-    let query = db
+    let query = this.db
       .updateTable("challenge")
       .set(FilterUndefined(values))
       .set((eb) => ({ version: eb("version", "+", 1) }))
@@ -139,8 +140,8 @@ export class ChallengeDAO {
     return result;
   }
 
-  async delete(db: DBType, id: number) {
-    const { numDeletedRows } = await db
+  async delete(id: number) {
+    const { numDeletedRows } = await this.db
       .deleteFrom("challenge")
       .where("id", "=", id)
       .executeTakeFirst();

@@ -20,7 +20,6 @@ export type AssociateIdentity = Omit<UserIdentity, "created_at">;
 const CACHE_NAMESPACE = "core:svc:identity";
 
 export class IdentityService {
-  private readonly databaseClient;
   private readonly tokenService;
   private readonly cacheService;
   private readonly dao;
@@ -28,10 +27,9 @@ export class IdentityService {
   private providers: Map<string, IdentityProvider> = new Map();
 
   constructor({ databaseClient, tokenService, cacheService }: Props) {
-    this.databaseClient = databaseClient;
     this.tokenService = tokenService;
     this.cacheService = cacheService;
-    this.dao = new UserIdentityDAO();
+    this.dao = new UserIdentityDAO(databaseClient.get());
   }
 
   register(provider: IdentityProvider) {
@@ -91,18 +89,18 @@ export class IdentityService {
   }
 
   async associateIdentity(data: AssociateIdentity) {
-    return this.dao.associate(this.databaseClient.get(), data);
+    return this.dao.associate(data);
   }
 
   async removeIdentity(user_id: number, provider: string) {
-    return this.dao.disAssociate(this.databaseClient.get(), {
+    return this.dao.disAssociate({
       user_id,
       provider,
     });
   }
 
   async listProvidersForUser(id: number) {
-    return this.dao.listProvidersForUser(this.databaseClient.get(), id);
+    return this.dao.listProvidersForUser(id);
   }
 
   async getProviderForUser(user_id: number, provider: string) {
@@ -110,7 +108,7 @@ export class IdentityService {
       CACHE_NAMESPACE,
       `pvd_uid:${user_id}:${provider}`,
       async () =>
-        await this.dao.getIdentityForUser(this.databaseClient.get(), {
+        await this.dao.getIdentityForUser({
           user_id,
           provider,
         }),
@@ -122,7 +120,7 @@ export class IdentityService {
       CACHE_NAMESPACE,
       `uid_pvd:${provider}:${provider_id}`,
       async () =>
-        await this.dao.getIdentityForProvider(this.databaseClient.get(), {
+        await this.dao.getIdentityForProvider({
           provider,
           provider_id,
         }),

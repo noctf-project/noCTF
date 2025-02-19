@@ -4,12 +4,13 @@ import type { AllNonNullable } from "../types/primitives.ts";
 
 export type DBSolve = AllNonNullable<DB["solve"]> & { created_at: Date };
 export class SolveDAO {
+  constructor(private readonly db: DBType) {}
+
   async getSolvesForChallenge(
-    db: DBType,
     challenge_id: number,
     division_id?: number,
   ): Promise<DBSolve[]> {
-    let query = this.getBaseSolveQuery(db).where(
+    let query = this.getBaseSolveQuery().where(
       "solve.challenge_id",
       "=",
       challenge_id,
@@ -22,8 +23,8 @@ export class SolveDAO {
     return (await query.execute()) as unknown as DBSolve[];
   }
 
-  async getAllSolves(db: DBType, division_id?: number): Promise<DBSolve[]> {
-    let query = this.getBaseSolveQuery(db);
+  async getAllSolves(division_id?: number): Promise<DBSolve[]> {
+    let query = this.getBaseSolveQuery();
     if (division_id) {
       query = query
         .innerJoin("division", "division.id", "division_id")
@@ -32,8 +33,8 @@ export class SolveDAO {
     return (await query.execute()) as unknown as DBSolve[];
   }
 
-  private getBaseSolveQuery(db: DBType) {
-    return db
+  private getBaseSolveQuery() {
+    return this.db
       .selectFrom("solve")
       .select([
         "solve.id as id",
@@ -46,9 +47,9 @@ export class SolveDAO {
       .orderBy("solve.created_at asc");
   }
 
-  async getSolveCountForChallenge(db: DBType, challenge_id: number) {
+  async getSolveCountForChallenge(challenge_id: number) {
     return (
-      await db
+      await this.db
         .selectFrom("solve")
         .select([(x) => x.fn.countAll().as("count")])
         .where("challenge_id", "=", challenge_id)

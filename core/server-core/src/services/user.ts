@@ -18,18 +18,16 @@ export class UserService {
   private readonly auditLogService;
 
   private readonly userDAO;
-  private readonly userIdentityDAO;
 
   constructor({ databaseClient, auditLogService }: Props) {
     this.databaseClient = databaseClient;
     this.auditLogService = auditLogService;
 
-    this.userDAO = new UserDAO();
-    this.userIdentityDAO = new UserIdentityDAO();
+    this.userDAO = new UserDAO(this.databaseClient.get());
   }
 
   async get(id: number) {
-    return this.userDAO.get(this.databaseClient.get(), id);
+    return this.userDAO.get(id);
   }
 
   async update(
@@ -45,7 +43,7 @@ export class UserService {
     },
     actor?: AuditLogActor,
   ) {
-    await this.userDAO.update(this.databaseClient.get(), id, {
+    await this.userDAO.update(id, {
       name,
       bio,
       roles,
@@ -81,14 +79,16 @@ export class UserService {
       );
     }
 
-    if (await this.userDAO.checkNameExists(this.databaseClient.get(), name)) {
+    if (await this.userDAO.checkNameExists(name)) {
       throw new ConflictError("A user already exists with this name");
     }
 
     const id = await this.databaseClient.transaction(async (tx) => {
-      const id = await this.userDAO.create(tx, { name, roles });
+      const userDAO = new UserDAO(tx);
+      const identityDAO = new UserIdentityDAO(tx);
+      const id = await userDAO.create({ name, roles });
       for (const identity of identities) {
-        await this.userIdentityDAO.associate(tx, { ...identity, user_id: id });
+        await identityDAO.associate({ ...identity, user_id: id });
       }
 
       return id;
