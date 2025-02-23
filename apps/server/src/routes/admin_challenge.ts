@@ -62,7 +62,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       return {
-        data: await challengeService.list(request.query, false),
+        data: await challengeService.list(request.query),
       };
     },
   );

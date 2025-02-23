@@ -121,16 +121,29 @@ export class ChallengeService {
 
   async list(
     query: Parameters<ChallengeDAO["list"]>[0],
-    removePrivateTags = false,
+    options?: {
+      removePrivateTags?: boolean;
+      cacheKey?: string;
+    },
   ): Promise<ChallengeMetadata[]> {
-    const summaries = await this.challengeDAO.list(query);
-    if (removePrivateTags) {
-      return summaries.map((c) => {
-        c.tags = this.removePrivateTags(c.tags);
-        return c;
-      });
+    const fn = async () => {
+      const summaries = await this.challengeDAO.list(query);
+      if (options?.removePrivateTags) {
+        return summaries.map((c) => {
+          c.tags = this.removePrivateTags(c.tags);
+          return c;
+        });
+      }
+      return summaries;
+    };
+    if (!options?.cacheKey) {
+      return fn();
     }
-    return summaries;
+    return this.cacheService.load(
+      CACHE_NAMESPACE,
+      `list:${options?.cacheKey}`,
+      fn,
+    );
   }
 
   async get(id: number, cached = false): Promise<Challenge> {

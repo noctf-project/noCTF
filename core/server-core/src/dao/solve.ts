@@ -18,17 +18,32 @@ export class SolveDAO {
     if (division_id) {
       query = query
         .innerJoin("division", "division.id", "division_id")
-        .where("division_id", "=", division_id);
+        .where("division_id", "=", division_id)
+        .orderBy("solve.created_at", "asc");
     }
     return (await query.execute()) as unknown as DBSolve[];
   }
 
-  async getAllSolves(division_id?: number): Promise<DBSolve[]> {
+  async getAllSolves(
+    division_id?: number,
+    params?: {
+      sort?: "asc" | "desc";
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<DBSolve[]> {
     let query = this.getBaseSolveQuery();
     if (division_id) {
       query = query
         .innerJoin("division", "division.id", "division_id")
-        .where("division_id", "=", division_id);
+        .where("division_id", "=", division_id)
+        .orderBy("solve.created_at", params?.sort || "asc");
+    }
+    if (params?.limit) {
+      query = query.limit(params.limit);
+    }
+    if (params?.offset) {
+      query = query.offset(params.offset);
     }
     return (await query.execute()) as unknown as DBSolve[];
   }
@@ -43,8 +58,7 @@ export class SolveDAO {
         "solve.team_flags as team_flags",
         "solve.hidden as hidden",
         "solve.created_at as created_at",
-      ])
-      .orderBy("solve.created_at asc");
+      ]);
   }
 
   async getSolveCountForChallenge(challenge_id: number) {

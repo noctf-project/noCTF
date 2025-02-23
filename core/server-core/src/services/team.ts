@@ -9,16 +9,25 @@ import { TeamDAO } from "../dao/team.ts";
 
 type Props = Pick<
   ServiceCradle,
-  "configService" | "databaseClient" | "auditLogService"
+  "cacheService" | "configService" | "databaseClient" | "auditLogService"
 >;
+
+const CACHE_NAMESPACE = "core:svc:team";
 
 export class TeamService {
   private readonly auditLogService;
+  private readonly cacheService;
   private readonly configService;
   private readonly dao;
 
-  constructor({ configService, databaseClient, auditLogService }: Props) {
+  constructor({
+    cacheService,
+    configService,
+    databaseClient,
+    auditLogService,
+  }: Props) {
     this.auditLogService = auditLogService;
+    this.cacheService = cacheService;
     this.configService = configService;
     this.dao = new TeamDAO(databaseClient.get());
     void this.init();
@@ -103,7 +112,11 @@ export class TeamService {
     return this.dao.get(id);
   }
 
-  async list(flags?: string[]) {
+  async list(flags?: string[], cacheKey?: string) {
+    if (cacheKey)
+      return this.cacheService.load(CACHE_NAMESPACE, `list:${cacheKey}`, () =>
+        this.dao.list(flags),
+      );
     return this.dao.list(flags);
   }
 

@@ -3,11 +3,14 @@ import type { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
 import {
   ScoreboardResponse,
-  ScoreboardSolvesResponse,
+  ScoreboardTeamResponse,
 } from "@noctf/api/responses";
+import { GetTeamParams } from "@noctf/api/params";
+import { NotFoundError } from "@noctf/server-core/errors";
 
 export async function routes(fastify: FastifyInstance) {
-  const { scoreboardService } = fastify.container.cradle as ServiceCradle;
+  const { scoreboardService, challengeService, teamService } = fastify.container
+    .cradle as ServiceCradle;
 
   fastify.get<{ Reply: ScoreboardResponse }>(
     "/scoreboard",
@@ -32,25 +35,46 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{ Reply: ScoreboardSolvesResponse }>(
-    "/solves",
+  fastify.get<{ Params: GetTeamParams; Reply: ScoreboardTeamResponse }>(
+    "/scoreboard/team/:id",
     {
       schema: {
         security: [{ bearer: [] }],
-        tags: ["scoreboard"],
+        tags: ["team"],
+        params: GetTeamParams,
+        response: {
+          200: ScoreboardTeamResponse,
+        },
         auth: {
           require: true,
-          policy: ["scoreboard.solves.get"],
-        },
-        response: {
-          200: ScoreboardSolvesResponse,
+          policy: ["AND", "team.get", "scoreboard.get"],
         },
       },
     },
-    async () => {
-      const solves = await scoreboardService.getDivisionSolves(1);
+    async (request) => {
+      const team = await teamService.get(request.params.id);
+      if (!team || team.flags.includes("hidden")) {
+        throw new NotFoundError("Team not found");
+      }
+      const now = Date.now();
+      const challenges = await challengeService.list(
+        { hidden: false, visible_at: new Date(now + 60000) },
+        {
+          cacheKey: "route:/teams",
+          removePrivateTags: true,
+        },
+      );
+      const scores = (await scoreboardService.getChallengeScores(1)).data;
+      const solves = challenges
+        .map(({ id }) => {
+          const s = scores[id]?.solves.find(
+            ({ team_id }) => team_id === team.id,
+          );
+          return s && !s.hidden && { ...s, challenge_id: id };
+        })
+        .filter((x) => x);
       return {
-        data: solves.data,
+        data: { solves },
       };
     },
   );

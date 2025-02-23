@@ -21,11 +21,8 @@ import {
 import { ActorType } from "@noctf/server-core/types/enums";
 import { GetTeamParams } from "@noctf/api/params";
 
-const CACHE_NAMESPACE = "route:challenge";
-
 export async function routes(fastify: FastifyInstance) {
-  const { teamService, cacheService } = fastify.container
-    .cradle as ServiceCradle;
+  const { teamService } = fastify.container.cradle as ServiceCradle;
 
   fastify.post<{ Body: CreateTeamRequest; Reply: MeTeamResponse }>(
     "/teams",
@@ -209,9 +206,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (_request, reply) => {
-      const teams = await cacheService.load(CACHE_NAMESPACE, "list", () =>
-        teamService.list(["!hidden"]),
-      );
+      const teams = await teamService.list(["!hidden"], "route:/teams");
 
       reply.header("cache-control", "private, max-age=900");
       return {
@@ -246,29 +241,6 @@ export async function routes(fastify: FastifyInstance) {
       return {
         data: team,
       };
-    },
-  );
-
-  fastify.get<{ Params: GetTeamParams; Reply: GetTeamResponse }>(
-    "/teams/:id/solves",
-    {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["team"],
-        params: GetTeamParams,
-        response: {
-          200: GetTeamResponse,
-        },
-        auth: {
-          require: true,
-          policy: ["OR", "team.get"],
-        },
-      },
-    },
-    async () => {
-      // TODO: get all solves for a team + score graph
-      // TODO: for admin: score-graph won't show hidden
-      throw new NotImplementedError();
     },
   );
 }
