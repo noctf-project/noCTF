@@ -4,32 +4,26 @@
   import TeamService from "$lib/state/team.svelte";
   import { getCategoriesFromTags } from "$lib/utils/challenges";
   import { getRelativeTime } from "$lib/utils/time";
+  import { teamScoresStore } from "$lib/state/team_solves.svelte";
+  import { derived as storeDerived } from "svelte/store";
 
-  interface ScoreboardEntry {
+  type ScoreboardEntry = {
     team_id: number;
     rank: number;
     score: number;
     time: Date;
-    solves: number[];
-  }
+  };
 
-  interface ChallengeEntry {
+  type ChallengeEntry = {
     id: number;
     title: string;
     points: number;
     categories: string[];
-  }
+  };
 
   const apiChallenges = wrapLoadable(api.GET("/challenges"));
   const apiScoreboard = wrapLoadable(api.GET("/scoreboard"));
-  const apiSolves = wrapLoadable(api.GET("/solves"));
-  const loading = $derived(
-    apiChallenges.loading || apiScoreboard.loading || apiSolves.loading,
-  );
-
-  const solves = $derived(
-    Object.groupBy(apiSolves.r?.data?.data || [], ({ team_id }) => team_id),
-  );
+  const loading = $derived(apiChallenges.loading || apiScoreboard.loading);
 
   const challenges: ChallengeEntry[] = $derived(
     apiChallenges.r?.data?.data.challenges
@@ -46,14 +40,18 @@
     apiScoreboard.r?.data?.data.map((s, i) => ({
       ...s,
       rank: i + 1,
-      solves: (solves[s.team_id] || []).map(({ challenge_id }) => challenge_id),
       time: new Date(s.time),
     })) || [],
   );
-
-  function hasSolved(team: ScoreboardEntry, challengeId: number): boolean {
-    return team.solves.includes(challengeId);
-  }
+  const teamIds = $derived(scoreboard.map(({ team_id }) => team_id));
+  const teamScores = storeDerived(teamScoresStore, ($teamScoresStore) => {
+    teamScoresStore.loadTeams(teamIds);
+    const { loading, data } = $teamScoresStore;
+    return teamIds.map((id) => ({
+      loading: !!loading.get(id),
+      data: data.get(id),
+    }));
+  });
 </script>
 
 <div class="w-10/12 mx-auto py-4">
@@ -127,7 +125,8 @@
         </thead>
 
         <tbody>
-          {#each scoreboard as entry}
+          {#each scoreboard as entry, index}
+            {@const teamData = $teamScores[index]}
             <tr>
               <td class="border border-base-300 text-center h-12">
                 {entry.rank}
@@ -151,10 +150,12 @@
                 {entry.score}
               </td>
               <td class="border border-base-300 px-4 text-center">
-                {entry.solves.length}
+                {teamData?.data?.solves.length || 0}
               </td>
               {#each challenges as challenge}
-                {@const solved = hasSolved(entry, challenge.id)}
+                {@const solved = teamData?.data?.solves.find(
+                  ({ challenge_id }) => challenge_id === challenge.id,
+                )}
                 <td
                   class={"border border-base-300 p-0 " +
                     (solved ? "bg-primary/20" : "")}

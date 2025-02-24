@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target":"ESNext",
+    "target": "ESNext",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "allowImportingTsExtensions": true,
@@ -10,7 +10,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "noImplicitAny": true,
+    "noImplicitAny": true
   },
   "include": ["src/**/*"]
 }

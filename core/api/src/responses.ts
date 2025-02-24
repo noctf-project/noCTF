@@ -203,6 +203,13 @@ export const ScoreboardResponse = Type.Object({
 });
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
 
+export const ScoreboardTeamResponse = Type.Object({
+  data: Type.Object({
+    solves: Type.Array(Solve),
+  }),
+});
+export type ScoreboardTeamResponse = Static<typeof ScoreboardTeamResponse>;
+
 export const ScoreboardSolvesResponse = Type.Object({
   data: Type.Array(Solve),
 });

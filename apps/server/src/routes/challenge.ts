@@ -13,13 +13,10 @@ import type { FastifyInstance } from "fastify";
 import { ServeFileHandler } from "../hooks/file.ts";
 import { SolveChallengeRequest } from "@noctf/api/requests";
 
-const CACHE_NAMESPACE = "route:challenge";
-
 export async function routes(fastify: FastifyInstance) {
   const {
     configService,
     policyService,
-    cacheService,
     teamService,
     challengeService,
     scoreboardService,
@@ -61,15 +58,11 @@ export async function routes(fastify: FastifyInstance) {
       const ctime = Date.now();
       const admin = await gateAdmin(ctime, request.user?.id);
 
-      const challenges = await cacheService.load(
-        CACHE_NAMESPACE,
-        `list:${admin}`,
-        async () => {
-          return await challengeService.list(
-            // To account for clock skew
-            admin ? {} : { hidden: false, visible_at: new Date(ctime + 60000) },
-            true,
-          );
+      const challenges = await challengeService.list(
+        admin ? {} : { hidden: false, visible_at: new Date(ctime + 60000) },
+        {
+          cacheKey: "route:/challenges",
+          removePrivateTags: true,
         },
       );
 
