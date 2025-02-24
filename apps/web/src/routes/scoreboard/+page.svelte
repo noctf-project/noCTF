@@ -4,7 +4,7 @@
   import TeamService from "$lib/state/team.svelte";
   import { getCategoriesFromTags } from "$lib/utils/challenges";
   import { getRelativeTime } from "$lib/utils/time";
-  import { teamScoresStore } from "./teamsolves.svelte";
+  import { teamScoresStore } from "$lib/state/team_solves.svelte";
   import { derived as storeDerived } from "svelte/store";
 
   type ScoreboardEntry = {
