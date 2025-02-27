@@ -18,6 +18,7 @@ export type ChallengeMetadataWithExpr = {
 export type ChallengeSolvesResult = {
   score: number | null;
   solves: Solve[];
+  last_valid_solve: Date;
 };
 
 export type ChallengeScore = {
@@ -40,15 +41,15 @@ export function ComputeScoreboardByDivision(
   // score, followed by date of last solve for tiebreak purposes
   const teamScores: Map<number, { score: number; time: Date }> = new Map();
   const computed = challenges.map((x) => {
-    const { score, solves } = ComputeScoresForChallenge(
+    const result = ComputeScoresForChallenge(
       x,
       solvesByChallenge[x.metadata.id] || [],
       logger,
     );
-    return [x.metadata.id, score, solves] as [number, number, Solve[]];
+    return [x.metadata.id, result] as [number, ChallengeSolvesResult];
   });
   const challengeScores = [];
-  for (const [challenge_id, score, solves] of computed) {
+  for (const [challenge_id, { score, solves, last_valid_solve }] of computed) {
     const challengeSolves = [];
     for (const solve of solves) {
       challengeSolves.push({
@@ -68,13 +69,14 @@ export function ComputeScoreboardByDivision(
         };
         teamScores.set(solve.team_id, team);
       }
-      // using side effects
       team.score += solve.score;
-      team.time = new Date(
-        Math.max(team.time.getTime(), solve.created_at.getTime()),
-      );
+      team.time = last_valid_solve > team.time ? last_valid_solve : team.time;
     }
-    challengeScores.push({ challenge_id, score, solves: challengeSolves });
+    challengeScores.push({
+      challenge_id,
+      score: score || 0,
+      solves: challengeSolves,
+    });
   }
   const scoreboard = Array.from(
     teamScores.entries().map(([team_id, teamScore]) => ({
@@ -114,15 +116,18 @@ export function ComputeScoresForChallenge(
   );
   try {
     const base = EvaluateScoringExpression(expr, params, valid.length);
-
-    const rv: Solve[] = valid.map(({ team_id, created_at }, i) => ({
-      team_id,
-      challenge_id: metadata.id,
-      bonus: bonus && i + 1,
-      hidden: false,
-      score: base + ((bonus && Math.round(bonus[i])) || 0),
-      created_at,
-    }));
+    let last_valid_solve = new Date(0);
+    const rv: Solve[] = valid.map(({ team_id, created_at }, i) => {
+      last_valid_solve = created_at;
+      return {
+        team_id,
+        challenge_id: metadata.id,
+        bonus: bonus && i + 1,
+        hidden: false,
+        score: base + ((bonus && Math.round(bonus[i])) || 0),
+        created_at,
+      };
+    });
     const rh: Solve[] = hidden.map(({ team_id, created_at }) => ({
       team_id,
       challenge_id: metadata.id,
@@ -133,6 +138,7 @@ export function ComputeScoresForChallenge(
     return {
       score: base,
       solves: rv.concat(rh),
+      last_valid_solve,
     };
   } catch (err) {
     if (logger)
@@ -143,6 +149,7 @@ export function ComputeScoresForChallenge(
     return {
       score: null,
       solves: [],
+      last_valid_solve: new Date(0),
     };
   }
 }
