@@ -9,6 +9,7 @@ import { ServiceCradle } from "../../index.ts";
 import { ChallengePlugin } from "./types.ts";
 import pLimit from "p-limit";
 import { ValidationError } from "../../errors.ts";
+import { EvaluateScoringExpression } from "../score.ts";
 
 const FILE_METADATA_LIMIT = 16;
 const FILE_METADATA_LIMITER = pLimit(FILE_METADATA_LIMIT);
@@ -120,7 +121,8 @@ export class CoreChallengePlugin implements ChallengePlugin {
 
   validate = async (m: ChallengePrivateMetadataBase) => {
     try {
-      await this.scoreService.evaluate(m.score.strategy, m.score.params, 0);
+      const expr = await this.scoreService.getExpr(m.score.strategy);
+      EvaluateScoringExpression(expr, m.score.params, 0);
     } catch (e) {
       throw new ValidationError(
         `Failed to evaluate scoring algorithm ${m.score.strategy}: ` +

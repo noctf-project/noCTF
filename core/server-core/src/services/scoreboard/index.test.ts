@@ -1,16 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ScoreboardService } from "./scoreboard.ts";
+import { ScoreboardService } from "./index.ts";
 import { mockDeep } from "vitest-mock-extended";
-import type { CacheService } from "./cache.ts";
-import { Logger } from "../types/primitives.ts";
-import { ChallengeService } from "./challenge/index.ts";
-import { ScoreService } from "./score.ts";
-import { DatabaseClient } from "../clients/database.ts";
-import { SolveDAO } from "../dao/solve.ts";
-import { DivisionDAO } from "../dao/division.ts";
+import type { CacheService } from "../cache.ts";
+import { Logger } from "../../types/primitives.ts";
+import { ChallengeService } from "../challenge/index.ts";
+import { ScoreService } from "../score.ts";
+import { DatabaseClient } from "../../clients/database.ts";
+import { SolveDAO } from "../../dao/solve.ts";
+import { DivisionDAO } from "../../dao/division.ts";
 
-vi.mock(import("../dao/division.ts"));
-vi.mock(import("../dao/solve.ts"));
+vi.mock(import("../../dao/division.ts"));
+vi.mock(import("../../dao/solve.ts"));
 
 describe(ScoreboardService, () => {
   const logger = mockDeep<Logger>();
