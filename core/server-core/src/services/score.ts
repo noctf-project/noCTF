@@ -1,15 +1,9 @@
-import { ScoreConfig, SetupConfig } from "@noctf/api/config";
+import { ScoreConfig } from "@noctf/api/config";
 import { LocalCache } from "../util/local_cache.ts";
 import type { Expression } from "expr-eval";
 import { Parser } from "expr-eval";
 import type { ServiceCradle } from "../index.ts";
 import type { ScoringStrategy } from "@noctf/api/datatypes";
-
-type ScoreContext = {
-  n: number;
-  t0: number;
-  t: number;
-};
 
 type Props = Pick<ServiceCradle, "configService" | "logger">;
 
@@ -39,6 +33,41 @@ const parser = new Parser({
     fndef: false,
   },
 });
+
+export function EvaluateScoringExpression(
+  expr: Expression,
+  params: Record<string, number>,
+  n: number,
+): number;
+export function EvaluateScoringExpression(
+  expr: Expression,
+  params: Record<string, number>,
+  n: number,
+  all: true,
+): number[];
+export function EvaluateScoringExpression(
+  expr: Expression,
+  params: Record<string, number>,
+  n: number,
+  all?: boolean,
+): number | number[] {
+  if (!all) {
+    return Math.round(
+      expr.evaluate({
+        ...params,
+        ctx: { n },
+      }),
+    );
+  }
+  return [...Array(n + 1).keys()].map((n) =>
+    Math.round(
+      expr.evaluate({
+        ...params,
+        ctx: { n },
+      }),
+    ),
+  );
+}
 
 export class ScoreService {
   private readonly configService;
@@ -78,54 +107,8 @@ export class ScoreService {
     );
     return strategies;
   }
-  async evaluate(
-    strategyName: string,
-    params: Record<string, number>,
-    n: number,
-  ): Promise<number>;
-  async evaluate(
-    strategyName: string,
-    params: Record<string, number>,
-    n: number,
-    all: true,
-  ): Promise<number[]>;
-  async evaluate(
-    strategyName: string,
-    params: Record<string, number>,
-    n: number,
-    all?: boolean,
-  ): Promise<number | number[]> {
-    const {
-      value: { start_time_s, end_time_s },
-    } = await this.configService.get<SetupConfig>(SetupConfig.$id!);
-    const start = start_time_s || 0;
-    const ctx: Omit<ScoreContext, "n"> = {
-      t0: start,
-      t: Math.min(
-        end_time_s ? end_time_s - start : Number.MAX_SAFE_INTEGER,
-        Math.floor(Date.now() / 1000) - start,
-      ),
-    };
-    const expr = await this.loadExpr(strategyName);
-    if (!all) {
-      return Math.round(
-        expr.evaluate({
-          ...params,
-          ctx: { ...ctx, n },
-        }),
-      );
-    }
-    return [...Array(n + 1).keys()].map((n) =>
-      Math.round(
-        expr.evaluate({
-          ...params,
-          ctx: { ...ctx, n },
-        }),
-      ),
-    );
-  }
 
-  private async loadExpr(strategyName: string) {
+  async getExpr(strategyName: string) {
     const strategies = await this.getStrategies();
     if (!strategies[strategyName]) {
       throw new Error(`Scoring strategy ${strategyName} does not exist`);
