@@ -32,6 +32,7 @@
   import api, { API_BASE_URL } from "$lib/api/index.svelte";
   import { getRelativeTime } from "$lib/utils/time";
   import TeamService from "$lib/state/team.svelte";
+  import { toasts } from "$lib/stores/toast";
 
   let {
     challData,
@@ -78,11 +79,20 @@
         data: flagInput.trim(),
       },
     });
+
+    if (r.error) {
+      toasts.error(r.error.message);
+      return;
+    }
     if (r.data) {
       flagSubmitStatus = r.data.data;
       if (flagSubmitStatus == "correct") {
         correctAnim.set(1);
         onSolve();
+      } else {
+        setTimeout(() => {
+          flagSubmitStatus = undefined;
+        }, 2000);
       }
     }
   }

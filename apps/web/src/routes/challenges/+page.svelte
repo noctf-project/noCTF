@@ -11,13 +11,20 @@
     type ChallDetails,
   } from "$lib/components/challenges/ChallengeModal.svelte";
   import { onMount } from "svelte";
+  import { toasts } from "$lib/stores/toast";
 
   let apiChallenges = wrapLoadable(api.GET("/challenges"));
   let challDetailsMap: { [id in number]: ChallDetails } = {};
 
   const refreshChallenges = async () => {
-    const r = await api.GET("/challenges");
-    apiChallenges.r = r;
+    try {
+      const r = await api.GET("/challenges");
+      apiChallenges.r = r;
+    } catch (e) {
+      console.error("Challenge refresh failed", e);
+      toasts.error("Failed to connect to the server - please try again");
+      return;
+    }
   };
 
   onMount(() => {
