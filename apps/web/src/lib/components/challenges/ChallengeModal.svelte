@@ -1,4 +1,4 @@
-<script module>
+<script module lang="ts">
   import { type ChallengeCardData } from "./ChallengeCard.svelte";
 
   export interface ChallDetails {

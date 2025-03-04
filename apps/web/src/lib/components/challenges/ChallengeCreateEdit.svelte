@@ -1,4 +1,4 @@
-<script module>
+<script module lang="ts">
   import type { Difficulty } from "$lib/constants/difficulties";
 
   export interface Flag {
