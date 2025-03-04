@@ -1,5 +1,6 @@
 <script lang="ts">
   import api from "$lib/api/index.svelte";
+  import { toasts } from "$lib/stores/toast";
   import { performRedirect } from "$lib/utils/url";
 
   let activeTab: "login" | "register" = $state("login");
@@ -21,28 +22,38 @@
   async function handleSubmit(e: Event) {
     e.preventDefault();
     if (activeTab == "register") {
-      const { data } = await api.POST("/auth/email/init", {
+      const registerInitReq = await api.POST("/auth/email/init", {
         body: {
           email,
         },
       });
-      const token = data?.data?.token;
-      if (token) {
-        const { data } = await api.POST("/auth/register/finish", {
-          body: {
-            token,
-            name,
-            email,
-            password,
-            captcha: "",
-          },
-        });
-        if (data?.data?.type == "session") {
-          successRedirect();
-        }
-      } else {
-        alert("some error occurred...");
+      if (registerInitReq.error) {
+        toasts.error(registerInitReq.error.message)
       }
+      const token = registerInitReq.data?.data?.token;
+      if (!token) {
+        toasts.error("Unknown error occured")
+        return
+      }
+      const finishRegisterReq = await api.POST("/auth/register/finish", {
+        body: {
+          token,
+          name,
+          email,
+          password,
+          captcha: "",
+        },
+      });
+
+      if (finishRegisterReq.error) {
+        toasts.error(finishRegisterReq.error.message)
+        return;
+      }
+
+      if (finishRegisterReq.data?.data?.type == "session") {
+        successRedirect();
+      }
+
     } else if (activeTab == "login") {
       const r = await api.POST("/auth/email/finish", {
         body: {
@@ -50,6 +61,12 @@
           password,
         },
       });
+
+      if (r.error) {
+        toasts.error(r.error.message);
+        return;
+      }
+      console.log(r)
       if (r.data?.data?.type == "session") {
         successRedirect();
       }
