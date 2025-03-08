@@ -239,7 +239,7 @@ export enum ChallengeSolveStatus {
 export const ScoreboardEntry = Type.Object({
   team_id: Type.Number(),
   score: Type.Number(),
-  time: TypeDate,
+  timestamp: TypeDate,
 });
 export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 

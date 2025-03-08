@@ -11,7 +11,7 @@
     team_id: number;
     rank: number;
     score: number;
-    time: Date;
+    timestamp: Date;
   };
 
   type ChallengeEntry = {
@@ -40,7 +40,7 @@
     apiScoreboard.r?.data?.data.map((s, i) => ({
       ...s,
       rank: i + 1,
-      time: new Date(s.time),
+      timestamp: new Date(s.timestamp),
     })) || [],
   );
   const teamIds = $derived(scoreboard.map(({ team_id }) => team_id));
@@ -142,9 +142,9 @@
               </td>
               <td
                 class="border border-base-300 px-4 text-center"
-                title={entry.time.toLocaleString()}
+                title={entry.timestamp.toLocaleString()}
               >
-                {getRelativeTime(entry.time)}
+                {getRelativeTime(entry.timestamp)}
               </td>
               <td class="border border-base-300 px-4 text-center">
                 {entry.score}

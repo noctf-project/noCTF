@@ -8,7 +8,7 @@ import {
   ComputeScoreboardByDivision,
   GetChangedTeamScores,
 } from "./calc.ts";
-import { ScoreboardGraphService } from "./graph.ts";
+import { ScoreHistoryService } from "./history.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -32,7 +32,7 @@ export class ScoreboardService {
   private readonly cacheService;
   private readonly challengeService;
   private readonly scoreService;
-  private readonly scoreboardGraphService;
+  private readonly scoreHistoryService;
 
   private readonly solveDAO;
   private readonly divisionDAO;
@@ -49,7 +49,7 @@ export class ScoreboardService {
     this.cacheService = cacheService;
     this.challengeService = challengeService;
     this.scoreService = scoreService;
-    this.scoreboardGraphService = new ScoreboardGraphService({
+    this.scoreHistoryService = new ScoreHistoryService({
       redisClientFactory,
     });
 
@@ -105,7 +105,7 @@ export class ScoreboardService {
   }
 
   async getTeamGraph(id: number) {
-    return this.scoreboardGraphService.getTeam(id);
+    return this.scoreHistoryService.getTeam(id);
   }
 
   private async commitDivisionScoreboard(
@@ -140,6 +140,6 @@ export class ScoreboardService {
     if (lastScoreboard) {
       diff = GetChangedTeamScores(lastScoreboard, scoreboard);
     }
-    await this.scoreboardGraphService.commitDiff(diff);
+    await this.scoreHistoryService.commitDiff(diff);
   }
 }
