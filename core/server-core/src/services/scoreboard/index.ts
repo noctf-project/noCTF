@@ -8,13 +8,14 @@ import {
   ComputeScoreboardByDivision,
   GetChangedTeamScores,
 } from "./calc.ts";
-import { ScoreHistoryService } from "./history.ts";
+import { ScoreHistoryDAO } from "../../dao/score_history.ts";
+import { SetupConfig } from "@noctf/api/config";
 
 type Props = Pick<
   ServiceCradle,
   | "cacheService"
+  | "configService"
   | "challengeService"
-  | "redisClientFactory"
   | "scoreService"
   | "databaseClient"
   | "logger"
@@ -26,33 +27,34 @@ type UpdatedContainer<T> = {
 };
 
 export const CACHE_SCORE_NAMESPACE = "core:svc:score";
+export const CACHE_SCORE_HISTORY_NAMESPACE = "core:svc:score_history";
 
 export class ScoreboardService {
   private readonly logger;
   private readonly cacheService;
   private readonly challengeService;
+  private readonly configService;
   private readonly scoreService;
-  private readonly scoreHistoryService;
 
+  private readonly scoreHistoryDAO;
   private readonly solveDAO;
   private readonly divisionDAO;
 
   constructor({
     cacheService,
+    configService,
     challengeService,
     databaseClient,
-    redisClientFactory,
     scoreService,
     logger,
   }: Props) {
     this.logger = logger;
     this.cacheService = cacheService;
     this.challengeService = challengeService;
+    this.configService = configService;
     this.scoreService = scoreService;
-    this.scoreHistoryService = new ScoreHistoryService({
-      redisClientFactory,
-    });
 
+    this.scoreHistoryDAO = new ScoreHistoryDAO(databaseClient.get());
     this.solveDAO = new SolveDAO(databaseClient.get());
     this.divisionDAO = new DivisionDAO(databaseClient.get());
   }
@@ -104,8 +106,30 @@ export class ScoreboardService {
     }
   }
 
-  async getTeamGraph(id: number) {
-    return this.scoreHistoryService.getTeam(id);
+  async getTeamScoreHistory(id: number) {
+    return this.cacheService.load(
+      CACHE_SCORE_HISTORY_NAMESPACE,
+      id.toString(),
+      async () => {
+        const {
+          value: { start_time_s, end_time_s },
+        } = await this.configService.get<SetupConfig>(SetupConfig.$id!);
+        return (
+          await this.scoreHistoryDAO.getByTeam(
+            id,
+            start_time_s ? new Date(start_time_s * 1000) : undefined,
+            end_time_s ? new Date(end_time_s * 1000) : undefined,
+          )
+        ).map(
+          ({ timestamp, score }) =>
+            [timestamp.getTime(), score] as [number, number],
+        );
+      },
+    );
+  }
+
+  private async clearTeamScoreHistory(id: number) {
+    return await this.scoreHistoryDAO.flushTeam(id);
   }
 
   private async commitDivisionScoreboard(
@@ -136,10 +160,19 @@ export class ScoreboardService {
       data: challengeScores,
       updated_at,
     });
+
     let diff = scoreboard;
     if (lastScoreboard) {
       diff = GetChangedTeamScores(lastScoreboard, scoreboard);
     }
-    await this.scoreHistoryService.commitDiff(diff);
+    await this.scoreHistoryDAO.add(diff);
+    const teams = new Set(diff.map(({ team_id }) => team_id));
+    await Promise.all(
+      teams
+        .values()
+        .map((t) =>
+          this.cacheService.del(CACHE_SCORE_HISTORY_NAMESPACE, t.toString()),
+        ),
+    );
   }
 }
