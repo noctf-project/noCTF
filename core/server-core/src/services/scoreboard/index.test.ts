@@ -8,6 +8,7 @@ import { ScoreService } from "../score.ts";
 import { DatabaseClient } from "../../clients/database.ts";
 import { SolveDAO } from "../../dao/solve.ts";
 import { DivisionDAO } from "../../dao/division.ts";
+import { RedisClientFactory } from "../../clients/redis.ts";
 
 vi.mock(import("../../dao/division.ts"));
 vi.mock(import("../../dao/solve.ts"));
@@ -16,6 +17,7 @@ describe(ScoreboardService, () => {
   const logger = mockDeep<Logger>();
   const cacheService = mockDeep<CacheService>();
   const challengeService = mockDeep<ChallengeService>();
+  const redisClientFactory = mockDeep<RedisClientFactory>();
   const databaseClient = mockDeep<DatabaseClient>();
   const scoreService = mockDeep<ScoreService>();
 
@@ -37,6 +39,7 @@ describe(ScoreboardService, () => {
       logger,
       cacheService,
       challengeService,
+      redisClientFactory,
       databaseClient,
       scoreService,
     });
@@ -49,6 +52,7 @@ describe(ScoreboardService, () => {
       logger,
       cacheService,
       challengeService,
+      redisClientFactory,
       databaseClient,
       scoreService,
     });

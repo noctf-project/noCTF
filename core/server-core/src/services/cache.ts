@@ -1,6 +1,8 @@
 import { decode, encode } from "cbor2";
 import type { ServiceCradle } from "../index.ts";
 import { Compress, Decompress } from "../util/message_compression.ts";
+import { Stopwatch } from "../util/stopwatch.ts";
+import { Coleascer } from "../util/coleascer.ts";
 
 type LoadParams = {
   expireSeconds: number;
@@ -17,10 +19,9 @@ type Props = Pick<ServiceCradle, "redisClientFactory" | "metricsClient">;
 export class CacheService {
   private readonly redisClient;
   private readonly metricsClient;
-  private readonly coalesceMap = new Map<
-    string,
-    Promise<Uint8Array<ArrayBufferLike> | null>
-  >();
+
+  private readonly getCoaleascer = new Coleascer();
+  private readonly fetchColeascer = new Coleascer();
 
   constructor({ redisClientFactory, metricsClient }: Props) {
     this.redisClient = redisClientFactory.getClient();
@@ -33,63 +34,67 @@ export class CacheService {
     fetcher: () => Promise<T>,
     options?: LoadOptions,
   ): Promise<T> {
-    const start = performance.now();
+    const stopwatch = new Stopwatch();
     const { expireSeconds, forceFetch } = {
       ...DEFAULT_LOAD_PARAMS,
       ...options,
     };
-    const k = `${namespace}:${key}`;
     if (!forceFetch) {
-      const data = (await this._get(k)) as T;
+      const data = (await this._get(namespace, key)) as T;
       if (data) {
-        const end = performance.now();
-        this.metricsClient.recordAggregate(
-          [
-            ["HitCount", 1],
-            ["HitTime", end - start],
-          ],
-          { cache_namespace: namespace },
-        );
         return data;
       }
     }
+    const fullKey = `${namespace}:${key}`;
+    return this.fetchColeascer.get(fullKey, () =>
+      this._fetch(namespace, fullKey, expireSeconds, stopwatch, fetcher),
+    );
+  }
+
+  async get<T>(namespace: string, key: string): Promise<T> {
+    return this._get(namespace, key) as T;
+  }
+
+  private async _fetch<T>(
+    namespace: string,
+    fullKey: string,
+    expireSeconds: number,
+    stopwatch: Stopwatch,
+    fetcher: () => Promise<T>,
+  ) {
     const result = await fetcher();
-    await this._put(k, result, expireSeconds);
-    const end = performance.now();
+    await this._put(fullKey, result, expireSeconds);
     this.metricsClient.recordAggregate(
       [
         ["MissCount", 1],
-        ["MissTime", end - start],
+        ["MissTime", stopwatch.elapsed()],
       ],
       { cache_namespace: namespace },
     );
     return result;
   }
 
-  async get<T>(namespace: string, key: string): Promise<T> {
+  private async _get(namespace: string, key: string) {
     const k = `${namespace}:${key}`;
-    return this._get(k) as T;
+    return this.getCoaleascer.get(k, () => this._getAndDecode(namespace, k));
   }
 
-  private async _get(k: string) {
-    let promise = this.coalesceMap.get(k);
-    if (!promise) {
-      promise = this._getRaw(k).finally(() => this.coalesceMap.delete(k));
-      this.coalesceMap.set(k, promise);
-    }
-    const data = await promise;
-    if (!data) return null;
-    return decode(data);
-  }
-
-  private async _getRaw(k: string) {
+  private async _getAndDecode(namespace: string, fullKey: string) {
+    const stopwatch = new Stopwatch();
     const client = await this.redisClient;
     const data = await client.get(
       client.commandOptions({ returnBuffers: true }),
-      k,
+      fullKey,
     );
     if (!data) return null;
-    return await Decompress(data);
+    this.metricsClient.recordAggregate(
+      [
+        ["HitCount", 1],
+        ["HitTime", stopwatch.elapsed()],
+      ],
+      { cache_namespace: namespace },
+    );
+    return decode(await Decompress(data));
   }
 
   async put<T>(
@@ -109,7 +114,8 @@ export class CacheService {
       : [`${namespace}:${key}`];
     const res = await client.del(keys);
     for (const key of keys) {
-      this.coalesceMap.delete(key);
+      this.getCoaleascer.delete(key);
+      this.fetchColeascer.delete(key);
     }
     return res;
   }
@@ -120,18 +126,19 @@ export class CacheService {
     return client.ttl(k);
   }
 
-  private async _put(k: string, value: unknown, expireSeconds?: number) {
+  private async _put(fullKey: string, value: unknown, expireSeconds?: number) {
     if (value === null) return;
     const client = await this.redisClient;
     const b = await Compress(encode(value));
     const res = await client.set(
-      k,
+      fullKey,
       Buffer.from(b.buffer, b.byteOffset, b.byteLength),
       {
         EX: expireSeconds,
       },
     );
-    this.coalesceMap.delete(k);
+    this.getCoaleascer.delete(fullKey);
+    this.fetchColeascer.delete(fullKey);
     return res;
   }
 }
