@@ -39,7 +39,7 @@ export function ComputeScoreboardByDivision(
   logger?: Logger,
 ) {
   // score, followed by date of last solve for tiebreak purposes
-  const teamScores: Map<number, { score: number; time: Date }> = new Map();
+  const teamScores: Map<number, { score: number; timestamp: Date }> = new Map();
   const computed = challenges.map((x) => {
     const result = ComputeScoresForChallenge(
       x,
@@ -65,12 +65,13 @@ export function ComputeScoreboardByDivision(
       if (!team) {
         team = {
           score: 0,
-          time: new Date(0),
+          timestamp: new Date(0),
         };
         teamScores.set(solve.team_id, team);
       }
       team.score += solve.score;
-      team.time = last_valid_solve > team.time ? last_valid_solve : team.time;
+      team.timestamp =
+        last_valid_solve > team.timestamp ? last_valid_solve : team.timestamp;
     }
     challengeScores.push({
       challenge_id,
@@ -95,7 +96,8 @@ export function ComputeScoreboardByDivision(
 
   return {
     scoreboard: scoreboard.sort(
-      (a, b) => a.score - b.score || a.time.getTime() - b.time.getTime(),
+      (a, b) =>
+        a.score - b.score || a.timestamp.getTime() - b.timestamp.getTime(),
     ),
     challenges: challengeObj,
   };

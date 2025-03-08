@@ -5,7 +5,7 @@ import { decode, encode } from "cbor2";
 type Props = Pick<ServiceCradle, "redisClientFactory">;
 
 export const TEAM_NAMESPACE = "core:svc:scoreboard_graph";
-export class ScoreboardGraphService {
+export class ScoreHistoryService {
   private readonly redisClientFactory;
 
   constructor({ redisClientFactory }: Props) {
@@ -32,13 +32,13 @@ export class ScoreboardGraphService {
   async commitDiff(entries: ScoreboardEntry[]) {
     const client = await this.redisClientFactory.getClient();
     const byTeam = new Map<number, Buffer[]>();
-    for (const { team_id, score, time } of entries) {
+    for (const { team_id, score, timestamp } of entries) {
       let team = byTeam.get(team_id);
       if (!team) {
         team = [];
         byTeam.set(team_id, team);
       }
-      const data = encode([time.getTime(), score] as [number, number]);
+      const data = encode([timestamp.getTime(), score] as [number, number]);
       team.push(Buffer.from(data.buffer, data.byteOffset, data.byteLength));
     }
     await Promise.all(
