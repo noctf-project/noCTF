@@ -104,11 +104,14 @@ export class CacheService {
 
   async del(namespace: string, key: string | string[]) {
     const client = await this.redisClient;
-    return client.del(
-      Array.isArray(key)
-        ? key.map((k) => `${namespace}:${k}`)
-        : `${namespace}:${key}`,
-    );
+    const keys = Array.isArray(key)
+      ? key.map((k) => `${namespace}:${k}`)
+      : [`${namespace}:${key}`];
+    const res = await client.del(keys);
+    for (const key of keys) {
+      this.coalesceMap.delete(key);
+    }
+    return res;
   }
 
   async getTtl(namespace: string, key: string) {
