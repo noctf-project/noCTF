@@ -40,7 +40,7 @@ export async function routes(fastify: FastifyInstance) {
     {
       schema: {
         security: [{ bearer: [] }],
-        tags: ["team"],
+        tags: ["scoreboard"],
         params: GetTeamParams,
         response: {
           200: ScoreboardTeamResponse,
@@ -65,6 +65,7 @@ export async function routes(fastify: FastifyInstance) {
         },
       );
       const scores = (await scoreboardService.getChallengeScores(1)).data;
+      const graph = await scoreboardService.getTeamGraph(request.params.id);
       const solves = challenges
         .map(({ id }) => {
           const s = scores[id]?.solves.find(
@@ -74,7 +75,7 @@ export async function routes(fastify: FastifyInstance) {
         })
         .filter((x) => x);
       return {
-        data: { solves },
+        data: { solves, graph },
       };
     },
   );
