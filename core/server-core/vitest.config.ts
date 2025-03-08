@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
@@ -8,6 +8,9 @@ export default defineConfig({
       reporter: ["text", "json", "html"],
       include: ["src/**"],
       exclude: ["vitest.config.ts", "**/**.test.ts"],
+    },
+    fakeTimers: {
+      toFake: [...(configDefaults.fakeTimers.toFake || []), "performance"],
     },
   },
 });
