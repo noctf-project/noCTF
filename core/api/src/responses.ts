@@ -206,6 +206,7 @@ export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
 export const ScoreboardTeamResponse = Type.Object({
   data: Type.Object({
     solves: Type.Array(Solve),
+    graph: Type.Array(Type.Tuple([Type.Number(), Type.Number()])),
   }),
 });
 export type ScoreboardTeamResponse = Static<typeof ScoreboardTeamResponse>;

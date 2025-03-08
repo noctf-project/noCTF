@@ -8,11 +8,13 @@ import {
   ComputeScoreboardByDivision,
   GetChangedTeamScores,
 } from "./calc.ts";
+import { ScoreboardGraphService } from "./graph.ts";
 
 type Props = Pick<
   ServiceCradle,
   | "cacheService"
   | "challengeService"
+  | "redisClientFactory"
   | "scoreService"
   | "databaseClient"
   | "logger"
@@ -30,6 +32,7 @@ export class ScoreboardService {
   private readonly cacheService;
   private readonly challengeService;
   private readonly scoreService;
+  private readonly scoreboardGraphService;
 
   private readonly solveDAO;
   private readonly divisionDAO;
@@ -38,6 +41,7 @@ export class ScoreboardService {
     cacheService,
     challengeService,
     databaseClient,
+    redisClientFactory,
     scoreService,
     logger,
   }: Props) {
@@ -45,6 +49,9 @@ export class ScoreboardService {
     this.cacheService = cacheService;
     this.challengeService = challengeService;
     this.scoreService = scoreService;
+    this.scoreboardGraphService = new ScoreboardGraphService({
+      redisClientFactory,
+    });
 
     this.solveDAO = new SolveDAO(databaseClient.get());
     this.divisionDAO = new DivisionDAO(databaseClient.get());
@@ -68,11 +75,11 @@ export class ScoreboardService {
   }
 
   async getChallengeScores(division_id: number) {
-    const scoreboard = this.cacheService.get<
+    const scoreboard = await this.cacheService.get<
       UpdatedContainer<Record<number, ChallengeScore>>
     >(CACHE_SCORE_NAMESPACE, `s:challenges:${division_id}`);
     if (!scoreboard) {
-      return null;
+      return { data: [], updated_at: new Date(0) };
     }
     return scoreboard;
   }
@@ -95,6 +102,10 @@ export class ScoreboardService {
     for (const { id } of divisions) {
       await this.commitDivisionScoreboard(challenges, id);
     }
+  }
+
+  async getTeamGraph(id: number) {
+    return this.scoreboardGraphService.getTeam(id);
   }
 
   private async commitDivisionScoreboard(
@@ -129,6 +140,6 @@ export class ScoreboardService {
     if (lastScoreboard) {
       diff = GetChangedTeamScores(lastScoreboard, scoreboard);
     }
-    this.logger.info({ diff }, "Diff");
+    await this.scoreboardGraphService.commitDiff(diff);
   }
 }
