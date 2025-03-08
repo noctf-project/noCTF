@@ -30,7 +30,7 @@ export async function routes(fastify: FastifyInstance) {
     async () => {
       const scoreboard = await scoreboardService.getScoreboard(1);
       return {
-        data: scoreboard.data,
+        data: scoreboard?.data || [],
       };
     },
   );
@@ -65,7 +65,9 @@ export async function routes(fastify: FastifyInstance) {
         },
       );
       const scores = (await scoreboardService.getChallengeScores(1)).data;
-      const graph = await scoreboardService.getTeamGraph(request.params.id);
+      const graph = await scoreboardService.getTeamScoreHistory(
+        request.params.id,
+      );
       const solves = challenges
         .map(({ id }) => {
           const s = scores[id]?.solves.find(

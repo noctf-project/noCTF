@@ -77,9 +77,11 @@ export async function routes(fastify: FastifyInstance) {
             score: scoreObj[c.id]?.score,
             solve_count:
               scoreObj[c.id]?.solves?.filter((x) => !x.hidden).length || 0,
-            solved_by_me: !!scoreObj[c.id]?.solves?.find(
-              ({ team_id }) => team_id == team?.team_id,
-            ),
+            solved_by_me:
+              team &&
+              !!scoreObj[c.id]?.solves?.find(
+                ({ team_id }) => team_id == team?.team_id,
+              ),
           },
         ]),
       );
