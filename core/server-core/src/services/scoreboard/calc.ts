@@ -6,7 +6,7 @@ import {
 } from "@noctf/api/datatypes";
 import { Expression } from "expr-eval";
 import { DBSolve } from "../../dao/solve.ts";
-import { deepEqual, partition } from "../../util/object.ts";
+import { partition } from "../../util/object.ts";
 import { EvaluateScoringExpression } from "../score.ts";
 import { Logger } from "../../types/primitives.ts";
 
@@ -164,7 +164,8 @@ export const GetChangedTeamScores = (
     map.set(entry.team_id, entry);
   }
   for (const entry of s2) {
-    if (!deepEqual(entry, map.get(entry.team_id))) {
+    const e2 = map.get(entry.team_id);
+    if (entry.score !== e2?.score) {
       output.push(entry);
     }
   }
