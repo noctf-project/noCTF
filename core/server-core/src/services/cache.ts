@@ -17,6 +17,10 @@ type Props = Pick<ServiceCradle, "redisClientFactory" | "metricsClient">;
 export class CacheService {
   private readonly redisClient;
   private readonly metricsClient;
+  private readonly coalesceMap = new Map<
+    string,
+    Promise<Uint8Array<ArrayBufferLike> | null>
+  >();
 
   constructor({ redisClientFactory, metricsClient }: Props) {
     this.redisClient = redisClientFactory.getClient();
@@ -68,13 +72,24 @@ export class CacheService {
   }
 
   private async _get(k: string) {
+    let promise = this.coalesceMap.get(k);
+    if (!promise) {
+      promise = this._getRaw(k).finally(() => this.coalesceMap.delete(k));
+      this.coalesceMap.set(k, promise);
+    }
+    const data = await promise;
+    if (!data) return null;
+    return decode(data);
+  }
+
+  private async _getRaw(k: string) {
     const client = await this.redisClient;
     const data = await client.get(
       client.commandOptions({ returnBuffers: true }),
       k,
     );
     if (!data) return null;
-    return decode(await Decompress(data));
+    return await Decompress(data);
   }
 
   async put<T>(
@@ -106,12 +121,14 @@ export class CacheService {
     if (value === null) return;
     const client = await this.redisClient;
     const b = await Compress(encode(value));
-    return await client.set(
+    const res = await client.set(
       k,
       Buffer.from(b.buffer, b.byteOffset, b.byteLength),
       {
         EX: expireSeconds,
       },
     );
+    this.coalesceMap.delete(k);
+    return res;
   }
 }
