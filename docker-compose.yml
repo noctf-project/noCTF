@@ -1,9 +1,15 @@
 services:
   redis:
     image: valkey/valkey:8-alpine
+    ports:
+      - 6379:6379
   nats:
     image: nats
     command: -js
+    ports:
+      - 4222:4222
+      - 8222:8222
+      - 6222:6222
   postgres:
     image: postgres:17-alpine
     volumes:
@@ -11,5 +17,7 @@ services:
     environment:
       - POSTGRES_PASSWORD=noctf
       - POSTGRES_DB=noctf
+    ports:
+      - 5432:5432
 volumes:
   postgres:
