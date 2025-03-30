@@ -17,6 +17,18 @@ EOF
   echo "Started $PROJECT_NAME"
 }
 
+# For non linux based dev environments
+start-local()  {
+  docker compose -p "${PROJECT_NAME}" up -d
+
+  cat << EOF > .env
+POSTGRES_URL=postgres://postgres:noctf@localhost:5432/noctf
+REDIS_URL=redis://localhost:6379
+NATS_URL=nats://localhost:4222
+EOF
+  echo "Started $PROJECT_NAME"
+}
+
 stop() {
   docker compose -p "${PROJECT_NAME}" stop
   rm .env
@@ -34,6 +46,10 @@ case $1 in
   start)
     start
     ;;
+
+  start-local)
+    start-local
+    ;; 
 
   stop)
     stop

@@ -11,13 +11,20 @@
     type ChallDetails,
   } from "$lib/components/challenges/ChallengeModal.svelte";
   import { onMount } from "svelte";
+  import { toasts } from "$lib/stores/toast";
 
   let apiChallenges = wrapLoadable(api.GET("/challenges"));
   let challDetailsMap: { [id in number]: ChallDetails } = {};
 
   const refreshChallenges = async () => {
-    const r = await api.GET("/challenges");
-    apiChallenges.r = r;
+    try {
+      const r = await api.GET("/challenges");
+      apiChallenges.r = r;
+    } catch (e) {
+      console.error("Challenge refresh failed", e);
+      toasts.error("Failed to connect to the server - please try again");
+      return;
+    }
   };
 
   onMount(() => {
@@ -83,16 +90,26 @@
       <div class="loading loading-spinner loading-lg text-primary"></div>
       <p class="text-center">Loading challenges...</p>
     </div>
+  {:else if apiChallenges.r.error}
+    <div class="flex flex-col items-center gap-4 mt-16">
+      <p class="text-center">{apiChallenges.r.error.message}</p>
+      <button
+        class="btn btn-primary"
+        onclick={refreshChallenges}
+      >
+        Retry
+      </button>
+    </div>
   {:else}
     <div class="grid grid-cols-[min(25%,20rem)_75%] gap-4 px-16 py-8">
       <div class="mt-8">
         <ChallengeFilterer
-          challenges={allChallenges!}
+          challenges={allChallenges || []}
           onFilter={(res) => (challenges = res)}
         />
       </div>
       <div class="flex flex-row flex-wrap gap-3 content-start">
-        {#each challenges! as challenge (challenge)}
+        {#each challenges || [] as challenge (challenge)}
           <ChallengeCard data={challenge} onclick={onChallengeClicked} />
         {/each}
       </div>

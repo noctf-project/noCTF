@@ -17,11 +17,20 @@ type Loadable<T> =
       r: T;
     };
 export function wrapLoadable<T>(p: Promise<T>): Loadable<T> {
-  const s = $state<Loadable<T>>({ loading: true, r: undefined });
-  p.then((r) => {
-    s.loading = false;
-    s.r = r;
+  const s = $state<Loadable<T>>({
+    loading: true,
+    r: undefined,
   });
+  p.then(
+    (r) => {
+      s.loading = false;
+      s.r = r;
+    },
+    (e) => {
+      s.loading = false;
+      console.error(e);
+    },
+  );
   return s;
 }
 

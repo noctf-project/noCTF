@@ -3,6 +3,7 @@
   import AdminHeader from "$lib/components/AdminHeader.svelte";
   import Header from "$lib/components/Header.svelte";
   import ThemeSwitcher from "$lib/components/ThemeSwitcher.svelte";
+  import Toast from "$lib/components/Toast.svelte";
   import "../app.css";
 
   let { children } = $props();
@@ -21,6 +22,7 @@
   <div class="fixed left-6 bottom-1">
     <ThemeSwitcher />
   </div>
+  <Toast />
   <footer class="bg-base-200 text-center pb-4 text-xs">
     Powered by <a href="/TODO" class="text-primary">noCTF</a>
   </footer>
