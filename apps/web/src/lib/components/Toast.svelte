@@ -1,18 +1,65 @@
 <script lang="ts">
-  import { toasts } from '$lib/stores/toast';
-  import { fade } from 'svelte/transition';
+  import { toasts } from "$lib/stores/toast"; // Assuming this store has { subscribe, remove }
+  import { fly } from "svelte/transition";
+  import Icon from "@iconify/svelte";
+  import { quintOut } from "svelte/easing"; // Smoother easing
+
+  // Helper function or object to map toast types to icons and classes
+  const toastStyles = {
+    success: {
+      icon: "material-symbols:check-circle-outline-rounded",
+      class: "alert-success",
+    },
+    error: {
+      icon: "material-symbols:error-outline-rounded",
+      class: "alert-error",
+    },
+    warning: {
+      icon: "material-symbols:warning-outline-rounded",
+      class: "alert-warning",
+    },
+    info: {
+      icon: "material-symbols:information-outline-rounded",
+      class: "alert-info",
+    },
+  };
+
+  // Default style for unknown types
+  const defaultStyle = toastStyles.info;
 </script>
 
-<div class="toast toast-center">
+<div class="toast toast-bottom toast-center p-4 z-50 w-full max-w-xs">
   {#each $toasts as toast (toast.id)}
+    {@const style = toastStyles[toast.type] || defaultStyle}
     <div
-      transition:fade={{ duration: 200 }}
-      class="alert {toast.type === 'error' ? 'alert-error' : 
-                   toast.type === 'success' ? 'alert-success' : 
-                   toast.type === 'warning' ? 'alert-warning' : 
-                   'alert-info'}"
+      role="alert"
+      transition:fly={{ duration: 350, x: 100, easing: quintOut }}
+      class="alert {style.class} shadow-lg flex items-center w-full max-w-xs sm:max-w-sm mt-2"
     >
-      <span>{toast.message}</span>
+      <Icon icon={style.icon} class="text-xl sm:text-2xl flex-shrink-0 mt-px" />
+
+      <p
+        class=" flex-1 whitespace-normal text-sm sm:text-base break-words mr-2 min-w-0"
+      >
+        {toast.message}
+      </p>
+
+      <button
+        aria-label="Close"
+        class="btn btn-xs btn-ghost btn-circle flex-shrink-0"
+        onclick={() => toasts.remove(toast.id)}
+      >
+        <Icon
+          icon="material-symbols:close-rounded"
+          class="text-lg sm:text-xl"
+        />
+      </button>
     </div>
   {/each}
 </div>
+
+<style>
+  .toast > :global(div.alert) {
+    width: 100%; /* Ensure alerts take the width defined */
+  }
+</style>
