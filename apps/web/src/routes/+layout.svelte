@@ -9,6 +9,12 @@
   let { children } = $props();
 </script>
 
+<svelte:head>
+	<title>noCTF</title>
+	<meta name="robots" content="noindex nofollow" />
+	<html lang="en"> </html>
+</svelte:head>
+
 <div class="flex flex-col min-h-screen h-auto">
   {#if page.url.pathname.startsWith("/admin")}
     <AdminHeader />

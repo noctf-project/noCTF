@@ -159,7 +159,7 @@
   <div
     in:fade={{ duration: 100 }}
     out:fade={{ duration: 100 }}
-    class="fixed inset-0 bg-black bg-opacity-40 flex -mt-32 items-center justify-center p-4 z-50"
+    class="fixed inset-0 bg-black bg-opacity-40 flex -mt-32 items-center justify-center p-4 z-40"
   >
     <div
       class="flex flex-col md:flex-row lg:flex-row gap-4 w-full lg:max-w-[50%]"

@@ -3,7 +3,7 @@
   import { fade } from 'svelte/transition';
 </script>
 
-<div class="toast toast-center">
+<div class="z-50 toast toast-center">
   {#each $toasts as toast (toast.id)}
     <div
       transition:fade={{ duration: 200 }}
