@@ -17,7 +17,11 @@ function createToastStore() {
     duration: number = 5000,
   ) {
     const id = Date.now();
-    update((toasts) => [...toasts, { message, type, id }]);
+    // only keep the most recent 5 messages
+    update((toasts) => {
+      const newToasts = [...toasts, { message, type, id }];
+      return newToasts.slice(-5);
+    });
     setTimeout(() => removeToast(id), duration);
   }
 
