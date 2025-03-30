@@ -5,7 +5,7 @@ type ToastType = "info" | "success" | "warning" | "error";
 interface Toast {
   message: string;
   type: ToastType;
-  id: number;
+  id: string;
 }
 
 function createToastStore() {
@@ -16,7 +16,7 @@ function createToastStore() {
     type: ToastType = "info",
     duration: number = 5000,
   ) {
-    const id = Date.now();
+    const id = crypto.randomUUID();
     // only keep the most recent 5 messages
     update((toasts) => {
       const newToasts = [...toasts, { message, type, id }];
@@ -25,12 +25,13 @@ function createToastStore() {
     setTimeout(() => removeToast(id), duration);
   }
 
-  function removeToast(id: number) {
+  function removeToast(id: string) {
     update((toasts) => toasts.filter((t) => t.id !== id));
   }
 
   return {
     subscribe,
+    remove: removeToast,
     info: (msg: string, duration?: number) => addToast(msg, "info", duration),
     success: (msg: string, duration?: number) =>
       addToast(msg, "success", duration),
