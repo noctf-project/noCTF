@@ -15,8 +15,11 @@ dependencies such as PostgreSQL and Redis. The development applications will not
 # Install the dependencies
 pnpm i
 
-# Start the docker dependencies
+# Start the docker dependencies (postgresql, redis, nats)
+# For linux based dev environments
 ./dev.sh start
+# For non-linux based
+./dev.sh start-local
 
 # Run the database migrations
 pnpm kysely migrate latest
@@ -29,6 +32,7 @@ cd ../..
 # Generate the API schema file
 cd apps/server
 pnpm generate:swagger
+cd ../..
 
 # Build the API client
 cd core/api-client
@@ -36,7 +40,7 @@ pnpm build
 
 # Finally run the server
 cd apps/server
-pnpm dev:www
+pnpm dev:www # api server
 pnpm dev:worker # required in a separate tab for scoreboard calculations
 
 # And the frontend
