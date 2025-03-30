@@ -18,7 +18,7 @@
 
   // Form fields
   let email = $state("");
-  let name = $state("");
+  let username = $state("");
   let password = $state("");
   let confirmPassword = $state("");
   let rememberMe = $state(true);
@@ -474,7 +474,7 @@
 
           <div class="form-control mt-4">
             <label for="name" class="label">
-              <span class="label-text">Name</span>
+              <span class="label-text">Username</span>
             </label>
             <input
               id="name"
