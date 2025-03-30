@@ -56,19 +56,28 @@
   </div>
 
   <div class="navbar-center hidden lg:block">
-    <ul
-      class="menu menu-horizontal border border-base-500 shadow-solid p-1 bg-base-100 rounded-lg flex gap-2"
-    >
-      <li>
-        <a href="/admin/challenges" class={isActive("/admin/challenges")}
-          >Challenges</a
-        >
-      </li>
-      <li><a href="/admin/users" class={isActive("/admin/users")}>Users</a></li>
-      <li>
-        <a href="/admin/config" class={isActive("/admin/config")}>Config</a>
-      </li>
-    </ul>
+    <div class="flex flex-col gap-0 items-center">
+      <div
+        class="bg-error w-full border border-base-500 shadow-solid text-error-content px-3 py-1 text-center rounded-t text-xs font-semibold"
+      >
+        Admin
+      </div>
+      <ul
+        class="menu menu-horizontal border border-base-500 shadow-solid p-1 bg-base-100 rounded-b flex gap-2"
+      >
+        <li>
+          <a href="/admin/challenges" class={isActive("/admin/challenges")}
+            >Challenges</a
+          >
+        </li>
+        <li>
+          <a href="/admin/users" class={isActive("/admin/users")}>Users</a>
+        </li>
+        <li>
+          <a href="/admin/config" class={isActive("/admin/config")}>Config</a>
+        </li>
+      </ul>
+    </div>
   </div>
 
   <div class="navbar-end"></div>

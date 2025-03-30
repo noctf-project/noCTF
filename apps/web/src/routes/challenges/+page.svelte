@@ -62,29 +62,62 @@
   async function onChallengeClicked(challData: ChallengeCardData) {
     modalVisible = true;
     modalChallData = challData;
+    modalChallDetails = undefined; // Reset details while loading/fetching
     if (challDetailsMap[challData.id]) {
       modalChallDetails = challDetailsMap[challData.id];
     } else {
       modalLoading = true;
-      const r = await api.GET("/challenges/{id}", {
-        params: { path: { id: challData.id } },
-      });
-      if (r.data) {
-        const challDetails: ChallDetails = {
-          description: r.data.data.description,
-          files: r.data.data.metadata.files.map((f) => f.name),
-        };
-        challDetailsMap[challData.id] = challDetails;
-        modalChallDetails = challDetails;
-        modalLoading = false;
+      try {
+        // Add try-catch for the specific challenge fetch
+        const r = await api.GET("/challenges/{id}", {
+          params: { path: { id: challData.id } },
+        });
+        if (r.data) {
+          const challDetails: ChallDetails = {
+            description: r.data.data.description,
+            // Ensure metadata and files exist before mapping
+            files: r.data.data.metadata?.files?.map((f) => f.name) ?? [],
+          };
+          challDetailsMap[challData.id] = challDetails;
+          // Only update if the modal is still meant for this challenge
+          if (modalChallData?.id === challData.id) {
+            modalChallDetails = challDetails;
+          }
+        } else if (r.error) {
+          // Handle API error for specific challenge
+          console.error("Failed to load challenge details:", r.error);
+          if (modalChallData?.id === challData.id) {
+            // Optionally show error in modal or use a toast
+            toasts.error(`Failed to load details for ${challData.title}`);
+            modalVisible = false; // Close modal on error, or handle differently
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load challenge details:", e);
+        if (modalChallData?.id === challData.id) {
+          toasts.error(`Failed to load details for ${challData.title}`);
+          modalVisible = false; // Close modal on error
+        }
+      } finally {
+        // Ensure loading is turned off if modal is still for this challenge
+        if (modalChallData?.id === challData.id) {
+          modalLoading = false;
+        }
       }
-      // TODO: error handling
     }
+  }
+
+  function closeModal() {
+    modalVisible = false;
+    // Optional: clear modal data when closing to prevent stale data flash
+    // modalChallData = undefined;
+    // modalChallDetails = undefined;
   }
 </script>
 
-<div class="w-11/12 m-auto h-auto mt-8">
-  <div class="self-center text-center text-4xl font-black pb-4">Challenges</div>
+<div class="w-full mx-auto px-4 sm:px-6 lg:px-8 h-auto mt-8">
+  <div class="text-center text-4xl font-black pb-4">Challenges</div>
+
   {#if apiChallenges.loading}
     <div class="flex flex-col items-center gap-4 mt-16">
       <div class="loading loading-spinner loading-lg text-primary"></div>
@@ -92,35 +125,51 @@
     </div>
   {:else if apiChallenges.r.error}
     <div class="flex flex-col items-center gap-4 mt-16">
-      <p class="text-center">{apiChallenges.r.error.message}</p>
-      <button
-        class="btn btn-primary"
-        onclick={refreshChallenges}
-      >
+      <p class="text-center text-error">{apiChallenges.r.error.message}</p>
+      <button class="btn btn-primary" onclick={refreshChallenges}>
         Retry
       </button>
     </div>
   {:else}
-    <div class="grid grid-cols-[min(25%,20rem)_75%] gap-4 px-16 py-8">
-      <div class="mt-8">
+    <div
+      class="flex flex-col md:grid grid-cols-[min(25%,20rem)_1fr] gap-6 lg:gap-8 py-8"
+    >
+      <div class="sticky top-8 self-start mb-6 md:mb-0 md:mt-8">
         <ChallengeFilterer
           challenges={allChallenges || []}
           onFilter={(res) => (challenges = res)}
         />
       </div>
-      <div class="flex flex-row flex-wrap gap-3 content-start">
-        {#each challenges || [] as challenge (challenge)}
-          <ChallengeCard data={challenge} onclick={onChallengeClicked} />
-        {/each}
+
+      <div
+        class="flex flex-row flex-wrap gap-4 justify-center md:justify-start content-start"
+      >
+        {#if challenges && challenges.length > 0}
+          {#each challenges as challenge (challenge.id)}
+            <ChallengeCard data={challenge} onclick={onChallengeClicked} />
+          {/each}
+        {:else if allChallenges && challenges && challenges.length === 0}
+          <p class="w-full text-center text-neutral-500">
+            No challenges match the current filters.
+          </p>
+        {:else if !allChallenges}
+          <p class="w-full text-center text-neutral-500">
+            Challenges loaded incorrectly.
+          </p>
+        {/if}
       </div>
     </div>
+
     <ChallengeModal
+      visible={modalVisible}
+      loading={modalLoading}
       challData={modalChallData}
       challDetails={modalChallDetails}
-      loading={modalLoading}
-      visible={modalVisible}
-      onClose={() => (modalVisible = false)}
-      onSolve={refreshChallenges}
+      onClose={closeModal}
+      onSolve={async () => {
+        await refreshChallenges();
+        closeModal();
+      }}
     />
   {/if}
 </div>
