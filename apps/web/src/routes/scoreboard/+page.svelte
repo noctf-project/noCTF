@@ -34,15 +34,21 @@
         points: c.score!,
         categories: getCategoriesFromTags(c.tags),
       }))
-      .sort((a, b) => b.points - a.points) || [],
+      .sort((a, b) => a.points - b.points) || [],
   );
 
   const scoreboard: ScoreboardEntry[] = $derived(
-    apiScoreboard.r?.data?.data.map((s, i) => ({
-      ...s,
-      rank: i + 1,
-      timestamp: new Date(s.timestamp),
-    })) || [],
+    apiScoreboard.r?.data?.data
+      .toSorted(
+        (a, b) =>
+          b.score - a.score ||
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      )
+      .map((s, i) => ({
+        ...s,
+        rank: i + 1,
+        timestamp: new Date(s.timestamp),
+      })) || [],
   );
   const teamIds = $derived(scoreboard.map(({ team_id }) => team_id));
   const teamScores = storeDerived(teamScoresStore, ($teamScoresStore) => {
