@@ -144,7 +144,6 @@ export class ScoreboardService {
 
     const { scoreboard, challenges: challengeScores } =
       ComputeScoreboardByDivision(challenges, solvesByChallenge, this.logger);
-    const { data: lastScoreboard } = (await this.getScoreboard(id)) || {};
     const updated_at = new Date();
     await this.cacheService.put<UpdatedContainer<ScoreboardEntry[]>>(
       CACHE_SCORE_NAMESPACE,
@@ -161,6 +160,14 @@ export class ScoreboardService {
       updated_at,
     });
 
+    // we want a separate cache value for graphing in case the calculation crashed
+    // halfway through
+    const { data: lastScoreboard } =
+      (await this.cacheService.get<UpdatedContainer<ScoreboardEntry[]>>(
+        CACHE_SCORE_NAMESPACE,
+        `s:scoreboard-calc_graph:${id}`,
+      )) || {};
+
     let diff = scoreboard;
     if (lastScoreboard) {
       diff = GetChangedTeamScores(lastScoreboard, scoreboard);
@@ -173,6 +180,15 @@ export class ScoreboardService {
         .map((t) =>
           this.cacheService.del(CACHE_SCORE_HISTORY_NAMESPACE, t.toString()),
         ),
+    );
+
+    await this.cacheService.put<UpdatedContainer<ScoreboardEntry[]>>(
+      CACHE_SCORE_NAMESPACE,
+      `s:scoreboard-calc_graph:${id}`,
+      {
+        data: scoreboard,
+        updated_at,
+      },
     );
   }
 }

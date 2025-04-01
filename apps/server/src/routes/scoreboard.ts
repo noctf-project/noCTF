@@ -7,12 +7,15 @@ import {
 } from "@noctf/api/responses";
 import { GetTeamParams } from "@noctf/api/params";
 import { NotFoundError } from "@noctf/server-core/errors";
+import { ScoreboardQuery } from "@noctf/api/query";
+
+export const SCOREBOARD_PAGE_SIZE = 400;
 
 export async function routes(fastify: FastifyInstance) {
   const { scoreboardService, challengeService, teamService } = fastify.container
     .cradle as ServiceCradle;
 
-  fastify.get<{ Reply: ScoreboardResponse }>(
+  fastify.get<{ Reply: ScoreboardResponse; Querystring: ScoreboardQuery }>(
     "/scoreboard",
     {
       schema: {
@@ -22,15 +25,28 @@ export async function routes(fastify: FastifyInstance) {
           require: true,
           policy: ["scoreboard.get"],
         },
+        querystring: ScoreboardQuery,
         response: {
           200: ScoreboardResponse,
         },
       },
     },
-    async () => {
+    async (request) => {
+      const page = request.query.page || 1;
+
+      // TODO: get scoreboard by division, currently we only have 1 div
       const scoreboard = await scoreboardService.getScoreboard(1);
+
       return {
-        data: scoreboard?.data || [],
+        data: {
+          scores:
+            scoreboard?.data.slice(
+              (page - 1) * SCOREBOARD_PAGE_SIZE,
+              page * SCOREBOARD_PAGE_SIZE,
+            ) || [],
+          page_size: SCOREBOARD_PAGE_SIZE,
+          total: scoreboard?.data.length || 0,
+        },
       };
     },
   );
@@ -64,6 +80,7 @@ export async function routes(fastify: FastifyInstance) {
           removePrivateTags: true,
         },
       );
+      // TODO: get scoreboard by division, currently we only have 1 div
       const scores = (await scoreboardService.getChallengeScores(1)).data;
       const graph = await scoreboardService.getTeamScoreHistory(
         request.params.id,

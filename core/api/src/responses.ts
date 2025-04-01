@@ -199,7 +199,11 @@ export type AdminGetScoringStrategiesResponse = Static<
 >;
 
 export const ScoreboardResponse = Type.Object({
-  data: Type.Array(ScoreboardEntry),
+  data: Type.Object({
+    scores: Type.Array(ScoreboardEntry),
+    total: Type.Number(),
+    page_size: Type.Number(),
+  }),
 });
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
 

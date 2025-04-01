@@ -11,8 +11,8 @@ vi.mock(import("../util/coleascer.ts"), () => ({
 }));
 
 vi.mock(import("../util/message_compression.ts"), () => ({
-  Compress: async (x) => x as unknown as Uint8Array<ArrayBufferLike>,
-  Decompress: async (x) => x as unknown as Uint8Array<ArrayBufferLike>,
+  Compress: async (x) => x as unknown as Uint8Array,
+  Decompress: async (x) => x as unknown as Uint8Array,
 }));
 
 describe(CacheService, () => {

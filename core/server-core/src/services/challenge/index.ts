@@ -201,7 +201,6 @@ export class ChallengeService {
       });
       if (solved) {
         // TODO: emit solve to event bus
-        this.cacheService.del(CACHE_SCORE_NAMESPACE, "scoreboard");
         this.cacheService.del(CACHE_SCORE_NAMESPACE, `c:${challenge.id}`);
       }
       return state.status;
