@@ -9,6 +9,7 @@ import { IdParams } from "@noctf/api/params";
 import { NotFoundError } from "@noctf/server-core/errors";
 import { ScoreboardQuery } from "@noctf/api/query";
 import { GetUtils } from "./_util.ts";
+import { Policy } from "@noctf/server-core/util/policy";
 
 export const SCOREBOARD_PAGE_SIZE = 200;
 
@@ -17,7 +18,7 @@ export async function routes(fastify: FastifyInstance) {
     .cradle as ServiceCradle;
 
   const { gateAdmin } = GetUtils(fastify.container.cradle);
-
+  const adminPolicy: Policy = ['admin.scoreboard.get'];
 
   fastify.get<{
     Reply: ScoreboardResponse;
@@ -42,9 +43,12 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      await gateAdmin(ctime, request.user?.id);
+      const admin = await gateAdmin(adminPolicy, ctime, request.user?.id);
 
       const page = request.query.page || 1;
+      const page_size = (admin
+        ? request.query.page_size
+        : Math.min(SCOREBOARD_PAGE_SIZE, request.query.page_size)) || SCOREBOARD_PAGE_SIZE;
       const scoreboard = await scoreboardService.getScoreboard(
         request.params.id,
       );
@@ -53,10 +57,10 @@ export async function routes(fastify: FastifyInstance) {
         data: {
           scores:
             scoreboard?.data.slice(
-              (page - 1) * SCOREBOARD_PAGE_SIZE,
-              page * SCOREBOARD_PAGE_SIZE,
+              (page - 1) * page_size,
+              page * page_size,
             ) || [],
-          page_size: SCOREBOARD_PAGE_SIZE,
+          page_size: page_size,
           total: scoreboard?.data.length || 0,
           updated_at: scoreboard.updated_at
         },
@@ -82,8 +86,8 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      await gateAdmin(ctime, request.user?.id);
-      
+      await gateAdmin(adminPolicy, ctime, request.user?.id);
+
       const team = await teamService.get(request.params.id);
       if (!team || team.flags.includes("hidden")) {
         throw new NotFoundError("Team not found");

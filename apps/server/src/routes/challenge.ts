@@ -13,6 +13,7 @@ import type { FastifyInstance } from "fastify";
 import { ServeFileHandler } from "../hooks/file.ts";
 import { SolveChallengeRequest } from "@noctf/api/requests";
 import { GetUtils } from "./_util.ts";
+import { Policy } from "@noctf/server-core/util/policy";
 
 export async function routes(fastify: FastifyInstance) {
   const {
@@ -24,6 +25,7 @@ export async function routes(fastify: FastifyInstance) {
   } = fastify.container.cradle;
   
   const { gateAdmin } = GetUtils(fastify.container.cradle);
+  const adminPolicy: Policy = ["admin.challenge.get"];
 
   fastify.get<{ Reply: ListChallengesResponse }>(
     "/challenges",
@@ -41,7 +43,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      const admin = await gateAdmin(ctime, request.user?.id);
+      const admin = await gateAdmin(adminPolicy, ctime, request.user?.id);
 
       const challenges = await challengeService.list(
         admin ? {} : { hidden: false, visible_at: new Date(ctime + 60000) },
@@ -105,7 +107,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      const admin = await gateAdmin(ctime, request.user?.id);
+      const admin = await gateAdmin(adminPolicy, ctime, request.user?.id);
       const { id } = request.params;
 
       // Cannot cache directly as could be rendered with team_id as param
@@ -145,7 +147,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      const admin = await gateAdmin(ctime, request.user?.id);
+      const admin = await gateAdmin(adminPolicy, ctime, request.user?.id);
       const { id } = request.params;
 
       // Cannot cache directly as could be rendered with team_id as param
@@ -191,7 +193,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      const admin = await gateAdmin(ctime, request.user?.id);
+      const admin = await gateAdmin(adminPolicy, ctime, request.user?.id);
       const { id } = request.params;
 
       // Cannot cache directly as could be rendered with team_id as param
@@ -234,7 +236,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const ctime = Date.now();
-      const admin = await gateAdmin(ctime, request.user?.id);
+      const admin = await gateAdmin(adminPolicy, ctime, request.user?.id);
       const { id } = request.params;
       const challenge = await challengeService.getMetadata(id);
       if (

@@ -2,13 +2,14 @@ import { SetupConfig } from "@noctf/api/config";
 import { ServiceCradle } from "@noctf/server-core";
 import { ForbiddenError } from "@noctf/server-core/errors";
 import { LocalCache } from "@noctf/server-core/util/local_cache";
+import { Policy } from "@noctf/server-core/util/policy";
 
 // TODO: this is better as middleware
 export const GetUtils = ({ policyService, configService }: ServiceCradle) => {
   const adminCache = new LocalCache<number, boolean>({ ttl: 1000, max: 5000 });
-  const gateAdmin = async (ctime: number, userId?: number) => {
+  const gateAdmin = async (policy: Policy, ctime: number, userId?: number) => {
     const admin = await adminCache.load(userId || 0, () =>
-      policyService.evaluate(userId || 0, ["admin.challenge.get"]),
+      policyService.evaluate(userId || 0, policy),
     );
     if (!admin) {
       const {
