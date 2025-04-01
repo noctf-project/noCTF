@@ -14,6 +14,7 @@ import {
   ScoreboardEntry,
   PublicTeam,
   Solve,
+  TypeDate,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 
@@ -203,6 +204,7 @@ export const ScoreboardResponse = Type.Object({
     scores: Type.Array(ScoreboardEntry),
     total: Type.Number(),
     page_size: Type.Number(),
+    updated_at: TypeDate
   }),
 });
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;

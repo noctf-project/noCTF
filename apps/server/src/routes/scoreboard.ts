@@ -9,13 +9,17 @@ import { IdParams } from "@noctf/api/params";
 import { NotFoundError } from "@noctf/server-core/errors";
 import { ScoreboardQuery } from "@noctf/api/query";
 
-export const SCOREBOARD_PAGE_SIZE = 400;
+export const SCOREBOARD_PAGE_SIZE = 200;
 
 export async function routes(fastify: FastifyInstance) {
   const { scoreboardService, challengeService, teamService } = fastify.container
     .cradle as ServiceCradle;
 
-  fastify.get<{ Reply: ScoreboardResponse; Querystring: ScoreboardQuery, Params: IdParams }>(
+  fastify.get<{
+    Reply: ScoreboardResponse;
+    Querystring: ScoreboardQuery;
+    Params: IdParams;
+  }>(
     "/scoreboard/division/:id",
     {
       schema: {
@@ -34,7 +38,9 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const page = request.query.page || 1;
-      const scoreboard = await scoreboardService.getScoreboard(request.params.id);
+      const scoreboard = await scoreboardService.getScoreboard(
+        request.params.id,
+      );
 
       return {
         data: {
@@ -45,6 +51,7 @@ export async function routes(fastify: FastifyInstance) {
             ) || [],
           page_size: SCOREBOARD_PAGE_SIZE,
           total: scoreboard?.data.length || 0,
+          updated_at: scoreboard.updated_at
         },
       };
     },

@@ -16,10 +16,9 @@ export type ChallengeMetadataWithExpr = {
   metadata: ChallengeMetadata;
 };
 
-export type ChallengeSolvesResult = {
+type ChallengeSolvesResult = {
   score: number | null;
   solves: Solve[];
-  last_valid_solve: Date;
 };
 
 export type ChallengeScore = {
@@ -49,9 +48,7 @@ function ComputeScoresForChallenge(
   );
   try {
     const base = EvaluateScoringExpression(expr, params, valid.length);
-    let last_valid_solve = new Date(0);
     const rv: Solve[] = valid.map(({ team_id, created_at }, i) => {
-      last_valid_solve = created_at;
       return {
         team_id,
         challenge_id: metadata.id,
@@ -71,7 +68,6 @@ function ComputeScoresForChallenge(
     return {
       score: base,
       solves: rv.concat(rh),
-      last_valid_solve,
     };
   } catch (err) {
     if (logger)
@@ -82,7 +78,6 @@ function ComputeScoresForChallenge(
     return {
       score: null,
       solves: [],
-      last_valid_solve: new Date(0),
     };
   }
 }
@@ -104,7 +99,7 @@ export function ComputeScoreboard(
     return [x.metadata.id, result] as [number, ChallengeSolvesResult];
   });
   const challengeScores = [];
-  for (const [challenge_id, { score, solves, last_valid_solve }] of computed) {
+  for (const [challenge_id, { score, solves }] of computed) {
     const challengeSolves = [];
     for (const solve of solves) {
       challengeSolves.push({
@@ -126,7 +121,7 @@ export function ComputeScoreboard(
       }
       team.score += solve.score;
       team.timestamp =
-        last_valid_solve > team.timestamp ? last_valid_solve : team.timestamp;
+        solve.created_at > team.timestamp ? solve.created_at : team.timestamp;
     }
     challengeScores.push({
       challenge_id,
@@ -167,7 +162,7 @@ export function ComputeScoreboard(
   return {
     scoreboard: scoreboard.sort(
       (a, b) =>
-        a.score - b.score || a.timestamp.getTime() - b.timestamp.getTime(),
+        b.score - a.score || a.timestamp.getTime() - b.timestamp.getTime(),
     ),
     challenges: challengeObj,
   };
