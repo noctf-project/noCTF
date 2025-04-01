@@ -5,7 +5,7 @@ import {
   ScoreboardResponse,
   ScoreboardTeamResponse,
 } from "@noctf/api/responses";
-import { GetTeamParams } from "@noctf/api/params";
+import { IdParams } from "@noctf/api/params";
 import { NotFoundError } from "@noctf/server-core/errors";
 import { ScoreboardQuery } from "@noctf/api/query";
 
@@ -15,8 +15,8 @@ export async function routes(fastify: FastifyInstance) {
   const { scoreboardService, challengeService, teamService } = fastify.container
     .cradle as ServiceCradle;
 
-  fastify.get<{ Reply: ScoreboardResponse; Querystring: ScoreboardQuery }>(
-    "/scoreboard",
+  fastify.get<{ Reply: ScoreboardResponse; Querystring: ScoreboardQuery, Params: IdParams }>(
+    "/scoreboard/division/:id",
     {
       schema: {
         security: [{ bearer: [] }],
@@ -26,6 +26,7 @@ export async function routes(fastify: FastifyInstance) {
           policy: ["scoreboard.get"],
         },
         querystring: ScoreboardQuery,
+        params: IdParams,
         response: {
           200: ScoreboardResponse,
         },
@@ -33,9 +34,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const page = request.query.page || 1;
-
-      // TODO: get scoreboard by division, currently we only have 1 div
-      const scoreboard = await scoreboardService.getScoreboard(1);
+      const scoreboard = await scoreboardService.getScoreboard(request.params.id);
 
       return {
         data: {
@@ -51,13 +50,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{ Params: GetTeamParams; Reply: ScoreboardTeamResponse }>(
+  fastify.get<{ Params: IdParams; Reply: ScoreboardTeamResponse }>(
     "/scoreboard/team/:id",
     {
       schema: {
         security: [{ bearer: [] }],
         tags: ["scoreboard"],
-        params: GetTeamParams,
+        params: IdParams,
         response: {
           200: ScoreboardTeamResponse,
         },

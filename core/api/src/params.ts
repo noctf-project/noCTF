@@ -1,21 +1,13 @@
 import type { Static } from "@sinclair/typebox";
 import { Type } from "@sinclair/typebox";
 
-export const GetChallengeParams = Type.Object(
+export const IdParams = Type.Object(
   {
     id: Type.Number(),
   },
   { additionalProperties: false },
 );
-export type GetChallengeParams = Static<typeof GetChallengeParams>;
-
-export const GetTeamParams = Type.Object(
-  {
-    id: Type.Number(),
-  },
-  { additionalProperties: false },
-);
-export type GetTeamParams = Static<typeof GetTeamParams>;
+export type IdParams = Static<typeof IdParams>;
 
 export const GetChallengeFileParams = Type.Object(
   {

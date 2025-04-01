@@ -1,6 +1,6 @@
 import { SetupConfig } from "@noctf/api/config";
 import type { ChallengePrivateMetadataBase } from "@noctf/api/datatypes";
-import { GetChallengeFileParams, GetChallengeParams } from "@noctf/api/params";
+import { GetChallengeFileParams, IdParams } from "@noctf/api/params";
 import {
   GetChallengeResponse,
   GetChallengeSolvesResponse,
@@ -103,7 +103,7 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{ Params: GetChallengeParams }>(
+  fastify.get<{ Params: IdParams }>(
     "/challenges/:id",
     {
       schema: {
@@ -112,7 +112,7 @@ export async function routes(fastify: FastifyInstance) {
         auth: {
           policy: ["OR", "challenge.get", "admin.challenge.get"],
         },
-        params: GetChallengeParams,
+        params: IdParams,
         response: {
           200: GetChallengeResponse,
         },
@@ -141,7 +141,7 @@ export async function routes(fastify: FastifyInstance) {
   );
 
   fastify.get<{
-    Params: GetChallengeParams;
+    Params: IdParams;
     Reply: GetChallengeSolvesResponse;
   }>(
     "/challenges/:id/solves",
@@ -152,7 +152,7 @@ export async function routes(fastify: FastifyInstance) {
         auth: {
           policy: ["OR", "challenge.solves.get", "admin.challenge.get"],
         },
-        params: GetChallengeParams,
+        params: IdParams,
         response: {
           200: GetChallengeSolvesResponse,
         },
@@ -185,7 +185,7 @@ export async function routes(fastify: FastifyInstance) {
 
   fastify.post<{
     Body: SolveChallengeRequest;
-    Params: GetChallengeParams;
+    Params: IdParams;
     Reply: SolveChallengeResponse;
   }>(
     "/challenges/:id/solves",
@@ -197,7 +197,7 @@ export async function routes(fastify: FastifyInstance) {
           require: true,
           policy: ["OR", "challenge.solves.create"],
         },
-        params: GetChallengeParams,
+        params: IdParams,
         body: SolveChallengeRequest,
         response: {
           200: SolveChallengeResponse,

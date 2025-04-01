@@ -19,7 +19,7 @@ import {
   SuccessResponse,
 } from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
-import { GetTeamParams } from "@noctf/api/params";
+import { IdParams } from "@noctf/api/params";
 
 export async function routes(fastify: FastifyInstance) {
   const { teamService } = fastify.container.cradle as ServiceCradle;
@@ -215,13 +215,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{ Params: GetTeamParams; Reply: GetTeamResponse }>(
+  fastify.get<{ Params: IdParams; Reply: GetTeamResponse }>(
     "/teams/:id",
     {
       schema: {
         security: [{ bearer: [] }],
         tags: ["team"],
-        params: GetTeamParams,
+        params: IdParams,
         response: {
           200: GetTeamResponse,
         },
