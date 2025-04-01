@@ -9,6 +9,7 @@ import { DBSolve } from "../../dao/solve.ts";
 import { partition } from "../../util/object.ts";
 import { EvaluateScoringExpression } from "../score.ts";
 import { Logger } from "../../types/primitives.ts";
+import { DBAward } from "../../dao/award.ts";
 
 export type ChallengeMetadataWithExpr = {
   expr: Expression;
@@ -33,77 +34,7 @@ export type ChallengeScore = {
   }[];
 };
 
-export function ComputeScoreboardByDivision(
-  challenges: ChallengeMetadataWithExpr[],
-  solvesByChallenge: Record<number, DBSolve[]>,
-  logger?: Logger,
-) {
-  // score, followed by date of last solve for tiebreak purposes
-  const teamScores: Map<number, { score: number; timestamp: Date }> = new Map();
-  const computed = challenges.map((x) => {
-    const result = ComputeScoresForChallenge(
-      x,
-      solvesByChallenge[x.metadata.id] || [],
-      logger,
-    );
-    return [x.metadata.id, result] as [number, ChallengeSolvesResult];
-  });
-  const challengeScores = [];
-  for (const [challenge_id, { score, solves, last_valid_solve }] of computed) {
-    const challengeSolves = [];
-    for (const solve of solves) {
-      challengeSolves.push({
-        team_id: solve.team_id,
-        hidden: solve.hidden,
-        bonus: solve.bonus,
-        score: solve.score,
-        created_at: solve.created_at,
-      });
-      if (solve.hidden) continue;
-
-      let team = teamScores.get(solve.team_id);
-      if (!team) {
-        team = {
-          score: 0,
-          timestamp: new Date(0),
-        };
-        teamScores.set(solve.team_id, team);
-      }
-      team.score += solve.score;
-      team.timestamp =
-        last_valid_solve > team.timestamp ? last_valid_solve : team.timestamp;
-    }
-    challengeScores.push({
-      challenge_id,
-      score: score || 0,
-      solves: challengeSolves,
-    });
-  }
-  const scoreboard = Array.from(
-    teamScores.entries().map(([team_id, teamScore]) => ({
-      ...teamScore,
-      team_id,
-    })),
-  );
-
-  const challengeObj = challengeScores.reduce(
-    (prev, cur) => {
-      prev[cur.challenge_id] = cur;
-      return prev;
-    },
-    {} as Record<number, ChallengeScore>,
-  );
-
-  return {
-    scoreboard: scoreboard.sort(
-      (a, b) =>
-        a.score - b.score || a.timestamp.getTime() - b.timestamp.getTime(),
-    ),
-    challenges: challengeObj,
-  };
-}
-
-export function ComputeScoresForChallenge(
+function ComputeScoresForChallenge(
   { metadata, expr }: ChallengeMetadataWithExpr,
   solves: DBSolve[],
   logger?: Logger,
@@ -154,6 +85,92 @@ export function ComputeScoresForChallenge(
       last_valid_solve: new Date(0),
     };
   }
+}
+
+export function ComputeScoreboard(
+  challenges: ChallengeMetadataWithExpr[],
+  solvesByChallenge: Record<number, DBSolve[]>,
+  awards: DBAward[],
+  logger?: Logger,
+) {
+  // score, followed by date of last solve for tiebreak purposes
+  const teamScores: Map<number, { score: number; timestamp: Date }> = new Map();
+  const computed = challenges.map((x) => {
+    const result = ComputeScoresForChallenge(
+      x,
+      solvesByChallenge[x.metadata.id] || [],
+      logger,
+    );
+    return [x.metadata.id, result] as [number, ChallengeSolvesResult];
+  });
+  const challengeScores = [];
+  for (const [challenge_id, { score, solves, last_valid_solve }] of computed) {
+    const challengeSolves = [];
+    for (const solve of solves) {
+      challengeSolves.push({
+        team_id: solve.team_id,
+        hidden: solve.hidden,
+        bonus: solve.bonus,
+        score: solve.score,
+        created_at: solve.created_at,
+      });
+      if (solve.hidden) continue;
+
+      let team = teamScores.get(solve.team_id);
+      if (!team) {
+        team = {
+          score: 0,
+          timestamp: new Date(0),
+        };
+        teamScores.set(solve.team_id, team);
+      }
+      team.score += solve.score;
+      team.timestamp =
+        last_valid_solve > team.timestamp ? last_valid_solve : team.timestamp;
+    }
+    challengeScores.push({
+      challenge_id,
+      score: score || 0,
+      solves: challengeSolves,
+    });
+  }
+
+  for (const award of awards) {
+    let team = teamScores.get(award.team_id);
+    if (!team) {
+      team = {
+        score: 0,
+        timestamp: new Date(0),
+      };
+      teamScores.set(award.team_id, team);
+    }
+    team.score += award.value;
+    team.timestamp =
+      award.created_at > team.timestamp ? award.created_at : team.timestamp;
+  }
+
+  const scoreboard = Array.from(
+    teamScores.entries().map(([team_id, teamScore]) => ({
+      ...teamScore,
+      team_id,
+    })),
+  );
+
+  const challengeObj = challengeScores.reduce(
+    (prev, cur) => {
+      prev[cur.challenge_id] = cur;
+      return prev;
+    },
+    {} as Record<number, ChallengeScore>,
+  );
+
+  return {
+    scoreboard: scoreboard.sort(
+      (a, b) =>
+        a.score - b.score || a.timestamp.getTime() - b.timestamp.getTime(),
+    ),
+    challenges: challengeObj,
+  };
 }
 
 export const GetChangedTeamScores = (

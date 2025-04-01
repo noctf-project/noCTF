@@ -200,8 +200,7 @@ export class ChallengeService {
         comments: state.comment,
       });
       if (solved) {
-        // TODO: emit solve to event bus
-        this.cacheService.del(CACHE_SCORE_NAMESPACE, `c:${challenge.id}`);
+        // TODO: emit solve to event bus to recalc
       }
       return state.status;
       // TODO: queueing, currently it is just marked as queued. probably emit

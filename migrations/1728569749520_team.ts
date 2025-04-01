@@ -91,5 +91,5 @@ export async function down(db: Kysely<any>): Promise<void> {
   await schema.dropTable("team_member").execute();
   await schema.dropType("team_member_role").execute();
   await schema.dropTable("team").execute();
-  await schema.dropType("division").execute();
+  await schema.dropTable("division").execute();
 }

@@ -5,11 +5,12 @@ import { DivisionDAO } from "../../dao/division.ts";
 import {
   ChallengeMetadataWithExpr,
   ChallengeScore,
-  ComputeScoreboardByDivision,
+  ComputeScoreboard,
   GetChangedTeamScores,
 } from "./calc.ts";
 import { ScoreHistoryDAO } from "../../dao/score_history.ts";
 import { SetupConfig } from "@noctf/api/config";
+import { AwardDAO } from "../../dao/award.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -36,6 +37,7 @@ export class ScoreboardService {
   private readonly configService;
   private readonly scoreService;
 
+  private readonly awardDAO;
   private readonly scoreHistoryDAO;
   private readonly solveDAO;
   private readonly divisionDAO;
@@ -54,6 +56,7 @@ export class ScoreboardService {
     this.configService = configService;
     this.scoreService = scoreService;
 
+    this.awardDAO = new AwardDAO(databaseClient.get());
     this.scoreHistoryDAO = new ScoreHistoryDAO(databaseClient.get());
     this.solveDAO = new SolveDAO(databaseClient.get());
     this.divisionDAO = new DivisionDAO(databaseClient.get());
@@ -74,6 +77,13 @@ export class ScoreboardService {
     params?: Parameters<SolveDAO["getAllSolves"]>[1],
   ) {
     return await this.solveDAO.getAllSolves(division_id, params);
+  }
+
+  async getAwards(
+    division_id?: number,
+    params?: Parameters<AwardDAO["getAllAwards"]>[1],
+  ) {
+    return await this.awardDAO.getAllAwards(division_id, params);
   }
 
   async getChallengeScores(division_id: number) {
@@ -137,13 +147,18 @@ export class ScoreboardService {
     id: number,
   ) {
     const solveList = await this.getSolves(id);
+    const awardList = await this.getAwards(id);
     const solvesByChallenge = Object.groupBy(
       solveList || [],
       ({ challenge_id }) => challenge_id,
     ) as Record<number, DBSolve[]>;
 
-    const { scoreboard, challenges: challengeScores } =
-      ComputeScoreboardByDivision(challenges, solvesByChallenge, this.logger);
+    const { scoreboard, challenges: challengeScores } = ComputeScoreboard(
+      challenges,
+      solvesByChallenge,
+      awardList,
+      this.logger,
+    );
     const updated_at = new Date();
     await this.cacheService.put<UpdatedContainer<ScoreboardEntry[]>>(
       CACHE_SCORE_NAMESPACE,

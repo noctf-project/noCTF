@@ -10,7 +10,7 @@ export class SolveDAO {
     challenge_id: number,
     division_id?: number,
   ): Promise<DBSolve[]> {
-    let query = this.getBaseSolveQuery().where(
+    let query = this.getBaseQuery().where(
       "solve.challenge_id",
       "=",
       challenge_id,
@@ -32,12 +32,12 @@ export class SolveDAO {
       offset?: number;
     },
   ): Promise<DBSolve[]> {
-    let query = this.getBaseSolveQuery();
+    let query = this.getBaseQuery().orderBy(
+      "solve.created_at",
+      params?.sort || "asc",
+    );
     if (division_id) {
-      query = query
-        .innerJoin("division", "division.id", "division_id")
-        .where("division_id", "=", division_id)
-        .orderBy("solve.created_at", params?.sort || "asc");
+      query = query.where("division_id", "=", division_id);
     }
     if (params?.limit) {
       query = query.limit(params.limit);
@@ -48,7 +48,7 @@ export class SolveDAO {
     return (await query.execute()) as unknown as DBSolve[];
   }
 
-  private getBaseSolveQuery() {
+  private getBaseQuery() {
     return this.db
       .selectFrom("solve")
       .select([
