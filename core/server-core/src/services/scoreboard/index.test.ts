@@ -26,8 +26,8 @@ describe(ScoreboardService, () => {
 
   beforeEach(() => {
     cacheService.load.mockImplementation((_a, _b, fetcher) => fetcher());
-    vi.mocked(DivisionDAO).mockImplementation(() => divisionDAO);
-    vi.mocked(SolveDAO).mockImplementation(() => solveDAO);
+    vi.mocked(DivisionDAO).mockReturnValue(divisionDAO);
+    vi.mocked(SolveDAO).mockReturnValue(solveDAO);
   });
 
   afterEach(() => {
