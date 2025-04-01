@@ -12,6 +12,7 @@ import { LocalCache } from "@noctf/server-core/util/local_cache";
 import type { FastifyInstance } from "fastify";
 import { ServeFileHandler } from "../hooks/file.ts";
 import { SolveChallengeRequest } from "@noctf/api/requests";
+import { GetUtils } from "./_util.ts";
 
 export async function routes(fastify: FastifyInstance) {
   const {
@@ -21,24 +22,8 @@ export async function routes(fastify: FastifyInstance) {
     challengeService,
     scoreboardService,
   } = fastify.container.cradle;
-  const adminCache = new LocalCache<number, boolean>({ ttl: 1000, max: 5000 });
-  const gateAdmin = async (ctime: number, userId?: number) => {
-    const admin = await adminCache.load(userId || 0, () =>
-      policyService.evaluate(userId || 0, ["admin.challenge.get"]),
-    );
-    if (!admin) {
-      const {
-        value: { active, start_time_s },
-      } = await configService.get<SetupConfig>(SetupConfig.$id);
-      if (!active) {
-        throw new ForbiddenError("The CTF is not currently active");
-      }
-      if (ctime < start_time_s * 1000) {
-        throw new ForbiddenError("The CTF has not started yet");
-      }
-    }
-    return admin;
-  };
+  
+  const { gateAdmin } = GetUtils(fastify.container.cradle);
 
   fastify.get<{ Reply: ListChallengesResponse }>(
     "/challenges",
@@ -74,7 +59,7 @@ export async function routes(fastify: FastifyInstance) {
         challenges.map((c) => [
           c.id,
           {
-            score: scoreObj[c.id]?.score,
+            score: scoreObj[c.id]?.score || 0,
             solve_count:
               scoreObj[c.id]?.solves?.filter((x) => !x.hidden).length || 0,
             solved_by_me:

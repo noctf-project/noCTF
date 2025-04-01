@@ -40,7 +40,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("name", "varchar(64)", (col) => col.notNull().unique())
     .addColumn("bio", "varchar", (col) => col.notNull().defaultTo(""))
     .addColumn("country", "char(3)")
-    .addColumn("join_code", "varchar", (col) => col.unique().nullsNotDistinct())
+    .addColumn("join_code", "varchar", (col) => col.unique())
     .addColumn("flags", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .addColumn("division_id", sql`integer`, (col) =>
       col.notNull().references("division.id"),

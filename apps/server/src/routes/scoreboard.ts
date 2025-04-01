@@ -8,12 +8,16 @@ import {
 import { IdParams } from "@noctf/api/params";
 import { NotFoundError } from "@noctf/server-core/errors";
 import { ScoreboardQuery } from "@noctf/api/query";
+import { GetUtils } from "./_util.ts";
 
 export const SCOREBOARD_PAGE_SIZE = 200;
 
 export async function routes(fastify: FastifyInstance) {
   const { scoreboardService, challengeService, teamService } = fastify.container
     .cradle as ServiceCradle;
+
+  const { gateAdmin } = GetUtils(fastify.container.cradle);
+
 
   fastify.get<{
     Reply: ScoreboardResponse;
@@ -37,6 +41,9 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
+      const ctime = Date.now();
+      await gateAdmin(ctime, request.user?.id);
+
       const page = request.query.page || 1;
       const scoreboard = await scoreboardService.getScoreboard(
         request.params.id,
@@ -74,6 +81,9 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
+      const ctime = Date.now();
+      await gateAdmin(ctime, request.user?.id);
+      
       const team = await teamService.get(request.params.id);
       if (!team || team.flags.includes("hidden")) {
         throw new NotFoundError("Team not found");

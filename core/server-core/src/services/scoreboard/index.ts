@@ -97,6 +97,7 @@ export class ScoreboardService {
   }
 
   async computeAndSaveScoreboards() {
+    this.logger.info("Computing scoreboards");
     const challenges: ChallengeMetadataWithExpr[] = await Promise.all(
       (
         await this.challengeService.list({
