@@ -9,6 +9,7 @@
   import { getRelativeTime } from "$lib/utils/time";
   import teamScoresState from "$lib/state/team_solves.svelte";
   import { untrack } from "svelte";
+  import Pagination from "$lib/components/Pagination.svelte";
 
   type ScoreboardEntry = {
     team_id: number;
@@ -74,7 +75,6 @@
     if (apiScoreboard.r?.data?.data?.total !== undefined) {
       totalTeams = apiScoreboard.r.data.data.total;
 
-      // Mark initial load as complete once we get data
       if (!initialLoadComplete) {
         initialLoadComplete = true;
       }
@@ -169,24 +169,6 @@
       });
     }
   });
-
-  function goToNextPage() {
-    if (currentPage < totalPages - 1) {
-      currentPage++;
-    }
-  }
-
-  function goToPrevPage() {
-    if (currentPage > 0) {
-      currentPage--;
-    }
-  }
-
-  function goToPage(page: number) {
-    if (page >= 0 && page < totalPages) {
-      currentPage = page;
-    }
-  }
 
   function toggleView() {
     detailedView = !detailedView;
@@ -633,101 +615,13 @@
         {/if}
       </div>
 
-      <div class="flex justify-center items-center mt-4 gap-2 mb-8">
-        <button
-          class="btn btn-sm pop hover:pop"
-          disabled={currentPage === 0}
-          onclick={goToPrevPage}
-        >
-          Previous
-        </button>
-
-        {#if totalPages <= 7}
-          {#each Array(totalPages) as _, i}
-            <button
-              class="btn btn-sm hover:pop pop {i === currentPage
-                ? 'btn-primary'
-                : ''}"
-              onclick={() => goToPage(i)}
-            >
-              {i + 1}
-            </button>
-          {/each}
-        {:else}
-          <button
-            class="btn btn-sm hover:pop pop {currentPage === 0
-              ? 'btn-primary'
-              : ''}"
-            onclick={() => goToPage(0)}
-          >
-            1
-          </button>
-
-          {#if currentPage > 2}
-            <span class="px-2">...</span>
-          {/if}
-
-          {#if currentPage <= 2}
-            {#each [1, 2, 3] as i}
-              <button
-                class="btn btn-sm hover:pop pop {i === currentPage
-                  ? 'btn-primary'
-                  : ''}"
-                onclick={() => goToPage(i)}
-              >
-                {i + 1}
-              </button>
-            {/each}
-          {:else if currentPage >= totalPages - 3}
-            {#each [totalPages - 4, totalPages - 3, totalPages - 2] as i}
-              <button
-                class="btn btn-sm hover:pop pop {i === currentPage
-                  ? 'btn-primary'
-                  : ''}"
-                onclick={() => goToPage(i)}
-              >
-                {i + 1}
-              </button>
-            {/each}
-          {:else}
-            {#each [currentPage - 1, currentPage, currentPage + 1] as i}
-              <button
-                class="btn btn-sm hover:pop pop {i === currentPage
-                  ? 'btn-primary'
-                  : ''}"
-                onclick={() => goToPage(i)}
-              >
-                {i + 1}
-              </button>
-            {/each}
-          {/if}
-
-          {#if currentPage < totalPages - 3}
-            <span class="px-2">...</span>
-          {/if}
-
-          <button
-            class="btn btn-sm hover:pop pop {currentPage === totalPages - 1
-              ? 'btn-primary'
-              : ''}"
-            onclick={() => goToPage(totalPages - 1)}
-          >
-            {totalPages}
-          </button>
-        {/if}
-
-        <button
-          class="btn btn-sm pop hover:pop"
-          disabled={currentPage === totalPages - 1}
-          onclick={goToNextPage}
-        >
-          Next
-        </button>
-
-        <span class="ml-2 text-sm">
-          Page {currentPage + 1} of {totalPages} ({totalTeams} teams)
-        </span>
-      </div>
+      <Pagination
+        totalItems={totalTeams}
+        initialPage={currentPage}
+        itemsPerPage={TEAMS_PER_PAGE}
+        onChange={(page) => currentPage = page}
+        className="mt-4 mb-8"
+      />
     </div>
   {/if}
 </div>

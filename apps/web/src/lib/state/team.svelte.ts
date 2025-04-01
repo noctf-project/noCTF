@@ -27,7 +27,12 @@ export class TeamService {
     }
   }
 
-  private async checkPreload() {
+  async getAllTeams(): Promise<Team[]> {
+    await this.preloadAll();
+    return Array.from(this.cache.values()).toSorted((a, b) => a.id - b.id);
+  }
+
+  async checkPreload() {
     if (!this.isLoaded) {
       this.isLoaded = true;
       this.loadLock = this.preloadAll();
