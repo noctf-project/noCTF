@@ -14,7 +14,7 @@
     team_id: number;
     rank: number;
     score: number;
-    timestamp: Date;
+    last_solve: Date;
   };
 
   type ChallengeEntry = {
@@ -27,10 +27,24 @@
   const TEAMS_PER_PAGE = 25;
   let currentPage = $state(0);
   let detailedView = $state(false);
+  let top10TeamIds = $state<number[]>([]);
+  let totalTeams = $state(0);
 
   const apiChallenges = wrapLoadable(api.GET("/challenges"));
-  const apiScoreboard = wrapLoadable(api.GET("/scoreboard"));
-  const loading = $derived(apiChallenges.loading || apiScoreboard.loading);
+  const apiScoreboard = $derived(
+    wrapLoadable(
+      api.GET("/scoreboard/division/{id}", {
+        params: {
+          path: { id: 1 },
+          query: { page: currentPage + 1, page_size: TEAMS_PER_PAGE },
+        },
+      }),
+    ),
+  );
+  let initialLoadComplete = $state(false);
+  const loading = $derived(
+    (apiChallenges.loading || apiScoreboard.loading) && !initialLoadComplete,
+  );
 
   const challenges: ChallengeEntry[] = $derived(
     apiChallenges.r?.data?.data.challenges
@@ -43,35 +57,40 @@
       .sort((a, b) => a.points - b.points) || [],
   );
 
-  const allTeamsScoreboard: Map<number, ScoreboardEntry> = $derived(
+  const currentPageTeams: Map<number, ScoreboardEntry> = $derived(
     new Map(
-      apiScoreboard.r?.data?.data
-        .toSorted(
-          (a, b) =>
-            b.score - a.score ||
-            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-        )
-        .map((s, i) => [
-          s.team_id,
-          {
-            ...s,
-            rank: i + 1,
-            timestamp: new Date(s.timestamp),
-          },
-        ]) || [],
+      apiScoreboard.r?.data?.data?.scores.map((s, i) => [
+        s.team_id,
+        {
+          ...s,
+          rank: currentPage * TEAMS_PER_PAGE + (i + 1),
+          last_solve: new Date(s.last_solve),
+        },
+      ]) || [],
     ),
   );
 
-  const allTeamIds = $derived(Array.from(allTeamsScoreboard.keys()));
-  const top10TeamIds = $derived(Array.from(allTeamIds).slice(0, 10));
-  const paginatedTeamIds = $derived(
-    Array.from(allTeamIds).slice(
-      currentPage * TEAMS_PER_PAGE,
-      (currentPage + 1) * TEAMS_PER_PAGE,
-    ),
-  );
+  $effect(() => {
+    if (apiScoreboard.r?.data?.data?.total !== undefined) {
+      totalTeams = apiScoreboard.r.data.data.total;
 
-  const totalPages = $derived(Math.ceil(allTeamIds.length / TEAMS_PER_PAGE));
+      // Mark initial load as complete once we get data
+      if (!initialLoadComplete) {
+        initialLoadComplete = true;
+      }
+    }
+  });
+
+  $effect(() => {
+    if (currentPage === 0 && apiScoreboard.r?.data?.data?.scores) {
+      const firstPageScores = apiScoreboard.r.data.data.scores;
+      top10TeamIds = firstPageScores.slice(0, 10).map((s) => s.team_id);
+    }
+  });
+
+  const paginatedTeamIds = $derived(Array.from(currentPageTeams.keys()));
+
+  const totalPages = $derived(Math.ceil(totalTeams / TEAMS_PER_PAGE));
 
   $effect(() => {
     if (detailedView && paginatedTeamIds.length) {
@@ -186,6 +205,166 @@
       <div class="loading loading-spinner loading-lg text-primary"></div>
       <p class="text-center">Loading scoreboard...</p>
     </div>
+  {:else if apiScoreboard.loading}
+    <div class="overflow-x-auto flex flex-col gap-0">
+      <div class="mx-auto mt-8 2xl:w-2/3 w-full">
+        {#if top10TeamsChartDataLoaded && top10TeamsChartsData.length}
+          <Graph data={top10TeamsChartsData} />
+        {:else}
+          <div class="skeleton w-full h-[33rem] mb-32"></div>
+        {/if}
+      </div>
+
+      {#if detailedView}
+        <div class="mt-4 mb-4">
+          <button
+            class="btn btn-sm btn-primary gap-2 pop hover:pop"
+            onclick={toggleView}
+          >
+            <Icon icon="material-symbols:view-agenda-outline" class="text-lg" />
+            Compact View
+          </button>
+        </div>
+
+        <div class="flex flex-row gap-0 w-auto ml-[37rem]">
+          {#each challenges as challenge}
+            <div class="relative">
+              <div
+                class="w-10 h-32 border border-x-base-300 border-transparent bg-base-200 skew-x-[-45deg] translate-x-16"
+              ></div>
+              <div
+                class="absolute bottom-14 left-1.5 px-1 -rotate-45 w-40 z-10 truncate"
+                title={`${challenge.title} (${challenge.categories.join(", ")})`}
+              >
+                {challenge.title}
+              </div>
+            </div>
+          {/each}
+        </div>
+
+        <table class="border-collapse w-80 overflow-auto table-fixed">
+          <thead>
+            <tr>
+              <th class="border border-base-300 bg-base-200 px-2 py-1 w-12"
+                >#</th
+              >
+              <th
+                class="border border-base-300 bg-base-200 px-4 py-1 w-64 text-left"
+                >Team</th
+              >
+              <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
+                >Score</th
+              >
+              <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
+                >Solves</th
+              >
+              <th class="border border-base-300 bg-base-200 px-2 py-1 w-32"
+                >Last Solve</th
+              >
+              {#each challenges as challenge}
+                <th
+                  class="border border-base-300 bg-base-200 w-10 text-center text-sm"
+                >
+                  {challenge.points}
+                </th>
+              {/each}
+            </tr>
+          </thead>
+          <tbody>
+            {#each Array(currentPage === totalPages - 1 ? totalTeams % TEAMS_PER_PAGE : TEAMS_PER_PAGE) as _}
+              <tr>
+                <td class="border border-base-300 text-center h-12">
+                  <div class="skeleton h-4 w-6 mx-auto"></div>
+                </td>
+                <td class="border border-base-300 px-4">
+                  <div class="skeleton h-4 w-32"></div>
+                </td>
+                <td class="border border-base-300 px-4 text-center">
+                  <div class="skeleton h-4 w-8 mx-auto"></div>
+                </td>
+                <td class="border border-base-300 px-4 text-center">
+                  <div class="skeleton h-4 w-6 mx-auto"></div>
+                </td>
+                <td class="border border-base-300 px-4 text-center">
+                  <div class="skeleton h-4 w-16 mx-auto"></div>
+                </td>
+                {#each challenges as challenge}
+                  <td class="border border-base-300 p-0">
+                    <div
+                      class="w-full h-full flex flex-col items-center justify-center"
+                      title={challenge.title}
+                    >
+                      <Icon
+                        icon="material-symbols:flag"
+                        class="text-xl opacity-10"
+                      />
+                      <span class="text-xs opacity-20">{challenge.points}</span>
+                    </div>
+                  </td>
+                {/each}
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      {:else}
+        <div class="md:w-2/3 mx-auto w-full">
+          <div class="mt-4 mb-4">
+            <button
+              class="btn btn-sm btn-primary gap-2 pop hover:pop"
+              onclick={toggleView}
+            >
+              <Icon icon="material-symbols:grid-view" class="text-lg" />
+              Detailed View
+            </button>
+          </div>
+
+          <table class="border-collapse w-full overflow-auto table-fixed">
+            <thead>
+              <tr>
+                <th class="border border-base-300 bg-base-200 px-2 py-1 w-12"
+                  >#</th
+                >
+                <th
+                  class="border border-base-300 bg-base-200 px-4 py-1 text-center"
+                  >Team</th
+                >
+                <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
+                  >Score</th
+                >
+                <th class="border border-base-300 bg-base-200 px-2 py-1 w-32"
+                  >Last Solve</th
+                >
+              </tr>
+            </thead>
+            <tbody>
+              {#each Array(currentPage === totalPages - 1 ? totalTeams % TEAMS_PER_PAGE : TEAMS_PER_PAGE) as _}
+                <tr>
+                  <td class="border border-base-300 text-center h-12">
+                    <div class="skeleton h-4 w-6 mx-auto"></div>
+                  </td>
+                  <td class="border border-base-300 px-4 text-center">
+                    <div class="skeleton h-4 w-32 mx-auto"></div>
+                  </td>
+                  <td class="border border-base-300 px-4 text-center">
+                    <div class="skeleton h-4 w-8 mx-auto"></div>
+                  </td>
+                  <td class="border border-base-300 px-4 text-center">
+                    <div class="skeleton h-4 w-16 mx-auto"></div>
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      {/if}
+
+      <div class="flex justify-center items-center mt-4 gap-2 mb-8">
+        <button class="btn btn-sm pop hover:pop" disabled>Previous</button>
+        <div class="skeleton h-8 w-32 mx-2"></div>
+        <button class="btn btn-sm pop hover:pop" disabled>Next</button>
+        <span class="ml-2 text-sm skeleton h-4 w-40"></span>
+      </div>
+    </div>
   {:else}
     <div class="overflow-x-auto flex flex-col gap-0">
       <div class="mx-auto mt-8 2xl:w-2/3 w-full">
@@ -197,8 +376,6 @@
       </div>
 
       {#if detailedView}
-
-        <!-- Detailed table view -->
         <div class="mt-4 mb-4">
           <button
             class="btn btn-sm btn-primary gap-2 pop hover:pop"
@@ -274,7 +451,7 @@
 
           <tbody>
             {#each paginatedTeamIds as team_id (`row-${team_id}`)}
-              {@const entry = allTeamsScoreboard.get(team_id)!}
+              {@const entry = currentPageTeams.get(team_id)!}
               {@const teamData = teamScoresState.data.get(team_id)}
               {#if !teamData}
                 <tr>
@@ -301,9 +478,16 @@
                   {#each challenges as challenge (`chall-${entry.team_id}-${challenge.id}`)}
                     <td class="border border-base-300 p-0">
                       <div
-                        class="w-full h-full flex flex-col items-center justify-center py-2"
+                        class="w-full h-full flex flex-col items-center justify-center"
+                        title={challenge.title}
                       >
-                        <div class="skeleton h-3 w-6"></div>
+                        <Icon
+                          icon="material-symbols:flag"
+                          class="text-xl opacity-10"
+                        />
+                        <span class="text-xs opacity-20"
+                          >{challenge.points}</span
+                        >
                       </div>
                     </td>
                   {/each}
@@ -333,9 +517,9 @@
                   </td>
                   <td
                     class="border border-base-300 px-4 text-center"
-                    title={entry.timestamp.toLocaleString()}
+                    title={entry.last_solve.toLocaleString()}
                   >
-                    {getRelativeTime(entry.timestamp)}
+                    {getRelativeTime(entry.last_solve)}
                   </td>
                   {#each challenges as challenge (`chall-${entry.team_id}-${challenge.id}`)}
                     {@const solved =
@@ -368,7 +552,6 @@
           </tbody>
         </table>
       {:else}
-
         <!-- Compact View Table -->
         <div class="md:w-2/3 mx-auto w-full">
           <div class="mt-4 mb-4">
@@ -401,7 +584,7 @@
             </thead>
             <tbody>
               {#each paginatedTeamIds as team_id (`compact-row-${team_id}`)}
-                {@const entry = allTeamsScoreboard.get(team_id)!}
+                {@const entry = currentPageTeams.get(team_id)!}
                 <tr>
                   <td class="border border-base-300 text-center h-12 font-bold">
                     {entry.rank}
@@ -423,9 +606,9 @@
                   </td>
                   <td
                     class="border border-base-300 px-4 text-center"
-                    title={entry.timestamp.toLocaleString()}
+                    title={entry.last_solve.toLocaleString()}
                   >
-                    {getRelativeTime(entry.timestamp)}
+                    {getRelativeTime(entry.last_solve)}
                   </td>
                 </tr>
               {/each}
@@ -526,7 +709,7 @@
         </button>
 
         <span class="ml-2 text-sm">
-          Page {currentPage + 1} of {totalPages} ({allTeamIds.length} teams)
+          Page {currentPage + 1} of {totalPages} ({totalTeams} teams)
         </span>
       </div>
     </div>
