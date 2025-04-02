@@ -1,15 +1,22 @@
 import { DB } from "@noctf/schema";
 import { AllNonNullable } from "../types/primitives.ts";
 import { DBType } from "../clients/database.ts";
-
-export type DBAward = AllNonNullable<DB["award"]> & { created_at: Date };
+import { Award } from "@noctf/api/datatypes";
 
 export class AwardDAO {
   constructor(private readonly db: DBType) {}
 
-  async getAwardsForTeam(team_id: number): Promise<DBAward[]> {
+  async getTeamAwards(
+    team_id: number,
+    params?: {
+      end_time?: Date;
+    },
+  ): Promise<Award[]> {
     let query = this.getBaseQuery().where("team_id", "=", team_id);
-    return (await query.execute()) as unknown as DBAward[];
+    if (params?.end_time) {
+      query = query.where("award.created_at", "<=", params.end_time);
+    }
+    return (await query.execute()) as unknown as Award[];
   }
 
   async getAllAwards(
@@ -19,7 +26,7 @@ export class AwardDAO {
       limit?: number;
       offset?: number;
     },
-  ): Promise<DBAward[]> {
+  ): Promise<Award[]> {
     let query = this.getBaseQuery();
     if (division_id) {
       query = query
@@ -32,7 +39,7 @@ export class AwardDAO {
     if (params?.offset) {
       query = query.offset(params.offset);
     }
-    return (await query.execute()) as unknown as DBAward[];
+    return (await query.execute()) as unknown as Award[];
   }
 
   private getBaseQuery() {

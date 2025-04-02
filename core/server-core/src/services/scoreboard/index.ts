@@ -11,6 +11,7 @@ import {
 import { ScoreHistoryDAO } from "../../dao/score_history.ts";
 import { SetupConfig } from "@noctf/api/config";
 import { AwardDAO } from "../../dao/award.ts";
+import { Coleascer } from "../../util/coleascer.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -72,22 +73,25 @@ export class ScoreboardService {
     return scoreboard;
   }
 
-  async getSolves(
-    division_id?: number,
-    params?: Parameters<SolveDAO["getAllSolves"]>[1],
-  ) {
-    return await this.solveDAO.getAllSolves(division_id, params);
-  }
-
   async getTeamSolves(team_id: number) {
-    return await this.solveDAO.getTeamSolves(team_id);
+    const end_time = (
+      await this.configService.get<SetupConfig>(SetupConfig.$id!)
+    ).value?.end_time_s;
+    return this.solveDAO.getTeamSolves(team_id, {
+      hidden: false,
+      end_time:
+        typeof end_time === "number" ? new Date(end_time * 1000) : undefined,
+    });
   }
 
-  async getAwards(
-    division_id?: number,
-    params?: Parameters<AwardDAO["getAllAwards"]>[1],
-  ) {
-    return await this.awardDAO.getAllAwards(division_id, params);
+  async getTeamAwards(team_id: number) {
+    const end_time = (
+      await this.configService.get<SetupConfig>(SetupConfig.$id!)
+    ).value?.end_time_s;
+    return this.awardDAO.getTeamAwards(team_id, {
+      end_time:
+        typeof end_time === "number" ? new Date(end_time * 1000) : undefined,
+    });
   }
 
   async getChallengesSummary(division_id: number) {
@@ -154,16 +158,12 @@ export class ScoreboardService {
     );
   }
 
-  private async clearTeamScoreHistory(id: number) {
-    return await this.scoreHistoryDAO.flushTeam(id);
-  }
-
   private async commitDivisionScoreboard(
     challenges: ChallengeMetadataWithExpr[],
     id: number,
   ) {
-    const solveList = await this.getSolves(id);
-    const awardList = await this.getAwards(id);
+    const solveList = await this.solveDAO.getAllSolves(id);
+    const awardList = await this.awardDAO.getAllAwards(id);
     const solvesByChallenge = Object.groupBy(
       solveList || [],
       ({ challenge_id }) => challenge_id,

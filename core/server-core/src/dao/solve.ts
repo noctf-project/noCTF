@@ -48,10 +48,21 @@ export class SolveDAO {
     return (await query.execute()) as unknown as DBSolve[];
   }
 
-  async getTeamSolves(team_id: number): Promise<DBSolve[]> {
-    return this.getBaseQuery()
-      .where("solve.team_id", "=", team_id)
-      .execute() as unknown as DBSolve[];
+  async getTeamSolves(
+    team_id: number,
+    params?: {
+      end_time?: Date;
+      hidden?: boolean;
+    },
+  ): Promise<DBSolve[]> {
+    let query = this.getBaseQuery().where("solve.team_id", "=", team_id);
+    if (params?.end_time) {
+      query = query.where("solve.created_at", "<=", params.end_time);
+    }
+    if (typeof params?.hidden === "boolean") {
+      query = query.where("solve.hidden", "=", params.hidden);
+    }
+    return query.execute() as unknown as DBSolve[];
   }
 
   private getBaseQuery() {

@@ -234,6 +234,18 @@ export const Solve = Type.Object(
 );
 export type Solve = Static<typeof Solve>;
 
+export const Award = Type.Object(
+  {
+    id: Type.Number(),
+    team_id: Type.Number(),
+    title: Type.String(),
+    value: Type.Number(),
+    created_at: TypeDate,
+  },
+  { additionalProperties: false },
+);
+export type Award = Static<typeof Award>;
+
 export enum ChallengeSolveStatus {
   Queued = "queued",
   Incorrect = "incorrect",

@@ -1,4 +1,5 @@
 import {
+  Award,
   ChallengeMetadata,
   ChallengePrivateMetadataBase,
   ScoreboardEntry,
@@ -9,7 +10,6 @@ import { DBSolve } from "../../dao/solve.ts";
 import { partition } from "../../util/object.ts";
 import { EvaluateScoringExpression } from "../score.ts";
 import { Logger } from "../../types/primitives.ts";
-import { DBAward } from "../../dao/award.ts";
 import { MaxDate } from "../../util/date.ts";
 
 export type ChallengeMetadataWithExpr = {
@@ -92,7 +92,7 @@ function ComputeScoresForChallenge(
 export function ComputeScoreboard(
   challenges: ChallengeMetadataWithExpr[],
   solvesByChallenge: Record<number, DBSolve[]>,
-  awards: DBAward[],
+  awards: Award[],
   logger?: Logger,
 ) {
   // score, followed by date of last solve for tiebreak purposes

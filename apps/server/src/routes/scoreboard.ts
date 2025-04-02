@@ -10,6 +10,7 @@ import { NotFoundError } from "@noctf/server-core/errors";
 import { ScoreboardQuery } from "@noctf/api/query";
 import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
+import { Award } from "@noctf/api/datatypes";
 
 export const SCOREBOARD_PAGE_SIZE = 200;
 
@@ -104,10 +105,11 @@ export async function routes(fastify: FastifyInstance) {
           )
         ).map(({ id }) => id),
       );
-      const scores = (
-        await scoreboardService.getChallengesSummary(team.division_id)
-      ).data;
-      const teamSolves = await scoreboardService.getTeamSolves(team.id);
+      const [scores, teamSolves, awards] = await Promise.all([
+        scoreboardService.getChallengesSummary(team.division_id),
+        scoreboardService.getTeamSolves(team.id),
+        scoreboardService.getTeamAwards(team.id),
+      ]);
       const graph = await scoreboardService.getTeamScoreHistory(
         request.params.id,
       );
@@ -117,10 +119,10 @@ export async function routes(fastify: FastifyInstance) {
         .map(({ challenge_id, ...x }) => ({
           ...x,
           challenge_id,
-          score: scores[challenge_id].score,
+          score: scores.data[challenge_id].score,
         }));
       return {
-        data: { solves, graph },
+        data: { solves, graph, awards },
       };
     },
   );

@@ -34,19 +34,6 @@ describe(ScoreboardService, () => {
     vi.resetAllMocks();
   });
 
-  it("Fetches the solves using DAO", async () => {
-    const svc = new ScoreboardService({
-      logger,
-      cacheService,
-      challengeService,
-      configService,
-      databaseClient,
-      scoreService,
-    });
-    await svc.getSolves(1, { limit: 50 });
-    expect(solveDAO.getAllSolves).toBeCalledWith(1, { limit: 50 });
-  });
-
   it("Fetches the scoreboard from cache", async () => {
     const svc = new ScoreboardService({
       logger,

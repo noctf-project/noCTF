@@ -15,6 +15,7 @@ import {
   PublicTeam,
   Solve,
   TypeDate,
+  Award,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 
@@ -213,6 +214,7 @@ export const ScoreboardTeamResponse = Type.Object({
   data: Type.Object({
     solves: Type.Array(Solve),
     graph: Type.Array(Type.Tuple([Type.Number(), Type.Number()])),
+    awards: Type.Array(Award),
   }),
 });
 export type ScoreboardTeamResponse = Static<typeof ScoreboardTeamResponse>;
