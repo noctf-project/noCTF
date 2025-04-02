@@ -1,6 +1,6 @@
 import { SetupConfig } from "@noctf/api/config";
 import type { ChallengePrivateMetadataBase } from "@noctf/api/datatypes";
-import { GetChallengeFileParams, GetChallengeParams } from "@noctf/api/params";
+import { GetChallengeFileParams, IdParams } from "@noctf/api/params";
 import {
   GetChallengeResponse,
   GetChallengeSolvesResponse,
@@ -8,10 +8,11 @@ import {
   SolveChallengeResponse,
 } from "@noctf/api/responses";
 import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
-import { LocalCache } from "@noctf/server-core/util/local_cache";
 import type { FastifyInstance } from "fastify";
 import { ServeFileHandler } from "../hooks/file.ts";
 import { SolveChallengeRequest } from "@noctf/api/requests";
+import { GetUtils } from "./_util.ts";
+import { Policy } from "@noctf/server-core/util/policy";
 
 export async function routes(fastify: FastifyInstance) {
   const {
@@ -21,24 +22,9 @@ export async function routes(fastify: FastifyInstance) {
     challengeService,
     scoreboardService,
   } = fastify.container.cradle;
-  const adminCache = new LocalCache<number, boolean>({ ttl: 1000, max: 5000 });
-  const gateAdmin = async (ctime: number, userId?: number) => {
-    const admin = await adminCache.load(userId || 0, () =>
-      policyService.evaluate(userId || 0, ["admin.challenge.get"]),
-    );
-    if (!admin) {
-      const {
-        value: { active, start_time_s },
-      } = await configService.get<SetupConfig>(SetupConfig.$id);
-      if (!active) {
-        throw new ForbiddenError("The CTF is not currently active");
-      }
-      if (ctime < start_time_s * 1000) {
-        throw new ForbiddenError("The CTF has not started yet");
-      }
-    }
-    return admin;
-  };
+
+  const { gateStartTime } = GetUtils(fastify.container.cradle);
+  const adminPolicy: Policy = ["admin.challenge.get"];
 
   fastify.get<{ Reply: ListChallengesResponse }>(
     "/challenges",
@@ -56,7 +42,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      const admin = await gateAdmin(ctime, request.user?.id);
+      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
 
       const challenges = await challengeService.list(
         admin ? {} : { hidden: false, visible_at: new Date(ctime + 60000) },
@@ -69,19 +55,24 @@ export async function routes(fastify: FastifyInstance) {
       const team = request.user?.id
         ? await teamService.getMembershipForUser(request.user?.id)
         : undefined;
-      const { data: scoreObj } = await scoreboardService.getChallengeScores(1);
+      const { data: scoreObj } = await scoreboardService.getChallengesSummary(
+        team?.division_id || 1, // TODO: configurable default
+      );
+      const solves = new Set<number>();
+
+      // Does not need to rely on scoreboard calcs
+      if (team) {
+        (await scoreboardService.getTeamSolves(team.team_id)).forEach(
+          ({ challenge_id }) => solves.add(challenge_id),
+        );
+      }
       const scores = Object.fromEntries(
         challenges.map((c) => [
           c.id,
           {
-            score: scoreObj[c.id]?.score,
-            solve_count:
-              scoreObj[c.id]?.solves?.filter((x) => !x.hidden).length || 0,
-            solved_by_me:
-              team &&
-              !!scoreObj[c.id]?.solves?.find(
-                ({ team_id }) => team_id == team?.team_id,
-              ),
+            score: scoreObj[c.id]?.score || 0,
+            solve_count: scoreObj[c.id]?.solve_count || 0,
+            solved_by_me: solves.has(c.id),
           },
         ]),
       );
@@ -103,7 +94,7 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{ Params: GetChallengeParams }>(
+  fastify.get<{ Params: IdParams }>(
     "/challenges/:id",
     {
       schema: {
@@ -112,7 +103,7 @@ export async function routes(fastify: FastifyInstance) {
         auth: {
           policy: ["OR", "challenge.get", "admin.challenge.get"],
         },
-        params: GetChallengeParams,
+        params: IdParams,
         response: {
           200: GetChallengeResponse,
         },
@@ -120,7 +111,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      const admin = await gateAdmin(ctime, request.user?.id);
+      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
       const { id } = request.params;
 
       // Cannot cache directly as could be rendered with team_id as param
@@ -141,7 +132,7 @@ export async function routes(fastify: FastifyInstance) {
   );
 
   fastify.get<{
-    Params: GetChallengeParams;
+    Params: IdParams;
     Reply: GetChallengeSolvesResponse;
   }>(
     "/challenges/:id/solves",
@@ -152,7 +143,7 @@ export async function routes(fastify: FastifyInstance) {
         auth: {
           policy: ["OR", "challenge.solves.get", "admin.challenge.get"],
         },
-        params: GetChallengeParams,
+        params: IdParams,
         response: {
           200: GetChallengeSolvesResponse,
         },
@@ -160,7 +151,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      const admin = await gateAdmin(ctime, request.user?.id);
+      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
       const { id } = request.params;
 
       // Cannot cache directly as could be rendered with team_id as param
@@ -175,17 +166,20 @@ export async function routes(fastify: FastifyInstance) {
       }
       // TODO: fix up all division ids, currently everything
       // is requesting division ID=1
+      const team = request.user?.id
+        ? await teamService.getMembershipForUser(request.user?.id)
+        : undefined;
       return {
-        data: (await scoreboardService.getChallengeScores(1)).data[
-          id
-        ]?.solves?.filter(({ hidden }) => !hidden),
+        data: (
+          await scoreboardService.getChallengeSolves(team?.division_id || 1, id)
+        ).data?.filter(({ hidden }) => !hidden),
       };
     },
   );
 
   fastify.post<{
     Body: SolveChallengeRequest;
-    Params: GetChallengeParams;
+    Params: IdParams;
     Reply: SolveChallengeResponse;
   }>(
     "/challenges/:id/solves",
@@ -197,7 +191,7 @@ export async function routes(fastify: FastifyInstance) {
           require: true,
           policy: ["OR", "challenge.solves.create"],
         },
-        params: GetChallengeParams,
+        params: IdParams,
         body: SolveChallengeRequest,
         response: {
           200: SolveChallengeResponse,
@@ -206,7 +200,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      const admin = await gateAdmin(ctime, request.user?.id);
+      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
       const { id } = request.params;
 
       // Cannot cache directly as could be rendered with team_id as param
@@ -249,7 +243,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const ctime = Date.now();
-      const admin = await gateAdmin(ctime, request.user?.id);
+      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
       const { id } = request.params;
       const challenge = await challengeService.getMetadata(id);
       if (

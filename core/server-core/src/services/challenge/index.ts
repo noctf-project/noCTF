@@ -21,7 +21,6 @@ import {
 } from "../../errors.ts";
 import type { SomeJSONSchema } from "ajv/dist/types/json-schema.js";
 import { SubmissionDAO } from "../../dao/submission.ts";
-import { CACHE_SCORE_NAMESPACE } from "../scoreboard/index.ts";
 import { ChallengePlugin } from "./types.ts";
 import { CoreChallengePlugin } from "./core_plugin.ts";
 
@@ -200,9 +199,7 @@ export class ChallengeService {
         comments: state.comment,
       });
       if (solved) {
-        // TODO: emit solve to event bus
-        this.cacheService.del(CACHE_SCORE_NAMESPACE, "scoreboard");
-        this.cacheService.del(CACHE_SCORE_NAMESPACE, `c:${challenge.id}`);
+        // TODO: emit solve to event bus to recalc
       }
       return state.status;
       // TODO: queueing, currently it is just marked as queued. probably emit

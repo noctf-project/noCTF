@@ -14,6 +14,7 @@ import {
   ScoreboardEntry,
   PublicTeam,
   Solve,
+  TypeDate,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 
@@ -199,7 +200,12 @@ export type AdminGetScoringStrategiesResponse = Static<
 >;
 
 export const ScoreboardResponse = Type.Object({
-  data: Type.Array(ScoreboardEntry),
+  data: Type.Object({
+    scores: Type.Array(Type.Omit(ScoreboardEntry, ["updated_at"])),
+    total: Type.Number(),
+    page_size: Type.Number(),
+    updated_at: TypeDate,
+  }),
 });
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
 

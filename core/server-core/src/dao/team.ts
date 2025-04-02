@@ -197,7 +197,8 @@ export class TeamDAO {
   async getMembershipForUser(user_id: number) {
     const result = await this.db
       .selectFrom("team_member")
-      .select(["team_id", "role"])
+      .innerJoin("team", "team.id", "team_member.team_id")
+      .select(["team_id", "role", "team.division_id"])
       .where("user_id", "=", user_id)
       .executeTakeFirst();
 

@@ -31,12 +31,12 @@
         },
       });
       if (registerInitReq.error) {
-        toasts.error(registerInitReq.error.message)
+        toasts.error(registerInitReq.error.message);
       }
       const token = registerInitReq.data?.data?.token;
       if (!token) {
-        toasts.error("Unknown error occured")
-        return
+        toasts.error("Unknown error occured");
+        return;
       }
       const finishRegisterReq = await api.POST("/auth/register/finish", {
         body: {
@@ -49,14 +49,13 @@
       });
 
       if (finishRegisterReq.error) {
-        toasts.error(finishRegisterReq.error.message)
+        toasts.error(finishRegisterReq.error.message);
         return;
       }
 
       if (finishRegisterReq.data?.data?.type == "session") {
         successRedirect();
       }
-
     } else if (activeTab == "login") {
       const r = await api.POST("/auth/email/finish", {
         body: {
@@ -70,7 +69,7 @@
         password = "";
         return;
       }
-      console.log(r)
+      console.log(r);
       if (r.data?.data?.type == "session") {
         successRedirect();
       }
@@ -84,7 +83,9 @@
       Log in to grant access to <span class="font-bold">{clientId}</span>
     </h2>
   {/if}
-  <div class="card w-full max-w-md bg-base-100 shadow-solid border border-base-500">
+  <div
+    class="card w-full max-w-md bg-base-100 shadow-solid border border-base-500"
+  >
     <div class="card-body">
       <div class="tabs tabs-boxed mb-6">
         <button
@@ -134,20 +135,19 @@
         <div class="form-control mt-4">
           <label for="password" class="label">
             <span class="label-text">Password</span>
-           
           </label>
           <div class="relative">
-          <input
-            type={passwordVisible ? "text" : "password"}
-            placeholder="••••••••"
-            class="input input-bordered w-full pr-10"
-            bind:value={password}
-            required
-          />
-          <button 
+            <input
+              type={passwordVisible ? "text" : "password"}
+              placeholder="••••••••"
+              class="input input-bordered w-full pr-10"
+              bind:value={password}
+              required
+            />
+            <button
               type="button"
               class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-              onclick={() => passwordVisible = !passwordVisible}
+              onclick={() => (passwordVisible = !passwordVisible)}
             >
               {#if passwordVisible}
                 <Icon icon="material-symbols:visibility" class="text-3xl" />
@@ -162,7 +162,11 @@
         {#if activeTab === "login"}
           <div class="flex justify-between items-center mt-2">
             <label class="cursor-pointer label justify-start">
-              <input type="checkbox" class="checkbox checkbox-sm mr-2" bind:checked={rememberMe} />
+              <input
+                type="checkbox"
+                class="checkbox checkbox-sm mr-2"
+                bind:checked={rememberMe}
+              />
               <span class="label-text">Remember me</span>
             </label>
             <a href="/auth/reset-password" class="text-sm link link-hover">
@@ -174,7 +178,11 @@
         <!-- This button does not work -->
         {#if activeTab === "login"}
           <div class="divider text-sm text-gray-500">OR</div>
-          <button type='button' class="btn btn-outline w-full" onclick={() => toasts.info("TODO: OAuth not implemented yet")}>
+          <button
+            type="button"
+            class="btn btn-outline w-full"
+            onclick={() => toasts.info("TODO: OAuth not implemented yet")}
+          >
             Continue with OAuth
           </button>
         {/if}
