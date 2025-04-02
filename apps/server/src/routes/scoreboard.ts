@@ -18,7 +18,7 @@ export async function routes(fastify: FastifyInstance) {
     .cradle as ServiceCradle;
 
   const { gateAdmin } = GetUtils(fastify.container.cradle);
-  const adminPolicy: Policy = ['admin.scoreboard.get'];
+  const adminPolicy: Policy = ["admin.scoreboard.get"];
 
   fastify.get<{
     Reply: ScoreboardResponse;
@@ -46,9 +46,11 @@ export async function routes(fastify: FastifyInstance) {
       const admin = await gateAdmin(adminPolicy, ctime, request.user?.id);
 
       const page = request.query.page || 1;
-      const page_size = (admin
-        ? request.query.page_size
-        : Math.min(SCOREBOARD_PAGE_SIZE, request.query.page_size)) || SCOREBOARD_PAGE_SIZE;
+      const page_size =
+        (admin
+          ? request.query.page_size
+          : Math.min(SCOREBOARD_PAGE_SIZE, request.query.page_size)) ||
+        SCOREBOARD_PAGE_SIZE;
       const scoreboard = await scoreboardService.getScoreboard(
         request.params.id,
       );
@@ -56,13 +58,11 @@ export async function routes(fastify: FastifyInstance) {
       return {
         data: {
           scores:
-            scoreboard?.data.slice(
-              (page - 1) * page_size,
-              page * page_size,
-            ) || [],
+            scoreboard?.data.slice((page - 1) * page_size, page * page_size) ||
+            [],
           page_size: page_size,
           total: scoreboard?.data.length || 0,
-          updated_at: scoreboard.updated_at
+          updated_at: scoreboard.updated_at,
         },
       };
     },

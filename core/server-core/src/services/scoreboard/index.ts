@@ -132,8 +132,8 @@ export class ScoreboardService {
             end_time_s ? new Date(end_time_s * 1000) : undefined,
           )
         ).map(
-          ({ timestamp, score }) =>
-            [timestamp.getTime(), score] as [number, number],
+          ({ updated_at, score }) =>
+            [updated_at.getTime(), score] as [number, number],
         );
       },
     );

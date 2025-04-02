@@ -23,7 +23,7 @@ export async function routes(fastify: FastifyInstance) {
     challengeService,
     scoreboardService,
   } = fastify.container.cradle;
-  
+
   const { gateAdmin } = GetUtils(fastify.container.cradle);
   const adminPolicy: Policy = ["admin.challenge.get"];
 
