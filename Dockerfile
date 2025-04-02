@@ -1,24 +1,31 @@
 ARG NODE_VERSION=22-slim
 
-FROM node:$NODE_VERSION AS build
-ARG POSTGRES_URL
-ARG DROP_DATABASE=1
 
+FROM node:$NODE_VERSION AS build
+ENV CI=1
+ENV DOCKER_ENV=1
 WORKDIR /build
 RUN corepack enable pnpm
 COPY pnpm-lock.yaml .
 RUN pnpm fetch --config.ignore-scripts
 COPY . .
-RUN pnpm install -r --offline --ignore-scripts --frozen-lockfile
-RUN node create-database.mjs
-RUN pnpm exec kysely migrate latest
-RUN pnpm --filter '@noctf/*' release
+RUN pnpm install -r --ignore-scripts --frozen-lockfile
+
+RUN pnpm --filter '@noctf/server' build
+RUN pnpm --filter '@noctf/web' build
+
+RUN pnpm --filter=@noctf/server --prefer-offline --prod deploy /deploy/server
 
 # create images
-RUN pnpm --filter=@noctf/server --prefer-offline --prod deploy /deploy/server
 FROM node:$NODE_VERSION AS server
-COPY --from=build /deploy/server /build
+COPY --from=build /deploy/server /build/apps/server
 ENV HOST=::
 ENV ENABLE_SWAGGER=0
-WORKDIR "/build"
-CMD ["/build/dist/index.cjs"]
+WORKDIR "/build/apps/server"
+CMD ["node", "dist/www.cjs"]
+
+
+FROM joseluisq/static-web-server AS web
+COPY --from=build /build/apps/web/dist /public
+COPY --from=build /build/apps/web/dist/404.html /public/index.html
+EXPOSE 80/tcp

@@ -162,8 +162,10 @@ export class ScoreboardService {
     challenges: ChallengeMetadataWithExpr[],
     id: number,
   ) {
-    const solveList = await this.solveDAO.getAllSolves(id);
-    const awardList = await this.awardDAO.getAllAwards(id);
+    const [solveList, awardList] = await Promise.all([
+      this.solveDAO.getAllSolves(id),
+      this.awardDAO.getAllAwards(id),
+    ]);
     const solvesByChallenge = Object.groupBy(
       solveList || [],
       ({ challenge_id }) => challenge_id,
