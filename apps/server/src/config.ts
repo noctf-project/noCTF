@@ -16,7 +16,6 @@ export const ENABLE_HTTP2 = ["1", "true"].includes(
 export const FILE_LOCAL_PATH = process.env.FILE_LOCAL_PATH || "files/";
 
 export const ENABLE_SWAGGER =
-  process.env.SWAGGER === undefined ||
   ["1", "true"].includes((process.env.ENABLE_SWAGGER || "").toLowerCase());
 
 export const METRICS_PATH = process.env.METRICS_PATH;
