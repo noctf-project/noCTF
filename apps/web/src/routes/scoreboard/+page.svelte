@@ -206,7 +206,7 @@
       <p class="text-center">Loading scoreboard...</p>
     </div>
   {:else if apiScoreboard.loading}
-    <div class="overflow-x-auto flex flex-col gap-0">
+    <div class="flex flex-col gap-0">
       <div class="mx-auto mt-8 2xl:w-2/3 w-full">
         {#if top10TeamsChartDataLoaded && top10TeamsChartsData.length}
           <Graph data={top10TeamsChartsData} />
@@ -215,125 +215,63 @@
         {/if}
       </div>
 
-      {#if detailedView}
-        <div class="mt-4 mb-4">
-          <button
-            class="btn btn-sm btn-primary gap-2 pop hover:pop"
-            onclick={toggleView}
-          >
-            <Icon icon="material-symbols:view-agenda-outline" class="text-lg" />
-            Compact View
-          </button>
-        </div>
-
-        <div class="flex flex-row gap-0 w-auto ml-[37rem]">
-          {#each challenges as challenge}
-            <div class="relative">
-              <div
-                class="w-10 h-32 border border-x-base-300 border-transparent bg-base-200 skew-x-[-45deg] translate-x-16"
-              ></div>
-              <div
-                class="absolute bottom-14 left-1.5 px-1 -rotate-45 w-40 z-10 truncate"
-                title={`${challenge.title} (${challenge.categories.join(", ")})`}
-              >
-                {challenge.title}
-              </div>
-            </div>
-          {/each}
-        </div>
-
-        <table class="border-collapse w-80 overflow-auto table-fixed">
-          <thead>
-            <tr>
-              <th class="border border-base-300 bg-base-200 px-2 py-1 w-12"
-                >#</th
-              >
-              <th
-                class="border border-base-300 bg-base-200 px-4 py-1 w-64 text-left"
-                >Team</th
-              >
-              <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
-                >Score</th
-              >
-              <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
-                >Solves</th
-              >
-              <th class="border border-base-300 bg-base-200 px-2 py-1 w-32"
-                >Last Solve</th
-              >
-              {#each challenges as challenge}
-                <th
-                  class="border border-base-300 bg-base-200 w-10 text-center text-sm"
-                >
-                  {challenge.points}
-                </th>
-              {/each}
-            </tr>
-          </thead>
-          <tbody>
-            {#each Array(currentPage === totalPages - 1 ? totalTeams % TEAMS_PER_PAGE : TEAMS_PER_PAGE) as _}
-              <tr>
-                <td class="border border-base-300 text-center h-12">
-                  <div class="skeleton h-4 w-6 mx-auto"></div>
-                </td>
-                <td class="border border-base-300 px-4">
-                  <div class="skeleton h-4 w-32"></div>
-                </td>
-                <td class="border border-base-300 px-4 text-center">
-                  <div class="skeleton h-4 w-8 mx-auto"></div>
-                </td>
-                <td class="border border-base-300 px-4 text-center">
-                  <div class="skeleton h-4 w-6 mx-auto"></div>
-                </td>
-                <td class="border border-base-300 px-4 text-center">
-                  <div class="skeleton h-4 w-16 mx-auto"></div>
-                </td>
-                {#each challenges as challenge}
-                  <td class="border border-base-300 p-0">
-                    <div
-                      class="w-full h-full flex flex-col items-center justify-center"
-                      title={challenge.title}
-                    >
-                      <Icon
-                        icon="material-symbols:flag"
-                        class="text-xl opacity-10"
-                      />
-                      <span class="text-xs opacity-20">{challenge.points}</span>
-                    </div>
-                  </td>
-                {/each}
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      {:else}
-        <div class="md:w-2/3 mx-auto w-full">
+      <div class="overflow-x-auto flex flex-col gap-0">
+        {#if detailedView}
           <div class="mt-4 mb-4">
             <button
               class="btn btn-sm btn-primary gap-2 pop hover:pop"
               onclick={toggleView}
             >
-              <Icon icon="material-symbols:grid-view" class="text-lg" />
-              Detailed View
+              <Icon
+                icon="material-symbols:view-agenda-outline"
+                class="text-lg"
+              />
+              Compact View
             </button>
           </div>
 
-          <table class="border-collapse w-full overflow-auto table-fixed">
+          <div class="flex flex-row gap-0 w-auto ml-[37rem]">
+            {#each challenges as challenge}
+              <div class="relative">
+                <div
+                  class="w-10 h-32 border border-x-base-300 border-transparent bg-base-200 skew-x-[-45deg] translate-x-16"
+                ></div>
+                <div
+                  class="absolute bottom-14 left-1.5 px-1 -rotate-45 w-40 z-10 truncate"
+                  title={`${challenge.title} (${challenge.categories.join(", ")})`}
+                >
+                  {challenge.title}
+                </div>
+              </div>
+            {/each}
+          </div>
+
+          <table class="border-collapse w-80 overflow-auto table-fixed">
             <thead>
               <tr>
                 <th class="border border-base-300 bg-base-200 px-2 py-1 w-12"
                   >#</th
                 >
                 <th
-                  class="border border-base-300 bg-base-200 px-4 py-1 text-center"
+                  class="border border-base-300 bg-base-200 px-4 py-1 w-64 text-left"
                   >Team</th
                 >
                 <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
                   >Score</th
                 >
+                <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
+                  >Solves</th
+                >
                 <th class="border border-base-300 bg-base-200 px-2 py-1 w-32"
                   >Last Solve</th
                 >
+                {#each challenges as challenge}
+                  <th
+                    class="border border-base-300 bg-base-200 w-10 text-center text-sm"
+                  >
+                    {challenge.points}
+                  </th>
+                {/each}
               </tr>
             </thead>
             <tbody>
@@ -342,140 +280,19 @@
                   <td class="border border-base-300 text-center h-12">
                     <div class="skeleton h-4 w-6 mx-auto"></div>
                   </td>
-                  <td class="border border-base-300 px-4 text-center">
-                    <div class="skeleton h-4 w-32 mx-auto"></div>
-                  </td>
-                  <td class="border border-base-300 px-4 text-center">
-                    <div class="skeleton h-4 w-8 mx-auto"></div>
-                  </td>
-                  <td class="border border-base-300 px-4 text-center">
-                    <div class="skeleton h-4 w-16 mx-auto"></div>
-                  </td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </div>
-      {/if}
-
-      <div class="flex justify-center items-center mt-4 gap-2 mb-8">
-        <button class="btn btn-sm pop hover:pop" disabled>Previous</button>
-        <div class="skeleton h-8 w-32 mx-2"></div>
-        <button class="btn btn-sm pop hover:pop" disabled>Next</button>
-        <span class="ml-2 text-sm skeleton h-4 w-40"></span>
-      </div>
-    </div>
-  {:else}
-    <div class="overflow-x-auto flex flex-col gap-0">
-      <div class="mx-auto mt-8 2xl:w-2/3 w-full">
-        {#if top10TeamsChartDataLoaded && top10TeamsChartsData.length}
-          <Graph data={top10TeamsChartsData} />
-        {:else}
-          <div class="skeleton w-full h-[33rem]"></div>
-        {/if}
-      </div>
-
-      {#if detailedView}
-        <div class="mt-4 mb-4">
-          <button
-            class="btn btn-sm btn-primary gap-2 pop hover:pop"
-            onclick={toggleView}
-          >
-            <Icon icon="material-symbols:view-agenda-outline" class="text-lg" />
-            Compact View
-          </button>
-        </div>
-
-        <div class="flex flex-row gap-0 w-auto ml-[37rem] -mt-16">
-          {#each challenges as challenge}
-            <div class="relative">
-              <div
-                class="
-                    w-10
-                    h-32
-                    border
-                    border-x-base-300
-                    border-transparent
-                    bg-base-200
-                    skew-x-[-45deg]
-                    translate-x-16
-                "
-              ></div>
-              <div
-                class="
-                    absolute
-                    bottom-14
-                    left-1.5
-                    px-1
-                    -rotate-45
-                    w-40
-                    z-10
-                    truncate
-                "
-                title={`${challenge.title} (${challenge.categories.join(", ")})`}
-              >
-                {challenge.title}
-              </div>
-            </div>
-          {/each}
-        </div>
-
-        <table class="border-collapse w-80 overflow-auto table-fixed">
-          <thead>
-            <tr>
-              <th class="border border-base-300 bg-base-200 px-2 py-1 w-12"
-                >#</th
-              >
-              <th
-                class="border border-base-300 bg-base-200 px-4 py-1 w-64 text-left"
-                >Team</th
-              >
-              <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
-                >Score</th
-              >
-              <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
-                >Solves</th
-              >
-              <th class="border border-base-300 bg-base-200 px-2 py-1 w-32"
-                >Last Solve</th
-              >
-              {#each challenges as challenge}
-                <th
-                  class="border border-base-300 bg-base-200 w-10 text-center text-sm"
-                >
-                  {challenge.points}
-                </th>
-              {/each}
-            </tr>
-          </thead>
-
-          <tbody>
-            {#each paginatedTeamIds as team_id (`row-${team_id}`)}
-              {@const entry = currentPageTeams.get(team_id)!}
-              {@const teamData = teamScoresState.data.get(team_id)}
-              {#if !teamData}
-                <tr>
-                  <td class="border border-base-300 text-center h-12">
-                    <div class="skeleton h-4 w-6 mx-auto"></div>
-                  </td>
-
                   <td class="border border-base-300 px-4">
                     <div class="skeleton h-4 w-32"></div>
                   </td>
-
                   <td class="border border-base-300 px-4 text-center">
                     <div class="skeleton h-4 w-8 mx-auto"></div>
                   </td>
-
                   <td class="border border-base-300 px-4 text-center">
                     <div class="skeleton h-4 w-6 mx-auto"></div>
                   </td>
-
                   <td class="border border-base-300 px-4 text-center">
                     <div class="skeleton h-4 w-16 mx-auto"></div>
                   </td>
-
-                  {#each challenges as challenge (`chall-${entry.team_id}-${challenge.id}`)}
+                  {#each challenges as challenge}
                     <td class="border border-base-300 p-0">
                       <div
                         class="w-full h-full flex flex-col items-center justify-center"
@@ -492,130 +309,329 @@
                     </td>
                   {/each}
                 </tr>
-              {:else}
+              {/each}
+            </tbody>
+          </table>
+        {:else}
+          <div class="md:w-2/3 mx-auto w-full">
+            <div class="mt-4 mb-4">
+              <button
+                class="btn btn-sm btn-primary gap-2 pop hover:pop"
+                onclick={toggleView}
+              >
+                <Icon icon="material-symbols:grid-view" class="text-lg" />
+                Detailed View
+              </button>
+            </div>
+
+            <table class="border-collapse w-full overflow-auto table-fixed">
+              <thead>
                 <tr>
-                  <td class="border border-base-300 text-center h-12 font-bold">
-                    {entry.rank}
-                  </td>
-                  <td class="border border-base-300 px-4">
-                    <a
-                      href="/team/{entry.team_id}"
-                      class="truncate block cursor-pointer"
-                    >
-                      {#await TeamService.getTeamName(entry.team_id)}
-                        <div class="skeleton h-4 w-24"></div>
-                      {:then name}
-                        {name}
-                      {/await}
-                    </a>
-                  </td>
-                  <td class="border border-base-300 px-4 text-center">
-                    {entry.score}
-                  </td>
-                  <td class="border border-base-300 px-4 text-center">
-                    {teamData.solves.length || 0}
-                  </td>
-                  <td
-                    class="border border-base-300 px-4 text-center"
-                    title={entry.last_solve.toLocaleString()}
+                  <th class="border border-base-300 bg-base-200 px-2 py-1 w-12"
+                    >#</th
                   >
-                    {getRelativeTime(entry.last_solve)}
-                  </td>
-                  {#each challenges as challenge (`chall-${entry.team_id}-${challenge.id}`)}
-                    {@const solved =
-                      teamSolveMap.get(team_id)?.has(challenge.id) ?? false}
-                    <td
-                      class={"border border-base-300 p-0 " +
-                        (solved ? "bg-primary/20" : "")}
-                    >
-                      <div
-                        class="w-full h-full flex flex-col items-center justify-center"
-                        title={challenge.title}
-                      >
-                        <Icon
-                          icon="material-symbols:flag"
-                          class="text-xl {solved
-                            ? 'text-primary'
-                            : 'opacity-10'}"
-                        />
-                        <span
-                          class="text-xs {solved
-                            ? 'text-primary'
-                            : 'opacity-20'}">{challenge.points}</span
-                        >
-                      </div>
-                    </td>
-                  {/each}
+                  <th
+                    class="border border-base-300 bg-base-200 px-4 py-1 text-center"
+                    >Team</th
+                  >
+                  <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
+                    >Score</th
+                  >
+                  <th class="border border-base-300 bg-base-200 px-2 py-1 w-32"
+                    >Last Solve</th
+                  >
                 </tr>
-              {/if}
-            {/each}
-          </tbody>
-        </table>
-      {:else}
-        <!-- Compact View Table -->
-        <div class="md:w-2/3 mx-auto w-full">
+              </thead>
+              <tbody>
+                {#each Array(currentPage === totalPages - 1 ? totalTeams % TEAMS_PER_PAGE : TEAMS_PER_PAGE) as _}
+                  <tr>
+                    <td class="border border-base-300 text-center h-12">
+                      <div class="skeleton h-4 w-6 mx-auto"></div>
+                    </td>
+                    <td class="border border-base-300 px-4 text-center">
+                      <div class="skeleton h-4 w-32 mx-auto"></div>
+                    </td>
+                    <td class="border border-base-300 px-4 text-center">
+                      <div class="skeleton h-4 w-8 mx-auto"></div>
+                    </td>
+                    <td class="border border-base-300 px-4 text-center">
+                      <div class="skeleton h-4 w-16 mx-auto"></div>
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+
+        <div class="flex justify-center items-center mt-4 gap-2 mb-8">
+          <button class="btn btn-sm pop hover:pop" disabled>Previous</button>
+          <div class="skeleton h-8 w-32 mx-2"></div>
+          <button class="btn btn-sm pop hover:pop" disabled>Next</button>
+          <span class="ml-2 text-sm skeleton h-4 w-40"></span>
+        </div>
+      </div>
+    </div>
+  {:else}
+    <div class="flex flex-col gap-0">
+      <div class="mx-auto mt-8 2xl:w-2/3 w-full">
+        {#if top10TeamsChartDataLoaded && top10TeamsChartsData.length}
+          <Graph data={top10TeamsChartsData} />
+        {:else}
+          <div class="skeleton w-full h-[33rem] mb-32"></div>
+        {/if}
+      </div>
+
+      <div class="overflow-x-auto flex flex-col gap-0">
+        {#if detailedView}
           <div class="mt-4 mb-4">
             <button
               class="btn btn-sm btn-primary gap-2 pop hover:pop"
               onclick={toggleView}
             >
-              <Icon icon="material-symbols:grid-view" class="text-lg" />
-              Detailed View
+              <Icon
+                icon="material-symbols:view-agenda-outline"
+                class="text-lg"
+              />
+              Compact View
             </button>
           </div>
 
-          <table class="border-collapse w-full overflow-auto table-fixed">
+          <div class="flex flex-row gap-0 w-auto ml-[37rem] -mt-16">
+            {#each challenges as challenge}
+              <div class="relative">
+                <div
+                  class="
+                        w-10
+                        h-32
+                        border
+                        border-x-base-300
+                        border-transparent
+                        bg-base-200
+                        skew-x-[-45deg]
+                        translate-x-16
+                    "
+                ></div>
+                <div
+                  class="
+                        absolute
+                        bottom-14
+                        left-1.5
+                        px-1
+                        -rotate-45
+                        w-40
+                        z-10
+                        truncate
+                    "
+                  title={`${challenge.title} (${challenge.categories.join(", ")})`}
+                >
+                  {challenge.title}
+                </div>
+              </div>
+            {/each}
+          </div>
+
+          <table class="border-collapse w-80 overflow-auto table-fixed">
             <thead>
               <tr>
                 <th class="border border-base-300 bg-base-200 px-2 py-1 w-12"
                   >#</th
                 >
                 <th
-                  class="border border-base-300 bg-base-200 px-4 py-1 text-center"
+                  class="border border-base-300 bg-base-200 px-4 py-1 w-64 text-left"
                   >Team</th
                 >
                 <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
                   >Score</th
                 >
+                <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
+                  >Solves</th
+                >
                 <th class="border border-base-300 bg-base-200 px-2 py-1 w-32"
                   >Last Solve</th
                 >
+                {#each challenges as challenge}
+                  <th
+                    class="border border-base-300 bg-base-200 w-10 text-center text-sm"
+                  >
+                    {challenge.points}
+                  </th>
+                {/each}
               </tr>
             </thead>
+
             <tbody>
-              {#each paginatedTeamIds as team_id (`compact-row-${team_id}`)}
+              {#each paginatedTeamIds as team_id (`row-${team_id}`)}
                 {@const entry = currentPageTeams.get(team_id)!}
-                <tr>
-                  <td class="border border-base-300 text-center h-12 font-bold">
-                    {entry.rank}
-                  </td>
-                  <td class="border border-base-300 px-4 text-center">
-                    <a
-                      href="/team/{entry.team_id}"
-                      class="truncate block cursor-pointer"
+                {@const teamData = teamScoresState.data.get(team_id)}
+                {#if !teamData}
+                  <tr>
+                    <td class="border border-base-300 text-center h-12">
+                      <div class="skeleton h-4 w-6 mx-auto"></div>
+                    </td>
+
+                    <td class="border border-base-300 px-4">
+                      <div class="skeleton h-4 w-32"></div>
+                    </td>
+
+                    <td class="border border-base-300 px-4 text-center">
+                      <div class="skeleton h-4 w-8 mx-auto"></div>
+                    </td>
+
+                    <td class="border border-base-300 px-4 text-center">
+                      <div class="skeleton h-4 w-6 mx-auto"></div>
+                    </td>
+
+                    <td class="border border-base-300 px-4 text-center">
+                      <div class="skeleton h-4 w-16 mx-auto"></div>
+                    </td>
+
+                    {#each challenges as challenge (`chall-${entry.team_id}-${challenge.id}`)}
+                      <td class="border border-base-300 p-0">
+                        <div
+                          class="w-full h-full flex flex-col items-center justify-center"
+                          title={challenge.title}
+                        >
+                          <Icon
+                            icon="material-symbols:flag"
+                            class="text-xl opacity-10"
+                          />
+                          <span class="text-xs opacity-20"
+                            >{challenge.points}</span
+                          >
+                        </div>
+                      </td>
+                    {/each}
+                  </tr>
+                {:else}
+                  <tr>
+                    <td
+                      class="border border-base-300 text-center h-12 font-bold"
                     >
-                      {#await TeamService.getTeamName(entry.team_id)}
-                        <div class="skeleton h-4 w-32 mx-auto"></div>
-                      {:then name}
-                        {name}
-                      {/await}
-                    </a>
-                  </td>
-                  <td class="border border-base-300 px-4 text-center">
-                    {entry.score}
-                  </td>
-                  <td
-                    class="border border-base-300 px-4 text-center"
-                    title={entry.last_solve.toLocaleString()}
-                  >
-                    {getRelativeTime(entry.last_solve)}
-                  </td>
-                </tr>
+                      {entry.rank}
+                    </td>
+                    <td class="border border-base-300 px-4">
+                      <a
+                        href="/team/{entry.team_id}"
+                        class="truncate block cursor-pointer"
+                      >
+                        {#await TeamService.getTeamName(entry.team_id)}
+                          <div class="skeleton h-4 w-24"></div>
+                        {:then name}
+                          {name}
+                        {/await}
+                      </a>
+                    </td>
+                    <td class="border border-base-300 px-4 text-center">
+                      {entry.score}
+                    </td>
+                    <td class="border border-base-300 px-4 text-center">
+                      {teamData.solves.length || 0}
+                    </td>
+                    <td
+                      class="border border-base-300 px-4 text-center"
+                      title={entry.last_solve.toLocaleString()}
+                    >
+                      {getRelativeTime(entry.last_solve)}
+                    </td>
+                    {#each challenges as challenge (`chall-${entry.team_id}-${challenge.id}`)}
+                      {@const solved =
+                        teamSolveMap.get(team_id)?.has(challenge.id) ?? false}
+                      <td
+                        class={"border border-base-300 p-0 " +
+                          (solved ? "bg-primary/20" : "")}
+                      >
+                        <div
+                          class="w-full h-full flex flex-col items-center justify-center"
+                          title={challenge.title}
+                        >
+                          <Icon
+                            icon="material-symbols:flag"
+                            class="text-xl {solved
+                              ? 'text-primary'
+                              : 'opacity-10'}"
+                          />
+                          <span
+                            class="text-xs {solved
+                              ? 'text-primary'
+                              : 'opacity-20'}">{challenge.points}</span
+                          >
+                        </div>
+                      </td>
+                    {/each}
+                  </tr>
+                {/if}
               {/each}
             </tbody>
           </table>
-        </div>
-      {/if}
+        {:else}
+          <!-- Compact View Table -->
+          <div class="md:w-2/3 mx-auto w-full">
+            <div class="mt-4 mb-4">
+              <button
+                class="btn btn-sm btn-primary gap-2 pop hover:pop"
+                onclick={toggleView}
+              >
+                <Icon icon="material-symbols:grid-view" class="text-lg" />
+                Detailed View
+              </button>
+            </div>
+
+            <table class="border-collapse w-full overflow-auto table-fixed">
+              <thead>
+                <tr>
+                  <th class="border border-base-300 bg-base-200 px-2 py-1 w-12"
+                    >#</th
+                  >
+                  <th
+                    class="border border-base-300 bg-base-200 px-4 py-1 text-center"
+                    >Team</th
+                  >
+                  <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
+                    >Score</th
+                  >
+                  <th class="border border-base-300 bg-base-200 px-2 py-1 w-32"
+                    >Last Solve</th
+                  >
+                </tr>
+              </thead>
+              <tbody>
+                {#each paginatedTeamIds as team_id (`compact-row-${team_id}`)}
+                  {@const entry = currentPageTeams.get(team_id)!}
+                  <tr>
+                    <td
+                      class="border border-base-300 text-center h-12 font-bold"
+                    >
+                      {entry.rank}
+                    </td>
+                    <td class="border border-base-300 px-4 text-center">
+                      <a
+                        href="/team/{entry.team_id}"
+                        class="truncate block cursor-pointer"
+                      >
+                        {#await TeamService.getTeamName(entry.team_id)}
+                          <div class="skeleton h-4 w-32 mx-auto"></div>
+                        {:then name}
+                          {name}
+                        {/await}
+                      </a>
+                    </td>
+                    <td class="border border-base-300 px-4 text-center">
+                      {entry.score}
+                    </td>
+                    <td
+                      class="border border-base-300 px-4 text-center"
+                      title={entry.last_solve.toLocaleString()}
+                    >
+                      {getRelativeTime(entry.last_solve)}
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+      </div>
 
       <div class="flex justify-center items-center mt-4 gap-2 mb-8">
         <button
