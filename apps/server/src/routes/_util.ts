@@ -7,7 +7,7 @@ import { Policy } from "@noctf/server-core/util/policy";
 // TODO: this is better as middleware
 export const GetUtils = ({ policyService, configService }: ServiceCradle) => {
   const adminCache = new LocalCache<number, boolean>({ ttl: 1000, max: 5000 });
-  const gateAdmin = async (policy: Policy, ctime: number, userId?: number) => {
+  const gateStartTime = async (policy: Policy, ctime: number, userId?: number) => {
     const admin = await adminCache.load(userId || 0, () =>
       policyService.evaluate(userId || 0, policy),
     );
@@ -25,5 +25,5 @@ export const GetUtils = ({ policyService, configService }: ServiceCradle) => {
     return admin;
   };
 
-  return { gateAdmin };
+  return { gateStartTime };
 };

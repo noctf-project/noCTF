@@ -17,7 +17,7 @@ export async function routes(fastify: FastifyInstance) {
   const { scoreboardService, challengeService, teamService } = fastify.container
     .cradle as ServiceCradle;
 
-  const { gateAdmin } = GetUtils(fastify.container.cradle);
+  const { gateStartTime } = GetUtils(fastify.container.cradle);
   const adminPolicy: Policy = ["admin.scoreboard.get"];
 
   fastify.get<{
@@ -43,7 +43,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      const admin = await gateAdmin(adminPolicy, ctime, request.user?.id);
+      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
 
       const page = request.query.page || 1;
       const page_size =
@@ -62,7 +62,7 @@ export async function routes(fastify: FastifyInstance) {
             [],
           page_size: page_size,
           total: scoreboard?.data.length || 0,
-          updated_at: scoreboard.updated_at,
+          updated_at: scoreboard?.updated_at,
         },
       };
     },
@@ -86,7 +86,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      await gateAdmin(adminPolicy, ctime, request.user?.id);
+      await gateStartTime(adminPolicy, ctime, request.user?.id);
 
       const team = await teamService.get(request.params.id);
       if (!team || team.flags.includes("hidden")) {
