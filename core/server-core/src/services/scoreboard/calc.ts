@@ -23,16 +23,17 @@ type ChallengeSolvesResult = {
   last_valid_solve: Date;
 };
 
-export type ChallengeScore = {
+export type ComputedChallengeScoreData = {
   challenge_id: number;
   score: number;
-  solves: {
-    team_id: number;
-    score: number;
-    bonus?: number;
-    hidden: boolean;
-    created_at: Date;
-  }[];
+  solves: Solve[];
+};
+
+export type ChallengeSummary = {
+  challenge_id: number;
+  score: number;
+  solve_count: number;
+  bonuses: number[];
 };
 
 function ComputeScoresForChallenge(
@@ -114,6 +115,7 @@ export function ComputeScoreboard(
         bonus: solve.bonus,
         score: solve.score,
         created_at: solve.created_at,
+        challenge_id: solve.challenge_id,
       });
       if (solve.hidden) continue;
 
@@ -163,7 +165,7 @@ export function ComputeScoreboard(
       prev[cur.challenge_id] = cur;
       return prev;
     },
-    {} as Record<number, ChallengeScore>,
+    {} as Record<number, ComputedChallengeScoreData>,
   );
 
   return {

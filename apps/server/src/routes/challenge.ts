@@ -55,7 +55,7 @@ export async function routes(fastify: FastifyInstance) {
       const team = request.user?.id
         ? await teamService.getMembershipForUser(request.user?.id)
         : undefined;
-      const { data: scoreObj } = await scoreboardService.getChallengeScores(
+      const { data: scoreObj } = await scoreboardService.getChallengesSummary(
         team?.division_id || 1, // TODO: configurable default
       );
       const solves = new Set<number>();
@@ -71,8 +71,7 @@ export async function routes(fastify: FastifyInstance) {
           c.id,
           {
             score: scoreObj[c.id]?.score || 0,
-            solve_count:
-              scoreObj[c.id]?.solves?.filter((x) => !x.hidden).length || 0,
+            solve_count: scoreObj[c.id]?.solve_count || 0,
             solved_by_me: solves.has(c.id),
           },
         ]),
@@ -167,10 +166,13 @@ export async function routes(fastify: FastifyInstance) {
       }
       // TODO: fix up all division ids, currently everything
       // is requesting division ID=1
+      const team = request.user?.id
+        ? await teamService.getMembershipForUser(request.user?.id)
+        : undefined;
       return {
-        data: (await scoreboardService.getChallengeScores(1)).data[
-          id
-        ]?.solves?.filter(({ hidden }) => !hidden),
+        data: (
+          await scoreboardService.getChallengeSolves(team?.division_id || 1, id)
+        ).data?.filter(({ hidden }) => !hidden),
       };
     },
   );

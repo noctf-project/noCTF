@@ -93,26 +93,32 @@ export async function routes(fastify: FastifyInstance) {
         throw new NotFoundError("Team not found");
       }
       const now = Date.now();
-      const challenges = await challengeService.list(
-        { hidden: false, visible_at: new Date(now + 60000) },
-        {
-          cacheKey: "route:/teams",
-          removePrivateTags: true,
-        },
+      const challenges = new Set(
+        (
+          await challengeService.list(
+            { hidden: false, visible_at: new Date(now + 60000) },
+            {
+              cacheKey: "route:/teams",
+              removePrivateTags: true,
+            },
+          )
+        ).map(({ id }) => id),
       );
-      // TODO: get scoreboard by division, currently we only have 1 div
-      const scores = (await scoreboardService.getChallengeScores(1)).data;
+      const scores = (
+        await scoreboardService.getChallengesSummary(team.division_id)
+      ).data;
+      const teamSolves = await scoreboardService.getTeamSolves(team.id);
       const graph = await scoreboardService.getTeamScoreHistory(
         request.params.id,
       );
-      const solves = challenges
-        .map(({ id }) => {
-          const s = scores[id]?.solves.find(
-            ({ team_id }) => team_id === team.id,
-          );
-          return s && !s.hidden && { ...s, challenge_id: id };
-        })
-        .filter((x) => x);
+      const solves = teamSolves
+        .filter(({ challenge_id }) => challenges.has(challenge_id))
+        .filter(({ hidden }) => !hidden)
+        .map(({ challenge_id, ...x }) => ({
+          ...x,
+          challenge_id,
+          score: scores[challenge_id].score,
+        }));
       return {
         data: { solves, graph },
       };

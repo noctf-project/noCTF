@@ -4,7 +4,7 @@ import { DBSolve, SolveDAO } from "../../dao/solve.ts";
 import { DivisionDAO } from "../../dao/division.ts";
 import {
   ChallengeMetadataWithExpr,
-  ChallengeScore,
+  ChallengeSummary,
   ComputeScoreboard,
   GetChangedTeamScores,
 } from "./calc.ts";
@@ -27,8 +27,8 @@ type UpdatedContainer<T> = {
   updated_at: Date;
 };
 
-export const CACHE_SCORE_NAMESPACE = "core:svc:score";
 export const CACHE_SCORE_HISTORY_NAMESPACE = "core:svc:score_history";
+const CACHE_SCORE_NAMESPACE = "core:svc:score";
 
 export class ScoreboardService {
   private readonly logger;
@@ -65,9 +65,9 @@ export class ScoreboardService {
   async getScoreboard(division_id: number) {
     const scoreboard = await this.cacheService.get<
       UpdatedContainer<ScoreboardEntry[]>
-    >(CACHE_SCORE_NAMESPACE, `s:scoreboard:${division_id}`);
+    >(CACHE_SCORE_NAMESPACE, `d:${division_id}:scoreboard`);
     if (!scoreboard) {
-      return null;
+      return { data: [], updated_at: new Date(0) };
     }
     return scoreboard;
   }
@@ -90,10 +90,21 @@ export class ScoreboardService {
     return await this.awardDAO.getAllAwards(division_id, params);
   }
 
-  async getChallengeScores(division_id: number) {
+  async getChallengesSummary(division_id: number) {
     const scoreboard = await this.cacheService.get<
-      UpdatedContainer<Record<number, ChallengeScore>>
-    >(CACHE_SCORE_NAMESPACE, `s:challenges:${division_id}`);
+      UpdatedContainer<Record<number, ChallengeSummary>>
+    >(CACHE_SCORE_NAMESPACE, `d:${division_id}:challenges_summary`);
+    if (!scoreboard) {
+      return { data: {}, updated_at: new Date(0) };
+    }
+    return scoreboard;
+  }
+
+  async getChallengeSolves(division_id: number, challenge_id: number) {
+    const scoreboard = await this.cacheService.get<UpdatedContainer<Solve[]>>(
+      CACHE_SCORE_NAMESPACE,
+      `d:${division_id}:challenge_solves:${challenge_id}`,
+    );
     if (!scoreboard) {
       return { data: [], updated_at: new Date(0) };
     }
@@ -167,25 +178,48 @@ export class ScoreboardService {
     const updated_at = new Date();
     await this.cacheService.put<UpdatedContainer<ScoreboardEntry[]>>(
       CACHE_SCORE_NAMESPACE,
-      `s:scoreboard:${id}`,
+      `d:${id}:scoreboard`,
       {
         data: scoreboard,
         updated_at,
       },
     );
+    const compacted: Record<number, ChallengeSummary> = {};
+    for (const { challenge_id, score, solves } of Object.values(
+      challengeScores,
+    )) {
+      compacted[challenge_id] = {
+        challenge_id,
+        score,
+        solve_count: solves.filter(({ hidden }) => !hidden).length,
+        bonuses: solves.map(({ bonus }) => bonus).filter((x) => x) as number[], // assuming solves are ordered
+      };
+    }
     await this.cacheService.put<
-      UpdatedContainer<Record<number, ChallengeScore>>
-    >(CACHE_SCORE_NAMESPACE, `s:challenges:${id}`, {
-      data: challengeScores,
+      UpdatedContainer<Record<number, ChallengeSummary>>
+    >(CACHE_SCORE_NAMESPACE, `d:${id}:challenges_summary`, {
+      data: compacted,
       updated_at,
     });
+    await Promise.all(
+      Object.values(challengeScores).map(({ challenge_id, solves }) =>
+        this.cacheService.put<UpdatedContainer<Solve[]>>(
+          CACHE_SCORE_NAMESPACE,
+          `d:${id}:challenge_solves:${challenge_id}`,
+          {
+            data: solves,
+            updated_at,
+          },
+        ),
+      ),
+    );
 
     // we want a separate cache value for graphing in case the calculation crashed
     // halfway through
     const { data: lastScoreboard } =
       (await this.cacheService.get<UpdatedContainer<ScoreboardEntry[]>>(
         CACHE_SCORE_NAMESPACE,
-        `s:scoreboard-calc_graph:${id}`,
+        `d:${id}:calc_graph`,
       )) || {};
 
     let diff = scoreboard;
@@ -204,7 +238,7 @@ export class ScoreboardService {
 
     await this.cacheService.put<UpdatedContainer<ScoreboardEntry[]>>(
       CACHE_SCORE_NAMESPACE,
-      `s:scoreboard-calc_graph:${id}`,
+      `d:${id}:calc_graph`,
       {
         data: scoreboard,
         updated_at,

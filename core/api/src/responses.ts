@@ -201,7 +201,7 @@ export type AdminGetScoringStrategiesResponse = Static<
 
 export const ScoreboardResponse = Type.Object({
   data: Type.Object({
-    scores: Type.Array(ScoreboardEntry),
+    scores: Type.Array(Type.Omit(ScoreboardEntry, ["updated_at"])),
     total: Type.Number(),
     page_size: Type.Number(),
     updated_at: TypeDate,

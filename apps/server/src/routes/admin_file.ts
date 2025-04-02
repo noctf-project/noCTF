@@ -87,7 +87,7 @@ export async function routes(fastify: FastifyInstance) {
       if (!data.filename || data.filename.length > 255) {
         throw new BadRequestError("Filename doesn't exist or is too long");
       }
-      const filename = data.filename.replace(/[^a-zA-Z0-9_\-. ]/g, '');
+      const filename = data.filename.replace(/[^a-zA-Z0-9_\-. ]/g, "");
       const result = await fileService.upload(filename, data.file);
 
       return reply.status(201).send({
