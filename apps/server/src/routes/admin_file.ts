@@ -2,6 +2,7 @@ import { FileParams } from "@noctf/api/params";
 import type { FastifyInstance } from "fastify";
 import { ServeFileHandler } from "../hooks/file.ts";
 import { AdminFileMetadataResponse } from "@noctf/api/responses";
+import { BadRequestError } from "@noctf/server-core/errors";
 
 export async function routes(fastify: FastifyInstance) {
   const { fileService } = fastify.container.cradle;
@@ -83,7 +84,11 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const data = await request.file();
-      const result = await fileService.upload(data.filename, data.file);
+      if (!data.filename || data.filename.length > 255) {
+        throw new BadRequestError("Filename doesn't exist or is too long");
+      }
+      const filename = data.filename.replace(/[^a-zA-Z0-9_\-. ]/g, '');
+      const result = await fileService.upload(filename, data.file);
 
       return reply.status(201).send({
         data: result,
