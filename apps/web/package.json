@@ -33,6 +33,9 @@
     "@tailwindcss/typography": "^0.5.15",
     "axios": "^1.7.9",
     "carta-md": "^4.6.7",
+    "chart.js": "^4.4.8",
+    "chartjs-adapter-date-fns": "^3.0.0",
+    "date-fns": "^4.1.0",
     "expr-eval": "catalog:",
     "lru-cache": "^11.0.2",
     "openapi-fetch": "^0.13.4"
