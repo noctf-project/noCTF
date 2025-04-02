@@ -48,6 +48,12 @@ export class SolveDAO {
     return (await query.execute()) as unknown as DBSolve[];
   }
 
+  async getTeamSolves(team_id: number): Promise<DBSolve[]> {
+    return this.getBaseQuery()
+      .where("solve.team_id", "=", team_id)
+      .execute() as unknown as DBSolve[];
+  }
+
   private getBaseQuery() {
     return this.db
       .selectFrom("solve")

@@ -1,4 +1,4 @@
-import type { ScoreboardEntry } from "@noctf/api/datatypes";
+import type { ScoreboardEntry, Solve } from "@noctf/api/datatypes";
 import type { ServiceCradle } from "../../index.ts";
 import { DBSolve, SolveDAO } from "../../dao/solve.ts";
 import { DivisionDAO } from "../../dao/division.ts";
@@ -77,6 +77,10 @@ export class ScoreboardService {
     params?: Parameters<SolveDAO["getAllSolves"]>[1],
   ) {
     return await this.solveDAO.getAllSolves(division_id, params);
+  }
+
+  async getTeamSolves(team_id: number) {
+    return await this.solveDAO.getTeamSolves(team_id);
   }
 
   async getAwards(

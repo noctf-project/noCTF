@@ -8,7 +8,6 @@ import {
   SolveChallengeResponse,
 } from "@noctf/api/responses";
 import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
-import { LocalCache } from "@noctf/server-core/util/local_cache";
 import type { FastifyInstance } from "fastify";
 import { ServeFileHandler } from "../hooks/file.ts";
 import { SolveChallengeRequest } from "@noctf/api/requests";
@@ -56,7 +55,17 @@ export async function routes(fastify: FastifyInstance) {
       const team = request.user?.id
         ? await teamService.getMembershipForUser(request.user?.id)
         : undefined;
-      const { data: scoreObj } = await scoreboardService.getChallengeScores(1);
+      const { data: scoreObj } = await scoreboardService.getChallengeScores(
+        team?.division_id || 1, // TODO: configurable default
+      );
+      const solves = new Set<number>();
+
+      // Does not need to rely on scoreboard calcs
+      if (team) {
+        (await scoreboardService.getTeamSolves(team.team_id)).forEach(
+          ({ challenge_id }) => solves.add(challenge_id),
+        );
+      }
       const scores = Object.fromEntries(
         challenges.map((c) => [
           c.id,
@@ -64,11 +73,7 @@ export async function routes(fastify: FastifyInstance) {
             score: scoreObj[c.id]?.score || 0,
             solve_count:
               scoreObj[c.id]?.solves?.filter((x) => !x.hidden).length || 0,
-            solved_by_me:
-              team &&
-              !!scoreObj[c.id]?.solves?.find(
-                ({ team_id }) => team_id == team?.team_id,
-              ),
+            solved_by_me: solves.has(c.id),
           },
         ]),
       );
