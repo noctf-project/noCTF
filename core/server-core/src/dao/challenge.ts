@@ -9,7 +9,11 @@ import { ConflictError, NotFoundError } from "../errors.ts";
 import type { UpdateObject } from "kysely";
 import type { DB } from "@noctf/schema";
 import type { SelectExpression } from "kysely";
-import { PostgresErrorCode, TryPGConstraintError } from "../util/pgerror.ts";
+import {
+  PostgresErrorCode,
+  PostgresErrorConfig,
+  TryPGConstraintError,
+} from "../util/pgerror.ts";
 
 const METADATA_FIELDS: SelectExpression<DB, "challenge">[] = [
   "id",
@@ -22,6 +26,14 @@ const METADATA_FIELDS: SelectExpression<DB, "challenge">[] = [
   "created_at",
   "updated_at",
 ];
+
+const CREATE_ERROR_CONFIG: PostgresErrorConfig = {
+  [PostgresErrorCode.Duplicate]: {
+    challenge_slug_key: () =>
+      new ConflictError("The challenge slug already exists"),
+  },
+};
+
 export class ChallengeDAO {
   constructor(private readonly db: DBType) {}
 
@@ -50,12 +62,7 @@ export class ChallengeDAO {
         updated_at,
       };
     } catch (e) {
-      const pgerror = TryPGConstraintError(e, {
-        [PostgresErrorCode.Duplicate]: {
-          challenge_slug_key: () =>
-            new ConflictError("The challenge slug already exists"),
-        },
-      });
+      const pgerror = TryPGConstraintError(e, CREATE_ERROR_CONFIG);
       if (pgerror) throw pgerror;
       throw e;
     }

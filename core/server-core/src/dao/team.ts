@@ -6,8 +6,20 @@ import { FilterUndefined } from "../util/filter.ts";
 import { BadRequestError, ConflictError, NotFoundError } from "../errors.ts";
 import { sql } from "kysely";
 import { partition } from "../util/object.ts";
-import { PostgresErrorCode } from "../util/pgerror.ts";
+import { PostgresErrorCode, PostgresErrorConfig } from "../util/pgerror.ts";
 import { TryPGConstraintError } from "../util/pgerror.ts";
+
+const CREATE_ERROR_CONFIG: PostgresErrorConfig = {
+  [PostgresErrorCode.Duplicate]: {
+    team_name_key: () => new ConflictError("The team name already exists"),
+    default: (e) =>
+      new ConflictError("A duplicate entry was detected", { cause: e }),
+  },
+  [PostgresErrorCode.ForeignKeyViolation]: {
+    team_division_id_fkey: () =>
+      new BadRequestError("Division ID does not exist"),
+  },
+};
 
 export class TeamDAO {
   constructor(private readonly db: DBType) {}
@@ -45,18 +57,7 @@ export class TeamDAO {
         created_at,
       };
     } catch (e) {
-      const pgerror = TryPGConstraintError(e, {
-        [PostgresErrorCode.Duplicate]: {
-          team_name_key: () =>
-            new ConflictError("The team name already exists"),
-          default: (e) =>
-            new ConflictError("A duplicate entry was detected", { cause: e }),
-        },
-        [PostgresErrorCode.ForeignKeyViolation]: {
-          team_division_id_fkey: () =>
-            new BadRequestError("Division ID does not exist"),
-        },
-      });
+      const pgerror = TryPGConstraintError(e, CREATE_ERROR_CONFIG);
       if (pgerror) throw pgerror;
       throw e;
     }
