@@ -47,12 +47,15 @@ export class TeamDAO {
     } catch (e) {
       const pgerror = TryPGConstraintError(e, {
         [PostgresErrorCode.Duplicate]: {
-          team_name_key: () => new ConflictError("The team name already exists"),
-          default: (e) => new ConflictError("A duplicate entry was detected", { cause: e })
+          team_name_key: () =>
+            new ConflictError("The team name already exists"),
+          default: (e) =>
+            new ConflictError("A duplicate entry was detected", { cause: e }),
         },
         [PostgresErrorCode.ForeignKeyViolation]: {
-          team_division_id_fkey: () => new BadRequestError("Division ID does not exist")
-        }
+          team_division_id_fkey: () =>
+            new BadRequestError("Division ID does not exist"),
+        },
       });
       if (pgerror) throw pgerror;
       throw e;

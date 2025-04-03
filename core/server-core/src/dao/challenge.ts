@@ -52,7 +52,8 @@ export class ChallengeDAO {
     } catch (e) {
       const pgerror = TryPGConstraintError(e, {
         [PostgresErrorCode.Duplicate]: {
-          challenge_slug_key: () => new ConflictError("The challenge slug already exists")
+          challenge_slug_key: () =>
+            new ConflictError("The challenge slug already exists"),
         },
       });
       if (pgerror) throw pgerror;
