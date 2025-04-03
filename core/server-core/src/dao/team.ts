@@ -1,4 +1,4 @@
-import type { Insertable, Updateable } from "kysely";
+import type { Insertable, SelectQueryBuilder, Updateable } from "kysely";
 import type { DBType } from "../clients/database.ts";
 import type { Team } from "@noctf/api/datatypes";
 import type { DB, TeamMemberRole } from "@noctf/schema";
@@ -96,30 +96,25 @@ export class TeamDAO {
     return result;
   }
 
-  async list(flags?: string[]): Promise<Team[]> {
-    let query = this.db
-      .selectFrom("team")
-      .select([
-        "id",
-        "name",
-        "bio",
-        "country",
-        "join_code",
-        "division_id",
-        "flags",
-        "created_at",
-      ]);
-    if (flags) {
-      const [no, yes] = partition(flags, (f) => f.startsWith("!"));
-
-      if (yes.length) {
-        query = query.where("flags", "&&", sql.val(yes));
-      }
-      if (no.length) {
-        query = query.where((eb) =>
-          eb.not(eb("flags", "&&", eb.val(no.map((f) => f.substring(1))))),
-        );
-      }
+  async list(
+    params?: Parameters<TeamDAO["listQuery"]>[0],
+    limit?: { limit?: number; offset?: number },
+  ): Promise<Team[]> {
+    let query = this.listQuery(params).select([
+      "id",
+      "name",
+      "bio",
+      "country",
+      "join_code",
+      "division_id",
+      "flags",
+      "created_at",
+    ]);
+    if (limit?.limit) {
+      query = query.limit(limit.limit);
+    }
+    if (limit?.offset) {
+      query = query.offset(limit.offset);
     }
     return query.execute();
   }
@@ -234,5 +229,32 @@ export class TeamDAO {
       .select(["user_id", "role"])
       .where("team_id", "=", id)
       .execute();
+  }
+
+  private listQuery(params?: {
+    flags?: string[];
+    name_prefix?: string;
+    division_id?: number;
+  }) {
+    let query = this.db.selectFrom("team");
+    if (params?.flags) {
+      const [no, yes] = partition(params.flags, (f) => f.startsWith("!"));
+
+      if (yes.length) {
+        query = query.where("flags", "&&", sql.val(yes));
+      }
+      if (no.length) {
+        query = query.where((eb) =>
+          eb.not(eb("flags", "&&", eb.val(no.map((f) => f.substring(1))))),
+        );
+      }
+    }
+    if (params?.name_prefix) {
+      query = query.where("name", "^@", params.name_prefix.toLowerCase());
+    }
+    if (params?.division_id) {
+      query = query.where("division_id", "=", params.division_id);
+    }
+    return query;
   }
 }
