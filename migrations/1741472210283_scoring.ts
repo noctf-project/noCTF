@@ -4,7 +4,9 @@ import type { Kysely } from "kysely";
 export async function up(db: Kysely<any>): Promise<void> {
   await db.schema
     .createTable("score_history")
-    .addColumn("team_id", "integer", (e) => e.notNull().references("team.id"))
+    .addColumn("team_id", "integer", (e) =>
+      e.notNull().references("team.id").onDelete("cascade"),
+    )
     .addColumn("updated_at", "timestamptz", (e) => e.notNull())
     .addColumn("last_solve", "timestamptz", (e) => e.notNull())
     .addPrimaryKeyConstraint("score_history_pkey", ["team_id", "updated_at"])

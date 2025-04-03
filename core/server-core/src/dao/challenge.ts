@@ -94,19 +94,6 @@ export class ChallengeDAO {
     return (await query.execute()) as unknown as ChallengeMetadata[];
   }
 
-  async getMetadata(id: number): Promise<ChallengeMetadata> {
-    const challenge = await this.db
-      .selectFrom("challenge")
-      .select(METADATA_FIELDS)
-      .where("id", "=", id)
-      .executeTakeFirst();
-
-    if (!challenge) {
-      throw new NotFoundError("Challenge not found");
-    }
-    return challenge as unknown as ChallengeMetadata;
-  }
-
   async get(id: number): Promise<Challenge> {
     const challenge = await this.db
       .selectFrom("challenge")

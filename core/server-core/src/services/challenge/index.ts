@@ -23,6 +23,7 @@ import type { SomeJSONSchema } from "ajv/dist/types/json-schema.js";
 import { SubmissionDAO } from "../../dao/submission.ts";
 import { ChallengePlugin } from "./types.ts";
 import { CoreChallengePlugin } from "./core_plugin.ts";
+import { LocalCache } from "../../util/local_cache.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -35,16 +36,19 @@ type Props = Pick<
   | "scoreService"
 >;
 
-const CACHE_NAMESPACE = "core:svc:challenge";
-
 export class ChallengeService {
   private readonly logger;
   private readonly auditLogService;
-  private readonly cacheService;
   private readonly eventBusService;
   private readonly challengeDAO;
   private readonly submissionDAO;
   private readonly ajv = new Ajv();
+  private readonly listCache = new LocalCache<string, ChallengeMetadata[]>({
+    ttl: 3000,
+  });
+  private readonly getCache = new LocalCache<number, Challenge>({
+    ttl: 3000,
+  });
   private privateMetadataSchema: SomeJSONSchema;
   private privateMetadataSchemaValidator: ValidateFunction;
 
@@ -53,7 +57,6 @@ export class ChallengeService {
   constructor({
     logger,
     auditLogService,
-    cacheService,
     databaseClient,
     eventBusService,
     fileService,
@@ -61,7 +64,6 @@ export class ChallengeService {
   }: Props) {
     this.logger = logger;
     this.auditLogService = auditLogService;
-    this.cacheService = cacheService;
     this.eventBusService = eventBusService;
 
     this.challengeDAO = new ChallengeDAO(databaseClient.get());
@@ -104,7 +106,6 @@ export class ChallengeService {
     if (v.private_metadata)
       await this.validatePrivateMetadata(v.private_metadata);
     const { version } = await this.challengeDAO.update(id, v);
-    await this.cacheService.del(CACHE_NAMESPACE, [`c:${id}`, `m:${id}`]);
     await this.auditLogService.log({
       operation: "challenge.update",
       actor,
@@ -138,18 +139,12 @@ export class ChallengeService {
     if (!options?.cacheKey) {
       return fn();
     }
-    return this.cacheService.load(
-      CACHE_NAMESPACE,
-      `list:${options?.cacheKey}`,
-      fn,
-    );
+    return this.listCache.load(`list:${options?.cacheKey}`, fn);
   }
 
   async get(id: number, cached = false): Promise<Challenge> {
     if (cached) {
-      return this.cacheService.load(CACHE_NAMESPACE, `c:${id}`, () =>
-        this.challengeDAO.get(id),
-      );
+      return this.getCache.load(id, () => this.challengeDAO.get(id));
     }
     return this.challengeDAO.get(id);
   }
@@ -166,7 +161,7 @@ export class ChallengeService {
   ) {
     let challenge;
     if (typeof ch === "number") {
-      challenge = await this.getMetadata(ch);
+      challenge = await this.get(ch, true);
     } else {
       challenge = ch;
     }
@@ -206,17 +201,6 @@ export class ChallengeService {
       // TODO: to event bus
     }
     throw new NotImplementedError("The challenge is not solvable");
-  }
-
-  /**
-   * Gets the metadata of a challenge. Always returns a cached response
-   * @param id ID Or Slug
-   * @returns Challenge
-   */
-  async getMetadata(id: number) {
-    return this.cacheService.load(CACHE_NAMESPACE, `m:${id}`, () =>
-      this.challengeDAO.getMetadata(id),
-    );
   }
 
   private removePrivateTags(tags: Record<string, string>) {
