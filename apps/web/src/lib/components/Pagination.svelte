@@ -7,7 +7,7 @@
     initialPage = 0,
     compact = false,
     className = "",
-    onChange = (_page: number) => {}
+    onChange = (_page: number) => {},
   } = $props<{
     totalItems?: number;
     itemsPerPage?: number;
@@ -19,9 +19,13 @@
 
   let currentPage = $state(initialPage);
 
-  const totalPages = $derived(Math.max(1, Math.ceil(totalItems / itemsPerPage)));
+  const totalPages = $derived(
+    Math.max(1, Math.ceil(totalItems / itemsPerPage)),
+  );
   const startItem = $derived(totalItems ? currentPage * itemsPerPage + 1 : 0);
-  const endItem = $derived(Math.min((currentPage + 1) * itemsPerPage, totalItems));
+  const endItem = $derived(
+    Math.min((currentPage + 1) * itemsPerPage, totalItems),
+  );
 
   function goToNextPage() {
     if (currentPage < totalPages - 1) {
@@ -67,7 +71,9 @@
       {#if totalPages <= 7}
         {#each Array(totalPages) as _, i}
           <button
-            class="btn btn-sm hover:pop pop {i === currentPage ? 'btn-primary' : 'btn-ghost'}"
+            class="btn btn-sm hover:pop pop {i === currentPage
+              ? 'btn-primary'
+              : 'btn-ghost'}"
             onclick={() => goToPage(i)}
           >
             {i + 1}
@@ -75,7 +81,9 @@
         {/each}
       {:else}
         <button
-          class="btn btn-sm hover:pop pop {currentPage === 0 ? 'btn-primary' : 'btn-ghost'}"
+          class="btn btn-sm hover:pop pop {currentPage === 0
+            ? 'btn-primary'
+            : 'btn-ghost'}"
           onclick={() => goToPage(0)}
         >
           1
@@ -88,7 +96,9 @@
         {#if currentPage <= 2}
           {#each [1, 2, 3] as i}
             <button
-              class="btn btn-sm hover:pop pop {i === currentPage ? 'btn-primary' : 'btn-ghost'}"
+              class="btn btn-sm hover:pop pop {i === currentPage
+                ? 'btn-primary'
+                : 'btn-ghost'}"
               onclick={() => goToPage(i)}
             >
               {i + 1}
@@ -97,7 +107,9 @@
         {:else if currentPage >= totalPages - 3}
           {#each [totalPages - 4, totalPages - 3, totalPages - 2] as i}
             <button
-              class="btn btn-sm hover:pop pop {i === currentPage ? 'btn-primary' : 'btn-ghost'}"
+              class="btn btn-sm hover:pop pop {i === currentPage
+                ? 'btn-primary'
+                : 'btn-ghost'}"
               onclick={() => goToPage(i)}
             >
               {i + 1}
@@ -106,7 +118,9 @@
         {:else}
           {#each [currentPage - 1, currentPage, currentPage + 1] as i}
             <button
-              class="btn btn-sm hover:pop pop {i === currentPage ? 'btn-primary' : 'btn-ghost'}"
+              class="btn btn-sm hover:pop pop {i === currentPage
+                ? 'btn-primary'
+                : 'btn-ghost'}"
               onclick={() => goToPage(i)}
             >
               {i + 1}
@@ -119,7 +133,9 @@
         {/if}
 
         <button
-          class="btn btn-sm hover:pop pop {currentPage === totalPages - 1 ? 'btn-primary' : 'btn-ghost'}"
+          class="btn btn-sm hover:pop pop {currentPage === totalPages - 1
+            ? 'btn-primary'
+            : 'btn-ghost'}"
           onclick={() => goToPage(totalPages - 1)}
         >
           {totalPages}
@@ -141,7 +157,8 @@
     {#if compact}
       Page {currentPage + 1} of {totalPages} • {totalItems} items
     {:else}
-      Page {currentPage + 1} of {totalPages} • Showing items {startItem}-{endItem} of {totalItems}
+      Page {currentPage + 1} of {totalPages} • Showing items {startItem}-{endItem}
+      of {totalItems}
     {/if}
   </div>
 </div>

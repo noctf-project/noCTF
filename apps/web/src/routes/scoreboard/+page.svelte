@@ -619,7 +619,7 @@
         totalItems={totalTeams}
         initialPage={currentPage}
         itemsPerPage={TEAMS_PER_PAGE}
-        onChange={(page) => currentPage = page}
+        onChange={(page) => (currentPage = page)}
         className="mt-4 mb-8"
       />
     </div>

@@ -1,6 +1,8 @@
 export const HOST = process.env.HOST || "localhost";
 export const PORT = parseInt(process.env.PORT) || 8000;
-export const ALLOWED_ORIGINS = [process.env.WEB_URL || "http://localhost:5173"];
+export const ALLOWED_ORIGINS = process.env.WEB_URL
+  ? process.env.WEB_URL.split(",")
+  : ["http://localhost:5173"];
 export const LOG_LEVEL = process.env.LOG_LEVEL || "info";
 export const POSTGRES_URL =
   process.env.POSTGRES_URL || "postgres://localhost/noctf";
@@ -15,8 +17,9 @@ export const ENABLE_HTTP2 = ["1", "true"].includes(
 
 export const FILE_LOCAL_PATH = process.env.FILE_LOCAL_PATH || "files/";
 
-export const ENABLE_SWAGGER =
-  ["1", "true"].includes((process.env.ENABLE_SWAGGER || "").toLowerCase());
+export const ENABLE_SWAGGER = ["1", "true"].includes(
+  (process.env.ENABLE_SWAGGER || "").toLowerCase(),
+);
 
 export const METRICS_PATH = process.env.METRICS_PATH;
 export const METRICS_FILE_NAME_FORMAT =
