@@ -36,8 +36,9 @@ pnpm generate:swagger
 cd ../..
 
 # Build the API client
-cd core/api-client
+cd core/openapi-spec
 pnpm build
+cd ../..
 
 # Finally run the server
 cd apps/server
@@ -47,6 +48,13 @@ pnpm dev:worker # required in a separate tab for scoreboard calculations
 # And the frontend
 cd apps/web
 pnpm dev
+```
+
+### Shutting down
+Close all running processes, and then run the dev stop script
+
+```sh
+./dev.sh stop
 ```
 
 ## Creating Database Migrations
