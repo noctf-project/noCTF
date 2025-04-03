@@ -6,24 +6,6 @@ export type DBSolve = AllNonNullable<DB["solve"]> & { created_at: Date };
 export class SolveDAO {
   constructor(private readonly db: DBType) {}
 
-  async getSolvesForChallenge(
-    challenge_id: number,
-    division_id?: number,
-  ): Promise<DBSolve[]> {
-    let query = this.getBaseQuery().where(
-      "solve.challenge_id",
-      "=",
-      challenge_id,
-    );
-    if (division_id) {
-      query = query
-        .innerJoin("division", "division.id", "division_id")
-        .where("division_id", "=", division_id)
-        .orderBy("solve.created_at", "asc");
-    }
-    return (await query.execute()) as unknown as DBSolve[];
-  }
-
   async getAllSolves(
     division_id?: number,
     params?: {
@@ -76,17 +58,5 @@ export class SolveDAO {
         "solve.hidden as hidden",
         "solve.created_at as created_at",
       ]);
-  }
-
-  async getSolveCountForChallenge(challenge_id: number) {
-    return (
-      await this.db
-        .selectFrom("solve")
-        .select([(x) => x.fn.countAll().as("count")])
-        .where("challenge_id", "=", challenge_id)
-        .where("hidden", "=", false)
-        .where((x) => x.not(x("team_flags", "&&", ["hidden"])))
-        .executeTakeFirstOrThrow()
-    ).count;
   }
 }

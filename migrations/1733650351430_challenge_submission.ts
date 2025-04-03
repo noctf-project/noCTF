@@ -102,7 +102,6 @@ export async function up(db: Kysely<any>): Promise<void> {
       "challenge_id",
       "team_id",
       "division_id",
-      "team_name",
       "team_flags",
       "created_at",
     ])
@@ -115,7 +114,6 @@ export async function up(db: Kysely<any>): Promise<void> {
           "challenge_id",
           "team_id",
           "division_id",
-          "team.name",
           "team.flags",
           "submission.created_at",
         ])

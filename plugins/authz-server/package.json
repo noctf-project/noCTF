@@ -5,6 +5,7 @@
   "scripts": {
     "test:unit": "vitest --coverage",
     "build": "tsc",
+    "release": "pnpm run build && pnpm run test:unit --run",
     "dev": "echo 'Nothing to do' && exit"
   },
   "keywords": [],

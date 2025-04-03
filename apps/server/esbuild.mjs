@@ -26,10 +26,17 @@ const dirnamePlugin = {
   },
 };
 
+// TODO: this generates 5mb bundles for each app which reuses mostly the same code
+// Can minify although not too much of a big deal as this is serverside
 await esbuild.build({
-  entryPoints: ["src/index.ts"],
+  entryPoints: [
+    "src/entrypoints/www.ts",
+    "src/entrypoints/worker.ts",
+    "src/entrypoints/shell.ts",
+  ],
   bundle: true,
-  outfile: "dist/index.cjs",
+  outdir: "dist/",
+  outExtension: { ".js": ".cjs" },
   platform: "node",
   format: "cjs",
   plugins: [dirnamePlugin],

@@ -251,7 +251,7 @@ importers:
         specifier: 'workspace:'
         version: link:../../core/openapi-spec
       '@sveltejs/adapter-static':
-        specifier: ^3.0.6
+        specifier: ^3.0.8
         version: 3.0.8(@sveltejs/kit@2.15.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)))
       '@sveltejs/kit':
         specifier: ^2.0.0

@@ -1,0 +1,38 @@
+# TODO: make this auto-migrate
+services:
+  server:
+    image: noctf/server
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: server
+    depends_on:
+      - redis
+      - nats
+      - postgres
+    environment:
+      NATS_URL: "nats://nats:4222"
+      REDIS_URL: "redis://redis:6379"
+      POSTGRES_URL: "postgres://postgres:noctf@postgres/noctf"
+      HOST: "::"
+      ENABLE_SWAGGER: 0
+  web:
+    image: noctf/web
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+  redis:
+    image: valkey/valkey:8-alpine
+  nats:
+    image: nats
+    command: -js
+  postgres:
+    image: postgres:17-alpine
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=noctf
+      - POSTGRES_DB=noctf
+volumes:
+  postgres:
