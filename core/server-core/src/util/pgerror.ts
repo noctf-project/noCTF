@@ -6,7 +6,7 @@ export enum PostgresErrorCode {
 }
 
 export const TryPGConstraintError = (
-  e: Error,
+  e: pg.DatabaseError, // We intentionally don't want to verify if error is an actual pg error
   config: Partial<
     Record<
       PostgresErrorCode,
@@ -16,7 +16,6 @@ export const TryPGConstraintError = (
     >
   >,
 ) => {
-  if (!(e instanceof pg.DatabaseError)) return;
   if (e.code && config[e.code as PostgresErrorCode]) {
     const cfg = config[e.code as PostgresErrorCode]!; // typescript is dumb
     if (e.constraint && cfg[e.constraint]) {
