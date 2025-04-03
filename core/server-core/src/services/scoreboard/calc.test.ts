@@ -202,7 +202,6 @@ describe(ComputeScoreboard, () => {
             team_flags: [],
             created_at: new Date(1) as unknown as Timestamp & Date, // fuck TS
             team_id: 1,
-            team_name: "test",
           },
           {
             challenge_id: 1,
@@ -212,7 +211,6 @@ describe(ComputeScoreboard, () => {
             team_flags: [],
             created_at: new Date(2) as unknown as Timestamp & Date, // fuck TS
             team_id: 3,
-            team_name: "test",
           },
           {
             challenge_id: 1,
@@ -222,7 +220,6 @@ describe(ComputeScoreboard, () => {
             team_flags: [],
             created_at: new Date(3) as unknown as Timestamp & Date, // fuck TS
             team_id: 2,
-            team_name: "test",
           },
         ],
       },
@@ -303,7 +300,6 @@ describe(ComputeScoreboard, () => {
             team_flags: [],
             created_at: new Date(1) as any, // fuck TS
             team_id: 1,
-            team_name: "test",
           },
         ],
       },
