@@ -31,6 +31,7 @@ cd ../..
 
 # Generate the API schema file
 cd apps/server
+mkdir dist/
 pnpm generate:swagger
 cd ../..
 
