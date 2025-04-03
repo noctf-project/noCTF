@@ -5,10 +5,11 @@ import type {
 import type { DBType } from "../clients/database.ts";
 import type { Challenge, ChallengeMetadata } from "@noctf/api/datatypes";
 import { FilterUndefined } from "../util/filter.ts";
-import { NotFoundError } from "../errors.ts";
+import { ConflictError, NotFoundError } from "../errors.ts";
 import type { UpdateObject } from "kysely";
 import type { DB } from "@noctf/schema";
 import type { SelectExpression } from "kysely";
+import { PostgresErrorCode, TryPGConstraintError } from "../util/pgerror.ts";
 
 const METADATA_FIELDS: SelectExpression<DB, "challenge">[] = [
   "id",
@@ -34,19 +35,29 @@ export class ChallengeDAO {
       hidden: v.hidden,
       visible_at: v.visible_at,
     };
-    const { id, version, created_at, updated_at } = await this.db
-      .insertInto("challenge")
-      .values(values)
-      .returning(["id", "version", "created_at", "updated_at"])
-      .executeTakeFirstOrThrow();
+    try {
+      const { id, version, created_at, updated_at } = await this.db
+        .insertInto("challenge")
+        .values(values)
+        .returning(["id", "version", "created_at", "updated_at"])
+        .executeTakeFirstOrThrow();
 
-    return {
-      ...values,
-      id,
-      version,
-      created_at,
-      updated_at,
-    };
+      return {
+        ...values,
+        id,
+        version,
+        created_at,
+        updated_at,
+      };
+    } catch (e) {
+      const pgerror = TryPGConstraintError(e, {
+        [PostgresErrorCode.Duplicate]: {
+          challenge_slug_key: () => new ConflictError("The challenge slug already exists")
+        },
+      });
+      if (pgerror) throw pgerror;
+      throw e;
+    }
   }
 
   async list({

@@ -3,9 +3,11 @@ import type { DBType } from "../clients/database.ts";
 import type { Team } from "@noctf/api/datatypes";
 import type { DB, TeamMemberRole } from "@noctf/schema";
 import { FilterUndefined } from "../util/filter.ts";
-import { ConflictError, NotFoundError } from "../errors.ts";
+import { BadRequestError, ConflictError, NotFoundError } from "../errors.ts";
 import { sql } from "kysely";
 import { partition } from "../util/object.ts";
+import { PostgresErrorCode } from "../util/pgerror.ts";
+import { TryPGConstraintError } from "../util/pgerror.ts";
 
 export class TeamDAO {
   constructor(private readonly db: DBType) {}
@@ -18,29 +20,43 @@ export class TeamDAO {
     division_id,
     flags,
   }: Insertable<DB["team"]>): Promise<Team> {
-    const { id, created_at } = await this.db
-      .insertInto("team")
-      .values({
-        name,
-        bio,
-        country,
-        join_code,
-        division_id,
-        flags,
-      })
-      .returning(["id", "created_at"])
-      .executeTakeFirstOrThrow();
+    try {
+      const { id, created_at } = await this.db
+        .insertInto("team")
+        .values({
+          name,
+          bio,
+          country,
+          join_code,
+          division_id,
+          flags,
+        })
+        .returning(["id", "created_at"])
+        .executeTakeFirstOrThrow();
 
-    return {
-      id,
-      name,
-      bio: bio || "",
-      country: country || null,
-      join_code: join_code || null,
-      division_id,
-      flags: flags || [],
-      created_at,
-    };
+      return {
+        id,
+        name,
+        bio: bio || "",
+        country: country || null,
+        join_code: join_code || null,
+        division_id,
+        flags: flags || [],
+        created_at,
+      };
+    } catch (e) {
+      const pgerror = TryPGConstraintError(e, {
+        [PostgresErrorCode.Duplicate]: {
+          team_name_key: () => new ConflictError("The team name already exists"),
+          default: (e) => new ConflictError("A duplicate entry was detected", { cause: e })
+        },
+        [PostgresErrorCode.ForeignKeyViolation]: {
+          team_division_id_fkey: () => new BadRequestError("Division ID does not exist")
+        }
+      });
+      if (pgerror) throw pgerror;
+      throw e;
+    }
   }
 
   async findUsingJoinCode(join_code: string) {
