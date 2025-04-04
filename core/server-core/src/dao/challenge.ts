@@ -5,10 +5,15 @@ import type {
 import type { DBType } from "../clients/database.ts";
 import type { Challenge, ChallengeMetadata } from "@noctf/api/datatypes";
 import { FilterUndefined } from "../util/filter.ts";
-import { NotFoundError } from "../errors.ts";
+import { ConflictError, NotFoundError } from "../errors.ts";
 import type { UpdateObject } from "kysely";
 import type { DB } from "@noctf/schema";
 import type { SelectExpression } from "kysely";
+import {
+  PostgresErrorCode,
+  PostgresErrorConfig,
+  TryPGConstraintError,
+} from "../util/pgerror.ts";
 
 const METADATA_FIELDS: SelectExpression<DB, "challenge">[] = [
   "id",
@@ -21,6 +26,14 @@ const METADATA_FIELDS: SelectExpression<DB, "challenge">[] = [
   "created_at",
   "updated_at",
 ];
+
+const CREATE_ERROR_CONFIG: PostgresErrorConfig = {
+  [PostgresErrorCode.Duplicate]: {
+    challenge_slug_key: () =>
+      new ConflictError("The challenge slug already exists"),
+  },
+};
+
 export class ChallengeDAO {
   constructor(private readonly db: DBType) {}
 
@@ -34,19 +47,25 @@ export class ChallengeDAO {
       hidden: v.hidden,
       visible_at: v.visible_at,
     };
-    const { id, version, created_at, updated_at } = await this.db
-      .insertInto("challenge")
-      .values(values)
-      .returning(["id", "version", "created_at", "updated_at"])
-      .executeTakeFirstOrThrow();
+    try {
+      const { id, version, created_at, updated_at } = await this.db
+        .insertInto("challenge")
+        .values(values)
+        .returning(["id", "version", "created_at", "updated_at"])
+        .executeTakeFirstOrThrow();
 
-    return {
-      ...values,
-      id,
-      version,
-      created_at,
-      updated_at,
-    };
+      return {
+        ...values,
+        id,
+        version,
+        created_at,
+        updated_at,
+      };
+    } catch (e) {
+      const pgerror = TryPGConstraintError(e, CREATE_ERROR_CONFIG);
+      if (pgerror) throw pgerror;
+      throw e;
+    }
   }
 
   async list({
@@ -73,19 +92,6 @@ export class ChallengeDAO {
     }
 
     return (await query.execute()) as unknown as ChallengeMetadata[];
-  }
-
-  async getMetadata(id: number): Promise<ChallengeMetadata> {
-    const challenge = await this.db
-      .selectFrom("challenge")
-      .select(METADATA_FIELDS)
-      .where("id", "=", id)
-      .executeTakeFirst();
-
-    if (!challenge) {
-      throw new NotFoundError("Challenge not found");
-    }
-    return challenge as unknown as ChallengeMetadata;
   }
 
   async get(id: number): Promise<Challenge> {

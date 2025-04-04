@@ -26,7 +26,7 @@ export async function routes(fastify: FastifyInstance) {
     Querystring: ScoreboardQuery;
     Params: IdParams;
   }>(
-    "/scoreboard/division/:id",
+    "/scoreboard/divisions/:id",
     {
       schema: {
         security: [{ bearer: [] }],
@@ -70,7 +70,7 @@ export async function routes(fastify: FastifyInstance) {
   );
 
   fastify.get<{ Params: IdParams; Reply: ScoreboardTeamResponse }>(
-    "/scoreboard/team/:id",
+    "/scoreboard/teams/:id",
     {
       schema: {
         security: [{ bearer: [] }],

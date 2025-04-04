@@ -1,5 +1,8 @@
 import { UpdateConfigValueRequest } from "@noctf/api/requests";
-import { AdminGetConfigValueResponse, AnyResponse } from "@noctf/api/responses";
+import {
+  AdminGetConfigValueResponse,
+  AdminGetConfigSchemaResponse,
+} from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
 import type { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
@@ -22,7 +25,7 @@ export async function routes(fastify: FastifyInstance) {
         security: [{ bearer: [] }],
         auth,
         response: {
-          200: AnyResponse,
+          200: AdminGetConfigSchemaResponse,
         },
       },
     },

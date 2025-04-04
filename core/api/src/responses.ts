@@ -184,6 +184,21 @@ export const AnyResponse = Type.Object(
 );
 export type AnyResponse = Static<typeof AnyResponse>;
 
+export const AdminGetConfigSchemaResponse = Type.Object(
+  {
+    data: Type.Array(
+      Type.Object({
+        namespace: Type.String(),
+        schema: Type.Any(),
+      }),
+    ),
+  },
+  { additionalProperties: false },
+);
+export type AdminGetConfigSchemaResponse = Static<
+  typeof AdminGetConfigSchemaResponse
+>;
+
 export const SolveChallengeResponse = Type.Object(
   {
     data: Type.Enum(ChallengeSolveStatus),

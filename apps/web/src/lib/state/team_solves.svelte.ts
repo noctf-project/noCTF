@@ -3,7 +3,7 @@ import { SvelteMap } from "svelte/reactivity";
 import api from "$lib/api/index.svelte";
 
 export type TeamScoringData = PathResponse<
-  "/scoreboard/team/{id}",
+  "/scoreboard/teams/{id}",
   "get"
 >["data"];
 
@@ -17,9 +17,12 @@ class TeamScoresState {
     this.loading.set(team, true);
 
     try {
-      const { data: response, error } = await api.GET("/scoreboard/team/{id}", {
-        params: { path: { id: team } },
-      });
+      const { data: response, error } = await api.GET(
+        "/scoreboard/teams/{id}",
+        {
+          params: { path: { id: team } },
+        },
+      );
 
       if (response) {
         this.data.set(team, response.data);

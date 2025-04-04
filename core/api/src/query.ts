@@ -11,3 +11,8 @@ export const ScoreboardQuery = Type.Object({
   page_size: Type.Optional(Type.Integer()),
 });
 export type ScoreboardQuery = Static<typeof ScoreboardQuery>;
+
+export const ListTeamsQuery = Type.Object({
+  division_id: Type.Optional(Type.Integer()),
+});
+export type ListTeamsQuery = Static<typeof ListTeamsQuery>;

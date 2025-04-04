@@ -6,19 +6,24 @@ import type { AuditParams } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 import { TeamConfig } from "@noctf/api/config";
 import { TeamDAO } from "../dao/team.ts";
+import { LocalCache } from "../util/local_cache.ts";
+import { Team } from "@noctf/api/datatypes";
 
 type Props = Pick<
   ServiceCradle,
   "cacheService" | "configService" | "databaseClient" | "auditLogService"
 >;
 
-const CACHE_NAMESPACE = "core:svc:team";
-
 export class TeamService {
   private readonly auditLogService;
   private readonly cacheService;
   private readonly configService;
   private readonly dao;
+
+  private readonly listCache = new LocalCache<string, Team[]>({
+    ttl: 10000,
+    max: 32,
+  });
 
   constructor({
     cacheService,
@@ -112,12 +117,19 @@ export class TeamService {
     return this.dao.get(id);
   }
 
-  async list(flags?: string[], cacheKey?: string) {
-    if (cacheKey)
-      return this.cacheService.load(CACHE_NAMESPACE, `list:${cacheKey}`, () =>
-        this.dao.list(flags),
-      );
-    return this.dao.list(flags);
+  async list(
+    params?: {
+      flags?: string[];
+      division_id?: number;
+    },
+    cached?: boolean,
+  ) {
+    const key =
+      cached &&
+      `${params?.flags?.toSorted().join(",") || ""}:${params?.division_id}`;
+    return key
+      ? this.listCache.load(key, () => this.dao.list(params))
+      : this.dao.list(params);
   }
 
   async delete(id: number, { actor, message }: AuditParams = {}) {

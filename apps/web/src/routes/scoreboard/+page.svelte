@@ -34,7 +34,7 @@
   const apiChallenges = wrapLoadable(api.GET("/challenges"));
   const apiScoreboard = $derived(
     wrapLoadable(
-      api.GET("/scoreboard/division/{id}", {
+      api.GET("/scoreboard/divisions/{id}", {
         params: {
           path: { id: 1 },
           query: { page: currentPage + 1, page_size: TEAMS_PER_PAGE },
