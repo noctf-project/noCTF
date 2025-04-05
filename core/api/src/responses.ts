@@ -98,7 +98,7 @@ export type GetTeamResponse = Static<typeof GetTeamResponse>;
 
 export const ListTeamsResponse = Type.Object({
   data: Type.Object({
-    teams: Type.Array(TeamSummary),
+    teams: Type.Array(Type.Omit(TeamSummary, ["flags"])),
     page_size: Type.Integer(),
     total: Type.Integer(),
   }),

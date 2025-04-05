@@ -113,6 +113,7 @@ export class TeamDAO {
         "country",
         "division_id",
         "created_at",
+        "flags",
         (eb) =>
           eb
             .selectFrom("team_member")
