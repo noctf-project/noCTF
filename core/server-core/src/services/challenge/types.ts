@@ -1,8 +1,5 @@
-import {
-  Challenge,
-  ChallengeMetadata,
-  ChallengeSolveStatus,
-} from "@noctf/api/datatypes";
+import { Challenge, ChallengeMetadata } from "@noctf/api/datatypes";
+import { ChallengeSolveStatus } from "@noctf/api/enums";
 import { TSchema } from "@sinclair/typebox";
 
 export type SolveData = {

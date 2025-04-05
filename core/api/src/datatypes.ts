@@ -246,12 +246,6 @@ export const Award = Type.Object(
 );
 export type Award = Static<typeof Award>;
 
-export enum ChallengeSolveStatus {
-  Queued = "queued",
-  Incorrect = "incorrect",
-  Correct = "correct",
-}
-
 export const ScoreboardEntry = Type.Object({
   team_id: Type.Number(),
   score: Type.Number(),
