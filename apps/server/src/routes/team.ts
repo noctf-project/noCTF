@@ -10,6 +10,7 @@ import {
 import {
   CreateTeamRequest,
   JoinTeamRequest,
+  QueryTeamNamesRequest,
   UpdateTeamRequest,
 } from "@noctf/api/requests";
 import {
@@ -21,7 +22,7 @@ import {
 } from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
 import { IdParams } from "@noctf/api/params";
-import { QueryTeamNamesQuery, ListTeamsQuery } from "@noctf/api/query";
+import { ListTeamsQuery } from "@noctf/api/query";
 
 export async function routes(fastify: FastifyInstance) {
   const { teamService } = fastify.container.cradle as ServiceCradle;
@@ -192,9 +193,9 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{
+  fastify.post<{
     Reply: QueryTeamNamesResponse;
-    Querystring: QueryTeamNamesQuery;
+    Body: QueryTeamNamesRequest;
   }>(
     "/team_names",
     {
@@ -204,14 +205,14 @@ export async function routes(fastify: FastifyInstance) {
         response: {
           200: QueryTeamNamesResponse,
         },
-        querystring: QueryTeamNamesQuery,
+        body: QueryTeamNamesRequest,
         auth: {
           policy: ["team.get"],
         },
       },
     },
     async (request) => {
-      const ids = [...new Set(request.query.id)];
+      const ids = [...new Set(request.body.ids)];
       return {
         data: await teamService.queryNames(ids, false),
       };

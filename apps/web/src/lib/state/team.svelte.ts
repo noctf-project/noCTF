@@ -18,15 +18,6 @@ export class TeamService {
     return this.cache.fetch(id);
   }
 
-  async getTeamName(id: number) {
-    await this.checkPreload();
-    try {
-      return (await this.cache.fetch(id))?.name;
-    } catch {
-      return "unknown";
-    }
-  }
-
   async getAllTeams(): Promise<Team[]> {
     await this.preloadAll();
     return Array.from(this.cache.values()).toSorted((a, b) => a.id - b.id);
