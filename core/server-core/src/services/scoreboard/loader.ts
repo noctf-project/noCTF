@@ -20,25 +20,29 @@ export class ScoreboardDataLoader {
     division: number,
     start: number,
     end: number,
-  ): Promise<ScoreboardEntry[]> {
+  ): Promise<{total: number, entries: ScoreboardEntry[]}> {
     return this.getScoreboardCoaleascer.get(
       `${division}:${start}:${end}`,
       async () => {
         const client = await this.factory.getClient();
         const keys = this.getCacheKeys(division);
-        const ranks = await client.zRangeByScore(keys.rank, start, end);
+        const [total, ranks] = await Promise.all([
+          client.zCard(keys.rank),
+          client.zRangeByScore(keys.rank, start, end)
+        ]);
         const compressed = await client.hmGet(
           client.commandOptions({ returnBuffers: true }),
           keys.team,
           ranks,
         );
-        return (
+        const entries = (
           await RunInParallelWithLimit(compressed, 8, async (x) => {
             return decode(await Decompress(x));
           })
         )
           .map((x) => x.status === "fulfilled" && x.value)
           .filter((x) => x) as ScoreboardEntry[];
+        return {total, entries};
       },
     );
   }
@@ -118,7 +122,7 @@ export class ScoreboardDataLoader {
         .map((x, i) => ({
           score: i,
           value: x.team_id.toString(),
-        })),
+        }), {key: 0}),
     );
     multi.hSet(keys.team, teams);
     multi.hSet(keys.csolves, csolves);

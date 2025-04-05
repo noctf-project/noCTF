@@ -58,8 +58,9 @@ export async function routes(fastify: FastifyInstance) {
       );
       return {
         data: {
-          scores: scoreboard,
+          scores: scoreboard.entries,
           page_size: page_size,
+          total: scoreboard.total
         },
       };
     },

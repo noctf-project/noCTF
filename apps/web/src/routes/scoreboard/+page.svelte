@@ -16,6 +16,16 @@
     rank: number;
     score: number;
     last_solve: Date;
+    solves: {
+      score: number;
+      bonus?: number;
+      created_at: Date;
+      challenge_id: number;
+    }[];
+    awards: {
+      value: number;
+      created_at: Date;
+    }[];
   };
 
   type ChallengeEntry = {
@@ -66,6 +76,8 @@
           ...s,
           rank: currentPage * TEAMS_PER_PAGE + (i + 1),
           last_solve: new Date(s.last_solve),
+          solves: s.solves.map(({ created_at, ...rest }) => ({ ...rest, created_at: new Date(created_at) })),
+          awards: s.awards.map(({ created_at, ...rest }) => ({ ...rest, created_at: new Date(created_at) }))
         },
       ]) || [],
     ),
@@ -91,31 +103,6 @@
   const paginatedTeamIds = $derived(Array.from(currentPageTeams.keys()));
 
   const totalPages = $derived(Math.ceil(totalTeams / TEAMS_PER_PAGE));
-
-  $effect(() => {
-    if (detailedView && paginatedTeamIds.length) {
-      untrack(() => {
-        teamScoresState.loadTeams(paginatedTeamIds);
-      });
-    }
-  });
-
-  const teamSolveMap = $derived.by(() => {
-    if (!detailedView) return new Map();
-
-    const map = new Map();
-    paginatedTeamIds.forEach((teamId) => {
-      const teamData = teamScoresState.data.get(teamId);
-      if (teamData) {
-        const solveSet = new Set();
-        teamData.solves.forEach((solve) => {
-          solveSet.add(solve.challenge_id);
-        });
-        map.set(teamId, solveSet);
-      }
-    });
-    return map;
-  });
 
   let top10TeamsChartDataLoaded = $state(false);
   let top10TeamsChartsData: TeamChartData[] = $state([]);
@@ -172,12 +159,6 @@
 
   function toggleView() {
     detailedView = !detailedView;
-
-    setTimeout(() => {
-      if (detailedView && paginatedTeamIds.length) {
-        teamScoresState.loadTeams(paginatedTeamIds);
-      }
-    }, 0);
   }
 </script>
 
@@ -445,104 +426,62 @@
             <tbody>
               {#each paginatedTeamIds as team_id (`row-${team_id}`)}
                 {@const entry = currentPageTeams.get(team_id)!}
-                {@const teamData = teamScoresState.data.get(team_id)}
-                {#if !teamData}
-                  <tr>
-                    <td class="border border-base-300 text-center h-12">
-                      <div class="skeleton h-4 w-6 mx-auto"></div>
-                    </td>
-
-                    <td class="border border-base-300 px-4">
-                      <div class="skeleton h-4 w-32"></div>
-                    </td>
-
-                    <td class="border border-base-300 px-4 text-center">
-                      <div class="skeleton h-4 w-8 mx-auto"></div>
-                    </td>
-
-                    <td class="border border-base-300 px-4 text-center">
-                      <div class="skeleton h-4 w-6 mx-auto"></div>
-                    </td>
-
-                    <td class="border border-base-300 px-4 text-center">
-                      <div class="skeleton h-4 w-16 mx-auto"></div>
-                    </td>
-
-                    {#each challenges as challenge (`chall-${entry.team_id}-${challenge.id}`)}
-                      <td class="border border-base-300 p-0">
-                        <div
-                          class="w-full h-full flex flex-col items-center justify-center"
-                          title={challenge.title}
-                        >
-                          <Icon
-                            icon="material-symbols:flag"
-                            class="text-xl opacity-10"
-                          />
-                          <span class="text-xs opacity-20"
-                            >{challenge.points}</span
-                          >
-                        </div>
-                      </td>
-                    {/each}
-                  </tr>
-                {:else}
-                  <tr>
-                    <td
-                      class="border border-base-300 text-center h-12 font-bold"
+                <tr>
+                  <td
+                    class="border border-base-300 text-center h-12 font-bold"
+                  >
+                    {entry.rank}
+                  </td>
+                  <td class="border border-base-300 px-4">
+                    <a
+                      href="/team/{entry.team_id}"
+                      class="truncate block cursor-pointer"
                     >
-                      {entry.rank}
-                    </td>
-                    <td class="border border-base-300 px-4">
-                      <a
-                        href="/team/{entry.team_id}"
-                        class="truncate block cursor-pointer"
-                      >
-                        {#await TeamService.getTeamName(entry.team_id)}
-                          <div class="skeleton h-4 w-24"></div>
-                        {:then name}
-                          {name}
-                        {/await}
-                      </a>
-                    </td>
-                    <td class="border border-base-300 px-4 text-center">
-                      {entry.score}
-                    </td>
-                    <td class="border border-base-300 px-4 text-center">
-                      {teamData.solves.length || 0}
-                    </td>
+                      {#await TeamService.getTeamName(entry.team_id)}
+                        <div class="skeleton h-4 w-24"></div>
+                      {:then name}
+                        {name}
+                      {/await}
+                    </a>
+                  </td>
+                  <td class="border border-base-300 px-4 text-center">
+                    {entry.score}
+                  </td>
+                  <td class="border border-base-300 px-4 text-center">
+                    {entry.solves.length || 0}
+                  </td>
+                  <td
+                    class="border border-base-300 px-4 text-center"
+                    title={entry.last_solve.toLocaleString()}
+                  >
+                    {getRelativeTime(entry.last_solve)}
+                  </td>
+                  {#each challenges as challenge (`chall-${entry.team_id}-${challenge.id}`)}
+                    {@const solved =
+                      entry.solves?.find(({ challenge_id }) => challenge.id === challenge_id) ?? false}
                     <td
-                      class="border border-base-300 px-4 text-center"
-                      title={entry.last_solve.toLocaleString()}
+                      class={"border border-base-300 p-0 " +
+                        (solved ? "bg-primary/20" : "")}
                     >
-                      {getRelativeTime(entry.last_solve)}
-                    </td>
-                    {#each challenges as challenge (`chall-${entry.team_id}-${challenge.id}`)}
-                      {@const solved =
-                        teamSolveMap.get(team_id)?.has(challenge.id) ?? false}
-                      <td
-                        class={"border border-base-300 p-0 " +
-                          (solved ? "bg-primary/20" : "")}
+                      <div
+                        class="w-full h-full flex flex-col items-center justify-center"
+                        title={challenge.title}
                       >
-                        <div
-                          class="w-full h-full flex flex-col items-center justify-center"
-                          title={challenge.title}
+                        <Icon
+                          icon="material-symbols:flag"
+                          class="text-xl {solved
+                            ? 'text-primary'
+                            : 'opacity-10'}"
+                        />
+                        <span
+                          class="text-xs {solved
+                            ? 'text-primary'
+                            : 'opacity-20'}">{challenge.points}</span
                         >
-                          <Icon
-                            icon="material-symbols:flag"
-                            class="text-xl {solved
-                              ? 'text-primary'
-                              : 'opacity-10'}"
-                          />
-                          <span
-                            class="text-xs {solved
-                              ? 'text-primary'
-                              : 'opacity-20'}">{challenge.points}</span
-                          >
-                        </div>
-                      </td>
-                    {/each}
-                  </tr>
-                {/if}
+                      </div>
+                    </td>
+                  {/each}
+                </tr>
               {/each}
             </tbody>
           </table>

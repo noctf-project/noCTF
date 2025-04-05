@@ -218,7 +218,8 @@ export type AdminGetScoringStrategiesResponse = Static<
 export const ScoreboardResponse = Type.Object({
   data: Type.Object({
     scores: Type.Array(Type.Omit(ScoreboardEntry, ["updated_at"])),
-    page_size: Type.Number(),
+    page_size: Type.Integer(),
+    total: Type.Integer()
   }),
 });
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
