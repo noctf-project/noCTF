@@ -1,4 +1,4 @@
-import { decode, encode } from "cbor2";
+import { decode, encode } from "cbor-x";
 import type { ServiceCradle } from "../index.ts";
 import { Compress, Decompress } from "../util/message_compression.ts";
 import { Stopwatch } from "../util/stopwatch.ts";

@@ -4,7 +4,7 @@ import { Coleascer } from "../util/coleascer.ts";
 import { mockDeep } from "vitest-mock-extended";
 import { MetricsClient } from "../clients/metrics.ts";
 import { RedisClientFactory } from "../clients/redis.ts";
-import { encode } from "cbor2";
+import { encode } from "cbor-x";
 
 vi.mock(import("../util/coleascer.ts"), () => ({
   Coleascer: vi.fn(),

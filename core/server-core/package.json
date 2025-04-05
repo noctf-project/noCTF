@@ -18,7 +18,7 @@
     "@sinclair/typebox": "catalog:",
     "ajv": "catalog:",
     "awilix": "catalog:",
-    "cbor2": "^1.8.0",
+    "cbor-x": "^1.6.0",
     "expr-eval": "catalog:",
     "fastify": "catalog:",
     "jsonwebtoken": "^9.0.2",
