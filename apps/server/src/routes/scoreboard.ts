@@ -60,7 +60,7 @@ export async function routes(fastify: FastifyInstance) {
         data: {
           scores: scoreboard.entries,
           page_size: page_size,
-          total: scoreboard.total
+          total: scoreboard.total,
         },
       };
     },
@@ -99,7 +99,11 @@ export async function routes(fastify: FastifyInstance) {
       }
       const solves = entry.solves.filter(({ hidden }) => !hidden);
       return {
-        data: { solves, graph, awards: entry.awards },
+        data: {
+          ...entry,
+          solves,
+          graph,
+        },
       };
     },
   );

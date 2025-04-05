@@ -76,8 +76,14 @@
           ...s,
           rank: currentPage * TEAMS_PER_PAGE + (i + 1),
           last_solve: new Date(s.last_solve),
-          solves: s.solves.map(({ created_at, ...rest }) => ({ ...rest, created_at: new Date(created_at) })),
-          awards: s.awards.map(({ created_at, ...rest }) => ({ ...rest, created_at: new Date(created_at) }))
+          solves: s.solves.map(({ created_at, ...rest }) => ({
+            ...rest,
+            created_at: new Date(created_at),
+          })),
+          awards: s.awards.map(({ created_at, ...rest }) => ({
+            ...rest,
+            created_at: new Date(created_at),
+          })),
         },
       ]) || [],
     ),
@@ -427,9 +433,7 @@
               {#each paginatedTeamIds as team_id (`row-${team_id}`)}
                 {@const entry = currentPageTeams.get(team_id)!}
                 <tr>
-                  <td
-                    class="border border-base-300 text-center h-12 font-bold"
-                  >
+                  <td class="border border-base-300 text-center h-12 font-bold">
                     {entry.rank}
                   </td>
                   <td class="border border-base-300 px-4">
@@ -458,7 +462,9 @@
                   </td>
                   {#each challenges as challenge (`chall-${entry.team_id}-${challenge.id}`)}
                     {@const solved =
-                      entry.solves?.find(({ challenge_id }) => challenge.id === challenge_id) ?? false}
+                      entry.solves?.find(
+                        ({ challenge_id }) => challenge.id === challenge_id,
+                      ) ?? false}
                     <td
                       class={"border border-base-300 p-0 " +
                         (solved ? "bg-primary/20" : "")}

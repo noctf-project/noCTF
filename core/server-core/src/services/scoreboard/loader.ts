@@ -20,7 +20,7 @@ export class ScoreboardDataLoader {
     division: number,
     start: number,
     end: number,
-  ): Promise<{total: number, entries: ScoreboardEntry[]}> {
+  ): Promise<{ total: number; entries: ScoreboardEntry[] }> {
     return this.getScoreboardCoaleascer.get(
       `${division}:${start}:${end}`,
       async () => {
@@ -28,7 +28,7 @@ export class ScoreboardDataLoader {
         const keys = this.getCacheKeys(division);
         const [total, ranks] = await Promise.all([
           client.zCard(keys.rank),
-          client.zRangeByScore(keys.rank, start, end)
+          client.zRangeByScore(keys.rank, start, end),
         ]);
         const compressed = await client.hmGet(
           client.commandOptions({ returnBuffers: true }),
@@ -42,7 +42,7 @@ export class ScoreboardDataLoader {
         )
           .map((x) => x.status === "fulfilled" && x.value)
           .filter((x) => x) as ScoreboardEntry[];
-        return {total, entries};
+        return { total, entries };
       },
     );
   }
@@ -119,10 +119,13 @@ export class ScoreboardDataLoader {
       keys.rank,
       scoreboard
         .filter((x) => !x.hidden)
-        .map((x, i) => ({
-          score: i,
-          value: x.team_id.toString(),
-        }), {key: 0}),
+        .map(
+          (x, i) => ({
+            score: i,
+            value: x.team_id.toString(),
+          }),
+          { key: 0 },
+        ),
     );
     multi.hSet(keys.team, teams);
     multi.hSet(keys.csolves, csolves);

@@ -36,6 +36,16 @@ export type ChallengeSummary = {
   bonuses: number[];
 };
 
+const NewTeam = (team_id: number, hidden: boolean): ScoreboardEntry => ({
+  score: 0,
+  team_id,
+  updated_at: new Date(0),
+  last_solve: new Date(0),
+  hidden,
+  solves: [],
+  awards: [],
+});
+
 function ComputeScoresForChallenge(
   { metadata, expr }: ChallengeMetadataWithExpr,
   solves: DBSolve[],
@@ -92,7 +102,7 @@ function ComputeScoresForChallenge(
 export function ComputeScoreboard(
   challenges: ChallengeMetadataWithExpr[],
   solvesByChallenge: Record<number, DBSolve[]>,
-  awards: Award[],
+  awards: (Award & { team_flags: string[] })[],
   logger?: Logger,
 ): {
   scoreboard: ScoreboardEntry[];
@@ -103,15 +113,10 @@ export function ComputeScoreboard(
   const computed = challenges.map((x) => {
     for (const solve of solvesByChallenge[x.metadata.id] || []) {
       if (!teamScores.has(solve.team_id)) {
-        teamScores.set(solve.team_id, {
-          score: 0,
-          team_id: solve.team_id,
-          updated_at: new Date(0),
-          last_solve: new Date(0),
-          hidden: solve.team_flags.includes("hidden"),
-          solves: [],
-          awards: [],
-        });
+        teamScores.set(
+          solve.team_id,
+          NewTeam(solve.team_id, solve.team_flags.includes("hidden")),
+        );
       }
     }
     const result = ComputeScoresForChallenge(
@@ -149,7 +154,8 @@ export function ComputeScoreboard(
   for (const award of awards) {
     let team = teamScores.get(award.team_id);
     if (!team) {
-      continue;
+      team = NewTeam(award.team_id, award.team_flags.includes("hidden"));
+      teamScores.set(award.team_id, team);
     }
     team.awards.push(award);
     team.score += award.value;
