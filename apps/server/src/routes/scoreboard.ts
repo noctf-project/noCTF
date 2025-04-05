@@ -31,7 +31,6 @@ export async function routes(fastify: FastifyInstance) {
         security: [{ bearer: [] }],
         tags: ["scoreboard"],
         auth: {
-          require: true,
           policy: ["scoreboard.get"],
         },
         querystring: ScoreboardQuery,
@@ -77,7 +76,6 @@ export async function routes(fastify: FastifyInstance) {
           200: ScoreboardTeamResponse,
         },
         auth: {
-          require: true,
           policy: ["AND", "team.get", "scoreboard.get"],
         },
       },

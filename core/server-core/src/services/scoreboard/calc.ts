@@ -57,12 +57,13 @@ function ComputeScoresForChallenge(
     let last_solve = new Date(0);
     const rv: Solve[] = valid.map(({ team_id, created_at }, i) => {
       last_solve = created_at;
+      const b = bonus?.[i];
       return {
         team_id,
         challenge_id: metadata.id,
-        bonus: bonus && i + 1,
+        bonus: b,
         hidden: false,
-        score: base + ((bonus && Math.round(bonus[i])) || 0),
+        score: base + ((b && Math.round(b)) || 0),
         created_at,
       };
     });
