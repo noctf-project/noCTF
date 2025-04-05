@@ -26,25 +26,12 @@ describe(ScoreboardService, () => {
 
   beforeEach(() => {
     cacheService.load.mockImplementation((_a, _b, fetcher) => fetcher());
-    vi.mocked(DivisionDAO).mockImplementation(() => divisionDAO);
-    vi.mocked(SolveDAO).mockImplementation(() => solveDAO);
+    vi.mocked(DivisionDAO).mockReturnValue(divisionDAO);
+    vi.mocked(SolveDAO).mockReturnValue(solveDAO);
   });
 
   afterEach(() => {
     vi.resetAllMocks();
-  });
-
-  it("Fetches the solves using DAO", async () => {
-    const svc = new ScoreboardService({
-      logger,
-      cacheService,
-      challengeService,
-      configService,
-      databaseClient,
-      scoreService,
-    });
-    await svc.getSolves(1, { limit: 50 });
-    expect(solveDAO.getAllSolves).toBeCalledWith(1, { limit: 50 });
   });
 
   it("Fetches the scoreboard from cache", async () => {
@@ -58,12 +45,15 @@ describe(ScoreboardService, () => {
     });
     cacheService.get.mockResolvedValueOnce(null).mockResolvedValueOnce({
       data: [],
-      updated_at: new Date(0),
+      updated_at: new Date(1),
     });
-    expect(await svc.getScoreboard(1)).toEqual(null);
     expect(await svc.getScoreboard(1)).toEqual({
       data: [],
       updated_at: new Date(0),
+    });
+    expect(await svc.getScoreboard(1)).toEqual({
+      data: [],
+      updated_at: new Date(1),
     });
   });
 });

@@ -41,7 +41,9 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
-    .addColumn("user_id", "integer", (col) => col.references("user.id"))
+    .addColumn("user_id", "integer", (col) =>
+      col.references("user.id").onDelete("no action"),
+    )
     .addColumn("team_id", "integer", (col) =>
       col.notNull().references("team.id"),
     )
@@ -100,7 +102,6 @@ export async function up(db: Kysely<any>): Promise<void> {
       "challenge_id",
       "team_id",
       "division_id",
-      "team_name",
       "team_flags",
       "created_at",
     ])
@@ -113,7 +114,6 @@ export async function up(db: Kysely<any>): Promise<void> {
           "challenge_id",
           "team_id",
           "division_id",
-          "team.name",
           "team.flags",
           "submission.created_at",
         ])

@@ -4,15 +4,18 @@ import type { Kysely } from "kysely";
 export async function up(db: Kysely<any>): Promise<void> {
   await db.schema
     .createTable("score_history")
-    .addColumn("team_id", "integer", (e) => e.notNull().references("team.id"))
-    .addColumn("timestamp", "timestamptz", (e) => e.notNull())
-    .addPrimaryKeyConstraint("score_history_pkey", ["team_id", "timestamp"])
+    .addColumn("team_id", "integer", (e) =>
+      e.notNull().references("team.id").onDelete("cascade"),
+    )
+    .addColumn("updated_at", "timestamptz", (e) => e.notNull())
+    .addColumn("last_solve", "timestamptz", (e) => e.notNull())
+    .addPrimaryKeyConstraint("score_history_pkey", ["team_id", "updated_at"])
     .addColumn("score", "integer", (e) => e.notNull())
     .execute();
   await db.schema
     .createIndex("score_history_idx_timestamp_team_id")
     .on("score_history")
-    .columns(["timestamp", "team_id"])
+    .columns(["updated_at", "team_id"])
     .execute();
 }
 

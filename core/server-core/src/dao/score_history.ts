@@ -10,7 +10,7 @@ export class ScoreHistoryDAO {
       .insertInto("score_history")
       .values(entries)
       .onConflict((o) =>
-        o.columns(["team_id", "timestamp"]).doUpdateSet({
+        o.columns(["team_id", "updated_at"]).doUpdateSet({
           score: (eb) => eb.ref("excluded.score"),
         }),
       )
@@ -31,14 +31,14 @@ export class ScoreHistoryDAO {
   async getByTeam(teamId: number, startTime?: Date, endTime?: Date) {
     let query = this.db
       .selectFrom("score_history")
-      .select(["team_id", "score", "timestamp"])
+      .select(["team_id", "score", "updated_at"])
       .where("team_id", "=", teamId)
-      .orderBy("timestamp", "asc");
+      .orderBy("updated_at", "asc");
     if (startTime) {
-      query = query.where("timestamp", ">=", startTime);
+      query = query.where("updated_at", ">=", startTime);
     }
     if (endTime) {
-      query = query.where("timestamp", "<=", endTime);
+      query = query.where("updated_at", "<=", endTime);
     }
     return query.execute();
   }

@@ -33,7 +33,7 @@ export class ConfigService {
   private readonly auditLogService;
   private readonly validators: Map<
     string,
-    [ValidateFunction, Validator<unknown>]
+    [TSchema, ValidateFunction, Validator<unknown>]
   > = new Map();
 
   private cache: Map<string, [Promise<ConfigValue<SerializableMap>>, number]> =
@@ -127,7 +127,7 @@ export class ConfigService {
     if (!v) {
       throw new ValidationError("Config namespace does not exist");
     }
-    const [av, validator] = v;
+    const [_schema, av, validator] = v;
     if (!av(value)) {
       throw new ValidationError(
         "JSONSchema: " +
@@ -177,6 +177,7 @@ export class ConfigService {
       throw new Error("schema has no $id field");
     }
     this.validators.set(namespace, [
+      schema,
       this.ajv.compile(schema),
       validator || nullValidator,
     ]);

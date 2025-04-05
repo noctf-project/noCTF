@@ -114,7 +114,7 @@ export enum UpdateTeamJoinCodeAction {
 
 export const UpdateTeamRequest = Type.Composite(
   [
-    Type.Pick(Team, ["name", "bio"]),
+    Type.Pick(Team, ["name", "bio", "country"]),
     Type.Object({
       join_code: Type.Optional(Type.Enum(UpdateTeamJoinCodeAction)),
     }),

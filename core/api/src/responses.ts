@@ -14,6 +14,8 @@ import {
   ScoreboardEntry,
   PublicTeam,
   Solve,
+  TypeDate,
+  Award,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 
@@ -182,6 +184,21 @@ export const AnyResponse = Type.Object(
 );
 export type AnyResponse = Static<typeof AnyResponse>;
 
+export const AdminGetConfigSchemaResponse = Type.Object(
+  {
+    data: Type.Array(
+      Type.Object({
+        namespace: Type.String(),
+        schema: Type.Any(),
+      }),
+    ),
+  },
+  { additionalProperties: false },
+);
+export type AdminGetConfigSchemaResponse = Static<
+  typeof AdminGetConfigSchemaResponse
+>;
+
 export const SolveChallengeResponse = Type.Object(
   {
     data: Type.Enum(ChallengeSolveStatus),
@@ -199,7 +216,12 @@ export type AdminGetScoringStrategiesResponse = Static<
 >;
 
 export const ScoreboardResponse = Type.Object({
-  data: Type.Array(ScoreboardEntry),
+  data: Type.Object({
+    scores: Type.Array(Type.Omit(ScoreboardEntry, ["updated_at"])),
+    total: Type.Number(),
+    page_size: Type.Number(),
+    updated_at: TypeDate,
+  }),
 });
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
 
@@ -207,6 +229,7 @@ export const ScoreboardTeamResponse = Type.Object({
   data: Type.Object({
     solves: Type.Array(Solve),
     graph: Type.Array(Type.Tuple([Type.Number(), Type.Number()])),
+    awards: Type.Array(Award),
   }),
 });
 export type ScoreboardTeamResponse = Static<typeof ScoreboardTeamResponse>;

@@ -1,5 +1,0 @@
-services:
-  postgres:
-    image: postgres:17-alpine
-    environment:
-      - POSTGRES_PASSWORD=noctf

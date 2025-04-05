@@ -37,6 +37,10 @@ export const Team = Type.Object({
   id: Type.Number(),
   name: Type.String({ maxLength: 64 }),
   bio: Type.String({ maxLength: 256 }),
+  country: Type.Union([
+    Type.String({ minLength: 3, maxLength: 3 }),
+    Type.Null(),
+  ]),
   join_code: Type.Union([Type.String({ maxLength: 64 }), Type.Null()]),
   division_id: Type.Number(),
   flags: Type.Array(Type.String()),
@@ -230,6 +234,18 @@ export const Solve = Type.Object(
 );
 export type Solve = Static<typeof Solve>;
 
+export const Award = Type.Object(
+  {
+    id: Type.Number(),
+    team_id: Type.Number(),
+    title: Type.String(),
+    value: Type.Number(),
+    created_at: TypeDate,
+  },
+  { additionalProperties: false },
+);
+export type Award = Static<typeof Award>;
+
 export enum ChallengeSolveStatus {
   Queued = "queued",
   Incorrect = "incorrect",
@@ -239,7 +255,8 @@ export enum ChallengeSolveStatus {
 export const ScoreboardEntry = Type.Object({
   team_id: Type.Number(),
   score: Type.Number(),
-  timestamp: TypeDate,
+  last_solve: TypeDate,
+  updated_at: TypeDate,
 });
 export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 

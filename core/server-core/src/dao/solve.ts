@@ -6,24 +6,6 @@ export type DBSolve = AllNonNullable<DB["solve"]> & { created_at: Date };
 export class SolveDAO {
   constructor(private readonly db: DBType) {}
 
-  async getSolvesForChallenge(
-    challenge_id: number,
-    division_id?: number,
-  ): Promise<DBSolve[]> {
-    let query = this.getBaseSolveQuery().where(
-      "solve.challenge_id",
-      "=",
-      challenge_id,
-    );
-    if (division_id) {
-      query = query
-        .innerJoin("division", "division.id", "division_id")
-        .where("division_id", "=", division_id)
-        .orderBy("solve.created_at", "asc");
-    }
-    return (await query.execute()) as unknown as DBSolve[];
-  }
-
   async getAllSolves(
     division_id?: number,
     params?: {
@@ -32,12 +14,12 @@ export class SolveDAO {
       offset?: number;
     },
   ): Promise<DBSolve[]> {
-    let query = this.getBaseSolveQuery();
+    let query = this.getBaseQuery().orderBy(
+      "solve.created_at",
+      params?.sort || "asc",
+    );
     if (division_id) {
-      query = query
-        .innerJoin("division", "division.id", "division_id")
-        .where("division_id", "=", division_id)
-        .orderBy("solve.created_at", params?.sort || "asc");
+      query = query.where("division_id", "=", division_id);
     }
     if (params?.limit) {
       query = query.limit(params.limit);
@@ -48,7 +30,24 @@ export class SolveDAO {
     return (await query.execute()) as unknown as DBSolve[];
   }
 
-  private getBaseSolveQuery() {
+  async getTeamSolves(
+    team_id: number,
+    params?: {
+      end_time?: Date;
+      hidden?: boolean;
+    },
+  ): Promise<DBSolve[]> {
+    let query = this.getBaseQuery().where("solve.team_id", "=", team_id);
+    if (params?.end_time) {
+      query = query.where("solve.created_at", "<=", params.end_time);
+    }
+    if (typeof params?.hidden === "boolean") {
+      query = query.where("solve.hidden", "=", params.hidden);
+    }
+    return query.execute() as unknown as DBSolve[];
+  }
+
+  private getBaseQuery() {
     return this.db
       .selectFrom("solve")
       .select([
@@ -59,17 +58,5 @@ export class SolveDAO {
         "solve.hidden as hidden",
         "solve.created_at as created_at",
       ]);
-  }
-
-  async getSolveCountForChallenge(challenge_id: number) {
-    return (
-      await this.db
-        .selectFrom("solve")
-        .select([(x) => x.fn.countAll().as("count")])
-        .where("challenge_id", "=", challenge_id)
-        .where("hidden", "=", false)
-        .where((x) => x.not(x("team_flags", "&&", ["hidden"])))
-        .executeTakeFirstOrThrow()
-    ).count;
   }
 }

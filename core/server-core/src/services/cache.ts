@@ -51,7 +51,7 @@ export class CacheService {
     );
   }
 
-  async get<T>(namespace: string, key: string): Promise<T> {
+  async get<T>(namespace: string, key: string): Promise<T | null> {
     return this._get(namespace, key) as T;
   }
 

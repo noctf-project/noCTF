@@ -1,11 +1,25 @@
-import type { Insertable, Updateable } from "kysely";
+import type { Insertable, SelectQueryBuilder, Updateable } from "kysely";
 import type { DBType } from "../clients/database.ts";
 import type { Team } from "@noctf/api/datatypes";
 import type { DB, TeamMemberRole } from "@noctf/schema";
 import { FilterUndefined } from "../util/filter.ts";
-import { ConflictError, NotFoundError } from "../errors.ts";
+import { BadRequestError, ConflictError, NotFoundError } from "../errors.ts";
 import { sql } from "kysely";
 import { partition } from "../util/object.ts";
+import { PostgresErrorCode, PostgresErrorConfig } from "../util/pgerror.ts";
+import { TryPGConstraintError } from "../util/pgerror.ts";
+
+const CREATE_ERROR_CONFIG: PostgresErrorConfig = {
+  [PostgresErrorCode.Duplicate]: {
+    team_name_key: () => new ConflictError("The team name already exists"),
+    default: (e) =>
+      new ConflictError("A duplicate entry was detected", { cause: e }),
+  },
+  [PostgresErrorCode.ForeignKeyViolation]: {
+    team_division_id_fkey: () =>
+      new BadRequestError("Division ID does not exist"),
+  },
+};
 
 export class TeamDAO {
   constructor(private readonly db: DBType) {}
@@ -13,31 +27,40 @@ export class TeamDAO {
   async create({
     name,
     bio,
+    country,
     join_code,
     division_id,
     flags,
   }: Insertable<DB["team"]>): Promise<Team> {
-    const { id, created_at } = await this.db
-      .insertInto("team")
-      .values({
-        name,
-        bio,
-        join_code,
-        division_id,
-        flags,
-      })
-      .returning(["id", "created_at"])
-      .executeTakeFirstOrThrow();
+    try {
+      const { id, created_at } = await this.db
+        .insertInto("team")
+        .values({
+          name,
+          bio,
+          country,
+          join_code,
+          division_id,
+          flags,
+        })
+        .returning(["id", "created_at"])
+        .executeTakeFirstOrThrow();
 
-    return {
-      id,
-      name,
-      bio: bio || "",
-      join_code: join_code || null,
-      division_id,
-      flags: flags || [],
-      created_at,
-    };
+      return {
+        id,
+        name,
+        bio: bio || "",
+        country: country || null,
+        join_code: join_code || null,
+        division_id,
+        flags: flags || [],
+        created_at,
+      };
+    } catch (e) {
+      const pgerror = TryPGConstraintError(e, CREATE_ERROR_CONFIG);
+      if (pgerror) throw pgerror;
+      throw e;
+    }
   }
 
   async findUsingJoinCode(join_code: string) {
@@ -59,6 +82,7 @@ export class TeamDAO {
         "id",
         "name",
         "bio",
+        "country",
         "join_code",
         "division_id",
         "flags",
@@ -72,29 +96,25 @@ export class TeamDAO {
     return result;
   }
 
-  async list(flags?: string[]): Promise<Team[]> {
-    let query = this.db
-      .selectFrom("team")
-      .select([
-        "id",
-        "name",
-        "bio",
-        "join_code",
-        "division_id",
-        "flags",
-        "created_at",
-      ]);
-    if (flags) {
-      const [no, yes] = partition(flags, (f) => f.startsWith("!"));
-
-      if (yes.length) {
-        query = query.where("flags", "&&", sql.val(yes));
-      }
-      if (no.length) {
-        query = query.where((eb) =>
-          eb.not(eb("flags", "&&", eb.val(no.map((f) => f.substring(1))))),
-        );
-      }
+  async list(
+    params?: Parameters<TeamDAO["listQuery"]>[0],
+    limit?: { limit?: number; offset?: number },
+  ): Promise<Team[]> {
+    let query = this.listQuery(params).select([
+      "id",
+      "name",
+      "bio",
+      "country",
+      "join_code",
+      "division_id",
+      "flags",
+      "created_at",
+    ]);
+    if (limit?.limit) {
+      query = query.limit(limit.limit);
+    }
+    if (limit?.offset) {
+      query = query.offset(limit.offset);
     }
     return query.execute();
   }
@@ -192,7 +212,8 @@ export class TeamDAO {
   async getMembershipForUser(user_id: number) {
     const result = await this.db
       .selectFrom("team_member")
-      .select(["team_id", "role"])
+      .innerJoin("team", "team.id", "team_member.team_id")
+      .select(["team_id", "role", "team.division_id"])
       .where("user_id", "=", user_id)
       .executeTakeFirst();
 
@@ -208,5 +229,32 @@ export class TeamDAO {
       .select(["user_id", "role"])
       .where("team_id", "=", id)
       .execute();
+  }
+
+  private listQuery(params?: {
+    flags?: string[];
+    name_prefix?: string;
+    division_id?: number;
+  }) {
+    let query = this.db.selectFrom("team");
+    if (params?.flags) {
+      const [no, yes] = partition(params.flags, (f) => f.startsWith("!"));
+
+      if (yes.length) {
+        query = query.where("flags", "&&", sql.val(yes));
+      }
+      if (no.length) {
+        query = query.where((eb) =>
+          eb.not(eb("flags", "&&", eb.val(no.map((f) => f.substring(1))))),
+        );
+      }
+    }
+    if (params?.name_prefix) {
+      query = query.where("name", "^@", params.name_prefix.toLowerCase());
+    }
+    if (params?.division_id) {
+      query = query.where("division_id", "=", params.division_id);
+    }
+    return query;
   }
 }

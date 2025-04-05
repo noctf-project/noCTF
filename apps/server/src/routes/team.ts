@@ -19,7 +19,8 @@ import {
   SuccessResponse,
 } from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
-import { GetTeamParams } from "@noctf/api/params";
+import { IdParams } from "@noctf/api/params";
+import { ListTeamsQuery } from "@noctf/api/query";
 
 export async function routes(fastify: FastifyInstance) {
   const { teamService } = fastify.container.cradle as ServiceCradle;
@@ -190,7 +191,7 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{ Reply: ListTeamsResponse }>(
+  fastify.get<{ Querystring: ListTeamsQuery; Reply: ListTeamsResponse }>(
     "/teams",
     {
       schema: {
@@ -199,29 +200,36 @@ export async function routes(fastify: FastifyInstance) {
         response: {
           200: ListTeamsResponse,
         },
+        querystring: ListTeamsQuery,
         auth: {
           require: true,
           policy: ["OR", "team.get"],
         },
       },
     },
-    async (_request, reply) => {
-      const teams = await teamService.list(["!hidden"], "route:/teams");
+    async (request, reply) => {
+      const teams = await teamService.list(
+        {
+          flags: ["!hidden"],
+          division_id: request.query.division_id,
+        },
+        true,
+      );
 
-      reply.header("cache-control", "private, max-age=900");
+      reply.header("cache-control", "private, max-age=600");
       return {
         data: teams,
       };
     },
   );
 
-  fastify.get<{ Params: GetTeamParams; Reply: GetTeamResponse }>(
+  fastify.get<{ Params: IdParams; Reply: GetTeamResponse }>(
     "/teams/:id",
     {
       schema: {
         security: [{ bearer: [] }],
         tags: ["team"],
-        params: GetTeamParams,
+        params: IdParams,
         response: {
           200: GetTeamResponse,
         },
