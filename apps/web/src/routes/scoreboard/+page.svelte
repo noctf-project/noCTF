@@ -494,7 +494,7 @@
                     </td>
                     <td class="border border-base-300 px-4">
                       <a
-                        href="/team/{entry.team_id}"
+                        href="/teams/{entry.team_id}"
                         class="truncate block cursor-pointer"
                       >
                         {#await TeamService.getTeamName(entry.team_id)}
@@ -588,7 +588,7 @@
                     </td>
                     <td class="border border-base-300 px-4 text-center">
                       <a
-                        href="/team/{entry.team_id}"
+                        href="/teams/{entry.team_id}"
                         class="truncate block cursor-pointer"
                       >
                         {#await TeamService.getTeamName(entry.team_id)}

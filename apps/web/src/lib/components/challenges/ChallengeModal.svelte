@@ -365,7 +365,7 @@
                       </td>
                       <td class="font-medium text-primary max-w-0">
                         <a
-                          href="/team/{teamId}"
+                          href="/teams/{teamId}"
                           class="block truncate hover:text-primary-focus"
                         >
                           {#await TeamService.getTeamName(teamId)}
