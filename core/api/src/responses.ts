@@ -218,18 +218,16 @@ export type AdminGetScoringStrategiesResponse = Static<
 export const ScoreboardResponse = Type.Object({
   data: Type.Object({
     scores: Type.Array(Type.Omit(ScoreboardEntry, ["updated_at"])),
-    total: Type.Number(),
     page_size: Type.Number(),
-    updated_at: TypeDate,
   }),
 });
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
 
 export const ScoreboardTeamResponse = Type.Object({
   data: Type.Object({
-    solves: Type.Array(Solve),
+    solves: Type.Array(Type.Omit(Solve, ["team_id"])),
     graph: Type.Array(Type.Tuple([Type.Number(), Type.Number()])),
-    awards: Type.Array(Award),
+    awards: Type.Array(Type.Omit(Award, ["team_id"])),
   }),
 });
 export type ScoreboardTeamResponse = Static<typeof ScoreboardTeamResponse>;

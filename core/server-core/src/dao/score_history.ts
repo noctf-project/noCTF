@@ -28,11 +28,11 @@ export class ScoreHistoryDAO {
       .execute();
   }
 
-  async getByTeam(teamId: number, startTime?: Date, endTime?: Date) {
+  async getByTeams(teamId: number[], startTime?: Date, endTime?: Date) {
     let query = this.db
       .selectFrom("score_history")
       .select(["team_id", "score", "updated_at"])
-      .where("team_id", "=", teamId)
+      .where("team_id", "in", teamId)
       .orderBy("updated_at", "asc");
     if (startTime) {
       query = query.where("updated_at", ">=", startTime);

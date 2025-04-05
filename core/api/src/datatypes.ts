@@ -257,6 +257,9 @@ export const ScoreboardEntry = Type.Object({
   score: Type.Number(),
   last_solve: TypeDate,
   updated_at: TypeDate,
+  hidden: Type.Boolean(),
+  solves: Type.Array(Type.Omit(Solve, ["team_id"])),
+  awards: Type.Array(Type.Omit(Award, ["team_id"])),
 });
 export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 
