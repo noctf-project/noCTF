@@ -90,8 +90,8 @@ export const GetTeamResponse = Type.Object({
   data: Type.Composite([
     Type.Omit(Team, ["join_code", "flags"]),
     Type.Object({
-      members: Type.Array(Type.String()) // TODO: list members
-    })
+      members: Type.Array(Type.String()), // TODO: list members
+    }),
   ]),
 });
 export type GetTeamResponse = Static<typeof GetTeamResponse>;

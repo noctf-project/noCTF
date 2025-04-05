@@ -128,7 +128,6 @@ export const QueryTeamNamesRequest = Type.Object({
 });
 export type QueryTeamNamesRequest = Static<typeof QueryTeamNamesRequest>;
 
-
 export const AdminCreateChallengeRequest = Type.Omit(
   Challenge,
   ["created_at", "updated_at", "id", "version"],

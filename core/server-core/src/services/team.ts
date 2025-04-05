@@ -17,11 +17,7 @@ export class TeamService {
   private readonly configService;
   private readonly dao;
 
-  constructor({
-    configService,
-    databaseClient,
-    auditLogService,
-  }: Props) {
+  constructor({ configService, databaseClient, auditLogService }: Props) {
     this.auditLogService = auditLogService;
     this.configService = configService;
     this.dao = new TeamDAO(databaseClient.get());
@@ -112,17 +108,12 @@ export class TeamService {
       flags?: string[];
       division_id?: number;
     },
-    limit?: { limit?: number, offset?: number }
+    limit?: { limit?: number; offset?: number },
   ) {
     return this.dao.listSummary(params, limit);
   }
 
-  async getCount(
-    params?: {
-      flags?: string[];
-      division_id?: number;
-    },
-  ) {
+  async getCount(params?: { flags?: string[]; division_id?: number }) {
     return this.dao.getCount(params);
   }
 

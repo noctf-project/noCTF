@@ -242,7 +242,11 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const admin = await gateStartTime(adminPolicy, Date.now(), request.user?.id);
+      const admin = await gateStartTime(
+        adminPolicy,
+        Date.now(),
+        request.user?.id,
+      );
 
       const page = request.query.page || 1;
       const page_size =
@@ -250,22 +254,21 @@ export async function routes(fastify: FastifyInstance) {
           ? request.query.page_size
           : Math.min(TEAM_PAGE_SIZE, request.query.page_size)) ||
         TEAM_PAGE_SIZE;
-      const query =       {
+      const query = {
         flags: ["!hidden"],
         division_id: request.query.division_id,
-        name_prefix: request.query.name_prefix
+        name_prefix: request.query.name_prefix,
       };
       const [teams, total] = await Promise.all([
-        teamService.listSummary(
-          query,
-        {
+        teamService.listSummary(query, {
           limit: page_size,
-          offset: (page - 1) * page_size
-        }
-      ), teamService.getCount(query)]);
+          offset: (page - 1) * page_size,
+        }),
+        teamService.getCount(query),
+      ]);
 
       return {
-        data: {teams, page_size, total },
+        data: { teams, page_size, total },
       };
     },
   );
@@ -294,7 +297,7 @@ export async function routes(fastify: FastifyInstance) {
 
       reply.header("cache-control", "private, max-age=900");
       return {
-        data: {...team, members: []}, // TODO: members
+        data: { ...team, members: [] }, // TODO: members
       };
     },
   );

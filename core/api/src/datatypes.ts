@@ -267,7 +267,7 @@ export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 export const TeamSummary = Type.Composite([
   Type.Omit(Team, ["join_code", "flags"]),
   Type.Object({
-    num_members: Type.Integer()
-  })
+    num_members: Type.Integer(),
+  }),
 ]);
 export type TeamSummary = Static<typeof TeamSummary>;

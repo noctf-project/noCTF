@@ -105,18 +105,22 @@ export class TeamDAO {
     params?: Parameters<TeamDAO["listQuery"]>[0],
     limit?: { limit?: number; offset?: number },
   ): Promise<TeamSummary[]> {
-    let query = this.listQuery(params).select([
-      "id",
-      "name",
-      "bio",
-      "country",
-      "division_id",
-      "created_at",
-      (eb) => eb.selectFrom("team_member").select(eb.fn.countAll().as("count"))
-      .where("team_member.team_id", "=", eb.ref("team.id"))
-      .as("num_members")
-    ])
-    .orderBy("id");
+    let query = this.listQuery(params)
+      .select([
+        "id",
+        "name",
+        "bio",
+        "country",
+        "division_id",
+        "created_at",
+        (eb) =>
+          eb
+            .selectFrom("team_member")
+            .select(eb.fn.countAll().as("count"))
+            .where("team_member.team_id", "=", eb.ref("team.id"))
+            .as("num_members"),
+      ])
+      .orderBy("id");
     if (limit?.limit) {
       query = query.limit(limit.limit);
     }
@@ -129,8 +133,11 @@ export class TeamDAO {
   async getCount(
     params?: Parameters<TeamDAO["listQuery"]>[0],
   ): Promise<number> {
-    return (await this.listQuery(params).select(this.db.fn.countAll().as("count"))
-      .executeTakeFirstOrThrow()).count as number;
+    return (
+      await this.listQuery(params)
+        .select(this.db.fn.countAll().as("count"))
+        .executeTakeFirstOrThrow()
+    ).count as number;
   }
 
   async queryNames(
