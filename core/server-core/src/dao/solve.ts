@@ -54,7 +54,6 @@ export class SolveDAO {
         "solve.id as id",
         "solve.team_id as team_id",
         "solve.challenge_id as challenge_id",
-        "solve.team_flags as team_flags",
         "solve.hidden as hidden",
         "solve.created_at as created_at",
       ]);

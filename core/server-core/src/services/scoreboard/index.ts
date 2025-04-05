@@ -12,6 +12,7 @@ import { ScoreHistoryDAO } from "../../dao/score_history.ts";
 import { SetupConfig } from "@noctf/api/config";
 import { AwardDAO } from "../../dao/award.ts";
 import { ScoreboardDataLoader } from "./loader.ts";
+import { TeamDAO } from "../../dao/team.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -43,6 +44,7 @@ export class ScoreboardService {
   private readonly awardDAO;
   private readonly scoreHistoryDAO;
   private readonly solveDAO;
+  private readonly teamDAO;
   private readonly divisionDAO;
 
   constructor({
@@ -67,6 +69,7 @@ export class ScoreboardService {
     this.awardDAO = new AwardDAO(databaseClient.get());
     this.scoreHistoryDAO = new ScoreHistoryDAO(databaseClient.get());
     this.solveDAO = new SolveDAO(databaseClient.get());
+    this.teamDAO = new TeamDAO(databaseClient.get());
     this.divisionDAO = new DivisionDAO(databaseClient.get());
   }
 
@@ -142,7 +145,8 @@ export class ScoreboardService {
     challenges: ChallengeMetadataWithExpr[],
     id: number,
   ) {
-    const [solveList, awardList] = await Promise.all([
+    const [teams, solveList, awardList] = await Promise.all([
+      this.teamDAO.listTeamsWithActivity(id),
       this.solveDAO.getAllSolves(id),
       this.awardDAO.getAllAwards(id),
     ]);
@@ -152,6 +156,7 @@ export class ScoreboardService {
     ) as Record<number, DBSolve[]>;
 
     const { scoreboard, challenges: challengeScores } = ComputeScoreboard(
+      new Map(teams.map((x) => [x.id, x])),
       challenges,
       solvesByChallenge,
       awardList,
@@ -192,9 +197,9 @@ export class ScoreboardService {
       diff = GetChangedTeamScores(lastScoreboard, scoreboard);
     }
     await this.scoreHistoryDAO.add(diff);
-    const teams = new Set(diff.map(({ team_id }) => team_id));
+    const diffTeams = new Set(diff.map(({ team_id }) => team_id));
     await Promise.all(
-      teams
+      diffTeams
         .values()
         .map((t) =>
           this.cacheService.del(CACHE_SCORE_HISTORY_NAMESPACE, t.toString()),

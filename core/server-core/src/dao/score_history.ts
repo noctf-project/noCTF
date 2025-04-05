@@ -4,11 +4,17 @@ import { DBType } from "../clients/database.ts";
 export class ScoreHistoryDAO {
   constructor(private readonly db: DBType) {}
 
-  async add(entries: ScoreboardEntry[]) {
+  async add(entries: { team_id: number; updated_at: Date; score: number }[]) {
     if (!entries.length) return;
     await this.db
       .insertInto("score_history")
-      .values(entries)
+      .values(
+        entries.map(({ team_id, updated_at, score }) => ({
+          team_id,
+          updated_at,
+          score,
+        })),
+      )
       .onConflict((o) =>
         o.columns(["team_id", "updated_at"]).doUpdateSet({
           score: (eb) => eb.ref("excluded.score"),

@@ -21,6 +21,11 @@ const CREATE_ERROR_CONFIG: PostgresErrorConfig = {
   },
 };
 
+export type MinimalTeamInfo = {
+  id: number;
+  flags: string[];
+};
+
 export class TeamDAO {
   constructor(private readonly db: DBType) {}
 
@@ -117,6 +122,24 @@ export class TeamDAO {
       query = query.offset(limit.offset);
     }
     return query.execute();
+  }
+
+  async listTeamsWithActivity(division: number): Promise<MinimalTeamInfo[]> {
+    return this.db
+      .selectFrom("team")
+      .select(["id", "flags"])
+      .distinctOn("id")
+      .where("division_id", "=", division)
+      .innerJoin(
+        this.db
+          .selectFrom("solve")
+          .select("team_id")
+          .union(this.db.selectFrom("award").select("team_id"))
+          .as("combined_teams"),
+        "team.id",
+        "combined_teams.team_id",
+      )
+      .execute();
   }
 
   async update(id: number, v: Updateable<DB["team"]>) {

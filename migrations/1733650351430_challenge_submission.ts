@@ -45,7 +45,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.references("user.id").onDelete("no action"),
     )
     .addColumn("team_id", "integer", (col) =>
-      col.notNull().references("team.id"),
+      col.notNull().references("team.id").onDelete("cascade"),
     )
     .addColumn("challenge_id", "integer", (col) =>
       col.notNull().references("challenge.id"),
@@ -102,7 +102,6 @@ export async function up(db: Kysely<any>): Promise<void> {
       "challenge_id",
       "team_id",
       "division_id",
-      "team_flags",
       "created_at",
     ])
     .as(
@@ -114,7 +113,6 @@ export async function up(db: Kysely<any>): Promise<void> {
           "challenge_id",
           "team_id",
           "division_id",
-          "team.flags",
           "submission.created_at",
         ])
         .where("solved", "=", true)
@@ -127,7 +125,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedAlwaysAsIdentity(),
     )
-    .addColumn("value", "integer")
+    .addColumn("value", "integer", (col) => col.notNull())
     .addColumn("title", "varchar(128)", (col) => col.notNull())
     .addColumn("team_id", "integer", (col) =>
       col.notNull().references("team.id").onDelete("cascade"),

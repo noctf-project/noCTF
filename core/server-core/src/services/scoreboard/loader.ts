@@ -115,20 +115,21 @@ export class ScoreboardDataLoader {
 
     const multi = client.multi();
     multi.del(Object.values(keys));
-    multi.zAdd(
-      keys.rank,
-      scoreboard
-        .filter((x) => !x.hidden)
-        .map(
-          (x, i) => ({
-            score: i,
-            value: x.team_id.toString(),
-          }),
-          { key: 0 },
-        ),
-    );
-    multi.hSet(keys.team, teams);
-    multi.hSet(keys.csolves, csolves);
+    if (scoreboard.length)
+      multi.zAdd(
+        keys.rank,
+        scoreboard
+          .filter((x) => !x.hidden)
+          .map(
+            (x, i) => ({
+              score: i,
+              value: x.team_id.toString(),
+            }),
+            { key: 0 },
+          ),
+      );
+    if (teams.length) multi.hSet(keys.team, teams);
+    if (csolves.length) multi.hSet(keys.csolves, csolves);
     await multi.exec();
   }
 

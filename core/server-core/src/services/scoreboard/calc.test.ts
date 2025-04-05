@@ -224,7 +224,7 @@ describe(ComputeScoreboard, () => {
   });
 
   it("Does nothing if no results", () => {
-    const result = ComputeScoreboard([], {}, []);
+    const result = ComputeScoreboard(new Map(), [], {}, []);
     expect(result).toEqual({
       scoreboard: [],
       challenges: new Map(),
@@ -234,6 +234,11 @@ describe(ComputeScoreboard, () => {
   it("Calculates challenge scores, uses the last valid solve date as the date", () => {
     vi.mocked(EvaluateScoringExpression).mockReturnValue(1 as any);
     const result = ComputeScoreboard(
+      new Map([
+        [1, { id: 1, flags: [] }],
+        [2, { id: 2, flags: [] }],
+        [3, { id: 3, flags: [] }],
+      ]),
       [
         {
           metadata: challenge1,
@@ -247,7 +252,6 @@ describe(ComputeScoreboard, () => {
             division_id: 1,
             hidden: false,
             id: 1,
-            team_flags: [],
             created_at: new Date(1) as unknown as Timestamp & Date, // fuck TS
             team_id: 1,
           },
@@ -256,7 +260,6 @@ describe(ComputeScoreboard, () => {
             division_id: 1,
             hidden: false,
             id: 2,
-            team_flags: [],
             created_at: new Date(2) as unknown as Timestamp & Date, // fuck TS
             team_id: 3,
           },
@@ -265,7 +268,6 @@ describe(ComputeScoreboard, () => {
             division_id: 1,
             hidden: false,
             id: 2,
-            team_flags: [],
             created_at: new Date(3) as unknown as Timestamp & Date, // fuck TS
             team_id: 2,
           },
@@ -368,6 +370,10 @@ describe(ComputeScoreboard, () => {
   it("Calculates challenge scores and adds awards to date", () => {
     vi.mocked(EvaluateScoringExpression).mockReturnValue(1 as any);
     const result = ComputeScoreboard(
+      new Map([
+        [1, { id: 1, flags: [] }],
+        [2, { id: 2, flags: [] }],
+      ]),
       [
         {
           metadata: challenge1,
@@ -381,7 +387,6 @@ describe(ComputeScoreboard, () => {
             division_id: 1,
             hidden: false,
             id: 1,
-            team_flags: [],
             created_at: new Date(1) as any, // fuck TS
             team_id: 1,
           },
@@ -394,7 +399,6 @@ describe(ComputeScoreboard, () => {
           team_id: 1,
           title: "test",
           value: 1,
-          team_flags: [],
         },
         {
           created_at: new Date(3) as any, // fuck TS
@@ -402,7 +406,6 @@ describe(ComputeScoreboard, () => {
           team_id: 2,
           title: "test",
           value: 3,
-          team_flags: [],
         },
       ],
     );
@@ -420,7 +423,6 @@ describe(ComputeScoreboard, () => {
               id: 2 as any, // fuck TS
               title: "test",
               value: 3,
-              team_flags: [],
             }),
           ],
           solves: [],
@@ -437,7 +439,6 @@ describe(ComputeScoreboard, () => {
               id: 1 as any, // fuck TS
               title: "test",
               value: 1,
-              team_flags: [],
             }),
           ],
           solves: [
