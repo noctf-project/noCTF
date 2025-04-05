@@ -27,8 +27,8 @@ export class ScoreboardDataLoader {
         const client = await this.factory.getClient();
         const keys = this.getCacheKeys(division);
         const [total, ranks] = await Promise.all([
-          client.zCard(keys.rank),
-          client.zRangeByScore(keys.rank, start, end),
+          client.lLen(keys.rank),
+          client.lRange(keys.rank, start, end),
         ]);
         const compressed = await client.hmGet(
           client.commandOptions({ returnBuffers: true }),
@@ -116,17 +116,11 @@ export class ScoreboardDataLoader {
     const multi = client.multi();
     multi.del(Object.values(keys));
     if (scoreboard.length)
-      multi.zAdd(
+      multi.rPush(
         keys.rank,
         scoreboard
           .filter((x) => !x.hidden)
-          .map(
-            (x, i) => ({
-              score: i,
-              value: x.team_id.toString(),
-            }),
-            { key: 0 },
-          ),
+          .map(({ team_id }) => team_id.toString()),
       );
     if (teams.length) multi.hSet(keys.team, teams);
     if (csolves.length) multi.hSet(keys.csolves, csolves);

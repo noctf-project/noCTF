@@ -255,6 +255,7 @@ export enum ChallengeSolveStatus {
 export const ScoreboardEntry = Type.Object({
   team_id: Type.Number(),
   score: Type.Number(),
+  rank: Type.Number(),
   last_solve: TypeDate,
   updated_at: TypeDate,
   hidden: Type.Boolean(),

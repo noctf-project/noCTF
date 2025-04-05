@@ -109,6 +109,7 @@ export function ComputeScoreboard(
       {
         score: 0,
         team_id: id,
+        rank: 0,
         updated_at: new Date(0),
         last_solve: new Date(0),
         hidden: flags.includes("hidden"),
@@ -172,12 +173,14 @@ export function ComputeScoreboard(
     prev.set(cur.challenge_id, cur);
     return prev;
   }, new Map<number, ComputedChallengeScoreData>());
-
+  
+  const sorted = scoreboard.sort(
+    (a, b) =>
+      b.score - a.score || a.last_solve.getTime() - b.last_solve.getTime(),
+  );
+  sorted.forEach((x, i) => x.rank = i + 1);
   return {
-    scoreboard: scoreboard.sort(
-      (a, b) =>
-        b.score - a.score || a.last_solve.getTime() - b.last_solve.getTime(),
-    ),
+    scoreboard: sorted,
     challenges: challengesMap,
   };
 }
