@@ -97,13 +97,14 @@ export const ListTeamsResponse = Type.Object({
 export type ListTeamsResponse = Static<typeof ListTeamsResponse>;
 
 export const QueryTeamNamesResponse = Type.Object({
-  data: Type.Array(Type.Object({
-    id: Type.Number(),
-    name: Type.String()
-  })),
+  data: Type.Array(
+    Type.Object({
+      id: Type.Number(),
+      name: Type.String(),
+    }),
+  ),
 });
 export type QueryTeamNamesResponse = Static<typeof QueryTeamNamesResponse>;
-
 
 export const MeUserResponse = Type.Object({
   data: Type.Composite([
@@ -232,6 +233,16 @@ export const ScoreboardResponse = Type.Object({
   }),
 });
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
+
+export const ScoreboardGraphsResponse = Type.Object({
+  data: Type.Array(
+    Type.Object({
+      team_id: Type.Number(),
+      graph: Type.Array(Type.Tuple([Type.Number(), Type.Number()])),
+    }),
+  ),
+});
+export type ScoreboardGraphsResponse = Static<typeof ScoreboardGraphsResponse>;
 
 export const ScoreboardTeamResponse = Type.Object({
   data: Type.Composite([

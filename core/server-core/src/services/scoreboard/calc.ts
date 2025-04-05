@@ -174,12 +174,12 @@ export function ComputeScoreboard(
     prev.set(cur.challenge_id, cur);
     return prev;
   }, new Map<number, ComputedChallengeScoreData>());
-  
+
   const sorted = scoreboard.sort(
     (a, b) =>
       b.score - a.score || a.last_solve.getTime() - b.last_solve.getTime(),
   );
-  sorted.forEach((x, i) => x.rank = i + 1);
+  sorted.forEach((x, i) => (x.rank = i + 1));
   return {
     scoreboard: sorted,
     challenges: challengesMap,

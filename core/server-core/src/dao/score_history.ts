@@ -39,6 +39,7 @@ export class ScoreHistoryDAO {
       .selectFrom("score_history")
       .select(["team_id", "score", "updated_at"])
       .where("team_id", "in", teamId)
+      .orderBy("team_id", "asc")
       .orderBy("updated_at", "asc");
     if (startTime) {
       query = query.where("updated_at", ">=", startTime);

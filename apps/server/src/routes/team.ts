@@ -192,24 +192,31 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{ Reply: QueryTeamNamesResponse; Querystring: QueryTeamNamesQuery }>('/team_names', {
-    schema: {
-      security: [{ bearer: [] }],
-      tags: ["team"],
-      response: {
-        200: QueryTeamNamesResponse,
-      },
-      querystring: QueryTeamNamesQuery,
-      auth: {
-        policy: ["team.get"],
+  fastify.get<{
+    Reply: QueryTeamNamesResponse;
+    Querystring: QueryTeamNamesQuery;
+  }>(
+    "/team_names",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["team"],
+        response: {
+          200: QueryTeamNamesResponse,
+        },
+        querystring: QueryTeamNamesQuery,
+        auth: {
+          policy: ["team.get"],
+        },
       },
     },
-  }, async (request) => {
-    const ids = [...new Set(request.query.id)];
-    return {
-      data: await teamService.queryNames(ids, false)
-    };
-  });
+    async (request) => {
+      const ids = [...new Set(request.query.id)];
+      return {
+        data: await teamService.queryNames(ids, false),
+      };
+    },
+  );
 
   fastify.get<{ Querystring: ListTeamsQuery; Reply: ListTeamsResponse }>(
     "/teams",

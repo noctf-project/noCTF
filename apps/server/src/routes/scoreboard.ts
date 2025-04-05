@@ -2,6 +2,7 @@ import type { ServiceCradle } from "@noctf/server-core";
 import type { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
 import {
+  ScoreboardGraphsResponse,
   ScoreboardResponse,
   ScoreboardTeamResponse,
 } from "@noctf/api/responses";
@@ -14,7 +15,7 @@ import { Policy } from "@noctf/server-core/util/policy";
 export const SCOREBOARD_PAGE_SIZE = 50;
 
 export async function routes(fastify: FastifyInstance) {
-  const { scoreboardService, challengeService, teamService } = fastify.container
+  const { scoreboardService, teamService } = fastify.container
     .cradle as ServiceCradle;
 
   const { gateStartTime } = GetUtils(fastify.container.cradle);
@@ -61,6 +62,37 @@ export async function routes(fastify: FastifyInstance) {
           page_size: page_size,
           total: scoreboard.total,
         },
+      };
+    },
+  );
+
+  fastify.get<{
+    Reply: ScoreboardGraphsResponse;
+    Querystring: ScoreboardQuery;
+    Params: IdParams;
+  }>(
+    "/scoreboard/divisions/:id/top",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["scoreboard"],
+        auth: {
+          policy: ["scoreboard.get"],
+        },
+        querystring: ScoreboardQuery,
+        params: IdParams,
+        response: {
+          200: ScoreboardGraphsResponse,
+        },
+      },
+    },
+    async (request) => {
+      const graphs = await scoreboardService.getTopScoreHistory(
+        request.params.id,
+        10,
+      );
+      return {
+        data: graphs,
       };
     },
   );

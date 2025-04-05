@@ -124,8 +124,12 @@ export class TeamDAO {
     return query.execute();
   }
 
-  async queryNames(ids: number[], include_hidden?: boolean): Promise<{id: number, name: string}[]> {
-    let query = this.db.selectFrom("team")
+  async queryNames(
+    ids: number[],
+    include_hidden?: boolean,
+  ): Promise<{ id: number; name: string }[]> {
+    let query = this.db
+      .selectFrom("team")
       .select(["id", "name"])
       .where("id", "in", ids);
     if (!include_hidden) {

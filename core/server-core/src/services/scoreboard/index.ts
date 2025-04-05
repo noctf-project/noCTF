@@ -13,6 +13,7 @@ import { SetupConfig } from "@noctf/api/config";
 import { AwardDAO } from "../../dao/award.ts";
 import { ScoreboardDataLoader } from "./loader.ts";
 import { TeamDAO } from "../../dao/team.ts";
+import { partition } from "../../util/object.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -117,6 +118,44 @@ export class ScoreboardService {
     for (const { id } of divisions) {
       await this.commitDivisionScoreboard(challenges, id);
     }
+  }
+
+  async getTopScoreHistory(division: number, count: number) {
+    return this.cacheService.load(
+      CACHE_SCORE_HISTORY_NAMESPACE,
+      `${division}:${count}`,
+      async () => {
+        const {
+          value: { start_time_s, end_time_s },
+        } = await this.configService.get<SetupConfig>(SetupConfig.$id!);
+        const ranks = await this.scoreboardDataLoader.getRanks(
+          division,
+          0,
+          count - 1,
+        );
+        const partitions = ranks.map((team_id) => ({
+          team_id,
+          graph: [] as [number, number][],
+        }));
+        const data = await this.scoreHistoryDAO.getByTeams(
+          ranks,
+          start_time_s ? new Date(start_time_s * 1000) : undefined,
+          end_time_s ? new Date(end_time_s * 1000) : undefined,
+        );
+
+        let position: [number, number] | null = null;
+        for (const entry of data) {
+          if (!position || (position && position[0] !== entry.team_id)) {
+            position = [entry.team_id, ranks.indexOf(entry.team_id)];
+          }
+          partitions[position[1]].graph.push([
+            entry.updated_at.getTime(),
+            entry.score,
+          ]);
+        }
+        return partitions;
+      },
+    );
   }
 
   async getTeamScoreHistory(id: number) {

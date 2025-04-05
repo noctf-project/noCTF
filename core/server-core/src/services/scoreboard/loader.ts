@@ -47,6 +47,13 @@ export class ScoreboardDataLoader {
     );
   }
 
+  async getRanks(division: number, start: number, end: number) {
+    const keys = this.getCacheKeys(division);
+    return (
+      await (await this.factory.getClient()).lRange(keys.rank, start, end)
+    ).map((x) => parseInt(x));
+  }
+
   async getChallengeSolves(
     division: number,
     challenge: number,

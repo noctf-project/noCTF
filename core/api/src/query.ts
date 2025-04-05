@@ -18,6 +18,6 @@ export const ListTeamsQuery = Type.Object({
 export type ListTeamsQuery = Static<typeof ListTeamsQuery>;
 
 export const QueryTeamNamesQuery = Type.Object({
-  id: Type.Array(Type.Integer({ minimum: 1 }), { maxItems: 100 })
+  id: Type.Array(Type.Integer({ minimum: 1 }), { maxItems: 100 }),
 });
 export type QueryTeamNamesQuery = Static<typeof QueryTeamNamesQuery>;

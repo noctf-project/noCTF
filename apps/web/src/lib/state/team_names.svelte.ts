@@ -17,9 +17,12 @@ export class TeamNamesService {
   async get(id: number) {
     const name = this.cache.get(id);
     if (name) return name;
-    if (!this.debounce) this.debounce = setTimeout(() => this.fetch(), DEBOUNCE_INTERVAL);
+    if (!this.debounce)
+      this.debounce = setTimeout(() => this.fetch(), DEBOUNCE_INTERVAL);
     this.queue.add(id);
-    const p = new Promise<string>((resolve, reject) => this.resolveQueue.push([id, resolve, reject]));
+    const p = new Promise<string>((resolve, reject) =>
+      this.resolveQueue.push([id, resolve, reject]),
+    );
     if (this.queue.size >= MAXIMUM_QUERIES) void this.fetch();
     return p;
   }
