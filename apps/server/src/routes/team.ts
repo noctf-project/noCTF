@@ -14,13 +14,14 @@ import {
 } from "@noctf/api/requests";
 import {
   GetTeamResponse,
+  QueryTeamNamesResponse,
   ListTeamsResponse,
   MeTeamResponse,
   SuccessResponse,
 } from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
 import { IdParams } from "@noctf/api/params";
-import { ListTeamsQuery } from "@noctf/api/query";
+import { QueryTeamNamesQuery, ListTeamsQuery } from "@noctf/api/query";
 
 export async function routes(fastify: FastifyInstance) {
   const { teamService } = fastify.container.cradle as ServiceCradle;
@@ -190,6 +191,25 @@ export async function routes(fastify: FastifyInstance) {
       };
     },
   );
+
+  fastify.get<{ Reply: QueryTeamNamesResponse; Querystring: QueryTeamNamesQuery }>('/team_names', {
+    schema: {
+      security: [{ bearer: [] }],
+      tags: ["team"],
+      response: {
+        200: QueryTeamNamesResponse,
+      },
+      querystring: QueryTeamNamesQuery,
+      auth: {
+        policy: ["team.get"],
+      },
+    },
+  }, async (request) => {
+    const ids = [...new Set(request.query.id)];
+    return {
+      data: await teamService.queryNames(ids, false)
+    };
+  });
 
   fastify.get<{ Querystring: ListTeamsQuery; Reply: ListTeamsResponse }>(
     "/teams",

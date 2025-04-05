@@ -4,7 +4,7 @@
     type TeamChartData,
   } from "$lib/components/scoreboard/Graph.svelte";
   import api, { wrapLoadable } from "$lib/api/index.svelte";
-  import TeamService from "$lib/state/team.svelte";
+  import TeamNamesService from "$lib/state/team_names.svelte";
   import { getCategoriesFromTags } from "$lib/utils/challenges";
   import { getRelativeTime } from "$lib/utils/time";
   import teamScoresState from "$lib/state/team_solves.svelte";
@@ -137,7 +137,7 @@
       let teamNames;
       try {
         teamNames = await Promise.all(
-          top10TeamIds.map((id) => TeamService.getTeamName(id)),
+          top10TeamIds.map((id) => TeamNamesService.get(id)),
         );
       } catch {
         return;
@@ -441,7 +441,7 @@
                       href="/team/{entry.team_id}"
                       class="truncate block cursor-pointer"
                     >
-                      {#await TeamService.getTeamName(entry.team_id)}
+                      {#await TeamNamesService.get(entry.team_id)}
                         <div class="skeleton h-4 w-24"></div>
                       {:then name}
                         {name}
@@ -536,7 +536,7 @@
                         href="/team/{entry.team_id}"
                         class="truncate block cursor-pointer"
                       >
-                        {#await TeamService.getTeamName(entry.team_id)}
+                        {#await TeamNamesService.get(entry.team_id)}
                           <div class="skeleton h-4 w-32 mx-auto"></div>
                         {:then name}
                           {name}

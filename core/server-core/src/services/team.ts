@@ -132,6 +132,10 @@ export class TeamService {
       : this.dao.list(params);
   }
 
+  async queryNames(ids: number[], includeHidden?: boolean) {
+    return this.dao.queryNames(ids, includeHidden);
+  }
+
   async delete(id: number, { actor, message }: AuditParams = {}) {
     await this.dao.delete(id);
     await this.auditLogService.log({

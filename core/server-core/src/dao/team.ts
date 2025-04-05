@@ -1,4 +1,4 @@
-import type { Insertable, SelectQueryBuilder, Updateable } from "kysely";
+import type { Insertable, Updateable } from "kysely";
 import type { DBType } from "../clients/database.ts";
 import type { Team } from "@noctf/api/datatypes";
 import type { DB, TeamMemberRole } from "@noctf/schema";
@@ -120,6 +120,18 @@ export class TeamDAO {
     }
     if (limit?.offset) {
       query = query.offset(limit.offset);
+    }
+    return query.execute();
+  }
+
+  async queryNames(ids: number[], include_hidden?: boolean): Promise<{id: number, name: string}[]> {
+    let query = this.db.selectFrom("team")
+      .select(["id", "name"])
+      .where("id", "in", ids);
+    if (!include_hidden) {
+      query = query.where((eb) =>
+        eb.not(eb("flags", "&&", eb.val(["hidden"]))),
+      );
     }
     return query.execute();
   }

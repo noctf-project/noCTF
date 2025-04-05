@@ -96,6 +96,15 @@ export const ListTeamsResponse = Type.Object({
 });
 export type ListTeamsResponse = Static<typeof ListTeamsResponse>;
 
+export const QueryTeamNamesResponse = Type.Object({
+  data: Type.Array(Type.Object({
+    id: Type.Number(),
+    name: Type.String()
+  })),
+});
+export type QueryTeamNamesResponse = Static<typeof QueryTeamNamesResponse>;
+
+
 export const MeUserResponse = Type.Object({
   data: Type.Composite([
     User,

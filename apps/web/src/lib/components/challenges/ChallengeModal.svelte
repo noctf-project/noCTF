@@ -31,7 +31,7 @@
   import { onMount } from "svelte";
   import api, { API_BASE_URL } from "$lib/api/index.svelte";
   import { getRelativeTime } from "$lib/utils/time";
-  import TeamService from "$lib/state/team.svelte";
+  import TeamNamesService from "$lib/state/team_names.svelte";
   import { toasts } from "$lib/stores/toast";
 
   let {
@@ -368,7 +368,7 @@
                           href="/team/{teamId}"
                           class="block truncate hover:text-primary-focus"
                         >
-                          {#await TeamService.getTeamName(teamId)}
+                          {#await TeamNamesService.get(teamId)}
                             loading...
                           {:then name}
                             {name}
