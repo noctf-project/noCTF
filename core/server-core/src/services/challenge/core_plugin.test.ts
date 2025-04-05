@@ -4,11 +4,8 @@ import { mockDeep } from "vitest-mock-extended";
 import { Logger } from "../../types/primitives.ts";
 import { ScoreService } from "../score.ts";
 import { FileService } from "../file.ts";
-import {
-  Challenge,
-  ChallengeMetadata,
-  ChallengeSolveStatus,
-} from "@noctf/api/datatypes";
+import { Challenge, ChallengeMetadata } from "@noctf/api/datatypes";
+import { ChallengeSolveStatus } from "@noctf/api/enums";
 
 describe(CoreChallengePlugin, () => {
   const logger = mockDeep<Logger>();

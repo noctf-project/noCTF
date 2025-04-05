@@ -12,10 +12,10 @@ export class SubmissionDAO {
   async getCurrentMetadata(challenge_id: number, team_id: number) {
     return await this.db
       .selectFrom("submission")
-      .select(["id", "user_id", "queued", "solved", "created_at"])
+      .select(["id", "user_id", "status", "created_at"])
       .where("challenge_id", "=", challenge_id)
       .where("team_id", "=", team_id)
-      .where((eb) => eb.or([eb("queued", "=", true), eb("solved", "=", true)]))
+      .where("status", "in", ["correct", "queued"])
       .executeTakeFirst();
   }
 }

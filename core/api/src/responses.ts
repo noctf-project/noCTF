@@ -7,7 +7,6 @@ import {
   FileMetadata,
   PublicChallenge,
   PublicChallengeSummary,
-  ChallengeSolveStatus,
   Team,
   ScoringStrategy,
   User,
@@ -18,6 +17,7 @@ import {
   Award,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
+import { ChallengeSolveStatus } from "./enums.ts";
 
 export const BaseResponse = Type.Object({
   error: Type.Optional(Type.String()),
