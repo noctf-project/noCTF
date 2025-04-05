@@ -1,6 +1,6 @@
 import { ScoreboardEntry, Solve } from "@noctf/api/datatypes";
 import { RedisClientFactory } from "../../clients/redis.ts";
-import { decode, encode } from "cbor2";
+import { decode, encode } from "cbor-x";
 import { ComputedChallengeScoreData } from "./calc.ts";
 import { Compress, Decompress } from "../../util/message_compression.ts";
 import { Coleascer } from "../../util/coleascer.ts";
