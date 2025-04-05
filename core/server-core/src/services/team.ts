@@ -6,33 +6,23 @@ import type { AuditParams } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 import { TeamConfig } from "@noctf/api/config";
 import { TeamDAO } from "../dao/team.ts";
-import { LocalCache } from "../util/local_cache.ts";
-import { Team } from "@noctf/api/datatypes";
 
 type Props = Pick<
   ServiceCradle,
-  "cacheService" | "configService" | "databaseClient" | "auditLogService"
+  "configService" | "databaseClient" | "auditLogService"
 >;
 
 export class TeamService {
   private readonly auditLogService;
-  private readonly cacheService;
   private readonly configService;
   private readonly dao;
 
-  private readonly listCache = new LocalCache<string, Team[]>({
-    ttl: 10000,
-    max: 32,
-  });
-
   constructor({
-    cacheService,
     configService,
     databaseClient,
     auditLogService,
   }: Props) {
     this.auditLogService = auditLogService;
-    this.cacheService = cacheService;
     this.configService = configService;
     this.dao = new TeamDAO(databaseClient.get());
     void this.init();
@@ -117,19 +107,23 @@ export class TeamService {
     return this.dao.get(id);
   }
 
-  async list(
+  async listSummary(
     params?: {
       flags?: string[];
       division_id?: number;
     },
-    cached?: boolean,
+    limit?: { limit?: number, offset?: number }
   ) {
-    const key =
-      cached &&
-      `${params?.flags?.toSorted().join(",") || ""}:${params?.division_id}`;
-    return key
-      ? this.listCache.load(key, () => this.dao.list(params))
-      : this.dao.list(params);
+    return this.dao.listSummary(params, limit);
+  }
+
+  async getCount(
+    params?: {
+      flags?: string[];
+      division_id?: number;
+    },
+  ) {
+    return this.dao.getCount(params);
   }
 
   async queryNames(ids: number[], includeHidden?: boolean) {

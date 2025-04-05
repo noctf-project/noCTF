@@ -23,9 +23,15 @@ import {
 import { ActorType } from "@noctf/server-core/types/enums";
 import { IdParams } from "@noctf/api/params";
 import { ListTeamsQuery } from "@noctf/api/query";
+import { GetUtils } from "./_util.ts";
+import { Policy } from "@noctf/server-core/util/policy";
+
+export const TEAM_PAGE_SIZE = 100;
 
 export async function routes(fastify: FastifyInstance) {
   const { teamService } = fastify.container.cradle as ServiceCradle;
+  const { gateStartTime } = GetUtils(fastify.container.cradle);
+  const adminPolicy: Policy = ["admin.team.get"];
 
   fastify.post<{ Body: CreateTeamRequest; Reply: MeTeamResponse }>(
     "/teams",
@@ -236,17 +242,30 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const teams = await teamService.list(
-        {
-          flags: ["!hidden"],
-          division_id: request.query.division_id,
-        },
-        true,
-      );
+      const admin = await gateStartTime(adminPolicy, Date.now(), request.user?.id);
 
-      reply.header("cache-control", "private, max-age=600");
+      const page = request.query.page || 1;
+      const page_size =
+        (admin
+          ? request.query.page_size
+          : Math.min(TEAM_PAGE_SIZE, request.query.page_size)) ||
+        TEAM_PAGE_SIZE;
+      const query =       {
+        flags: ["!hidden"],
+        division_id: request.query.division_id,
+        name_prefix: request.query.name_prefix
+      };
+      const [teams, total] = await Promise.all([
+        teamService.listSummary(
+          query,
+        {
+          limit: page_size,
+          offset: (page - 1) * page_size
+        }
+      ), teamService.getCount(query)]);
+
       return {
-        data: teams,
+        data: {teams, page_size, total },
       };
     },
   );
@@ -275,7 +294,7 @@ export async function routes(fastify: FastifyInstance) {
 
       reply.header("cache-control", "private, max-age=900");
       return {
-        data: team,
+        data: {...team, members: []}, // TODO: members
       };
     },
   );

@@ -185,7 +185,7 @@ export class ScoreboardService {
     id: number,
   ) {
     const [teams, solveList, awardList] = await Promise.all([
-      this.teamDAO.listTeamsWithActivity(id),
+      this.teamDAO.listWithActivity(id),
       this.solveDAO.getAllSolves(id),
       this.awardDAO.getAllAwards(id),
     ]);

@@ -12,7 +12,7 @@ import {
   ScoringStrategy,
   User,
   ScoreboardEntry,
-  PublicTeam,
+  TeamSummary,
   Solve,
   TypeDate,
   Award,
@@ -87,12 +87,21 @@ export const MeTeamResponse = Type.Object({
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
 
 export const GetTeamResponse = Type.Object({
-  data: PublicTeam,
+  data: Type.Composite([
+    Type.Omit(Team, ["join_code", "flags"]),
+    Type.Object({
+      members: Type.Array(Type.String()) // TODO: list members
+    })
+  ]),
 });
 export type GetTeamResponse = Static<typeof GetTeamResponse>;
 
 export const ListTeamsResponse = Type.Object({
-  data: Type.Array(PublicTeam),
+  data: Type.Object({
+    teams: Type.Array(TeamSummary),
+    page_size: Type.Integer(),
+    total: Type.Integer(),
+  }),
 });
 export type ListTeamsResponse = Static<typeof ListTeamsResponse>;
 

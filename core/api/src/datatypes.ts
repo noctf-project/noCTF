@@ -253,9 +253,9 @@ export enum ChallengeSolveStatus {
 }
 
 export const ScoreboardEntry = Type.Object({
-  team_id: Type.Number(),
+  team_id: Type.Integer(),
   score: Type.Number(),
-  rank: Type.Number(),
+  rank: Type.Integer(),
   last_solve: TypeDate,
   updated_at: TypeDate,
   hidden: Type.Boolean(),
@@ -264,5 +264,10 @@ export const ScoreboardEntry = Type.Object({
 });
 export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 
-export const PublicTeam = Type.Omit(Team, ["join_code", "flags"]);
-export type PublicTeam = Static<typeof PublicTeam>;
+export const TeamSummary = Type.Composite([
+  Type.Omit(Team, ["join_code", "flags"]),
+  Type.Object({
+    num_members: Type.Integer()
+  })
+]);
+export type TeamSummary = Static<typeof TeamSummary>;
