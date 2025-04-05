@@ -23,7 +23,6 @@ import { SubmissionDAO } from "../../dao/submission.ts";
 import { ChallengePlugin } from "./types.ts";
 import { CoreChallengePlugin } from "./core_plugin.ts";
 import { LocalCache } from "../../util/local_cache.ts";
-import { ChallengeSolveStatus } from "@noctf/api/enums";
 
 type Props = Pick<
   ServiceCradle,
@@ -182,7 +181,7 @@ export class ChallengeService {
         { name: impl.name() },
         "Presolve plugin returned a valid result",
       );
-      const solved = state.status === ChallengeSolveStatus.Correct;
+      const solved = state.status === "correct";
       this.submissionDAO.create({
         team_id: teamId,
         user_id: userId,
