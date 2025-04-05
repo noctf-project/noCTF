@@ -7,7 +7,6 @@ import type { ServiceCradle } from "../../index.ts";
 import type { AuditLogActor } from "../../types/audit_log.ts";
 import type { ChallengePublicMetadataBase } from "@noctf/api/datatypes";
 import {
-  ChallengeSolveStatus,
   type Challenge,
   type ChallengeMetadata,
   type PublicChallenge,
@@ -24,6 +23,7 @@ import { SubmissionDAO } from "../../dao/submission.ts";
 import { ChallengePlugin } from "./types.ts";
 import { CoreChallengePlugin } from "./core_plugin.ts";
 import { LocalCache } from "../../util/local_cache.ts";
+import { ChallengeSolveStatus } from "@noctf/api/enums";
 
 type Props = Pick<
   ServiceCradle,
@@ -189,8 +189,7 @@ export class ChallengeService {
         challenge_id: challenge.id,
         source: challenge.private_metadata.solve.source,
         data,
-        queued: state.status === ChallengeSolveStatus.Queued,
-        solved,
+        status: state.status,
         comments: state.comment,
       });
       if (solved) {

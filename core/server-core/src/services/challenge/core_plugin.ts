@@ -3,13 +3,13 @@ import {
   ChallengePrivateMetadataBase,
   ChallengePublicMetadataBase,
   ChallengeSolveInputType,
-  ChallengeSolveStatus,
 } from "@noctf/api/datatypes";
 import { ServiceCradle } from "../../index.ts";
 import { ChallengePlugin } from "./types.ts";
 import pLimit from "p-limit";
 import { ValidationError } from "../../errors.ts";
 import { EvaluateScoringExpression } from "../score.ts";
+import { ChallengeSolveStatus } from "@noctf/api/enums";
 
 const FILE_METADATA_LIMIT = 16;
 const FILE_METADATA_LIMITER = pLimit(FILE_METADATA_LIMIT);
