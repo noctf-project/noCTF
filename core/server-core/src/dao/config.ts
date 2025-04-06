@@ -1,7 +1,7 @@
 import type { JsonObject } from "@noctf/schema";
 import type { DBType } from "../clients/database.ts";
-import type { SerializableMap } from "../types/primitives.ts";
 import { BadRequestError } from "../errors.ts";
+import { SerializableMap } from "@noctf/api/types";
 
 export class ConfigDAO {
   constructor(private readonly db: DBType) {}

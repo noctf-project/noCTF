@@ -1,4 +1,4 @@
-import { Primitive } from "../types/primitives.ts";
+import type { Primitive } from "@noctf/api/types";
 
 export class Coleascer {
   private readonly map = new Map<Primitive, Promise<unknown>>();

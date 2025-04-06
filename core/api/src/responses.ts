@@ -16,6 +16,7 @@ import {
   TypeDate,
   Award,
   Submission,
+  Division,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
@@ -253,3 +254,18 @@ export const AdminUpdateSubmissionsResponse = Type.Object({
 export type AdminUpdateSubmissionsResponse = Static<
   typeof AdminUpdateSubmissionsResponse
 >;
+
+export const ListDivisionsResponse = Type.Object({
+  data: Type.Array(
+    Type.Composite(
+      [
+        Type.Omit(Division, ["password", "is_visible"]),
+        Type.Object({
+          is_password: Type.Boolean(),
+        }),
+      ],
+      { additionalProperties: false },
+    ),
+  ),
+});
+export type ListDivisionsResponse = Static<typeof ListDivisionsResponse>;
