@@ -6,6 +6,7 @@ import type { AuditParams } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 import { TeamConfig } from "@noctf/api/config";
 import { TeamDAO } from "../dao/team.ts";
+import { DivisionDAO } from "../dao/division.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -15,17 +16,28 @@ type Props = Pick<
 export class TeamService {
   private readonly auditLogService;
   private readonly configService;
-  private readonly dao;
+
+  private readonly divisionDAO;
+  private readonly teamDAO;
 
   constructor({ configService, databaseClient, auditLogService }: Props) {
     this.auditLogService = auditLogService;
     this.configService = configService;
-    this.dao = new TeamDAO(databaseClient.get());
+    this.divisionDAO = new DivisionDAO(databaseClient.get());
+    this.teamDAO = new TeamDAO(databaseClient.get());
     void this.init();
   }
 
   async init() {
     await this.configService.register(TeamConfig, { max_members: 0 });
+  }
+
+  async listDivisions(params?: Parameters<DivisionDAO["list"]>[0]) {
+    return this.divisionDAO.list(params);
+  }
+
+  async getDivision(id: number) {
+    return this.divisionDAO.get(id);
   }
 
   async create(
@@ -44,7 +56,7 @@ export class TeamService {
     { actor, message }: AuditParams = {},
   ) {
     const join_code = generate_join_code ? nanoid() : null;
-    const team = await this.dao.create({
+    const team = await this.teamDAO.create({
       name,
       join_code,
       division_id,
@@ -84,7 +96,7 @@ export class TeamService {
       j = null;
     }
 
-    await this.dao.update(id, {
+    await this.teamDAO.update(id, {
       name,
       bio,
       join_code: j,
@@ -100,7 +112,7 @@ export class TeamService {
   }
 
   async get(id: number) {
-    return this.dao.get(id);
+    return this.teamDAO.get(id);
   }
 
   async listSummary(
@@ -110,19 +122,18 @@ export class TeamService {
     },
     limit?: { limit?: number; offset?: number },
   ) {
-    return this.dao.listSummary(params, limit);
+    return this.teamDAO.listSummary(params, limit);
   }
 
   async getCount(params?: { flags?: string[]; division_id?: number }) {
-    return this.dao.getCount(params);
+    return this.teamDAO.getCount(params);
   }
 
   async queryNames(ids: number[], includeHidden?: boolean) {
-    return this.dao.queryNames(ids, includeHidden);
+    return this.teamDAO.queryNames(ids, includeHidden);
   }
-
   async delete(id: number, { actor, message }: AuditParams = {}) {
-    await this.dao.delete(id);
+    await this.teamDAO.delete(id);
     await this.auditLogService.log({
       actor,
       operation: "team.delete",
@@ -137,14 +148,14 @@ export class TeamService {
    * @param code
    */
   async join(user_id: number, code: string) {
-    const result = await this.dao.findUsingJoinCode(code);
+    const result = await this.teamDAO.findUsingJoinCode(code);
     if (
       !result.flags.includes(TeamFlag.FROZEN) ||
       !result.flags.includes(TeamFlag.BLOCKED)
     ) {
       throw new NotFoundError("Team not found");
     }
-    await this.dao.assign({
+    await this.teamDAO.assign({
       user_id,
       team_id: result.id,
       role: "member",
@@ -166,14 +177,14 @@ export class TeamService {
   }
 
   async getMembershipForUser(userId: number) {
-    return this.dao.getMembershipForUser(userId);
+    return this.teamDAO.getMembershipForUser(userId);
   }
 
   async assignMember(
     v: Parameters<TeamDAO["assign"]>[0],
     { actor, message }: AuditParams = {},
   ) {
-    await this.dao.assign(v);
+    await this.teamDAO.assign(v);
     await this.auditLogService.log({
       actor,
       operation: "team.member.assign",
@@ -201,6 +212,6 @@ export class TeamService {
   }
 
   async listMembers(teamId: number) {
-    return await this.dao.listMembers(teamId);
+    return await this.teamDAO.listMembers(teamId);
   }
 }

@@ -114,7 +114,7 @@ export class ScoreboardService {
         metadata,
       })),
     );
-    const divisions = await this.divisionDAO.listDivisions();
+    const divisions = await this.divisionDAO.list();
     for (const { id } of divisions) {
       await this.commitDivisionScoreboard(challenges, id);
     }

@@ -23,9 +23,10 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("challenge_id", "integer", (col) =>
       col.notNull().references("challenge.id"),
     )
-    .addColumn("data", "text")
-    .addColumn("comments", "text")
+    .addColumn("data", "text", (col) => col.notNull().defaultTo(""))
+    .addColumn("comments", "text", (col) => col.notNull().defaultTo(""))
     .addColumn("source", "varchar(64)", (col) => col.notNull())
+    .addColumn("metadata", "jsonb", (col) => col.notNull().defaultTo("{}"))
     .addColumn("hidden", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("status", sql`submission_status`, (col) => col.notNull())
     .addColumn("created_at", "timestamptz", (col) =>
@@ -49,7 +50,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .execute();
 
   await schema
-    .createIndex("submission_uidx_queued_solved")
+    .createIndex("submission_uidx_queued_correct")
     .on("submission")
     .unique()
     .columns(["challenge_id", "team_id"])
