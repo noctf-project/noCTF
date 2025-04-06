@@ -10,7 +10,7 @@ export class TeamNamesService {
   private debounce: ReturnType<typeof setTimeout> | null = null;
 
   private readonly cache = new LRUCache<number, string>({
-    max: 4096,
+    max: 8192,
     ttl: 900000, // 15 minutes
   });
 
