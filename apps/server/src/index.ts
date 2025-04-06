@@ -137,7 +137,7 @@ const logRequest = async (
   reply: { elapsedTime?: number; statusCode?: number },
   flag?: string,
 ) => {
-  const elapsed = +reply.elapsedTime.toFixed(2);
+  const elapsed = +reply.elapsedTime?.toFixed(2);
   server.log.info(
     {
       elapsed,

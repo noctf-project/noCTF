@@ -6,12 +6,12 @@ import {
   Solve,
 } from "@noctf/api/datatypes";
 import { Expression } from "expr-eval";
-import { DBSolve } from "../../dao/solve.ts";
 import { partition } from "../../util/object.ts";
 import { EvaluateScoringExpression } from "../score.ts";
 import { Logger } from "../../types/primitives.ts";
 import { MaxDate } from "../../util/date.ts";
 import { MinimalTeamInfo } from "../../dao/team.ts";
+import { RawSolve } from "../../dao/submission.ts";
 
 export type ChallengeMetadataWithExpr = {
   expr: Expression;
@@ -40,7 +40,7 @@ export type ChallengeSummary = {
 function ComputeScoresForChallenge(
   { metadata, expr }: ChallengeMetadataWithExpr,
   teams: Map<number, MinimalTeamInfo>,
-  solves: DBSolve[],
+  solves: RawSolve[],
   logger?: Logger,
 ): ChallengeSolvesResult {
   const {
@@ -102,7 +102,7 @@ function ComputeScoresForChallenge(
 export function ComputeScoreboard(
   teams: Map<number, MinimalTeamInfo>,
   challenges: ChallengeMetadataWithExpr[],
-  solvesByChallenge: Record<number, DBSolve[]>,
+  solvesByChallenge: Record<number, RawSolve[]>,
   awards: Award[],
   logger?: Logger,
 ): {

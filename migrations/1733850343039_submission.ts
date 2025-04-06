@@ -64,33 +64,6 @@ export async function up(db: Kysely<any>): Promise<void> {
     .execute();
 
   await schema
-    .createView("solve")
-    .columns([
-      "id",
-      "hidden",
-      "challenge_id",
-      "team_id",
-      "division_id",
-      "created_at",
-      "updated_at",
-    ])
-    .as(
-      db
-        .selectFrom("submission")
-        .select([
-          "id",
-          "hidden",
-          "challenge_id",
-          "team_id",
-          "division_id",
-          "created_at",
-          "updated_at",
-        ])
-        .where("status", "=", "correct"),
-    )
-    .execute();
-
-  await schema
     .createTable("award")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedAlwaysAsIdentity(),

@@ -1,6 +1,5 @@
-import type { ScoreboardEntry, Solve } from "@noctf/api/datatypes";
+import type { ScoreboardEntry } from "@noctf/api/datatypes";
 import type { ServiceCradle } from "../../index.ts";
-import { DBSolve, SolveDAO } from "../../dao/solve.ts";
 import { DivisionDAO } from "../../dao/division.ts";
 import {
   ChallengeMetadataWithExpr,
@@ -14,6 +13,7 @@ import { AwardDAO } from "../../dao/award.ts";
 import { ScoreboardDataLoader } from "./loader.ts";
 import { TeamDAO } from "../../dao/team.ts";
 import { partition } from "../../util/object.ts";
+import { RawSolve, SubmissionDAO } from "../../dao/submission.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -44,7 +44,7 @@ export class ScoreboardService {
   private readonly scoreboardDataLoader;
   private readonly awardDAO;
   private readonly scoreHistoryDAO;
-  private readonly solveDAO;
+  private readonly submissionDAO;
   private readonly teamDAO;
   private readonly divisionDAO;
 
@@ -69,7 +69,7 @@ export class ScoreboardService {
     );
     this.awardDAO = new AwardDAO(databaseClient.get());
     this.scoreHistoryDAO = new ScoreHistoryDAO(databaseClient.get());
-    this.solveDAO = new SolveDAO(databaseClient.get());
+    this.submissionDAO = new SubmissionDAO(databaseClient.get());
     this.teamDAO = new TeamDAO(databaseClient.get());
     this.divisionDAO = new DivisionDAO(databaseClient.get());
   }
@@ -186,13 +186,13 @@ export class ScoreboardService {
   ) {
     const [teams, solveList, awardList] = await Promise.all([
       this.teamDAO.listWithActivity(id),
-      this.solveDAO.getAllSolves(id),
+      this.submissionDAO.getSolvesForCalculation(id),
       this.awardDAO.getAllAwards(id),
     ]);
     const solvesByChallenge = Object.groupBy(
       solveList || [],
       ({ challenge_id }) => challenge_id,
-    ) as Record<number, DBSolve[]>;
+    ) as Record<number, RawSolve[]>;
 
     const { scoreboard, challenges: challengeScores } = ComputeScoreboard(
       new Map(teams.map((x) => [x.id, x])),
