@@ -5,11 +5,11 @@ import {
   ChallengeSolveInputType,
 } from "@noctf/api/datatypes";
 import { ServiceCradle } from "../../index.ts";
-import { ChallengePlugin } from "./types.ts";
+import { ChallengePlugin, SolveData } from "./types.ts";
 import pLimit from "p-limit";
 import { ValidationError } from "../../errors.ts";
 import { EvaluateScoringExpression } from "../score.ts";
-import { ChallengeSolveStatus } from "@noctf/api/enums";
+import { SubmissionStatus } from "@noctf/api/enums";
 
 const FILE_METADATA_LIMIT = 16;
 const FILE_METADATA_LIMITER = pLimit(FILE_METADATA_LIMIT);
@@ -66,12 +66,17 @@ export class CoreChallengePlugin implements ChallengePlugin {
     return ChallengePrivateMetadataBase;
   }
 
-  preSolve = async (c: ChallengeMetadata, teamId: number, data: string) => {
+  preSolve = async (
+    c: ChallengeMetadata,
+    teamId: number,
+    data: string,
+  ): Promise<SolveData | null> => {
     const m = c.private_metadata;
     switch (m.solve.source) {
       case "manual":
+        if (m.solve.manual?.input_type === ChallengeSolveInputType.None) return null;
         return {
-          status: ChallengeSolveStatus.Queued,
+          status: "queued",
         };
       case "flag":
         for (const spec of m.solve.flag || []) {
@@ -86,11 +91,11 @@ export class CoreChallengePlugin implements ChallengePlugin {
           const result = strategy(spec.data, teamId, data);
           if (result.solved)
             return {
-              status: ChallengeSolveStatus.Correct,
+              status: "correct",
             };
         }
         return {
-          status: ChallengeSolveStatus.Incorrect,
+          status: "incorrect",
         };
       default:
         return null;

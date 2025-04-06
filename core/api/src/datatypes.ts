@@ -1,5 +1,6 @@
 import type { Static } from "@sinclair/typebox";
 import { Type } from "@sinclair/typebox";
+import { SubmissionStatus } from "./enums.ts";
 
 export const TypeDate = Type.Transform(
   Type.Unsafe<Date>({
@@ -256,6 +257,30 @@ export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 
 export const PublicTeam = Type.Omit(Team, ["join_code", "flags"]);
 export type PublicTeam = Static<typeof PublicTeam>;
+
+export const Submission = Type.Object({
+  id: Type.Number(),
+  user_id: Type.Union([Type.Number(), Type.Null()]),
+  team_id: Type.Number(),
+  challenge_id: Type.Number(),
+  data: Type.String({ maxLength: 512 }),
+  comments: Type.String({ maxLength: 512 }),
+  source: Type.String({ maxLength: 64 }),
+  hidden: Type.Boolean(),
+  status: SubmissionStatus,
+  created_at: TypeDate,
+  updated_at: TypeDate,
+});
+export type Submission = Static<typeof Submission>;
+
+export const LimitOffset = Type.Object(
+  {
+    limit: Type.Optional(Type.Integer({ minimum: 1 })),
+    offset: Type.Optional(Type.Number({ minimum: 0 })),
+  },
+  { additionalProperties: false },
+);
+export type LimitOffset = Static<typeof LimitOffset>;
 
 export const Division = Type.Object({
   name: Type.String({ maxLength: 128 }),

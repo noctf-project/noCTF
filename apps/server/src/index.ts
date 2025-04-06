@@ -40,6 +40,7 @@ import { FileService } from "@noctf/server-core/services/file";
 import { ScoreboardService } from "@noctf/server-core/services/scoreboard/index";
 import { fastifyMultipart } from "@fastify/multipart";
 import { ScoreService } from "@noctf/server-core/services/score";
+import { SubmissionService } from "@noctf/server-core/services/submission";
 
 export const server = fastify({
   logger: {
@@ -94,6 +95,7 @@ server.register(async () => {
     teamService: asClass(TeamService).singleton(),
     scoreService: asClass(ScoreService).singleton(),
     scoreboardService: asClass(ScoreboardService).singleton(),
+    submissionService: asClass(SubmissionService).singleton(),
     userService: asClass(UserService).singleton(),
     lockService: asClass(LockService).singleton(),
   });
