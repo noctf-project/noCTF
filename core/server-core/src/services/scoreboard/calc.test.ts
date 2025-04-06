@@ -269,6 +269,7 @@ describe(ComputeScoreboard, () => {
             hidden: false,
             id: 1,
             created_at: new Date(1) as unknown as Timestamp & Date, // fuck TS
+            updated_at: new Date(1) as unknown as Timestamp & Date,
             team_id: 1,
           },
           {
@@ -277,6 +278,7 @@ describe(ComputeScoreboard, () => {
             hidden: false,
             id: 2,
             created_at: new Date(2) as unknown as Timestamp & Date, // fuck TS
+            updated_at: new Date(2) as unknown as Timestamp & Date,
             team_id: 3,
           },
           {
@@ -285,6 +287,7 @@ describe(ComputeScoreboard, () => {
             hidden: false,
             id: 2,
             created_at: new Date(3) as unknown as Timestamp & Date, // fuck TS
+            updated_at: new Date(3) as unknown as Timestamp & Date,
             team_id: 2,
           },
         ],
@@ -406,7 +409,8 @@ describe(ComputeScoreboard, () => {
             division_id: 1,
             hidden: false,
             id: 1,
-            created_at: new Date(1) as any, // fuck TS
+            created_at: new Date(1) as unknown as Timestamp & Date, // fuck TS
+            updated_at: new Date(1) as unknown as Timestamp & Date,
             team_id: 1,
           },
         ],

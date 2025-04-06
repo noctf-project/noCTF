@@ -2,7 +2,10 @@ import type { DB } from "@noctf/schema";
 import type { DBType } from "../clients/database.ts";
 import type { AllNonNullable } from "../types/primitives.ts";
 
-export type DBSolve = AllNonNullable<DB["solve"]> & { created_at: Date };
+export type DBSolve = AllNonNullable<DB["solve"]> & {
+  created_at: Date;
+  updated_at: Date;
+};
 export class SolveDAO {
   constructor(private readonly db: DBType) {}
 
@@ -56,6 +59,7 @@ export class SolveDAO {
         "solve.challenge_id as challenge_id",
         "solve.hidden as hidden",
         "solve.created_at as created_at",
+        "solve.updated_at as updated_at",
       ]);
   }
 }

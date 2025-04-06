@@ -21,7 +21,7 @@ export type ChallengeMetadataWithExpr = {
 type ChallengeSolvesResult = {
   score: number | null;
   solves: Solve[];
-  last_valid_solve: Date;
+  last_updated: Date;
 };
 
 export type ComputedChallengeScoreData = {
@@ -55,8 +55,10 @@ function ComputeScoresForChallenge(
   try {
     const base = EvaluateScoringExpression(expr, params, valid.length);
     let last_solve = new Date(0);
-    const rv: Solve[] = valid.map(({ team_id, created_at }, i) => {
+    let last_updated = new Date(0);
+    const rv: Solve[] = valid.map(({ team_id, created_at, updated_at }, i) => {
       last_solve = created_at;
+      last_updated = MaxDate(last_updated, updated_at);
       const b = bonus?.[i];
       return {
         team_id,
@@ -67,17 +69,21 @@ function ComputeScoresForChallenge(
         created_at,
       };
     });
-    const rh: Solve[] = hidden.map(({ team_id, created_at }) => ({
-      team_id,
-      challenge_id: metadata.id,
-      hidden: true,
-      score: base,
-      created_at,
-    }));
+    const rh: Solve[] = hidden.map(({ team_id, created_at, updated_at }) => {
+      last_updated = MaxDate(last_updated, updated_at);
+
+      return {
+        team_id,
+        challenge_id: metadata.id,
+        hidden: true,
+        score: base,
+        created_at,
+      };
+    });
     return {
       score: base,
       solves: rv.concat(rh),
-      last_valid_solve: last_solve,
+      last_updated,
     };
   } catch (err) {
     if (logger)
@@ -88,7 +94,7 @@ function ComputeScoresForChallenge(
     return {
       score: null,
       solves: [],
-      last_valid_solve: new Date(0),
+      last_updated: new Date(0),
     };
   }
 }
@@ -129,7 +135,7 @@ export function ComputeScoreboard(
     return [x.metadata.id, result] as [number, ChallengeSolvesResult];
   });
   const challengeScores = [];
-  for (const [challenge_id, { score, solves, last_valid_solve }] of computed) {
+  for (const [challenge_id, { score, solves, last_updated }] of computed) {
     const challengeSolves: Solve[] = [];
     for (const solve of solves) {
       challengeSolves.push(solve);
@@ -144,7 +150,7 @@ export function ComputeScoreboard(
         : MaxDate(solve.created_at, team.last_solve);
       team.updated_at = solve.hidden
         ? team.updated_at
-        : MaxDate(last_valid_solve, team.updated_at);
+        : MaxDate(last_updated, team.updated_at);
     }
     challengeScores.push({
       challenge_id,
