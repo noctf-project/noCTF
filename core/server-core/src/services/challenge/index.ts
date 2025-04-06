@@ -24,6 +24,7 @@ import { ChallengePlugin } from "./types.ts";
 import { CoreChallengePlugin } from "./core_plugin.ts";
 import { LocalCache } from "../../util/local_cache.ts";
 import { ChallengeSolveStatus } from "@noctf/api/enums";
+import { SerializableMap } from "@noctf/api/types";
 
 type Props = Pick<
   ServiceCradle,
@@ -158,6 +159,7 @@ export class ChallengeService {
     teamId: number,
     userId: number,
     data: string,
+    metadata?: SerializableMap
   ) {
     let challenge;
     if (typeof ch === "number") {
@@ -191,6 +193,8 @@ export class ChallengeService {
         data,
         status: state.status,
         comments: state.comment,
+        // eslint-disable @typescript-eslint/no-explicit-any
+        metadata: metadata as any
       });
       if (solved) {
         // TODO: emit solve to event bus to recalc

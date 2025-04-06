@@ -223,6 +223,7 @@ export async function routes(fastify: FastifyInstance) {
           team.team_id,
           request.user.id,
           request.body.data,
+          { ip: request.ip }
         ),
       };
     },

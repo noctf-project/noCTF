@@ -1,11 +1,11 @@
 import type { Static, TSchema } from "@sinclair/typebox";
 import type { ServiceCradle } from "../index.ts";
 import { ValidationError } from "../errors.ts";
-import type { SerializableMap } from "../types/primitives.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
 import type { ValidateFunction } from "ajv";
 import { Ajv } from "ajv";
 import { ConfigDAO } from "../dao/config.ts";
+import type { SerializableMap } from "@noctf/api/types";
 
 type Validator<T> = (kv: T) => Promise<string | null> | string | null;
 
