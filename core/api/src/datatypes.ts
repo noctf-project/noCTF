@@ -283,6 +283,7 @@ export const LimitOffset = Type.Object(
 export type LimitOffset = Static<typeof LimitOffset>;
 
 export const Division = Type.Object({
+  id: Type.Number(),
   name: Type.String({ maxLength: 128 }),
   slug: Type.String({ maxLength: 64 }),
   description: Type.String({ maxLength: 512 }),
