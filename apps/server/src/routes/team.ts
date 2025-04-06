@@ -48,9 +48,7 @@ export async function routes(fastify: FastifyInstance) {
       if (!canList && !request.user) {
         return { data: [] };
       }
-      const membership = request.user
-        ? await teamService.getMembershipForUser(request.user.id)
-        : null;
+      const membership = await request.user?.membership;
       if (!canList) {
         if (!membership) return { data: [] };
         const division = await teamService.getDivision(membership.division_id);
@@ -85,7 +83,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      if (await teamService.getMembershipForUser(request.user.id)) {
+      if (await request.user?.membership) {
         throw new ConflictError("You are currently part of a team");
       }
       const actor = {
@@ -184,9 +182,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const membership = await teamService.getMembershipForUser(
-        request.user.id,
-      );
+      const membership = await request.user?.membership;
       if (!membership) {
         throw new NotFoundError("You are not currently part of a team");
       }
@@ -213,9 +209,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const membership = await teamService.getMembershipForUser(
-        request.user.id,
-      );
+      const membership = await request.user?.membership;
       if (!membership) {
         throw new NotFoundError("You are not currently part of a team");
       }

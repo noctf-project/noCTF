@@ -46,12 +46,9 @@ export async function routes(fastify: FastifyInstance) {
           removePrivateTags: true,
         },
       );
-      const teamPromise = request.user?.id
-        ? teamService.getMembershipForUser(request.user?.id)
-        : undefined;
       const [challenges, team] = await Promise.all([
         challengesPromise,
-        teamPromise,
+        request.user?.membership,
       ]);
 
       const { data: scoreObj } = await scoreboardService.getChallengesSummary(
@@ -165,12 +162,14 @@ export async function routes(fastify: FastifyInstance) {
       }
       // TODO: fix up all division ids, currently everything
       // is requesting division ID=1
-      const team = request.user?.id
-        ? await teamService.getMembershipForUser(request.user?.id)
-        : undefined;
+      const membership = await request.user?.membership;
+
       return {
         data: (
-          await scoreboardService.getChallengeSolves(team?.division_id || 1, id)
+          await scoreboardService.getChallengeSolves(
+            membership?.division_id || 1,
+            id,
+          )
         ).data?.filter(({ hidden }) => !hidden),
       };
     },
@@ -212,15 +211,16 @@ export async function routes(fastify: FastifyInstance) {
       ) {
         throw new NotFoundError("Challenge not found");
       }
-      const team = await teamService.getMembershipForUser(request.user.id);
-      if (!team) {
+      const membership = await request.user?.membership;
+
+      if (!membership) {
         throw new ForbiddenError("You are not currently part of a team");
       }
 
       return {
         data: await challengeService.solve(
           challenge,
-          team.team_id,
+          membership.team_id,
           request.user.id,
           request.body.data,
           { ip: request.ip },

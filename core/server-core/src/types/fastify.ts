@@ -1,3 +1,4 @@
+import type { TeamService } from "../services/team.ts";
 import type { Policy } from "../util/policy.ts";
 
 declare module "fastify" {
@@ -16,6 +17,9 @@ declare module "fastify" {
     user?: {
       id: number;
       token: string;
+      membership: PromiseLike<
+        Awaited<ReturnType<TeamService["getMembershipForUser"]>>
+      >;
     };
   }
 }
