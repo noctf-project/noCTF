@@ -158,7 +158,7 @@ export class ChallengeService {
     teamId: number,
     userId: number,
     data: string,
-    metadata?: SerializableMap
+    metadata?: SerializableMap,
   ) {
     let challenge;
     if (typeof ch === "number") {
@@ -193,7 +193,7 @@ export class ChallengeService {
         status: state.status,
         comments: state.comment,
         // eslint-disable @typescript-eslint/no-explicit-any
-        metadata: metadata as any
+        metadata: metadata as any,
       });
       if (solved) {
         // TODO: emit solve to event bus to recalc

@@ -9,7 +9,6 @@ import { ChallengePlugin, SolveData } from "./types.ts";
 import pLimit from "p-limit";
 import { ValidationError } from "../../errors.ts";
 import { EvaluateScoringExpression } from "../score.ts";
-import { SubmissionStatus } from "@noctf/api/enums";
 
 const FILE_METADATA_LIMIT = 16;
 const FILE_METADATA_LIMITER = pLimit(FILE_METADATA_LIMIT);
@@ -74,7 +73,8 @@ export class CoreChallengePlugin implements ChallengePlugin {
     const m = c.private_metadata;
     switch (m.solve.source) {
       case "manual":
-        if (m.solve.manual?.input_type === ChallengeSolveInputType.None) return null;
+        if (m.solve.manual?.input_type === ChallengeSolveInputType.None)
+          return null;
         return {
           status: "queued",
         };

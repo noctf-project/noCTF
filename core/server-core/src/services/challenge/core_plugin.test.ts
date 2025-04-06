@@ -39,6 +39,9 @@ describe(CoreChallengePlugin, () => {
         private_metadata: {
           solve: {
             source: "manual",
+            manual: {
+              input_type: "text",
+            },
           },
         },
       } as unknown as Challenge,
@@ -46,7 +49,7 @@ describe(CoreChallengePlugin, () => {
       "test",
     );
     expect(result).toEqual({
-      status: SubmissionStatus.Queued,
+      status: "queued",
     });
   });
 
@@ -60,7 +63,7 @@ describe(CoreChallengePlugin, () => {
       },
     } as Partial<ChallengeMetadata> as ChallengeMetadata;
     expect(await service.preSolve(metadata, 1, "test")).toEqual({
-      status: SubmissionStatus.Incorrect,
+      status: "incorrect",
     });
   });
 
@@ -79,13 +82,13 @@ describe(CoreChallengePlugin, () => {
       },
     } as Partial<ChallengeMetadata> as ChallengeMetadata;
     expect(await service.preSolve(metadata, 1, "test")).toEqual({
-      status: SubmissionStatus.Incorrect,
+      status: "incorrect",
     });
     expect(await service.preSolve(metadata, 1, "ctf{isthebest}")).toEqual({
-      status: SubmissionStatus.Incorrect,
+      status: "incorrect",
     });
     expect(await service.preSolve(metadata, 1, "CTF{isthebest}")).toEqual({
-      status: SubmissionStatus.Correct,
+      status: "correct",
     });
   });
 
@@ -104,13 +107,13 @@ describe(CoreChallengePlugin, () => {
       },
     } as Partial<ChallengeMetadata> as ChallengeMetadata;
     expect(await service.preSolve(metadata, 1, "test")).toEqual({
-      status: SubmissionStatus.Incorrect,
+      status: "incorrect",
     });
     expect(await service.preSolve(metadata, 1, "ctf{isthebest}")).toEqual({
-      status: SubmissionStatus.Correct,
+      status: "correct",
     });
     expect(await service.preSolve(metadata, 1, "CTF{isthebest}")).toEqual({
-      status: SubmissionStatus.Correct,
+      status: "correct",
     });
   });
 
@@ -129,13 +132,13 @@ describe(CoreChallengePlugin, () => {
       },
     } as Partial<ChallengeMetadata> as ChallengeMetadata;
     expect(await service.preSolve(metadata, 1, "test")).toEqual({
-      status: SubmissionStatus.Incorrect,
+      status: "incorrect",
     });
     expect(await service.preSolve(metadata, 1, "nohello")).toEqual({
-      status: SubmissionStatus.Incorrect,
+      status: "incorrect",
     });
     expect(await service.preSolve(metadata, 1, "helloworld")).toEqual({
-      status: SubmissionStatus.Correct,
+      status: "correct",
     });
   });
 
@@ -154,13 +157,13 @@ describe(CoreChallengePlugin, () => {
       },
     } as Partial<ChallengeMetadata> as ChallengeMetadata;
     expect(await service.preSolve(metadata, 1, "test")).toEqual({
-      status: SubmissionStatus.Incorrect,
+      status: "incorrect",
     });
     expect(await service.preSolve(metadata, 1, "nohello")).toEqual({
-      status: SubmissionStatus.Incorrect,
+      status: "incorrect",
     });
     expect(await service.preSolve(metadata, 1, "HeLlOWoRlD")).toEqual({
-      status: SubmissionStatus.Correct,
+      status: "correct",
     });
   });
 
