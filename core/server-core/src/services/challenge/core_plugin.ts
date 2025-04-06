@@ -74,6 +74,7 @@ export class CoreChallengePlugin implements ChallengePlugin {
     const m = c.private_metadata;
     switch (m.solve.source) {
       case "manual":
+        if (m.solve.manual?.input_type === ChallengeSolveInputType.None) return null;
         return {
           status: "queued",
         };
