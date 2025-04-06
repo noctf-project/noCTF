@@ -73,6 +73,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       "division_id",
       "team_flags",
       "created_at",
+      "updated_at",
     ])
     .as(
       db
@@ -83,8 +84,9 @@ export async function up(db: Kysely<any>): Promise<void> {
           "challenge_id",
           "team_id",
           "division_id",
-          "team.flags",
+          "team_flags",
           "submission.created_at",
+          "submission.updated_at",
         ])
         .where("status", "=", "correct")
         .innerJoin("team", "team.id", "submission.team_id"),
