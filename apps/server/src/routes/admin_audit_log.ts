@@ -10,11 +10,11 @@ export async function routes(fastify: FastifyInstance) {
   const auth = {
     require: true,
     scopes: new Set(["admin"]),
-    policy: ["AND", "admin.audit_log.read"] as Policy,
+    policy: ["AND", "admin.audit_log.get"] as Policy,
   };
 
-  fastify.post(
-    "/admin/audit_log",
+  fastify.post<{ Body: QueryAuditLogRequest; Reply: QueryAuditLogResponse }>(
+    "/admin/audit_log/query",
     {
       schema: {
         tags: ["admin"],

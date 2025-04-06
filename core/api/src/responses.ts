@@ -15,10 +15,11 @@ import {
   Solve,
   TypeDate,
   Award,
+  Submission,
   Division,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
-import { ChallengeSolveStatus } from "./enums.ts";
+import { SubmissionStatus } from "./enums.ts";
 
 export const BaseResponse = Type.Object({
   error: Type.Optional(Type.String()),
@@ -221,7 +222,7 @@ export type AdminGetConfigSchemaResponse = Static<
 
 export const SolveChallengeResponse = Type.Object(
   {
-    data: Type.Enum(ChallengeSolveStatus),
+    data: SubmissionStatus,
   },
   { additionalProperties: false },
 );
@@ -268,6 +269,20 @@ export const ScoreboardSolvesResponse = Type.Object({
   data: Type.Array(Solve),
 });
 export type ScoreboardSolvesResponse = Static<typeof ScoreboardSolvesResponse>;
+
+export const AdminQuerySubmissionsResponse = Type.Object({
+  data: Type.Array(Submission),
+});
+export type AdminQuerySubmissionsResponse = Static<
+  typeof AdminQuerySubmissionsResponse
+>;
+
+export const AdminUpdateSubmissionsResponse = Type.Object({
+  data: Type.Array(Type.Number()),
+});
+export type AdminUpdateSubmissionsResponse = Static<
+  typeof AdminUpdateSubmissionsResponse
+>;
 
 export const ListDivisionsResponse = Type.Object({
   data: Type.Array(

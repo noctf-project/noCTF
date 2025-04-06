@@ -18,6 +18,7 @@ import type { ChallengeService } from "./services/challenge/index.ts";
 import type { FileService } from "./services/file.ts";
 import type { ScoreService } from "./services/score.ts";
 import type { ScoreboardService } from "./services/scoreboard/index.ts";
+import type { SubmissionService } from "./services/submission.ts";
 
 export type ServiceCradle = {
   logger: Logger;
@@ -36,6 +37,7 @@ export type ServiceCradle = {
   policyService: PolicyService;
   scoreService: ScoreService;
   scoreboardService: ScoreboardService;
+  submissionService: SubmissionService;
   teamService: TeamService;
   userService: UserService;
   lockService: LockService;

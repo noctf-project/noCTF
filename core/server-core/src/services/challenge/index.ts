@@ -23,7 +23,6 @@ import { SubmissionDAO } from "../../dao/submission.ts";
 import { ChallengePlugin } from "./types.ts";
 import { CoreChallengePlugin } from "./core_plugin.ts";
 import { LocalCache } from "../../util/local_cache.ts";
-import { ChallengeSolveStatus } from "@noctf/api/enums";
 import type { SerializableMap } from "@noctf/api/types";
 
 type Props = Pick<
@@ -159,7 +158,7 @@ export class ChallengeService {
     teamId: number,
     userId: number,
     data: string,
-    metadata?: SerializableMap
+    metadata?: SerializableMap,
   ) {
     let challenge;
     if (typeof ch === "number") {
@@ -184,7 +183,7 @@ export class ChallengeService {
         { name: impl.name() },
         "Presolve plugin returned a valid result",
       );
-      const solved = state.status === ChallengeSolveStatus.Correct;
+      const solved = state.status === "correct";
       this.submissionDAO.create({
         team_id: teamId,
         user_id: userId,
@@ -194,7 +193,7 @@ export class ChallengeService {
         status: state.status,
         comments: state.comment,
         // eslint-disable @typescript-eslint/no-explicit-any
-        metadata: metadata as any
+        metadata: metadata as any,
       });
       if (solved) {
         // TODO: emit solve to event bus to recalc
