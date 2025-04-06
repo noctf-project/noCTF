@@ -8,7 +8,6 @@ export async function up(db: Kysely<any>): Promise<void> {
       e.notNull().references("team.id").onDelete("cascade"),
     )
     .addColumn("updated_at", "timestamptz", (e) => e.notNull())
-    .addColumn("last_solve", "timestamptz", (e) => e.notNull())
     .addPrimaryKeyConstraint("score_history_pkey", ["team_id", "updated_at"])
     .addColumn("score", "integer", (e) => e.notNull())
     .execute();
