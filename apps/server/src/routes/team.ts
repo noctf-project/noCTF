@@ -24,13 +24,11 @@ import {
 import { ActorType } from "@noctf/server-core/types/enums";
 import { IdParams } from "@noctf/api/params";
 import { ListTeamsQuery } from "@noctf/api/query";
-import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
 
 export const TEAM_PAGE_SIZE = 100;
 
 export async function routes(fastify: FastifyInstance) {
-  const { gateStartTime } = GetUtils(fastify.container.cradle);
   const adminPolicy: Policy = ["admin.team.get"];
   const { teamService, policyService } = fastify.container
     .cradle as ServiceCradle;
@@ -273,17 +271,12 @@ export async function routes(fastify: FastifyInstance) {
         },
         querystring: ListTeamsQuery,
         auth: {
-          require: true,
-          policy: ["OR", "team.get"],
+          policy: ["team.get"],
         },
       },
     },
     async (request, reply) => {
-      const admin = await gateStartTime(
-        adminPolicy,
-        Date.now(),
-        request.user?.id,
-      );
+      const admin = policyService.evaluate(request.user?.id, adminPolicy);
 
       const page = request.query.page || 1;
       const page_size =
@@ -321,8 +314,7 @@ export async function routes(fastify: FastifyInstance) {
           200: GetTeamResponse,
         },
         auth: {
-          require: true,
-          policy: ["OR", "team.get"],
+          policy: ["team.get"],
         },
       },
     },

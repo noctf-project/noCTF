@@ -42,8 +42,11 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const ctime = Date.now();
-      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
+      const admin = await gateStartTime(
+        adminPolicy,
+        Date.now(),
+        request.user?.id,
+      );
 
       const page = request.query.page || 1;
       const page_size =
@@ -87,6 +90,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
+      await gateStartTime(adminPolicy, Date.now(), request.user?.id);
       const graphs = await scoreboardService.getTopScoreHistory(
         request.params.id,
         10,

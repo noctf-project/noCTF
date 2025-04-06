@@ -2,7 +2,7 @@ import client from "$lib/api/index.svelte";
 import type { PathResponse } from "$lib/api/types";
 import { LRUCache } from "lru-cache";
 
-export type Team = PathResponse<"/teams/{id}", "get">["data"];
+export type Team = PathResponse<"/teams/{id}", "get">["data"]["teams"];
 
 export class TeamService {
   private isLoaded = false;
@@ -44,7 +44,9 @@ export class TeamService {
     if (error) {
       throw new Error("Error fetching teams", { cause: error });
     }
-    data.data.forEach((x) => {
+    // TODO: we can get rid of this whole class
+    // patching this now to load the first 100 teams
+    data.data.teams.forEach((x) => {
       this.cache.set(x.id, x);
     });
   }

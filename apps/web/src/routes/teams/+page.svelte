@@ -139,7 +139,11 @@
                 icon="material-symbols:group"
                 class="text-lg text-base-content/70"
               />
-              <span class="text-sm font-medium">3 members</span>
+              <span class="text-sm font-medium"
+                >{team.num_members} member{team.num_members === 1
+                  ? ""
+                  : "s"}</span
+              >
             </div>
             <Icon
               icon="material-symbols:arrow-forward"
