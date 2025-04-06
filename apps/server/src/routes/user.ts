@@ -23,15 +23,15 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const team = await teamService.getMembershipForUser(request.user.id);
-      const teamDetails = team?.team_id
-        ? await teamService.get(team?.team_id)
+      const membership = await request.user?.membership;
+      const teamDetails = membership?.team_id
+        ? await teamService.get(membership?.team_id)
         : null;
       const user = await userService.get(request.user.id);
       return {
         data: {
           ...user,
-          team_id: team?.team_id || null,
+          team_id: membership?.team_id || null,
           team_name: teamDetails?.name || null,
         },
       };

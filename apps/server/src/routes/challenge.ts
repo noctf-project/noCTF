@@ -1,4 +1,3 @@
-import { SetupConfig } from "@noctf/api/config";
 import type { ChallengePrivateMetadataBase } from "@noctf/api/datatypes";
 import { GetChallengeFileParams, IdParams } from "@noctf/api/params";
 import {
@@ -15,8 +14,7 @@ import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
 
 export async function routes(fastify: FastifyInstance) {
-  const { teamService, challengeService, scoreboardService } =
-    fastify.container.cradle;
+  const { challengeService, scoreboardService } = fastify.container.cradle;
 
   const { gateStartTime } = GetUtils(fastify.container.cradle);
   const adminPolicy: Policy = ["admin.challenge.get"];
@@ -46,12 +44,9 @@ export async function routes(fastify: FastifyInstance) {
           removePrivateTags: true,
         },
       );
-      const teamPromise = request.user?.id
-        ? teamService.getMembershipForUser(request.user?.id)
-        : undefined;
       const [challenges, team] = await Promise.all([
         challengesPromise,
-        teamPromise,
+        request.user?.membership,
       ]);
 
       const { data: scoreObj } = await scoreboardService.getChallengesSummary(
@@ -169,12 +164,14 @@ export async function routes(fastify: FastifyInstance) {
       }
       // TODO: fix up all division ids, currently everything
       // is requesting division ID=1
-      const team = request.user?.id
-        ? await teamService.getMembershipForUser(request.user?.id)
-        : undefined;
+      const membership = await request.user?.membership;
+
       return {
         data: (
-          await scoreboardService.getChallengeSolves(team?.division_id || 1, id)
+          await scoreboardService.getChallengeSolves(
+            membership?.division_id || 1,
+            id,
+          )
         ).filter(({ hidden }) => !hidden),
       };
     },
@@ -216,15 +213,16 @@ export async function routes(fastify: FastifyInstance) {
       ) {
         throw new NotFoundError("Challenge not found");
       }
-      const team = await teamService.getMembershipForUser(request.user.id);
-      if (!team) {
+      const membership = await request.user?.membership;
+
+      if (!membership) {
         throw new ForbiddenError("You are not currently part of a team");
       }
 
       return {
         data: await challengeService.solve(
           challenge,
-          team.team_id,
+          membership.team_id,
           request.user.id,
           request.body.data,
           { ip: request.ip },
