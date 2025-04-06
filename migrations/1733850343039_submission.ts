@@ -78,16 +78,15 @@ export async function up(db: Kysely<any>): Promise<void> {
       db
         .selectFrom("submission")
         .select([
-          "submission.id",
+          "id",
           "hidden",
           "challenge_id",
           "team_id",
           "division_id",
-          "submission.created_at",
-          "submission.updated_at",
+          "created_at",
+          "updated_at",
         ])
-        .where("status", "=", "correct")
-        .innerJoin("team", "team.id", "submission.team_id"),
+        .where("status", "=", "correct"),
     )
     .execute();
 
