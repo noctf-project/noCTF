@@ -14,6 +14,7 @@ import {
 } from "@noctf/api/requests";
 import {
   GetTeamResponse,
+  ListDivisionsResponse,
   ListTeamsResponse,
   MeTeamResponse,
   SuccessResponse,
@@ -23,7 +24,49 @@ import { IdParams } from "@noctf/api/params";
 import { ListTeamsQuery } from "@noctf/api/query";
 
 export async function routes(fastify: FastifyInstance) {
-  const { teamService } = fastify.container.cradle as ServiceCradle;
+  const { teamService, policyService } = fastify.container
+    .cradle as ServiceCradle;
+
+  fastify.get<{ Reply: ListDivisionsResponse }>(
+    "/divisions",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["division"],
+        auth: {
+          policy: ["OR", "team.self.get", "division.get", "scoreboard.get"],
+        },
+        response: {
+          200: ListDivisionsResponse,
+        },
+      },
+    },
+    async (request) => {
+      const canList = policyService.evaluate(request.user?.id, [
+        "division.get",
+      ]);
+      if (!canList && !request.user) {
+        return { data: [] };
+      }
+      const membership = request.user
+        ? await teamService.getMembershipForUser(request.user.id)
+        : null;
+      if (!canList) {
+        if (!membership) return { data: [] };
+        const division = await teamService.getDivision(membership.division_id);
+        if (!division) return { data: [] };
+        return { data: [{ ...division, is_password: !!division.password }] };
+      }
+      return {
+        data: (
+          await teamService.listDivisions({
+            visible_ids: membership ? [membership.division_id] : [],
+            is_visible: true,
+          })
+        ).map((x) => ({ ...x, is_password: !!x.password })),
+      };
+    },
+  );
 
   fastify.post<{ Body: CreateTeamRequest; Reply: MeTeamResponse }>(
     "/teams",
@@ -133,7 +176,7 @@ export async function routes(fastify: FastifyInstance) {
         tags: ["team"],
         auth: {
           require: true,
-          policy: ["team.self"],
+          policy: ["team.self.get"],
         },
         response: {
           200: MeTeamResponse,

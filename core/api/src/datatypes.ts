@@ -256,3 +256,14 @@ export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 
 export const PublicTeam = Type.Omit(Team, ["join_code", "flags"]);
 export type PublicTeam = Static<typeof PublicTeam>;
+
+export const Division = Type.Object({
+  name: Type.String({ maxLength: 128 }),
+  slug: Type.String({ maxLength: 64 }),
+  description: Type.String({ maxLength: 512 }),
+  is_visible: Type.Boolean(),
+  is_joinable: Type.Boolean(),
+  password: Type.String({ maxLength: 64 }),
+  created_at: TypeDate,
+});
+export type Division = Static<typeof Division>;

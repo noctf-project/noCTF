@@ -16,6 +16,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("is_joinable", "boolean", (col) =>
       col.notNull().defaultTo(false),
     )
+    .addColumn("password", "varchar(64)", (col) => col.notNull().defaultTo(""))
     .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )

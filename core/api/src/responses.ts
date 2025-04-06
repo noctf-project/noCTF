@@ -15,6 +15,7 @@ import {
   Solve,
   TypeDate,
   Award,
+  Division,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
 import { ChallengeSolveStatus } from "./enums.ts";
@@ -238,3 +239,18 @@ export const ScoreboardSolvesResponse = Type.Object({
   data: Type.Array(Solve),
 });
 export type ScoreboardSolvesResponse = Static<typeof ScoreboardSolvesResponse>;
+
+export const ListDivisionsResponse = Type.Object({
+  data: Type.Array(
+    Type.Composite(
+      [
+        Type.Omit(Division, ["password", "is_visible"]),
+        Type.Object({
+          is_password: Type.Boolean(),
+        }),
+      ],
+      { additionalProperties: false },
+    ),
+  ),
+});
+export type ListDivisionsResponse = Static<typeof ListDivisionsResponse>;
