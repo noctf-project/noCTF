@@ -83,7 +83,6 @@ export async function down(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
 
   await schema.dropTable("award").execute();
-  await schema.dropView("solve").execute();
   await schema.dropTable("submission").execute();
   await schema.dropType("submission_status").execute();
 }
