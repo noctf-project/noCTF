@@ -1,12 +1,13 @@
 import { TooManyRequestsError } from "@noctf/server-core/errors";
+import { RateLimitBucket } from "@noctf/server-core/services/rate_limit";
 import { FastifyReply, FastifyRequest, FastifySchema } from "fastify";
 
 // TODO: block based on 48 bits of ipv6, full ipv4
 const DEFAULT_KEY = (r: FastifyRequest) =>
-  r.routeOptions.url && `all:${r.user ? 'u'+r.user.id : 'i' + r.ip}`;
+  r.routeOptions.url && `all:${r.user ? "u" + r.user.id : "i" + r.ip}`;
 const DEFAULT_CONFIG: FastifySchema["rateLimit"] = {
   key: DEFAULT_KEY,
-  limit: (r) => r.user ? 250 : 1000,
+  limit: (r) => (r.user ? 250 : 1000),
   windowSeconds: 60,
 };
 
@@ -18,11 +19,33 @@ export const RateLimitHook = async (
   const config = request.routeOptions.schema?.rateLimit || DEFAULT_CONFIG;
   const windowSeconds = config.windowSeconds || 60;
   const limit =
-    typeof config.limit === "function" ? await config.limit(request) : config.limit;
+    typeof config.limit === "function"
+      ? await config.limit(request)
+      : config.limit;
   const key =
     config.key && (await (config.key(request) || DEFAULT_KEY(request)));
-  if (!key) return;
-  const next = await rateLimitService.check(key, { windowSeconds, limit });
+  if (!key || (Array.isArray(key) && !key.length)) return;
+  if (!limit || (Array.isArray(limit) && !limit.length)) return;
+
+  const buckets: RateLimitBucket[] = [];
+  if (Array.isArray(key)) {
+    for (const [i, k] of key.entries()) {
+      buckets.push({
+        key: k,
+        windowSeconds,
+        limit: Array.isArray(limit)
+          ? limit[i] || limit[limit.length - 1]
+          : limit,
+      });
+    }
+  } else {
+    buckets.push({
+      key,
+      windowSeconds,
+      limit: Array.isArray(limit) ? limit[0] : limit,
+    });
+  }
+  const next = await rateLimitService.evaluate(buckets);
   if (next) {
     reply.header("x-ratelimit-reset", Date.now() + next);
     throw new TooManyRequestsError("You're trying too hard");

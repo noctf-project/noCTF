@@ -14,8 +14,17 @@ declare module "fastify" {
     rateLimit?: {
       key?: (
         r: FastifyRequest,
-      ) => string | undefined | Promise<string | undefined>;
-      limit: number | ((r: FastifyRequest) => Promise<number> | number);
+      ) =>
+        | string
+        | string[]
+        | undefined
+        | Promise<string | string[] | undefined>;
+      limit:
+        | number
+        | number[]
+        | ((
+            r: FastifyRequest,
+          ) => Promise<number | number[]> | number | number[]);
       windowSeconds?: number; // by default 1 minute
     };
   }
