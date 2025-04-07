@@ -165,8 +165,9 @@ export class TeamDAO {
       .where("division_id", "=", division)
       .innerJoin(
         this.db
-          .selectFrom("solve")
+          .selectFrom("submission")
           .select("team_id")
+          .where("status", "=", "correct")
           .union(this.db.selectFrom("award").select("team_id"))
           .as("combined_teams"),
         "team.id",
