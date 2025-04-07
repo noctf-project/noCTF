@@ -203,6 +203,7 @@ export class ScoreboardService {
     );
     const updated_at = new Date();
     await this.scoreboardDataLoader.saveIndexed(
+      updated_at,
       id,
       scoreboard,
       challengeScores,

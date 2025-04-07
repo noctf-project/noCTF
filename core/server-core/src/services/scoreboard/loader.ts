@@ -27,8 +27,8 @@ export class ScoreboardDataLoader {
         const client = await this.factory.getClient();
         const keys = this.getCacheKeys(division);
         const [total, ranks] = await Promise.all([
-          client.lLen(keys.rank),
-          client.lRange(keys.rank, start, end),
+          client.zCard(keys.rank),
+          client.zRange(keys.rank, start, end),
         ]);
         const compressed = await client.hmGet(
           client.commandOptions({ returnBuffers: true }),
@@ -90,6 +90,7 @@ export class ScoreboardDataLoader {
   }
 
   async saveIndexed(
+    updatedAt: Date,
     division: number,
     scoreboard: ScoreboardEntry[],
     challenges: Map<number, ComputedChallengeScoreData>,
@@ -123,14 +124,18 @@ export class ScoreboardDataLoader {
     const multi = client.multi();
     multi.del(Object.values(keys));
     if (scoreboard.length)
-      multi.rPush(
+      multi.zAdd(
         keys.rank,
         scoreboard
           .filter((x) => !x.hidden)
-          .map(({ team_id }) => team_id.toString()),
+          .map(({ rank, team_id }) => ({
+            score: rank,
+            value: team_id.toString(),
+          })),
       );
     if (teams.length) multi.hSet(keys.team, teams);
     if (csolves.length) multi.hSet(keys.csolves, csolves);
+    multi.set(keys.updated, updatedAt.getTime().toString());
     await multi.exec();
   }
 
@@ -140,6 +145,7 @@ export class ScoreboardDataLoader {
       rank: `${root}:rank`,
       team: `${root}:team`,
       csolves: `${root}:csolves`,
+      updated: `${root}:updated`,
     };
   }
 }
