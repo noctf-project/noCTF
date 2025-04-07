@@ -3,7 +3,7 @@ import { ServiceCradle } from "../index.ts";
 
 type Props = Pick<ServiceCradle, "redisClientFactory" | "logger">;
 
-const WRITE_INTERVAL_MS = 20;
+const FLUSH_INTERVAL_MS = 10;
 const BUCKET_NAMESPACE = "core:rl:bucket";
 
 export type RateLimitBucket = {
@@ -35,7 +35,7 @@ export class RateLimitService {
 
   async evaluate(input: RateLimitBucket[]): Promise<number | null> {
     if (!this.timeout) {
-      this.timeout = setTimeout(() => this._dump(), WRITE_INTERVAL_MS);
+      this.timeout = setTimeout(() => this._dump(), FLUSH_INTERVAL_MS);
     }
     const now = Math.floor(Date.now() / 1000);
     const buckets: RateLimitBucket[] = input.map(
@@ -55,7 +55,6 @@ export class RateLimitService {
     const data = await this._read(now, buckets);
 
     maxBlocked = 0;
-    console.log("data", data);
     for (const [i, { key, windowSeconds, limit }] of buckets.entries()) {
       const read = data[i];
       const write = this.writes.get(key) || 0;
