@@ -11,6 +11,13 @@ declare module "fastify" {
       scopes?: Set<string>;
       policy?: Policy | (() => Promise<Policy> | Policy);
     };
+    rateLimit?: {
+      key?: (
+        r: FastifyRequest,
+      ) => string | undefined | Promise<string | undefined>;
+      limit: number | ((r: FastifyRequest) => Promise<number> | number);
+      windowSeconds?: number; // by default 1 minute
+    };
   }
 
   interface FastifyRequest {

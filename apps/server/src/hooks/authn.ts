@@ -5,10 +5,7 @@ import {
   TokenValidationError,
 } from "@noctf/server-core/errors";
 import { NOCTF_SESSION_COOKIE } from "@noctf/mod-auth/const";
-import { TeamService } from "@noctf/server-core/services/team";
 import { CreateThenable } from "@noctf/server-core/util/promises";
-
-type Membership = Awaited<ReturnType<TeamService["getMembershipForUser"]>>;
 
 const parseCookie = (str: string) =>
   str

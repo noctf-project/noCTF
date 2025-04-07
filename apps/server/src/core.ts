@@ -20,10 +20,12 @@ import { AuthnHook } from "./hooks/authn.ts";
 import { AuthzHook } from "./hooks/authz.ts";
 import { LocalFileProvider } from "@noctf/server-core/services/file";
 import { FILE_LOCAL_PATH } from "./config.ts";
+import { RateLimitHook } from "./hooks/rate_limit.ts";
 
 export default async function (fastify: FastifyInstance) {
   fastify.addHook("preHandler", AuthnHook);
   fastify.addHook("preHandler", AuthzHook);
+  fastify.addHook("preHandler", RateLimitHook);
 
   const { fileService } = fastify.container.cradle;
   fileService.register(new LocalFileProvider(FILE_LOCAL_PATH));
