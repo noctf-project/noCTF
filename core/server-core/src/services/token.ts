@@ -26,7 +26,7 @@ export class TokenService {
   private logger: Props["logger"];
   private localCache = new LocalCache<string, boolean>({
     max: 10000,
-    ttl: 1000,
+    ttl: 3000,
   });
 
   constructor({ secret, cacheService: cacheService, logger }: Props) {
