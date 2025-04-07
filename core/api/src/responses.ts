@@ -11,7 +11,7 @@ import {
   ScoringStrategy,
   User,
   ScoreboardEntry,
-  PublicTeam,
+  TeamSummary,
   Solve,
   TypeDate,
   Award,
@@ -89,14 +89,33 @@ export const MeTeamResponse = Type.Object({
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
 
 export const GetTeamResponse = Type.Object({
-  data: PublicTeam,
+  data: Type.Composite([
+    Type.Omit(Team, ["join_code", "flags"]),
+    Type.Object({
+      members: Type.Array(Type.String()), // TODO: list members
+    }),
+  ]),
 });
 export type GetTeamResponse = Static<typeof GetTeamResponse>;
 
 export const ListTeamsResponse = Type.Object({
-  data: Type.Array(PublicTeam),
+  data: Type.Object({
+    teams: Type.Array(Type.Omit(TeamSummary, ["flags"])),
+    page_size: Type.Integer(),
+    total: Type.Integer(),
+  }),
 });
 export type ListTeamsResponse = Static<typeof ListTeamsResponse>;
+
+export const QueryTeamNamesResponse = Type.Object({
+  data: Type.Array(
+    Type.Object({
+      id: Type.Number(),
+      name: Type.String(),
+    }),
+  ),
+});
+export type QueryTeamNamesResponse = Static<typeof QueryTeamNamesResponse>;
 
 export const MeUserResponse = Type.Object({
   data: Type.Composite([
@@ -220,19 +239,29 @@ export type AdminGetScoringStrategiesResponse = Static<
 export const ScoreboardResponse = Type.Object({
   data: Type.Object({
     scores: Type.Array(Type.Omit(ScoreboardEntry, ["updated_at"])),
-    total: Type.Number(),
-    page_size: Type.Number(),
-    updated_at: TypeDate,
+    page_size: Type.Integer(),
+    total: Type.Integer(),
   }),
 });
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
 
+export const ScoreboardGraphsResponse = Type.Object({
+  data: Type.Array(
+    Type.Object({
+      team_id: Type.Number(),
+      graph: Type.Array(Type.Tuple([Type.Number(), Type.Number()])),
+    }),
+  ),
+});
+export type ScoreboardGraphsResponse = Static<typeof ScoreboardGraphsResponse>;
+
 export const ScoreboardTeamResponse = Type.Object({
-  data: Type.Object({
-    solves: Type.Array(Solve),
-    graph: Type.Array(Type.Tuple([Type.Number(), Type.Number()])),
-    awards: Type.Array(Award),
-  }),
+  data: Type.Composite([
+    ScoreboardEntry,
+    Type.Object({
+      graph: Type.Array(Type.Tuple([Type.Number(), Type.Number()])),
+    }),
+  ]),
 });
 export type ScoreboardTeamResponse = Static<typeof ScoreboardTeamResponse>;
 

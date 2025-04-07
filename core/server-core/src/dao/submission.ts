@@ -7,6 +7,15 @@ import { SubmissionStatus } from "@noctf/api/enums";
 import { PostgresErrorCode, TryPGConstraintError } from "../util/pgerror.ts";
 import { ConflictError } from "../errors.ts";
 
+export type RawSolve = {
+  id: number;
+  team_id: number;
+  challenge_id: number;
+  hidden: boolean;
+  created_at: Date;
+  updated_at: Date;
+};
+
 export class SubmissionDAO {
   constructor(private readonly db: DBType) {}
 
@@ -131,5 +140,37 @@ export class SubmissionDAO {
       .orderBy("created_at desc")
       .offset(limit?.offset || 0)
       .execute();
+  }
+
+  async getSolvesForCalculation(
+    division_id?: number,
+    params?: {
+      sort?: "asc" | "desc";
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<RawSolve[]> {
+    let query = this.db
+      .selectFrom("submission")
+      .innerJoin("team", "submission.team_id", "team.id")
+      .select([
+        "submission.id as id",
+        "submission.team_id as team_id",
+        "submission.challenge_id as challenge_id",
+        "submission.hidden as hidden",
+        "submission.created_at as created_at",
+        "submission.updated_at as updated_at",
+      ])
+      .orderBy("submission.created_at", params?.sort || "asc");
+    if (division_id) {
+      query = query.where("team.division_id", "=", division_id);
+    }
+    if (params?.limit) {
+      query = query.limit(params.limit);
+    }
+    if (params?.offset) {
+      query = query.offset(params.offset);
+    }
+    return query.execute();
   }
 }

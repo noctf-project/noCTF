@@ -2,6 +2,7 @@ import type { ServiceCradle } from "@noctf/server-core";
 import type { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
 import {
+  ScoreboardGraphsResponse,
   ScoreboardResponse,
   ScoreboardTeamResponse,
 } from "@noctf/api/responses";
@@ -10,12 +11,11 @@ import { NotFoundError } from "@noctf/server-core/errors";
 import { ScoreboardQuery } from "@noctf/api/query";
 import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
-import { Award } from "@noctf/api/datatypes";
 
-export const SCOREBOARD_PAGE_SIZE = 200;
+export const SCOREBOARD_PAGE_SIZE = 50;
 
 export async function routes(fastify: FastifyInstance) {
-  const { scoreboardService, challengeService, teamService } = fastify.container
+  const { scoreboardService, teamService } = fastify.container
     .cradle as ServiceCradle;
 
   const { gateStartTime } = GetUtils(fastify.container.cradle);
@@ -32,7 +32,6 @@ export async function routes(fastify: FastifyInstance) {
         security: [{ bearer: [] }],
         tags: ["scoreboard"],
         auth: {
-          require: true,
           policy: ["scoreboard.get"],
         },
         querystring: ScoreboardQuery,
@@ -43,8 +42,11 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const ctime = Date.now();
-      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
+      const admin = await gateStartTime(
+        adminPolicy,
+        Date.now(),
+        request.user?.id,
+      );
 
       const page = request.query.page || 1;
       const page_size =
@@ -54,17 +56,47 @@ export async function routes(fastify: FastifyInstance) {
         SCOREBOARD_PAGE_SIZE;
       const scoreboard = await scoreboardService.getScoreboard(
         request.params.id,
+        (page - 1) * page_size,
+        page * page_size - 1,
       );
-
       return {
         data: {
-          scores:
-            scoreboard?.data.slice((page - 1) * page_size, page * page_size) ||
-            [],
+          scores: scoreboard.entries,
           page_size: page_size,
-          total: scoreboard?.data.length || 0,
-          updated_at: scoreboard?.updated_at,
+          total: scoreboard.total,
         },
+      };
+    },
+  );
+
+  fastify.get<{
+    Reply: ScoreboardGraphsResponse;
+    Querystring: ScoreboardQuery;
+    Params: IdParams;
+  }>(
+    "/scoreboard/divisions/:id/top",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["scoreboard"],
+        auth: {
+          policy: ["scoreboard.get"],
+        },
+        querystring: ScoreboardQuery,
+        params: IdParams,
+        response: {
+          200: ScoreboardGraphsResponse,
+        },
+      },
+    },
+    async (request) => {
+      await gateStartTime(adminPolicy, Date.now(), request.user?.id);
+      const graphs = await scoreboardService.getTopScoreHistory(
+        request.params.id,
+        10,
+      );
+      return {
+        data: graphs,
       };
     },
   );
@@ -80,7 +112,6 @@ export async function routes(fastify: FastifyInstance) {
           200: ScoreboardTeamResponse,
         },
         auth: {
-          require: true,
           policy: ["AND", "team.get", "scoreboard.get"],
         },
       },
@@ -93,36 +124,20 @@ export async function routes(fastify: FastifyInstance) {
       if (!team || team.flags.includes("hidden")) {
         throw new NotFoundError("Team not found");
       }
-      const now = Date.now();
-      const challenges = new Set(
-        (
-          await challengeService.list(
-            { hidden: false, visible_at: new Date(now + 60000) },
-            {
-              cacheKey: "route:/teams",
-              removePrivateTags: true,
-            },
-          )
-        ).map(({ id }) => id),
-      );
-      const [scores, teamSolves, awards] = await Promise.all([
-        scoreboardService.getChallengesSummary(team.division_id),
-        scoreboardService.getTeamSolves(team.id),
-        scoreboardService.getTeamAwards(team.id),
-      ]);
+      const entry = await scoreboardService.getTeam(team.division_id, team.id);
       const graph = await scoreboardService.getTeamScoreHistory(
         request.params.id,
       );
-      const solves = teamSolves
-        .filter(({ challenge_id }) => challenges.has(challenge_id))
-        .filter(({ hidden }) => !hidden)
-        .map(({ challenge_id, ...x }) => ({
-          ...x,
-          challenge_id,
-          score: scores.data[challenge_id].score,
-        }));
+      if (!entry) {
+        throw new NotFoundError("Team not found");
+      }
+      const solves = entry.solves.filter(({ hidden }) => !hidden);
       return {
-        data: { solves, graph, awards },
+        data: {
+          ...entry,
+          solves,
+          graph,
+        },
       };
     },
   );

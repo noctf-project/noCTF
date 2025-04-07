@@ -6,36 +6,22 @@ import type { AuditParams } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 import { TeamConfig } from "@noctf/api/config";
 import { TeamDAO } from "../dao/team.ts";
-import { LocalCache } from "../util/local_cache.ts";
-import { Team } from "@noctf/api/datatypes";
 import { DivisionDAO } from "../dao/division.ts";
 
 type Props = Pick<
   ServiceCradle,
-  "cacheService" | "configService" | "databaseClient" | "auditLogService"
+  "configService" | "databaseClient" | "auditLogService"
 >;
 
 export class TeamService {
   private readonly auditLogService;
-  private readonly cacheService;
   private readonly configService;
 
   private readonly divisionDAO;
   private readonly teamDAO;
 
-  private readonly listCache = new LocalCache<string, Team[]>({
-    ttl: 10000,
-    max: 32,
-  });
-
-  constructor({
-    cacheService,
-    configService,
-    databaseClient,
-    auditLogService,
-  }: Props) {
+  constructor({ configService, databaseClient, auditLogService }: Props) {
     this.auditLogService = auditLogService;
-    this.cacheService = cacheService;
     this.configService = configService;
     this.divisionDAO = new DivisionDAO(databaseClient.get());
     this.teamDAO = new TeamDAO(databaseClient.get());
@@ -129,21 +115,23 @@ export class TeamService {
     return this.teamDAO.get(id);
   }
 
-  async list(
+  async listSummary(
     params?: {
       flags?: string[];
       division_id?: number;
     },
-    cached?: boolean,
+    limit?: { limit?: number; offset?: number },
   ) {
-    const key =
-      cached &&
-      `${params?.flags?.toSorted().join(",") || ""}:${params?.division_id}`;
-    return key
-      ? this.listCache.load(key, () => this.teamDAO.list(params))
-      : this.teamDAO.list(params);
+    return this.teamDAO.listSummary(params, limit);
   }
 
+  async getCount(params?: { flags?: string[]; division_id?: number }) {
+    return this.teamDAO.getCount(params);
+  }
+
+  async queryNames(ids: number[], includeHidden?: boolean) {
+    return this.teamDAO.queryNames(ids, includeHidden);
+  }
   async delete(id: number, { actor, message }: AuditParams = {}) {
     await this.teamDAO.delete(id);
     await this.auditLogService.log({
@@ -162,8 +150,8 @@ export class TeamService {
   async join(user_id: number, code: string) {
     const result = await this.teamDAO.findUsingJoinCode(code);
     if (
-      !result.flags.includes(TeamFlag.FROZEN) ||
-      !result.flags.includes(TeamFlag.BLOCKED)
+      result.flags.includes(TeamFlag.FROZEN) ||
+      result.flags.includes(TeamFlag.BLOCKED)
     ) {
       throw new NotFoundError("Team not found");
     }

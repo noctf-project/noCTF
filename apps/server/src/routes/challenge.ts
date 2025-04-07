@@ -1,4 +1,3 @@
-import { SetupConfig } from "@noctf/api/config";
 import type { ChallengePrivateMetadataBase } from "@noctf/api/datatypes";
 import { GetChallengeFileParams, IdParams } from "@noctf/api/params";
 import {
@@ -15,8 +14,7 @@ import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
 
 export async function routes(fastify: FastifyInstance) {
-  const { teamService, challengeService, scoreboardService } =
-    fastify.container.cradle;
+  const { challengeService, scoreboardService } = fastify.container.cradle;
 
   const { gateStartTime } = GetUtils(fastify.container.cradle);
   const adminPolicy: Policy = ["admin.challenge.get"];
@@ -58,9 +56,13 @@ export async function routes(fastify: FastifyInstance) {
 
       // Does not need to rely on scoreboard calcs
       if (team) {
-        (await scoreboardService.getTeamSolves(team.team_id)).forEach(
-          ({ challenge_id }) => solves.add(challenge_id),
+        const entry = await scoreboardService.getTeam(
+          team.division_id,
+          team.team_id,
         );
+        if (entry) {
+          entry.solves.forEach(({ challenge_id }) => solves.add(challenge_id));
+        }
       }
       const scores = Object.fromEntries(
         challenges.map((c) => [
@@ -170,7 +172,7 @@ export async function routes(fastify: FastifyInstance) {
             membership?.division_id || 1,
             id,
           )
-        ).data?.filter(({ hidden }) => !hidden),
+        ).filter(({ hidden }) => !hidden),
       };
     },
   );

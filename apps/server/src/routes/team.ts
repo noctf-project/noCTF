@@ -10,10 +10,12 @@ import {
 import {
   CreateTeamRequest,
   JoinTeamRequest,
+  QueryTeamNamesRequest,
   UpdateTeamRequest,
 } from "@noctf/api/requests";
 import {
   GetTeamResponse,
+  QueryTeamNamesResponse,
   ListDivisionsResponse,
   ListTeamsResponse,
   MeTeamResponse,
@@ -22,8 +24,12 @@ import {
 import { ActorType } from "@noctf/server-core/types/enums";
 import { IdParams } from "@noctf/api/params";
 import { ListTeamsQuery } from "@noctf/api/query";
+import { Policy } from "@noctf/server-core/util/policy";
+
+export const TEAM_PAGE_SIZE = 100;
 
 export async function routes(fastify: FastifyInstance) {
+  const adminPolicy: Policy = ["admin.team.get"];
   const { teamService, policyService } = fastify.container
     .cradle as ServiceCradle;
 
@@ -228,6 +234,32 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
+  fastify.post<{
+    Reply: QueryTeamNamesResponse;
+    Body: QueryTeamNamesRequest;
+  }>(
+    "/team_names",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["team"],
+        response: {
+          200: QueryTeamNamesResponse,
+        },
+        body: QueryTeamNamesRequest,
+        auth: {
+          policy: ["team.get"],
+        },
+      },
+    },
+    async (request) => {
+      const ids = [...new Set(request.body.ids)];
+      return {
+        data: await teamService.queryNames(ids, false),
+      };
+    },
+  );
+
   fastify.get<{ Querystring: ListTeamsQuery; Reply: ListTeamsResponse }>(
     "/teams",
     {
@@ -239,23 +271,34 @@ export async function routes(fastify: FastifyInstance) {
         },
         querystring: ListTeamsQuery,
         auth: {
-          require: true,
-          policy: ["OR", "team.get"],
+          policy: ["team.get"],
         },
       },
     },
     async (request, reply) => {
-      const teams = await teamService.list(
-        {
-          flags: ["!hidden"],
-          division_id: request.query.division_id,
-        },
-        true,
-      );
+      const admin = policyService.evaluate(request.user?.id, adminPolicy);
 
-      reply.header("cache-control", "private, max-age=600");
+      const page = request.query.page || 1;
+      const page_size =
+        (admin
+          ? request.query.page_size
+          : Math.min(TEAM_PAGE_SIZE, request.query.page_size)) ||
+        TEAM_PAGE_SIZE;
+      const query = {
+        flags: ["!hidden"],
+        division_id: request.query.division_id,
+        name_prefix: request.query.name_prefix,
+      };
+      const [teams, total] = await Promise.all([
+        teamService.listSummary(query, {
+          limit: page_size,
+          offset: (page - 1) * page_size,
+        }),
+        teamService.getCount(query),
+      ]);
+
       return {
-        data: teams,
+        data: { teams, page_size, total },
       };
     },
   );
@@ -271,8 +314,7 @@ export async function routes(fastify: FastifyInstance) {
           200: GetTeamResponse,
         },
         auth: {
-          require: true,
-          policy: ["OR", "team.get"],
+          policy: ["team.get"],
         },
       },
     },
@@ -284,7 +326,7 @@ export async function routes(fastify: FastifyInstance) {
 
       reply.header("cache-control", "private, max-age=900");
       return {
-        data: team,
+        data: { ...team, members: [] }, // TODO: members
       };
     },
   );
