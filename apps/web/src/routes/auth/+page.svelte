@@ -28,7 +28,6 @@
   let passwordVisible = $state(false);
   let passwordStrength = $state(0);
   let registrationToken = $state("");
-  let emailVerificationEnabled = $state(false); // This should be set based on your config
 
   // URL params
   let urlParams = new URLSearchParams(window.location.search);
@@ -46,6 +45,8 @@
     //   emailVerificationEnabled = res.data?.emailVerificationEnabled ?? true;
     // });
   });
+  const emailVerificationEnabled = wrapLoadable(api.GET("/admin/challenges"));
+  let emailVerificationEnabled = $state(false); // This should be set based on your config
 
   function successRedirect() {
     if (redirectParam) {
