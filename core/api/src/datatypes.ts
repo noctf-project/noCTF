@@ -305,3 +305,10 @@ export const Division = Type.Object({
   created_at: TypeDate,
 });
 export type Division = Static<typeof Division>;
+
+export const TeamMembership = Type.Object({
+  division_id: Type.Number(),
+  role: Type.Union([Type.Literal("owner"), Type.Literal("member")]),
+  team_id: Type.Number(),
+});
+export type TeamMembership = Static<typeof TeamMembership>;
