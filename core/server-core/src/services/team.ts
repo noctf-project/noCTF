@@ -25,8 +25,8 @@ export class TeamService {
     number,
     TeamMembership | null
   >({
-    max: 4096,
-    ttl: 5000,
+    max: 10000,
+    ttl: 10000,
   });
 
   constructor({ configService, databaseClient, auditLogService }: Props) {

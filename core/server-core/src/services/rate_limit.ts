@@ -21,7 +21,7 @@ export class RateLimitService {
 
   private readonly reads = new Map<string, [number, number]>();
   private readonly blocked = new TTLCache({
-    max: 8192,
+    max: 10000,
     ttl: 60000,
   });
 
