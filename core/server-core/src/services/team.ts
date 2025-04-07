@@ -150,8 +150,8 @@ export class TeamService {
   async join(user_id: number, code: string) {
     const result = await this.teamDAO.findUsingJoinCode(code);
     if (
-      !result.flags.includes(TeamFlag.FROZEN) ||
-      !result.flags.includes(TeamFlag.BLOCKED)
+      result.flags.includes(TeamFlag.FROZEN) ||
+      result.flags.includes(TeamFlag.BLOCKED)
     ) {
       throw new NotFoundError("Team not found");
     }
