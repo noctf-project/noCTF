@@ -135,7 +135,6 @@ export class ChallengeDAO {
       .set((eb) => ({ version: eb("version", "+", 1) }))
       .returning(["id", "version"])
       .where("id", "=", id);
-    console.log(v.version);
     if (v.version || v.version === 0) {
       query = query.where("version", "=", v.version);
     }
