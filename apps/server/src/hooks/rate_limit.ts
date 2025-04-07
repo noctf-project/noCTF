@@ -1,9 +1,9 @@
 import { TooManyRequestsError } from "@noctf/server-core/errors";
 import { RateLimitBucket } from "@noctf/server-core/services/rate_limit";
-import { FastifyReply, FastifyRequest, FastifySchema } from "fastify";
+import { FastifyReply, FastifyRequest } from "fastify";
 
 const DEFAULT_CONFIG = (r: FastifyRequest) => ({
-  key: r.routeOptions.url && `all:${r.user ? "u" + r.user.id : "i" + r.ip}`,
+  key: r.routeOptions.url && `azl:${r.user ? "u" + r.user.id : "i" + r.ip}`,
   limit: r.user ? 250 : 1000,
   windowSeconds: 60,
 });

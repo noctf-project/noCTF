@@ -127,7 +127,6 @@ export class RateLimitService {
     fetchKeys.forEach(([_i, k]) => this.fetchLocks.set(k, lock.promise));
     try {
       const values = fetchVals.length ? await client.mGet(fetchVals) : [];
-      await Promise.all([...locks]);
       lock.resolve();
       for (const [i, [j, key]] of fetchKeys.entries()) {
         const value: [number, number] = [
@@ -137,6 +136,7 @@ export class RateLimitService {
         fetched[j] = value;
         this.reads.set(key, value);
       }
+      await Promise.all([...locks]);
       for (const i of lockedKeys) {
         fetched[i] = this.reads.get(buckets[i].key);
       }
