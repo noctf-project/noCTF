@@ -12,12 +12,13 @@ export type RateLimitBucket = {
   limit: number;
 };
 
+const EmptyFn = () => {};
 export class RateLimitService {
   // cache key
   // sample_window:key
   private writes = new Map<string, number>();
   private timeout: ReturnType<typeof setTimeout> | null;
-  private fetchLocks = new Map<string, Promise<void>>();
+  private fetchLocks = new Map<string, Promise<[number, number]>>();
 
   private readonly reads = new Map<string, [number, number]>();
   private readonly blocked = new TTLCache({
@@ -98,18 +99,15 @@ export class RateLimitService {
     const fetched: ([number, number] | undefined)[] = buckets.map((x) =>
       this.reads.get(x.key),
     );
-
-    const locks = new Set<Promise<void>>();
     const fetchVals: string[] = [];
-    const lockedKeys: number[] = [];
+    const lockedKeys: [number, Promise<[number, number]>][] = [];
     const fetchKeys: [number, string][] = [];
     for (const [i, res] of fetched.entries()) {
       if (res) continue;
       const { windowSeconds, key } = buckets[i];
       const lock = this.fetchLocks.get(key);
       if (lock) {
-        locks.add(lock);
-        lockedKeys.push(i);
+        lockedKeys.push([i, lock]);
         continue;
       }
       const window = Math.floor(now / windowSeconds) * windowSeconds;
@@ -121,13 +119,11 @@ export class RateLimitService {
     if (!fetchVals.length && !lockedKeys.length)
       return fetched as [number, number][];
 
-    const lock = Promise.withResolvers<void>();
-    // can't have uncaught promises
-    lock.promise.catch(() => {});
-    fetchKeys.forEach(([_i, k]) => this.fetchLocks.set(k, lock.promise));
+    const locks = fetchKeys.map(() => Promise.withResolvers<[number, number]>());
+    locks.forEach((l) => l.promise.catch(EmptyFn));
+    fetchKeys.forEach(([_i, k], i) => this.fetchLocks.set(k, locks[i].promise));
     try {
       const values = fetchVals.length ? await client.mGet(fetchVals) : [];
-      lock.resolve();
       for (const [i, [j, key]] of fetchKeys.entries()) {
         const value: [number, number] = [
           +(values[i * 2] || 0),
@@ -135,14 +131,15 @@ export class RateLimitService {
         ];
         fetched[j] = value;
         this.reads.set(key, value);
+        locks[i].resolve(value);
       }
-      await Promise.all([...locks]);
-      for (const i of lockedKeys) {
-        fetched[i] = this.reads.get(buckets[i].key);
+      const lockValues = await Promise.all(lockedKeys.map(([_i, p]) => p));
+      for (const [i, [j]] of lockedKeys.entries()) {
+        fetched[j] = lockValues[i];
       }
       return fetched as [number, number][];
     } catch (e) {
-      lock.reject(e);
+      locks.forEach((lock) => lock.reject(e));
       throw e;
     } finally {
       fetchKeys.forEach(([_i, x]) => this.fetchLocks.delete(x));
