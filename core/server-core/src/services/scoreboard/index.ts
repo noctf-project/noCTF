@@ -1,6 +1,5 @@
-import type { ScoreboardEntry, Solve } from "@noctf/api/datatypes";
+import type { ScoreboardEntry } from "@noctf/api/datatypes";
 import type { ServiceCradle } from "../../index.ts";
-import { DBSolve, SolveDAO } from "../../dao/solve.ts";
 import { DivisionDAO } from "../../dao/division.ts";
 import {
   ChallengeMetadataWithExpr,
@@ -11,7 +10,10 @@ import {
 import { ScoreHistoryDAO } from "../../dao/score_history.ts";
 import { SetupConfig } from "@noctf/api/config";
 import { AwardDAO } from "../../dao/award.ts";
-import { Coleascer } from "../../util/coleascer.ts";
+import { ScoreboardDataLoader } from "./loader.ts";
+import { TeamDAO } from "../../dao/team.ts";
+import { partition } from "../../util/object.ts";
+import { RawSolve, SubmissionDAO } from "../../dao/submission.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -20,6 +22,7 @@ type Props = Pick<
   | "challengeService"
   | "scoreService"
   | "databaseClient"
+  | "redisClientFactory"
   | "logger"
 >;
 
@@ -38,9 +41,11 @@ export class ScoreboardService {
   private readonly configService;
   private readonly scoreService;
 
+  private readonly scoreboardDataLoader;
   private readonly awardDAO;
   private readonly scoreHistoryDAO;
-  private readonly solveDAO;
+  private readonly submissionDAO;
+  private readonly teamDAO;
   private readonly divisionDAO;
 
   constructor({
@@ -48,6 +53,7 @@ export class ScoreboardService {
     configService,
     challengeService,
     databaseClient,
+    redisClientFactory,
     scoreService,
     logger,
   }: Props) {
@@ -57,41 +63,23 @@ export class ScoreboardService {
     this.configService = configService;
     this.scoreService = scoreService;
 
+    this.scoreboardDataLoader = new ScoreboardDataLoader(
+      redisClientFactory,
+      CACHE_SCORE_NAMESPACE,
+    );
     this.awardDAO = new AwardDAO(databaseClient.get());
     this.scoreHistoryDAO = new ScoreHistoryDAO(databaseClient.get());
-    this.solveDAO = new SolveDAO(databaseClient.get());
+    this.submissionDAO = new SubmissionDAO(databaseClient.get());
+    this.teamDAO = new TeamDAO(databaseClient.get());
     this.divisionDAO = new DivisionDAO(databaseClient.get());
   }
 
-  async getScoreboard(division_id: number) {
-    const scoreboard = await this.cacheService.get<
-      UpdatedContainer<ScoreboardEntry[]>
-    >(CACHE_SCORE_NAMESPACE, `d:${division_id}:scoreboard`);
-    if (!scoreboard) {
-      return { data: [], updated_at: new Date(0) };
-    }
-    return scoreboard;
+  async getScoreboard(division_id: number, start: number, end: number) {
+    return this.scoreboardDataLoader.getScoreboard(division_id, start, end);
   }
 
-  async getTeamSolves(team_id: number) {
-    const end_time = (
-      await this.configService.get<SetupConfig>(SetupConfig.$id!)
-    ).value?.end_time_s;
-    return this.solveDAO.getTeamSolves(team_id, {
-      hidden: false,
-      end_time:
-        typeof end_time === "number" ? new Date(end_time * 1000) : undefined,
-    });
-  }
-
-  async getTeamAwards(team_id: number) {
-    const end_time = (
-      await this.configService.get<SetupConfig>(SetupConfig.$id!)
-    ).value?.end_time_s;
-    return this.awardDAO.getTeamAwards(team_id, {
-      end_time:
-        typeof end_time === "number" ? new Date(end_time * 1000) : undefined,
-    });
+  async getTeam(division_id: number, team_id: number) {
+    return await this.scoreboardDataLoader.getTeam(division_id, team_id);
   }
 
   async getChallengesSummary(division_id: number) {
@@ -105,14 +93,10 @@ export class ScoreboardService {
   }
 
   async getChallengeSolves(division_id: number, challenge_id: number) {
-    const scoreboard = await this.cacheService.get<UpdatedContainer<Solve[]>>(
-      CACHE_SCORE_NAMESPACE,
-      `d:${division_id}:challenge_solves:${challenge_id}`,
+    return this.scoreboardDataLoader.getChallengeSolves(
+      division_id,
+      challenge_id,
     );
-    if (!scoreboard) {
-      return { data: [], updated_at: new Date(0) };
-    }
-    return scoreboard;
   }
 
   async computeAndSaveScoreboards() {
@@ -136,6 +120,44 @@ export class ScoreboardService {
     }
   }
 
+  async getTopScoreHistory(division: number, count: number) {
+    return this.cacheService.load(
+      CACHE_SCORE_HISTORY_NAMESPACE,
+      `${division}:${count}`,
+      async () => {
+        const {
+          value: { start_time_s, end_time_s },
+        } = await this.configService.get<SetupConfig>(SetupConfig.$id!);
+        const ranks = await this.scoreboardDataLoader.getRanks(
+          division,
+          0,
+          count - 1,
+        );
+        const partitions = ranks.map((team_id) => ({
+          team_id,
+          graph: [] as [number, number][],
+        }));
+        const data = await this.scoreHistoryDAO.getByTeams(
+          ranks,
+          start_time_s ? new Date(start_time_s * 1000) : undefined,
+          end_time_s ? new Date(end_time_s * 1000) : undefined,
+        );
+
+        let position: [number, number] | null = null;
+        for (const entry of data) {
+          if (!position || (position && position[0] !== entry.team_id)) {
+            position = [entry.team_id, ranks.indexOf(entry.team_id)];
+          }
+          partitions[position[1]].graph.push([
+            entry.updated_at.getTime(),
+            entry.score,
+          ]);
+        }
+        return partitions;
+      },
+    );
+  }
+
   async getTeamScoreHistory(id: number) {
     return this.cacheService.load(
       CACHE_SCORE_HISTORY_NAMESPACE,
@@ -145,8 +167,8 @@ export class ScoreboardService {
           value: { start_time_s, end_time_s },
         } = await this.configService.get<SetupConfig>(SetupConfig.$id!);
         return (
-          await this.scoreHistoryDAO.getByTeam(
-            id,
+          await this.scoreHistoryDAO.getByTeams(
+            [id],
             start_time_s ? new Date(start_time_s * 1000) : undefined,
             end_time_s ? new Date(end_time_s * 1000) : undefined,
           )
@@ -162,34 +184,31 @@ export class ScoreboardService {
     challenges: ChallengeMetadataWithExpr[],
     id: number,
   ) {
-    const [solveList, awardList] = await Promise.all([
-      this.solveDAO.getAllSolves(id),
+    const [teams, solveList, awardList] = await Promise.all([
+      this.teamDAO.listWithActivity(id),
+      this.submissionDAO.getSolvesForCalculation(id),
       this.awardDAO.getAllAwards(id),
     ]);
     const solvesByChallenge = Object.groupBy(
       solveList || [],
       ({ challenge_id }) => challenge_id,
-    ) as Record<number, DBSolve[]>;
+    ) as Record<number, RawSolve[]>;
 
     const { scoreboard, challenges: challengeScores } = ComputeScoreboard(
+      new Map(teams.map((x) => [x.id, x])),
       challenges,
       solvesByChallenge,
       awardList,
       this.logger,
     );
     const updated_at = new Date();
-    await this.cacheService.put<UpdatedContainer<ScoreboardEntry[]>>(
-      CACHE_SCORE_NAMESPACE,
-      `d:${id}:scoreboard`,
-      {
-        data: scoreboard,
-        updated_at,
-      },
+    await this.scoreboardDataLoader.saveIndexed(
+      id,
+      scoreboard,
+      challengeScores,
     );
     const compacted: Record<number, ChallengeSummary> = {};
-    for (const { challenge_id, score, solves } of Object.values(
-      challengeScores,
-    )) {
+    for (const { challenge_id, score, solves } of challengeScores.values()) {
       compacted[challenge_id] = {
         challenge_id,
         score,
@@ -203,18 +222,6 @@ export class ScoreboardService {
       data: compacted,
       updated_at,
     });
-    await Promise.all(
-      Object.values(challengeScores).map(({ challenge_id, solves }) =>
-        this.cacheService.put<UpdatedContainer<Solve[]>>(
-          CACHE_SCORE_NAMESPACE,
-          `d:${id}:challenge_solves:${challenge_id}`,
-          {
-            data: solves,
-            updated_at,
-          },
-        ),
-      ),
-    );
 
     // we want a separate cache value for graphing in case the calculation crashed
     // halfway through
@@ -224,14 +231,14 @@ export class ScoreboardService {
         `d:${id}:calc_graph`,
       )) || {};
 
-    let diff = scoreboard;
+    let diff: ScoreboardEntry[] = scoreboard;
     if (lastScoreboard) {
       diff = GetChangedTeamScores(lastScoreboard, scoreboard);
     }
     await this.scoreHistoryDAO.add(diff);
-    const teams = new Set(diff.map(({ team_id }) => team_id));
+    const diffTeams = new Set(diff.map(({ team_id }) => team_id));
     await Promise.all(
-      teams
+      diffTeams
         .values()
         .map((t) =>
           this.cacheService.del(CACHE_SCORE_HISTORY_NAMESPACE, t.toString()),

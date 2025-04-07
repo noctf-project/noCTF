@@ -64,36 +64,6 @@ export async function up(db: Kysely<any>): Promise<void> {
     .execute();
 
   await schema
-    .createView("solve")
-    .columns([
-      "id",
-      "hidden",
-      "challenge_id",
-      "team_id",
-      "division_id",
-      "team_flags",
-      "created_at",
-      "updated_at",
-    ])
-    .as(
-      db
-        .selectFrom("submission")
-        .select([
-          "submission.id",
-          "hidden",
-          "challenge_id",
-          "team_id",
-          "division_id",
-          "team.flags",
-          "submission.created_at",
-          "submission.updated_at",
-        ])
-        .where("status", "=", "correct")
-        .innerJoin("team", "team.id", "submission.team_id"),
-    )
-    .execute();
-
-  await schema
     .createTable("award")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedAlwaysAsIdentity(),
@@ -113,7 +83,6 @@ export async function down(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
 
   await schema.dropTable("award").execute();
-  await schema.dropView("solve").execute();
   await schema.dropTable("submission").execute();
   await schema.dropType("submission_status").execute();
 }

@@ -1,6 +1,6 @@
-import type { Insertable, SelectQueryBuilder, Updateable } from "kysely";
+import type { Insertable, Updateable } from "kysely";
 import type { DBType } from "../clients/database.ts";
-import type { Team } from "@noctf/api/datatypes";
+import type { Team, TeamSummary } from "@noctf/api/datatypes";
 import type { DB, TeamMemberRole } from "@noctf/schema";
 import { FilterUndefined } from "../util/filter.ts";
 import { BadRequestError, ConflictError, NotFoundError } from "../errors.ts";
@@ -19,6 +19,11 @@ const CREATE_ERROR_CONFIG: PostgresErrorConfig = {
     team_division_id_fkey: () =>
       new BadRequestError("Division ID does not exist"),
   },
+};
+
+export type MinimalTeamInfo = {
+  id: number;
+  flags: string[];
 };
 
 export class TeamDAO {
@@ -96,27 +101,79 @@ export class TeamDAO {
     return result;
   }
 
-  async list(
+  async listSummary(
     params?: Parameters<TeamDAO["listQuery"]>[0],
     limit?: { limit?: number; offset?: number },
-  ): Promise<Team[]> {
-    let query = this.listQuery(params).select([
-      "id",
-      "name",
-      "bio",
-      "country",
-      "join_code",
-      "division_id",
-      "flags",
-      "created_at",
-    ]);
+  ): Promise<TeamSummary[]> {
+    let query = this.listQuery(params)
+      .select([
+        "id",
+        "name",
+        "bio",
+        "country",
+        "division_id",
+        "created_at",
+        "flags",
+        (eb) =>
+          eb
+            .selectFrom("team_member")
+            .select(eb.fn.countAll().as("count"))
+            .where("team_member.team_id", "=", eb.ref("team.id"))
+            .as("num_members"),
+      ])
+      .orderBy("id");
     if (limit?.limit) {
       query = query.limit(limit.limit);
     }
     if (limit?.offset) {
       query = query.offset(limit.offset);
     }
+    return query.execute() as Promise<TeamSummary[]>;
+  }
+
+  async getCount(
+    params?: Parameters<TeamDAO["listQuery"]>[0],
+  ): Promise<number> {
+    return (
+      await this.listQuery(params)
+        .select(this.db.fn.countAll().as("count"))
+        .executeTakeFirstOrThrow()
+    ).count as number;
+  }
+
+  async queryNames(
+    ids: number[],
+    include_hidden?: boolean,
+  ): Promise<{ id: number; name: string }[]> {
+    let query = this.db
+      .selectFrom("team")
+      .select(["id", "name"])
+      .where("id", "in", ids);
+    if (!include_hidden) {
+      query = query.where((eb) =>
+        eb.not(eb("flags", "&&", eb.val(["hidden"]))),
+      );
+    }
     return query.execute();
+  }
+
+  async listWithActivity(division: number): Promise<MinimalTeamInfo[]> {
+    return this.db
+      .selectFrom("team")
+      .select(["id", "flags"])
+      .distinctOn("id")
+      .where("division_id", "=", division)
+      .innerJoin(
+        this.db
+          .selectFrom("submission")
+          .select("team_id")
+          .where("status", "=", "correct")
+          .union(this.db.selectFrom("award").select("team_id"))
+          .as("combined_teams"),
+        "team.id",
+        "combined_teams.team_id",
+      )
+      .execute();
   }
 
   async update(id: number, v: Updateable<DB["team"]>) {

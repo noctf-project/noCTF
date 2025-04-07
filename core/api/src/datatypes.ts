@@ -248,12 +248,24 @@ export const Award = Type.Object(
 export type Award = Static<typeof Award>;
 
 export const ScoreboardEntry = Type.Object({
-  team_id: Type.Number(),
+  team_id: Type.Integer(),
   score: Type.Number(),
+  rank: Type.Integer(),
   last_solve: TypeDate,
   updated_at: TypeDate,
+  hidden: Type.Boolean(),
+  solves: Type.Array(Type.Omit(Solve, ["team_id"])),
+  awards: Type.Array(Type.Omit(Award, ["team_id"])),
 });
 export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
+
+export const TeamSummary = Type.Composite([
+  Type.Omit(Team, ["join_code"]),
+  Type.Object({
+    num_members: Type.Integer(),
+  }),
+]);
+export type TeamSummary = Static<typeof TeamSummary>;
 
 export const PublicTeam = Type.Omit(Team, ["join_code", "flags"]);
 export type PublicTeam = Static<typeof PublicTeam>;

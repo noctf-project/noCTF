@@ -18,28 +18,44 @@ describe(GetChangedTeamScores, () => {
       {
         team_id: 1,
         score: 1,
+        rank: 1,
         last_solve: new Date(0),
         updated_at: new Date(0),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
       {
         team_id: 2,
         score: 2,
+        rank: 2,
         last_solve: new Date(0),
         updated_at: new Date(0),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
     ];
     const s2: ScoreboardEntry[] = [
       {
         team_id: 1,
         score: 1,
+        rank: 1,
         last_solve: new Date(0),
         updated_at: new Date(0),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
       {
         team_id: 2,
         score: 2,
+        rank: 2,
         last_solve: new Date(0),
         updated_at: new Date(0),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
     ];
     expect(GetChangedTeamScores(s1, s2)).toEqual([]);
@@ -50,28 +66,44 @@ describe(GetChangedTeamScores, () => {
       {
         team_id: 1,
         score: 1,
+        rank: 1,
         last_solve: new Date(0),
         updated_at: new Date(0),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
       {
         team_id: 2,
         score: 2,
+        rank: 2,
         last_solve: new Date(0),
         updated_at: new Date(0),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
     ];
     const s2: ScoreboardEntry[] = [
       {
         team_id: 1,
         score: 1,
+        rank: 1,
         last_solve: new Date(1),
         updated_at: new Date(1),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
       {
         team_id: 2,
         score: 2,
+        rank: 2,
         last_solve: new Date(1),
         updated_at: new Date(1),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
     ];
     expect(GetChangedTeamScores(s1, s2)).toEqual([]);
@@ -82,14 +114,22 @@ describe(GetChangedTeamScores, () => {
       {
         team_id: 1,
         score: 1,
+        rank: 1,
         last_solve: new Date(0),
         updated_at: new Date(0),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
       {
         team_id: 2,
         score: 2,
+        rank: 2,
         last_solve: new Date(0),
         updated_at: new Date(0),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
     ];
     const s2: ScoreboardEntry[] = [];
@@ -101,24 +141,36 @@ describe(GetChangedTeamScores, () => {
       {
         team_id: 1,
         score: 1,
+        rank: 1,
         last_solve: new Date(0),
         updated_at: new Date(0),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
     ];
     const s2: ScoreboardEntry[] = [
       {
         team_id: 2,
         score: 2,
+        rank: 1,
         last_solve: new Date(0),
         updated_at: new Date(0),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
     ];
     expect(GetChangedTeamScores(s1, s2)).toEqual([
       {
         team_id: 2,
         score: 2,
+        rank: 1,
         last_solve: new Date(0),
         updated_at: new Date(0),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
     ]);
   });
@@ -128,24 +180,36 @@ describe(GetChangedTeamScores, () => {
       {
         team_id: 1,
         score: 1,
+        rank: 1,
         last_solve: new Date(0),
         updated_at: new Date(0),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
     ];
     const s2: ScoreboardEntry[] = [
       {
         team_id: 1,
         score: 10,
+        rank: 1,
         last_solve: new Date(1),
         updated_at: new Date(1),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
     ];
     expect(GetChangedTeamScores(s1, s2)).toEqual([
       {
         team_id: 1,
         score: 10,
+        rank: 1,
         last_solve: new Date(1),
         updated_at: new Date(1),
+        hidden: false,
+        awards: [],
+        solves: [],
       },
     ]);
   });
@@ -176,16 +240,21 @@ describe(ComputeScoreboard, () => {
   });
 
   it("Does nothing if no results", () => {
-    const result = ComputeScoreboard([], {}, []);
+    const result = ComputeScoreboard(new Map(), [], {}, []);
     expect(result).toEqual({
       scoreboard: [],
-      challenges: {},
+      challenges: new Map(),
     });
   });
 
   it("Calculates challenge scores, uses the last valid solve date as the date", () => {
     vi.mocked(EvaluateScoringExpression).mockReturnValue(1 as any);
     const result = ComputeScoreboard(
+      new Map([
+        [1, { id: 1, flags: [] }],
+        [2, { id: 2, flags: [] }],
+        [3, { id: 3, flags: [] }],
+      ]),
       [
         {
           metadata: challenge1,
@@ -199,8 +268,8 @@ describe(ComputeScoreboard, () => {
             division_id: 1,
             hidden: false,
             id: 1,
-            team_flags: [],
             created_at: new Date(1) as unknown as Timestamp & Date, // fuck TS
+            updated_at: new Date(1) as unknown as Timestamp & Date,
             team_id: 1,
           },
           {
@@ -208,8 +277,8 @@ describe(ComputeScoreboard, () => {
             division_id: 1,
             hidden: false,
             id: 2,
-            team_flags: [],
             created_at: new Date(2) as unknown as Timestamp & Date, // fuck TS
+            updated_at: new Date(2) as unknown as Timestamp & Date,
             team_id: 3,
           },
           {
@@ -217,8 +286,8 @@ describe(ComputeScoreboard, () => {
             division_id: 1,
             hidden: false,
             id: 2,
-            team_flags: [],
             created_at: new Date(3) as unknown as Timestamp & Date, // fuck TS
+            updated_at: new Date(3) as unknown as Timestamp & Date,
             team_id: 2,
           },
         ],
@@ -232,58 +301,101 @@ describe(ComputeScoreboard, () => {
           updated_at: new Date(3),
           last_solve: new Date(1),
           team_id: 1,
+          hidden: false,
+          rank: 1,
+          awards: [],
+          solves: [
+            expect.objectContaining({
+              bonus: undefined,
+              created_at: new Date(1),
+              hidden: false,
+              challenge_id: 1,
+              score: 1,
+            }),
+          ],
         },
         {
           score: 1,
           updated_at: new Date(3),
           last_solve: new Date(2),
           team_id: 3,
+          hidden: false,
+          rank: 2,
+          awards: [],
+          solves: [
+            expect.objectContaining({
+              bonus: undefined,
+              created_at: new Date(2),
+              hidden: false,
+              challenge_id: 1,
+              score: 1,
+            }),
+          ],
         },
         {
           score: 1,
           updated_at: new Date(3),
           last_solve: new Date(3),
           team_id: 2,
-        },
-      ],
-      challenges: {
-        "1": {
-          challenge_id: 1,
-          score: 1,
+          hidden: false,
+          rank: 3,
+          awards: [],
           solves: [
-            {
-              bonus: undefined,
-              created_at: new Date(1),
-              hidden: false,
-              challenge_id: 1,
-              score: 1,
-              team_id: 1,
-            },
-            {
-              bonus: undefined,
-              created_at: new Date(2),
-              hidden: false,
-              challenge_id: 1,
-              score: 1,
-              team_id: 3,
-            },
-            {
+            expect.objectContaining({
               bonus: undefined,
               created_at: new Date(3),
               hidden: false,
               challenge_id: 1,
               score: 1,
-              team_id: 2,
-            },
+            }),
           ],
         },
-      },
+      ],
+      challenges: new Map([
+        [
+          1,
+          {
+            challenge_id: 1,
+            score: 1,
+            solves: [
+              {
+                bonus: undefined,
+                created_at: new Date(1),
+                hidden: false,
+                challenge_id: 1,
+                score: 1,
+                team_id: 1,
+              },
+              {
+                bonus: undefined,
+                created_at: new Date(2),
+                hidden: false,
+                challenge_id: 1,
+                score: 1,
+                team_id: 3,
+              },
+              {
+                bonus: undefined,
+                created_at: new Date(3),
+                hidden: false,
+                challenge_id: 1,
+                score: 1,
+                team_id: 2,
+              },
+            ],
+          },
+        ],
+      ]),
     });
   });
 
   it("Calculates challenge scores and adds awards to date", () => {
     vi.mocked(EvaluateScoringExpression).mockReturnValue(1 as any);
     const result = ComputeScoreboard(
+      new Map([
+        [1, { id: 1, flags: [] }],
+        [2, { id: 2, flags: [] }],
+      ]),
       [
         {
           metadata: challenge1,
@@ -297,8 +409,8 @@ describe(ComputeScoreboard, () => {
             division_id: 1,
             hidden: false,
             id: 1,
-            team_flags: [],
-            created_at: new Date(1) as any, // fuck TS
+            created_at: new Date(1) as unknown as Timestamp & Date, // fuck TS
+            updated_at: new Date(1) as unknown as Timestamp & Date,
             team_id: 1,
           },
         ],
@@ -327,18 +439,33 @@ describe(ComputeScoreboard, () => {
           last_solve: new Date(0),
           updated_at: new Date(3),
           team_id: 2,
+          rank: 1,
+          hidden: false,
+          awards: [
+            expect.objectContaining({
+              created_at: new Date(3) as any, // fuck TS
+              id: 2 as any, // fuck TS
+              title: "test",
+              value: 3,
+            }),
+          ],
+          solves: [],
         },
         {
           score: 2,
           last_solve: new Date(1),
           updated_at: new Date(2),
           team_id: 1,
-        },
-      ],
-      challenges: {
-        "1": {
-          challenge_id: 1,
-          score: 1,
+          rank: 2,
+          hidden: false,
+          awards: [
+            expect.objectContaining({
+              created_at: new Date(2) as any, // fuck TS
+              id: 1 as any, // fuck TS
+              title: "test",
+              value: 1,
+            }),
+          ],
           solves: [
             {
               bonus: undefined,
@@ -350,7 +477,26 @@ describe(ComputeScoreboard, () => {
             },
           ],
         },
-      },
+      ],
+      challenges: new Map([
+        [
+          1,
+          {
+            challenge_id: 1,
+            score: 1,
+            solves: [
+              {
+                bonus: undefined,
+                created_at: new Date(1),
+                hidden: false,
+                challenge_id: 1,
+                score: 1,
+                team_id: 1,
+              },
+            ],
+          },
+        ],
+      ]),
     });
   });
 });

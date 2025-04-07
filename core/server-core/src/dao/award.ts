@@ -29,9 +29,7 @@ export class AwardDAO {
   ): Promise<Award[]> {
     let query = this.getBaseQuery();
     if (division_id) {
-      query = query
-        .innerJoin("team", "team.id", "award.team_id")
-        .where("team.division_id", "=", division_id);
+      query = query.where("team.division_id", "=", division_id);
     }
     if (params?.limit) {
       query = query.limit(params.limit);
@@ -39,12 +37,13 @@ export class AwardDAO {
     if (params?.offset) {
       query = query.offset(params.offset);
     }
-    return (await query.execute()) as unknown as Award[];
+    return await query.execute();
   }
 
   private getBaseQuery() {
     return this.db
       .selectFrom("award")
+      .innerJoin("team", "team.id", "award.team_id")
       .select([
         "award.id as id",
         "award.team_id as team_id",

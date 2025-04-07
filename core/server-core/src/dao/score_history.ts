@@ -4,11 +4,17 @@ import { DBType } from "../clients/database.ts";
 export class ScoreHistoryDAO {
   constructor(private readonly db: DBType) {}
 
-  async add(entries: ScoreboardEntry[]) {
+  async add(entries: { team_id: number; updated_at: Date; score: number }[]) {
     if (!entries.length) return;
     await this.db
       .insertInto("score_history")
-      .values(entries)
+      .values(
+        entries.map(({ team_id, updated_at, score }) => ({
+          team_id,
+          updated_at,
+          score,
+        })),
+      )
       .onConflict((o) =>
         o.columns(["team_id", "updated_at"]).doUpdateSet({
           score: (eb) => eb.ref("excluded.score"),
@@ -28,11 +34,12 @@ export class ScoreHistoryDAO {
       .execute();
   }
 
-  async getByTeam(teamId: number, startTime?: Date, endTime?: Date) {
+  async getByTeams(teamId: number[], startTime?: Date, endTime?: Date) {
     let query = this.db
       .selectFrom("score_history")
       .select(["team_id", "score", "updated_at"])
-      .where("team_id", "=", teamId)
+      .where("team_id", "in", teamId)
+      .orderBy("team_id", "asc")
       .orderBy("updated_at", "asc");
     if (startTime) {
       query = query.where("updated_at", ">=", startTime);

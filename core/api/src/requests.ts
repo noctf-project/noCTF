@@ -179,6 +179,11 @@ export const UpdateTeamRequest = Type.Composite(
 );
 export type UpdateTeamRequest = Static<typeof UpdateTeamRequest>;
 
+export const QueryTeamNamesRequest = Type.Object({
+  ids: Type.Array(Type.Integer({ minimum: 1 }), { maxItems: 100 }),
+});
+export type QueryTeamNamesRequest = Static<typeof QueryTeamNamesRequest>;
+
 export const AdminCreateChallengeRequest = Type.Omit(
   Challenge,
   ["created_at", "updated_at", "id", "version"],
