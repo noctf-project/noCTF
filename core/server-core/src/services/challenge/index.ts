@@ -44,10 +44,10 @@ export class ChallengeService {
   private readonly submissionDAO;
   private readonly ajv = new Ajv();
   private readonly listCache = new LocalCache<string, ChallengeMetadata[]>({
-    ttl: 3000,
+    ttl: 5000,
   });
   private readonly getCache = new LocalCache<number, Challenge>({
-    ttl: 3000,
+    ttl: 5000,
   });
   private privateMetadataSchema: SomeJSONSchema;
   private privateMetadataSchemaValidator: ValidateFunction;
