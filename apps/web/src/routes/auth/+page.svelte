@@ -77,7 +77,7 @@
       });
 
       if (checkEmailReq.error) {
-        toasts.error(checkEmailReq.error.message);
+        toasts.error(checkEmailReq.error.message ?? "An unexpected error occurred when validating email. Please try again later.");
         isLoading = false;
         return;
       }
