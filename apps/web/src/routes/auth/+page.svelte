@@ -1,5 +1,5 @@
 <script lang="ts">
-  import api from "$lib/api/index.svelte";
+  import api, { wrapLoadable } from "$lib/api/index.svelte";
   import { toasts } from "$lib/stores/toast";
   import { performRedirect } from "$lib/utils/url";
   import Icon from "@iconify/svelte";
@@ -20,13 +20,12 @@
   let email = $state("");
   let username = $state("");
   let password = $state("");
-  let confirmPassword = $state("");
   let rememberMe = $state(true);
 
   // UI states
   let isLoading = $state(false);
   let passwordVisible = $state(false);
-  let passwordStrength = $state(0);
+  // let passwordStrength = $state(0);
   let registrationToken = $state("");
 
   // URL params
@@ -60,7 +59,6 @@
       currentStage = "email";
       // Reset sensitive fields when going back
       password = "";
-      confirmPassword = "";
     }
     // Specific back buttons are used for forgot password flow stages
   }
@@ -72,27 +70,27 @@
       isLoading = true;
 
       // Check if the email exists
-      const checkEmailReq = await api.POST("/auth/email/init", {
+      const checkEmailRes = await api.POST("/auth/email/init", {
         body: { email },
       });
 
-      if (checkEmailReq.error) {
-        toasts.error(checkEmailReq.error.message ?? "An unexpected error occurred when validating email. Please try again later.");
+      if (checkEmailRes.error) {
+        toasts.error(checkEmailRes.error.message ?? "An unexpected error occurred when validating email. Please try again later.");
         isLoading = false;
         return;
       }
-      console.log(checkEmailReq);
+      console.log(checkEmailRes);
 
       // Handle different responses based on if email exists
       if (
-        checkEmailReq.data &&
-        Object.keys(checkEmailReq.data.data || {}).length === 0
+        checkEmailRes.data &&
+        Object.keys(checkEmailRes.data.data || {}).length === 0
       ) {
         // Email exists, proceed to login
         currentStage = "login";
-      } else if (checkEmailReq.data?.data?.token) {
+      } else if (checkEmailRes.data?.data?.token) {
         // New user, store token for registration
-        registrationToken = checkEmailReq.data.data.token;
+        registrationToken = checkEmailRes.data.data.token;
 
         if (emailVerificationEnabled) {
           // If email verification is enabled, show verification message
@@ -126,7 +124,7 @@
     try {
       isLoading = true;
 
-      const loginReq = await api.POST("/auth/email/finish", {
+      const loginRes = await api.POST("/auth/email/finish", {
         body: {
           email,
           password,
@@ -134,13 +132,12 @@
         },
       });
 
-      if (loginReq.error) {
-        toasts.error(loginReq.error.message);
+      if (loginRes.error) {
+        toasts.error(loginRes.error.message ?? "An unexpected error occurred when logging in. Please try again later.");
         isLoading = false;
         return;
       }
-
-      if (loginReq.data?.data?.type === "session") {
+      if (loginRes.data?.data?.type === "session") {
         successRedirect();
       } else {
         toasts.error("Login failed");
@@ -157,30 +154,23 @@
     try {
       isLoading = true;
 
-      // Password validation
-      if (password !== confirmPassword) {
-        toasts.error("Passwords do not match");
-        isLoading = false;
-        return;
-      }
-
-      const registerReq = await api.POST("/auth/register/finish", {
+      const registerRes = await api.POST("/auth/register/finish", {
         body: {
           token: registrationToken,
-          username,
+          name: username,
           email,
           password,
           captcha: "", // Assuming captcha is handled elsewhere or not needed here
         },
       });
 
-      if (registerReq.error) {
-        toasts.error(registerReq.error.message);
+      if (registerRes.error) {
+        toasts.error(registerRes.error.message);
         isLoading = false;
         return;
       }
 
-      if (registerReq.data?.data?.type === "session") {
+      if (registerRes.data?.data?.type === "session") {
         toasts.success("Account created successfully!");
         successRedirect();
       } else {
@@ -194,26 +184,27 @@
     }
   }
 
+  // TODO: Implement when password reset API is available
   async function handleForgotPasswordRequest() {
-    if (!email) {
-      toasts.error("Please enter your email address.");
-      return;
-    }
+    // if (!email) {
+    //   toasts.error("Please enter your email address.");
+    //   return;
+    // }
     try {
-      isLoading = true;
+    //   isLoading = true;
       // Replace with your actual API endpoint for initiating password reset
-      const resetReq = await api.POST("/auth/password/reset/init", {
-        body: { email },
-      });
+      // const resetReq = await api.POST("/auth/password/reset/init", {
+      //   body: { email },
+      // });
 
-      if (resetReq.error) {
-        console.error("Password reset request error:", resetReq.error);
-        toasts.error(
-          "Failed to request password reset. Please try again later.",
-        );
-        isLoading = false;
-        return;
-      }
+      // if (resetReq.error) {
+      //   console.error("Password reset request error:", resetReq.error);
+      //   toasts.error(
+      //     "Failed to request password reset. Please try again later.",
+      //   );
+      //   isLoading = false;
+      //   return;
+      // }
 
       currentStage = "forgot-password-sent";
       toasts.success("Password reset instructions sent (if account exists).");
@@ -517,9 +508,8 @@
             type="submit"
             disabled={isLoading ||
               !username ||
-              !password ||
-              password !== confirmPassword ||
-              passwordStrength < 3}
+              !password 
+              }
           >
             {#if isLoading}
               <span class="loading loading-spinner loading-sm"></span>
