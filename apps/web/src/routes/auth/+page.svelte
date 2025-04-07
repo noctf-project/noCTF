@@ -39,13 +39,7 @@
     { name: "GitHub", icon: "mdi:github" },
   ];
 
-  onMount(() => {
-    // Could load verification config here
-    // api.GET("/auth/config").then(res => {
-    //   emailVerificationEnabled = res.data?.emailVerificationEnabled ?? true;
-    // });
-  });
-  const emailVerificationEnabled = wrapLoadable(api.GET("/admin/challenges"));
+  // const emailVerificationEnabled = wrapLoadable(api.GET("/admin/challenges"));
   let emailVerificationEnabled = $state(false); // This should be set based on your config
 
   function successRedirect() {
