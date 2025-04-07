@@ -73,7 +73,7 @@ const DoStream = (
 };
 
 export const Compress = (
-  arr: Uint8Array | Uint8Array,
+  arr: Uint8Array,
   id = DEFAULT_METHOD,
 ): Promise<Uint8Array> => {
   let m = id;

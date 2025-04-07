@@ -8,12 +8,12 @@ import { PostgresErrorCode, TryPGConstraintError } from "../util/pgerror.ts";
 import { ConflictError } from "../errors.ts";
 
 export type RawSolve = {
-  id: number,
-  team_id: number,
-  challenge_id: number,
-  hidden: boolean,
-  created_at: Date,
-  updated_at: Date,
+  id: number;
+  team_id: number;
+  challenge_id: number;
+  hidden: boolean;
+  created_at: Date;
+  updated_at: Date;
 };
 
 export class SubmissionDAO {
@@ -160,10 +160,8 @@ export class SubmissionDAO {
         "submission.hidden as hidden",
         "submission.created_at as created_at",
         "submission.updated_at as updated_at",
-      ]).orderBy(
-        "submission.created_at",
-        params?.sort || "asc",
-      );
+      ])
+      .orderBy("submission.created_at", params?.sort || "asc");
     if (division_id) {
       query = query.where("team.division_id", "=", division_id);
     }
