@@ -5,7 +5,6 @@ type Props = Pick<ServiceCradle, "redisClientFactory" | "logger">;
 
 const WRITE_INTERVAL_MS = 20;
 const BUCKET_NAMESPACE = "core:rl:bucket";
-const BLOCKED_NAMESPACE = "core:rl:blocked";
 
 export type RateLimitBucket = {
   key: string;
@@ -56,6 +55,7 @@ export class RateLimitService {
     const data = await this._read(now, buckets);
 
     maxBlocked = 0;
+    console.log("data", data);
     for (const [i, { key, windowSeconds, limit }] of buckets.entries()) {
       const read = data[i];
       const write = this.writes.get(key) || 0;
@@ -108,19 +108,26 @@ export class RateLimitService {
       if (res) continue;
       const { windowSeconds, key } = buckets[i];
       const lock = this.fetchLocks.get(key);
-      if (lock) locks.add(lock);
+      if (lock) {
+        locks.add(lock);
+        lockedKeys.push(i);
+        continue;
+      }
       const window = Math.floor(now / windowSeconds) * windowSeconds;
       const prev = `${BUCKET_NAMESPACE}:${window - windowSeconds}:${key}`;
       const curr = `${BUCKET_NAMESPACE}:${window}:${key}`;
       fetchVals.push(prev, curr);
       fetchKeys.push([i, key]);
     }
-    if (!fetchVals.length) return fetched as [number, number][];
+    if (!fetchVals.length && !lockedKeys.length)
+      return fetched as [number, number][];
 
     const lock = Promise.withResolvers<void>();
+    // can't have uncaught promises
+    lock.promise.catch(() => {});
     fetchKeys.forEach(([_i, k]) => this.fetchLocks.set(k, lock.promise));
     try {
-      const values = await client.mGet(fetchVals);
+      const values = fetchVals.length ? await client.mGet(fetchVals) : [];
       await Promise.all([...locks]);
       lock.resolve();
       for (const [i, [j, key]] of fetchKeys.entries()) {
@@ -148,7 +155,7 @@ export class RateLimitService {
       clearTimeout(this.timeout);
       this.timeout = null;
     }
-    
+
     if (!this.writes.size) {
       this.reads.clear();
       return;
@@ -177,7 +184,7 @@ export class RateLimitService {
       // merge writes back into map since we don't want to lose it
       for (const [key, v] of writes) {
         this.reads.get(key)![1] -= v; // since we previously set it
-        this.writes.set(key, (this.writes.get(key)||0)+v);
+        this.writes.set(key, (this.writes.get(key) || 0) + v);
       }
     }
   }
