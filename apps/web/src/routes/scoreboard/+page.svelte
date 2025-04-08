@@ -36,6 +36,7 @@
   };
 
   const TEAMS_PER_PAGE = 25;
+  const DIVISION = 1;
   let currentPage = $state(0);
   let detailedView = $state(false);
   let totalTeams = $state(0);
@@ -45,7 +46,7 @@
     wrapLoadable(
       api.GET("/scoreboard/divisions/{id}", {
         params: {
-          path: { id: 1 },
+          path: { id: DIVISION },
           query: { page: currentPage + 1, page_size: TEAMS_PER_PAGE },
         },
       }),
@@ -98,19 +99,11 @@
     }
   });
 
-  $effect(() => {
-    if (currentPage === 0 && apiScoreboard.r?.data?.data?.scores) {
-      const firstPageScores = apiScoreboard.r.data.data.scores;
-      top10TeamIds = firstPageScores.slice(0, 10).map((s) => s.team_id);
-    }
-  });
-
   const paginatedTeamIds = $derived(Array.from(currentPageTeams.keys()));
-
   const totalPages = $derived(Math.ceil(totalTeams / TEAMS_PER_PAGE));
 
   const apiTop10TeamsChartsData = wrapLoadable(
-    api.GET("/scoreboard/divisions/{id}/top", { params: { path: { id: 1 } } }),
+    api.GET("/scoreboard/divisions/{id}/top", { params: { path: { id: DIVISION } } }),
   );
   let top10TeamsChartsData: Promise<TeamChartData[]> | undefined = $derived(
     apiTop10TeamsChartsData.r?.data
