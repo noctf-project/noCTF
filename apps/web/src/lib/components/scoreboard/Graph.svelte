@@ -279,7 +279,6 @@
     }
 
     const { offsetLeft: positionX, offsetTop: positionY } = chart.canvas;
-    const chartWidth = chart.width;
 
     // @ts-expect-error: it exists
     const { x, y } = tooltip._eventPosition;
