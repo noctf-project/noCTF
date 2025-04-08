@@ -49,6 +49,7 @@ export const server = fastify({
     level: LOG_LEVEL,
   },
   disableRequestLogging: true,
+  trustProxy: true,
   genReqId: () => nanoid(),
   ...{ http2: ENABLE_HTTP2 }, // typescript is being funny
 });

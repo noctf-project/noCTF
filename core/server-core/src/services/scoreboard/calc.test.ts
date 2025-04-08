@@ -22,6 +22,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -32,6 +33,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -44,6 +46,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -54,6 +57,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -70,6 +74,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -80,6 +85,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -92,6 +98,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(1),
         updated_at: new Date(1),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -102,6 +109,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(1),
         updated_at: new Date(1),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -118,6 +126,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -128,6 +137,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -145,6 +155,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -157,6 +168,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -169,6 +181,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -184,6 +197,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -196,6 +210,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(1),
         updated_at: new Date(1),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -208,6 +223,7 @@ describe(GetChangedTeamScores, () => {
         last_solve: new Date(1),
         updated_at: new Date(1),
         hidden: false,
+        tag_ids: [],
         awards: [],
         solves: [],
       },
@@ -300,6 +316,7 @@ describe(ComputeScoreboard, () => {
           team_id: 1,
           hidden: false,
           rank: 1,
+          tag_ids: [],
           awards: [],
           solves: [
             expect.objectContaining({
@@ -318,6 +335,7 @@ describe(ComputeScoreboard, () => {
           team_id: 3,
           hidden: false,
           rank: 2,
+          tag_ids: [],
           awards: [],
           solves: [
             expect.objectContaining({
@@ -336,6 +354,7 @@ describe(ComputeScoreboard, () => {
           team_id: 2,
           hidden: false,
           rank: 3,
+          tag_ids: [],
           awards: [],
           solves: [
             expect.objectContaining({
@@ -437,6 +456,7 @@ describe(ComputeScoreboard, () => {
           team_id: 2,
           rank: 1,
           hidden: false,
+          tag_ids: [],
           awards: [
             expect.objectContaining({
               created_at: new Date(3) as any, // fuck TS
@@ -454,6 +474,7 @@ describe(ComputeScoreboard, () => {
           team_id: 1,
           rank: 2,
           hidden: false,
+          tag_ids: [],
           awards: [
             expect.objectContaining({
               created_at: new Date(2) as any, // fuck TS
