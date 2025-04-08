@@ -1,4 +1,4 @@
-import { ScoreboardEntry, Solve } from "@noctf/api/datatypes";
+import { ScoreboardEntry, ScoreboardVersionData, Solve } from "@noctf/api/datatypes";
 import { RedisClientFactory } from "../../clients/redis.ts";
 import { decode, encode } from "cbor-x";
 import { ComputedChallengeScoreData } from "./calc.ts";
@@ -17,15 +17,18 @@ export class ScoreboardDataLoader {
   private readonly getTeamCoalescer = new Coleascer();
 
   async getScoreboard(
-    division: number,
+    pointer: string|number,
+    division_id: number,
     start: number,
     end: number,
   ): Promise<{ total: number; entries: ScoreboardEntry[] }> {
+    const version = await this.getVersionPointer(pointer, division_id);
+    if (!version) return { total: 0, entries: [] };
+    const keys = this.getCacheKeys(version, division_id);
     return this.getScoreboardCoaleascer.get(
-      `${division}:${start}:${end}`,
+      `${division_id}:${start}:${end}`,
       async () => {
         const client = await this.factory.getClient();
-        const keys = this.getCacheKeys(division);
         const [total, ranks] = await Promise.all([
           client.zCard(keys.rank),
           client.zRange(keys.rank, start, end),
@@ -47,22 +50,28 @@ export class ScoreboardDataLoader {
     );
   }
 
-  async getRanks(division: number, start: number, end: number) {
-    const keys = this.getCacheKeys(division);
+  async getRanks(pointer: string | number, division_id: number, start: number, end: number) {
+    const version = await this.getVersionPointer(pointer, division_id);
+    if (!version) return [];
+    const keys = this.getCacheKeys(version, division_id);
     return (
       await (await this.factory.getClient()).zRange(keys.rank, start, end)
     ).map((x) => parseInt(x));
   }
 
   async getChallengeSolves(
-    division: number,
+    pointer: string|number,
+    division_id: number,
     challenge: number,
   ): Promise<Solve[]> {
+    const version = await this.getVersionPointer(pointer, division_id);
+    if (!version) return [];
+    const keys = this.getCacheKeys(version, division_id);
+
     return this.getChallengesCoalescer.get(
-      `${division}:${challenge}`,
+      `${division_id}:${challenge}`,
       async () => {
         const client = await this.factory.getClient();
-        const keys = this.getCacheKeys(division);
         const compressed = await client.hGet(
           client.commandOptions({ returnBuffers: true }),
           keys.csolves,
@@ -74,12 +83,15 @@ export class ScoreboardDataLoader {
   }
 
   async getTeam(
-    division: number,
+    pointer: string | number,
+    division_id: number,
     team: number,
   ): Promise<ScoreboardEntry | null> {
-    return this.getTeamCoalescer.get(`${division}:${team}`, async () => {
+    const version = await this.getVersionPointer(pointer, division_id);
+    if (!version) return null;
+    const keys = this.getCacheKeys(version, division_id);
+    return this.getTeamCoalescer.get(`${division_id}:${version}:${team}`, async () => {
       const client = await this.factory.getClient();
-      const keys = this.getCacheKeys(division);
       const compressed = await client.hGet(
         client.commandOptions({ returnBuffers: true }),
         keys.team,
@@ -90,13 +102,13 @@ export class ScoreboardDataLoader {
   }
 
   async saveIndexed(
-    updatedAt: Date,
-    division: number,
+    version: number,
+    division_id: number,
     scoreboard: ScoreboardEntry[],
     challenges: Map<number, ComputedChallengeScoreData>,
-  ) {
+  ): Promise<ScoreboardVersionData> {
     const client = await this.factory.getClient();
-    const keys = this.getCacheKeys(division);
+    const keys = this.getCacheKeys(version, division_id);
 
     const teams = (
       await RunInParallelWithLimit(scoreboard, 8, async (x) => {
@@ -122,7 +134,7 @@ export class ScoreboardDataLoader {
       .filter((x) => x) as [string, Buffer][];
 
     const multi = client.multi();
-    multi.del(Object.values(keys));
+    const saved: string[] = [];
     if (scoreboard.length)
       multi.zAdd(
         keys.rank,
@@ -135,17 +147,41 @@ export class ScoreboardDataLoader {
       );
     if (teams.length) multi.hSet(keys.team, teams);
     if (csolves.length) multi.hSet(keys.csolves, csolves);
-    multi.set(keys.updated, updatedAt.getTime().toString());
+    saved.push(...Object.values(keys));
+    for (const key of saved) {
+      multi.expire(key, 300);
+    }
     await multi.exec();
+
+    return {
+      keys: saved,
+      division_id,
+      version
+    };
+  }
+  
+  async getVersionPointer(pointer: string|number, division_id: number) {
+    if (typeof pointer === 'number') return pointer;
+    const client = await this.factory.getClient();
+    const result = await client.get(`${this.getDivisionString(division_id)}:p:${pointer}`);
+    return result ? (JSON.parse(result) as ScoreboardVersionData).version : null;
   }
 
-  private getCacheKeys(division: number) {
-    const root = `${this.namespace}:d:${division}`;
+  async saveVersionPointer(data: ScoreboardVersionData) {
+    const client = await this.factory.getClient();
+    await client.set(`${this.getDivisionString(data.division_id)}:p:${data.version}`, JSON.stringify(data));
+  }
+
+  private getDivisionString(division: number) {
+    return `${this.namespace}:d:${division}`;
+  }
+
+  private getCacheKeys(version: number, division: number) {
+    const root = `${this.getDivisionString(division)}:v:${version}`;
     return {
       rank: `${root}:rank`,
       team: `${root}:team`,
       csolves: `${root}:csolves`,
-      updated: `${root}:updated`,
     };
   }
 }

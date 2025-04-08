@@ -203,11 +203,11 @@ export class ScoreboardService {
     );
     const updated_at = new Date();
     await this.scoreboardDataLoader.saveIndexed(
-      updated_at,
+      updated_at.getTime(),
       id,
       scoreboard,
       challengeScores,
-    );
+    );    
     const compacted: Record<number, ChallengeSummary> = {};
     for (const { challenge_id, score, solves } of challengeScores.values()) {
       compacted[challenge_id] = {
