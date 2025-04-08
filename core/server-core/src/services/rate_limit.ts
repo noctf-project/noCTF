@@ -119,7 +119,9 @@ export class RateLimitService {
     if (!fetchVals.length && !lockedKeys.length)
       return fetched as [number, number][];
 
-    const locks = fetchKeys.map(() => Promise.withResolvers<[number, number]>());
+    const locks = fetchKeys.map(() =>
+      Promise.withResolvers<[number, number]>(),
+    );
     locks.forEach((l) => l.promise.catch(EmptyFn));
     fetchKeys.forEach(([_i, k], i) => this.fetchLocks.set(k, locks[i].promise));
     try {
