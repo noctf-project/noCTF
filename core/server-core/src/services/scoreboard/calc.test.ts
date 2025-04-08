@@ -251,9 +251,9 @@ describe(ComputeScoreboard, () => {
     vi.mocked(EvaluateScoringExpression).mockReturnValue(1 as any);
     const result = ComputeScoreboard(
       new Map([
-        [1, { id: 1, flags: [] }],
-        [2, { id: 2, flags: [] }],
-        [3, { id: 3, flags: [] }],
+        [1, { id: 1, flags: [], division_id: 1, tag_ids: [] }],
+        [2, { id: 2, flags: [], division_id: 1, tag_ids: [] }],
+        [3, { id: 3, flags: [], division_id: 1, tag_ids: [] }],
       ]),
       [
         {
@@ -265,7 +265,6 @@ describe(ComputeScoreboard, () => {
         1: [
           {
             challenge_id: 1,
-            division_id: 1,
             hidden: false,
             id: 1,
             created_at: new Date(1) as unknown as Timestamp & Date, // fuck TS
@@ -274,7 +273,6 @@ describe(ComputeScoreboard, () => {
           },
           {
             challenge_id: 1,
-            division_id: 1,
             hidden: false,
             id: 2,
             created_at: new Date(2) as unknown as Timestamp & Date, // fuck TS
@@ -283,7 +281,6 @@ describe(ComputeScoreboard, () => {
           },
           {
             challenge_id: 1,
-            division_id: 1,
             hidden: false,
             id: 2,
             created_at: new Date(3) as unknown as Timestamp & Date, // fuck TS
@@ -393,8 +390,8 @@ describe(ComputeScoreboard, () => {
     vi.mocked(EvaluateScoringExpression).mockReturnValue(1 as any);
     const result = ComputeScoreboard(
       new Map([
-        [1, { id: 1, flags: [] }],
-        [2, { id: 2, flags: [] }],
+        [1, { id: 1, flags: [], division_id: 1, tag_ids: [] }],
+        [2, { id: 2, flags: [], division_id: 1, tag_ids: [] }],
       ]),
       [
         {
@@ -406,7 +403,6 @@ describe(ComputeScoreboard, () => {
         1: [
           {
             challenge_id: 1,
-            division_id: 1,
             hidden: false,
             id: 1,
             created_at: new Date(1) as unknown as Timestamp & Date, // fuck TS

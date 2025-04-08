@@ -1,13 +1,13 @@
 import { createClient, ErrorReply } from "redis";
 import type { Logger } from "../types/primitives.ts";
-import TTLCache from "@isaacs/ttlcache";
+import { LocalCache } from "../util/local_cache.ts";
 
 export class RedisClientFactory {
   private readonly url;
   private readonly logger;
   private client: ReturnType<typeof createClient>;
 
-  private readonly scriptCache = new TTLCache<string, string>({
+  private readonly scriptCache = new LocalCache<string, string>({
     max: 1000,
     ttl: Infinity,
   });
@@ -40,12 +40,10 @@ export class RedisClientFactory {
     returnBuffers = false,
   ): Promise<T> {
     const client = await this.getClient();
-    let sha = this.scriptCache.get(script);
-    if (!sha) {
-      sha = await client.scriptLoad(script);
-      this.scriptCache.set(script, sha);
-    }
-    const exec = (): Promise<T> => {
+    let sha = await this.scriptCache.load(script, () =>
+      client.scriptLoad(script),
+    );
+    const exec = (sha: string): Promise<T> => {
       if (returnBuffers) {
         return client.evalSha(client.commandOptions({ returnBuffers }), sha, {
           keys,
@@ -59,11 +57,13 @@ export class RedisClientFactory {
     };
 
     try {
-      return await exec();
+      return await exec(sha);
     } catch (e) {
       if (e instanceof ErrorReply && e.message.startsWith("NOSCRIPT")) {
-        this.scriptCache.set(script, await client.scriptLoad(script));
-        return await exec();
+        sha = await this.scriptCache.load(script, () =>
+          client.scriptLoad(script),
+        );
+        return await exec(sha);
       } else {
         throw e;
       }
