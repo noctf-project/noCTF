@@ -316,6 +316,6 @@ export type TeamMembership = Static<typeof TeamMembership>;
 export const ScoreboardVersionData = Type.Object({
   version: Type.Number(),
   division_id: Type.Number(),
-  keys: Type.Array(Type.String())
+  keys: Type.Array(Type.String()),
 });
 export type ScoreboardVersionData = Static<typeof ScoreboardVersionData>;

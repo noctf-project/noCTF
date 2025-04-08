@@ -11,7 +11,7 @@ import { ScoreHistoryDAO } from "../../dao/score_history.ts";
 import { SetupConfig } from "@noctf/api/config";
 import { AwardDAO } from "../../dao/award.ts";
 import { ScoreboardDataLoader } from "./loader.ts";
-import { TeamDAO } from "../../dao/team.ts";
+import { MinimalTeamInfo, TeamDAO } from "../../dao/team.ts";
 import { partition } from "../../util/object.ts";
 import { RawSolve, SubmissionDAO } from "../../dao/submission.ts";
 
@@ -33,6 +33,7 @@ type UpdatedContainer<T> = {
 
 export const CACHE_SCORE_HISTORY_NAMESPACE = "core:svc:score_history";
 const CACHE_SCORE_NAMESPACE = "core:svc:score";
+const SCOREBOARD_LATEST = "latest";
 
 export class ScoreboardService {
   private readonly logger;
@@ -75,11 +76,20 @@ export class ScoreboardService {
   }
 
   async getScoreboard(division_id: number, start: number, end: number) {
-    return this.scoreboardDataLoader.getScoreboard(division_id, start, end);
+    return this.scoreboardDataLoader.getScoreboard(
+      SCOREBOARD_LATEST,
+      division_id,
+      start,
+      end,
+    );
   }
 
   async getTeam(division_id: number, team_id: number) {
-    return await this.scoreboardDataLoader.getTeam(division_id, team_id);
+    return await this.scoreboardDataLoader.getTeam(
+      SCOREBOARD_LATEST,
+      division_id,
+      team_id,
+    );
   }
 
   async getChallengesSummary(division_id: number) {
@@ -94,6 +104,7 @@ export class ScoreboardService {
 
   async getChallengeSolves(division_id: number, challenge_id: number) {
     return this.scoreboardDataLoader.getChallengeSolves(
+      SCOREBOARD_LATEST,
       division_id,
       challenge_id,
     );
@@ -114,9 +125,22 @@ export class ScoreboardService {
         metadata,
       })),
     );
-    const divisions = await this.divisionDAO.list();
+    const [teams, divisions] = await Promise.all([
+      this.teamDAO.listForScoreboard(),
+      this.divisionDAO.list(),
+    ]);
+    await this.scoreboardDataLoader.saveTeamTags(teams);
+    const teamMap = new Map<number, MinimalTeamInfo[]>(
+      divisions.map(({ id }) => [id, []]),
+    );
+    teams.forEach((t) => teamMap.get(t.division_id)?.push(t));
+
     for (const { id } of divisions) {
-      await this.commitDivisionScoreboard(challenges, id);
+      await this.commitDivisionScoreboard(
+        teamMap.get(id) || [],
+        challenges,
+        id,
+      );
     }
   }
 
@@ -129,6 +153,7 @@ export class ScoreboardService {
           value: { start_time_s, end_time_s },
         } = await this.configService.get<SetupConfig>(SetupConfig.$id!);
         const ranks = await this.scoreboardDataLoader.getRanks(
+          SCOREBOARD_LATEST,
           division,
           0,
           count - 1,
@@ -181,14 +206,15 @@ export class ScoreboardService {
   }
 
   private async commitDivisionScoreboard(
+    teams: MinimalTeamInfo[],
     challenges: ChallengeMetadataWithExpr[],
     id: number,
   ) {
-    const [teams, solveList, awardList] = await Promise.all([
-      this.teamDAO.listWithActivity(id),
+    const [solveList, awardList] = await Promise.all([
       this.submissionDAO.getSolvesForCalculation(id),
       this.awardDAO.getAllAwards(id),
     ]);
+
     const solvesByChallenge = Object.groupBy(
       solveList || [],
       ({ challenge_id }) => challenge_id,
@@ -202,12 +228,15 @@ export class ScoreboardService {
       this.logger,
     );
     const updated_at = new Date();
-    await this.scoreboardDataLoader.saveIndexed(
+
+    const info = await this.scoreboardDataLoader.saveIndexed(
       updated_at.getTime(),
       id,
       scoreboard,
       challengeScores,
-    );    
+    );
+    await this.scoreboardDataLoader.saveVersionPointer(SCOREBOARD_LATEST, info);
+
     const compacted: Record<number, ChallengeSummary> = {};
     for (const { challenge_id, score, solves } of challengeScores.values()) {
       compacted[challenge_id] = {

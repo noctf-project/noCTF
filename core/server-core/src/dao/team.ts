@@ -23,7 +23,9 @@ const CREATE_ERROR_CONFIG: PostgresErrorConfig = {
 
 export type MinimalTeamInfo = {
   id: number;
+  division_id: number;
   flags: string[];
+  tag_ids: number[];
 };
 
 export class TeamDAO {
@@ -157,23 +159,36 @@ export class TeamDAO {
     return query.execute();
   }
 
-  async listWithActivity(division: number): Promise<MinimalTeamInfo[]> {
-    return this.db
-      .selectFrom("team")
-      .select(["id", "flags"])
-      .distinctOn("id")
-      .where("division_id", "=", division)
+  async listForScoreboard(division?: number): Promise<MinimalTeamInfo[]> {
+    let query = this.db
+      .selectFrom("team as t")
+      .distinctOn("t.id")
+      .leftJoin("team_tag_member as ttm", "t.id", "ttm.team_id")
+      .leftJoin("team_tag as tt", "ttm.tag_id", "tt.id")
       .innerJoin(
-        this.db
+        this.db // check that team has activity
           .selectFrom("submission")
           .select("team_id")
           .where("status", "=", "correct")
           .union(this.db.selectFrom("award").select("team_id"))
           .as("combined_teams"),
-        "team.id",
+        "t.id",
         "combined_teams.team_id",
       )
-      .execute();
+      .select([
+        "t.id",
+        "t.division_id",
+        "t.flags",
+        sql<
+          number[]
+        >`COALESCE(array_agg(ttm.tag_id) FILTER (WHERE ttm.tag_id IS NOT NULL AND tt.is_visible = true), ARRAY[]::integer[])`.as(
+          "tag_ids",
+        ),
+      ])
+      .groupBy("t.id");
+
+    if (division) query = query.where("t.division_id", "=", division);
+    return await query.execute();
   }
 
   async update(id: number, v: Updateable<DB["team"]>) {
