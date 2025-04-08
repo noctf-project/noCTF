@@ -10,6 +10,7 @@
   import teamScoresState from "$lib/state/team_solves.svelte";
   import { untrack } from "svelte";
   import Pagination from "$lib/components/Pagination.svelte";
+  import { countryCodeToFlag } from "$lib/utils/country_flags";
 
   type ScoreboardEntry = {
     team_id: number;
@@ -103,7 +104,9 @@
   const totalPages = $derived(Math.ceil(totalTeams / TEAMS_PER_PAGE));
 
   const apiTop10TeamsChartsData = wrapLoadable(
-    api.GET("/scoreboard/divisions/{id}/top", { params: { path: { id: DIVISION } } }),
+    api.GET("/scoreboard/divisions/{id}/top", {
+      params: { path: { id: DIVISION } },
+    }),
   );
   let top10TeamsChartsData: Promise<TeamChartData[]> | undefined = $derived(
     apiTop10TeamsChartsData.r?.data
@@ -394,19 +397,26 @@
                 {@const entry = currentPageTeams.get(team_id)!}
                 <tr>
                   <td class="border border-base-300 text-center h-12 font-bold">
-                    {entry.rank}
+                    {#if entry.rank <= 3}
+                      {["🥇", "🥈", "🥉"][entry.rank - 1]}
+                    {:else}
+                      {entry.rank}
+                    {/if}
                   </td>
                   <td class="border border-base-300 px-4">
-                    <a
-                      href="/team/{entry.team_id}"
-                      class="truncate block cursor-pointer"
-                    >
-                      {#await TeamNamesService.get(entry.team_id)}
-                        <div class="skeleton h-4 w-24"></div>
-                      {:then name}
-                        {name}
-                      {/await}
-                    </a>
+                    <div class="flex flex-row gap-4">
+                      <span class="text-xl">{countryCodeToFlag("un")}</span>
+                      <a
+                        href="/team/{entry.team_id}"
+                        class="truncate block cursor-pointer bg-base-300/40 p-0.5 px-2 rounded-md"
+                      >
+                        {#await TeamNamesService.get(entry.team_id)}
+                          <div class="skeleton h-4 w-32 mx-auto"></div>
+                        {:then name}
+                          {name}
+                        {/await}
+                      </a>
+                    </div>
                   </td>
                   <td class="border border-base-300 px-4 text-center">
                     {entry.score}
@@ -471,7 +481,7 @@
                     >#</th
                   >
                   <th
-                    class="border border-base-300 bg-base-200 px-4 py-1 text-center"
+                    class="border border-base-300 bg-base-200 px-4 py-1 text-left"
                     >Team</th
                   >
                   <th class="border border-base-300 bg-base-200 px-2 py-1 w-20"
@@ -489,19 +499,26 @@
                     <td
                       class="border border-base-300 text-center h-12 font-bold"
                     >
-                      {entry.rank}
+                      {#if entry.rank <= 3}
+                        {["🥇", "🥈", "🥉"][entry.rank - 1]}
+                      {:else}
+                        {entry.rank}
+                      {/if}
                     </td>
-                    <td class="border border-base-300 px-4 text-center">
-                      <a
-                        href="/team/{entry.team_id}"
-                        class="truncate block cursor-pointer"
-                      >
-                        {#await TeamNamesService.get(entry.team_id)}
-                          <div class="skeleton h-4 w-32 mx-auto"></div>
-                        {:then name}
-                          {name}
-                        {/await}
-                      </a>
+                    <td class="border border-base-300 px-4">
+                      <div class="flex flex-row gap-4">
+                        <span class="text-xl">{countryCodeToFlag("un")}</span>
+                        <a
+                          href="/team/{entry.team_id}"
+                          class="truncate block cursor-pointer bg-base-300/40 p-0.5 px-2 rounded-md"
+                        >
+                          {#await TeamNamesService.get(entry.team_id)}
+                            <div class="skeleton h-4 w-32 mx-auto"></div>
+                          {:then name}
+                            {name}
+                          {/await}
+                        </a>
+                      </div>
                     </td>
                     <td class="border border-base-300 px-4 text-center">
                       {entry.score}
