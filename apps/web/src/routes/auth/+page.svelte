@@ -165,7 +165,8 @@
       });
 
       if (registerRes.error) {
-        toasts.error(registerRes.error.message);
+        toasts.error(registerRes.error.message || 'An error occured during registration. Please try again later.');
+        console.error(registerRes.error);
         isLoading = false;
         return;
       }
@@ -523,7 +524,7 @@
       {#if currentStage === "verification-sent"}
         <div class="pb-4 flex flex-col items-center">
           <div
-            class="bg-info/20 text-info rounded-full flex items-center justify-center pb-4"
+            class="rounded-full flex items-center justify-center pb-4"
           >
             <Icon icon="material-symbols:mail-outline" class="text-4xl" />
           </div>
