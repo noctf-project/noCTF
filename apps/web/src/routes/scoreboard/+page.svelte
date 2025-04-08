@@ -7,8 +7,6 @@
   import TeamNamesService from "$lib/state/team_names.svelte";
   import { getCategoriesFromTags } from "$lib/utils/challenges";
   import { getRelativeTime } from "$lib/utils/time";
-  import teamScoresState from "$lib/state/team_solves.svelte";
-  import { untrack } from "svelte";
   import Pagination from "$lib/components/Pagination.svelte";
   import { countryCodeToFlag } from "$lib/utils/country_flags";
 
