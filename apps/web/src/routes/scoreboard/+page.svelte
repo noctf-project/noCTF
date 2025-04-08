@@ -38,7 +38,6 @@
   const TEAMS_PER_PAGE = 25;
   let currentPage = $state(0);
   let detailedView = $state(false);
-  let top10TeamIds = $state<number[]>([]);
   let totalTeams = $state(0);
 
   const apiChallenges = wrapLoadable(api.GET("/challenges"));
