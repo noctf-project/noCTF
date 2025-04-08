@@ -110,58 +110,22 @@
 
   const totalPages = $derived(Math.ceil(totalTeams / TEAMS_PER_PAGE));
 
-  let top10TeamsChartDataLoaded = $state(false);
-  let top10TeamsChartsData: TeamChartData[] = $state([]);
-  $effect(() => {
-    if (top10TeamsChartDataLoaded) {
-      return;
-    }
-
-    (async () => {
-      if (!top10TeamIds.length) return;
-
-      const { loading, data } = teamScoresState;
-      const top10TeamScores = top10TeamIds.map((id) => ({
-        loading: !!loading.get(id),
-        data: data.get(id),
-      }));
-
-      const allTeamScoresLoaded = top10TeamIds.every(
-        (_, i) =>
-          top10TeamScores[i] &&
-          !top10TeamScores[i].loading &&
-          top10TeamScores[i].data,
-      );
-      if (!allTeamScoresLoaded) return;
-
-      let teamNames;
-      try {
-        teamNames = await Promise.all(
-          top10TeamIds.map((id) => TeamNamesService.get(id)),
-        );
-      } catch {
-        return;
-      }
-
-      if (teamNames.some((name) => name == null)) return;
-
-      const chartData = top10TeamIds.map((_, i) => ({
-        name: teamNames[i]!,
-        data: top10TeamScores[i]!.data!.graph || [],
-      }));
-
-      top10TeamsChartDataLoaded = true;
-      top10TeamsChartsData = chartData;
-    })();
-  });
-
-  $effect(() => {
-    if (top10TeamIds.length) {
-      untrack(() => {
-        teamScoresState.loadTeams(top10TeamIds);
-      });
-    }
-  });
+  const apiTop10TeamsChartsData = wrapLoadable(
+    api.GET("/scoreboard/divisions/{id}/top", { params: { path: { id: 1 } } }),
+  );
+  let top10TeamsChartsData: Promise<TeamChartData[]> | undefined = $derived(
+    apiTop10TeamsChartsData.r?.data
+      ? Promise.all(
+          apiTop10TeamsChartsData.r?.data.data.map(
+            async ({ team_id, graph }) => ({
+              name: await TeamNamesService.get(team_id),
+              data: graph,
+            }),
+          ),
+        )
+      : undefined,
+  );
+  $effect(() => {});
 
   function toggleView() {
     detailedView = !detailedView;
@@ -177,8 +141,10 @@
   {:else if apiScoreboard.loading}
     <div class="flex flex-col gap-0">
       <div class="mx-auto mt-8 2xl:w-2/3 w-full">
-        {#if top10TeamsChartDataLoaded && top10TeamsChartsData.length}
-          <Graph data={top10TeamsChartsData} />
+        {#if top10TeamsChartsData}
+          {#await top10TeamsChartsData then top10TeamsChartsData}
+            <Graph data={top10TeamsChartsData} />
+          {/await}
         {:else}
           <div class="skeleton w-full h-[33rem] mb-32"></div>
         {/if}
@@ -344,8 +310,10 @@
   {:else}
     <div class="flex flex-col gap-0">
       <div class="mx-auto mt-8 2xl:w-2/3 w-full">
-        {#if top10TeamsChartDataLoaded && top10TeamsChartsData.length}
-          <Graph data={top10TeamsChartsData} />
+        {#if top10TeamsChartsData}
+          {#await top10TeamsChartsData then top10TeamsChartsData}
+            <Graph data={top10TeamsChartsData} />
+          {/await}
         {:else}
           <div class="skeleton w-full h-[33rem] mb-32"></div>
         {/if}
