@@ -15,18 +15,20 @@ import { LocalCache } from "../../util/local_cache.ts";
 const SCRIPT_PREPARE_RANK = `
 local dest_key = KEYS[1]
 local teams_key = KEYS[2]
-local num_keys = #KEYS - 2
+local ranks_key = KEYS[3]
+local num_keys = #KEYS - 3
 local source_keys = {}
 for i = 1, num_keys do
-  source_keys[i] = KEYS[i + 2]
+  source_keys[i] = KEYS[i + 3]
 end
 
 local count = nil
 
-if num_keys > 1 then
+if num_keys > 0 then
   local exists = redis.call('EXISTS', dest_key)
   if exists == 0 then
-    count = redis.call('ZINTERSTORE', dest_key, num_keys, unpack(source_keys))
+    redis.call('SUNIONSTORE', dest_key, unpack(source_keys))
+    count = redis.call('ZINTERSTORE', dest_key, 2, ranks_key, dest_key)
     redis.call('EXPIRE', dest_key, 60)
   end
 end`;
@@ -89,9 +91,10 @@ export class ScoreboardDataLoader {
       const key = `${this.namespace}:tt:${id}`;
       multi.del(key);
       multi.sAdd(
-        `${this.namespace}:tt:${id}`,
+        key,
         teams.map((id) => id.toString()),
       );
+      multi.expire(key, 300);
     }
     await multi.exec();
   }
