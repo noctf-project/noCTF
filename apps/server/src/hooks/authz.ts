@@ -7,8 +7,8 @@ let cache: LocalCache;
 export const AuthzHook = async (request: FastifyRequest) => {
   if (!cache) {
     cache = new LocalCache({
-      max: 20000,
-      ttl: 1000,
+      max: 10000,
+      ttl: 5000,
       dispose: LocalCache.disposeMetricsHook(
         request.server.container.cradle.metricsClient,
         "AuthzHook",

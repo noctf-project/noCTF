@@ -32,7 +32,6 @@ export const ServeFileHandler = async (
   }
   const [stream, { mime, size, filename }] = urlOrStream;
   reply.header("content-type", mime);
-  console.log(range ? (range[1] || size - 1) + 1 - (range[0] || 0) : size);
   reply.header(
     "content-length",
     range ? (range[1] || size - 1) + 1 - (range[0] || 0) : size,

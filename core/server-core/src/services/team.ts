@@ -7,6 +7,8 @@ import { ActorType } from "../types/enums.ts";
 import { TeamConfig } from "@noctf/api/config";
 import { TeamDAO } from "../dao/team.ts";
 import { DivisionDAO } from "../dao/division.ts";
+import { LocalCache } from "../util/local_cache.ts";
+import { TeamMembership } from "@noctf/api/datatypes";
 
 type Props = Pick<
   ServiceCradle,
@@ -19,6 +21,13 @@ export class TeamService {
 
   private readonly divisionDAO;
   private readonly teamDAO;
+  private readonly membershipCache = new LocalCache<
+    number,
+    TeamMembership | null
+  >({
+    max: 10000,
+    ttl: 10000,
+  });
 
   constructor({ configService, databaseClient, auditLogService }: Props) {
     this.auditLogService = auditLogService;
@@ -176,8 +185,10 @@ export class TeamService {
     return result.id;
   }
 
-  async getMembershipForUser(userId: number) {
-    return this.teamDAO.getMembershipForUser(userId);
+  async getMembershipForUser(userId: number): Promise<TeamMembership | null> {
+    return this.membershipCache.load(userId, () =>
+      this.teamDAO.getMembershipForUser(userId),
+    );
   }
 
   async assignMember(

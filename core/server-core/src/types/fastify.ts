@@ -1,3 +1,4 @@
+import { RateLimitBucket } from "../services/rate_limit.ts";
 import type { TeamService } from "../services/team.ts";
 import type { Policy } from "../util/policy.ts";
 
@@ -11,6 +12,13 @@ declare module "fastify" {
       scopes?: Set<string>;
       policy?: Policy | (() => Promise<Policy> | Policy);
     };
+    rateLimit?:
+      | RateLimitBucket
+      | RateLimitBucket[]
+      | (() =>
+          | Promise<RateLimitBucket | RateLimitBucket[]>
+          | RateLimitBucket
+          | RateLimitBucket[]);
   }
 
   interface FastifyRequest {
