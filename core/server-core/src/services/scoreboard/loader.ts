@@ -10,8 +10,48 @@ import { Compress, Decompress } from "../../util/message_compression.ts";
 import { Coleascer } from "../../util/coleascer.ts";
 import { RunInParallelWithLimit } from "../../util/semaphore.ts";
 import { MinimalTeamInfo } from "../../dao/team.ts";
-import TTLCache from "@isaacs/ttlcache";
 import { LocalCache } from "../../util/local_cache.ts";
+
+const SCRIPT_PREPARE_RANK = `
+local dest_key = KEYS[1]
+local teams_key = KEYS[2]
+local num_keys = #KEYS - 2
+local source_keys = {}
+for i = 1, num_keys do
+  source_keys[i] = KEYS[i + 2]
+end
+
+local count = nil
+
+if num_keys > 1 then
+  local exists = redis.call('EXISTS', dest_key)
+  if exists == 0 then
+    count = redis.call('ZINTERSTORE', dest_key, num_keys, unpack(source_keys))
+    redis.call('EXPIRE', dest_key, 60)
+  end
+end`;
+const SCRIPT_GET_RANKS =
+  SCRIPT_PREPARE_RANK +
+  `
+return redis.call('ZRANGE', dest_key, ARGV[1], ARGV[2])`;
+
+const SCRIPT_GET_SCOREBOARD =
+  SCRIPT_PREPARE_RANK +
+  `
+local teams = redis.call('ZRANGE', dest_key, ARGV[1], ARGV[2])
+
+local ret = {}
+if count == nil then
+  ret[1] = redis.call('ZCARD', dest_key)
+else
+  ret[1] = count
+end
+if #teams == 0 then
+  ret[2] = {}
+  return ret
+end
+ret[2] = redis.call('HMGET', teams_key, unpack(teams))
+return ret`;
 
 export class ScoreboardDataLoader {
   constructor(
@@ -61,6 +101,7 @@ export class ScoreboardDataLoader {
     division_id: number,
     start: number,
     end: number,
+    tags?: number[],
   ): Promise<{ total: number; entries: ScoreboardEntry[] }> {
     const version = await this.getVersionPointer(pointer, division_id);
     if (!version) return { total: 0, entries: [] };
@@ -68,16 +109,13 @@ export class ScoreboardDataLoader {
     return this.getScoreboardCoaleascer.get(
       `${division_id}:${start}:${end}`,
       async () => {
-        const client = await this.factory.getClient();
-        const [total, ranks] = await Promise.all([
-          client.zCard(keys.rank),
-          client.zRange(keys.rank, start, end),
-        ]);
-        const compressed = await client.hmGet(
-          client.commandOptions({ returnBuffers: true }),
-          keys.team,
-          ranks,
-        );
+        const [total, compressed]: [number, Buffer[]] =
+          await this.factory.executeScript(
+            SCRIPT_GET_SCOREBOARD,
+            this.getScriptKeys(keys, tags),
+            [start.toString(), end.toString()],
+            true,
+          );
         const entries = (
           await RunInParallelWithLimit(compressed, 8, async (x) => {
             return decode(await Decompress(x));
@@ -95,12 +133,18 @@ export class ScoreboardDataLoader {
     division_id: number,
     start: number,
     end: number,
-  ) {
+    tags?: number[],
+  ): Promise<number[]> {
     const version = await this.getVersionPointer(pointer, division_id);
     if (!version) return [];
     const keys = this.getCacheKeys(version, division_id);
     return (
-      await (await this.factory.getClient()).zRange(keys.rank, start, end)
+      await this.factory.executeScript<string[]>(
+        SCRIPT_GET_RANKS,
+        this.getScriptKeys(keys, tags),
+        [start.toString(), end.toString()],
+        true,
+      )
     ).map((x) => parseInt(x));
   }
 
@@ -195,14 +239,12 @@ export class ScoreboardDataLoader {
       );
     if (teams.length) multi.hSet(keys.team, teams);
     if (csolves.length) multi.hSet(keys.csolves, csolves);
-    saved.push(...Object.values(keys));
     for (const key of saved) {
       multi.expire(key, 300);
     }
     await multi.exec();
 
     return {
-      keys: saved,
       division_id,
       version,
     };
@@ -239,6 +281,22 @@ export class ScoreboardDataLoader {
       rank: `${root}:rank`,
       team: `${root}:team`,
       csolves: `${root}:csolves`,
+      ranktag: `${root}:ranktag`,
     };
+  }
+
+  private getScriptKeys(
+    keys: ReturnType<ScoreboardDataLoader["getCacheKeys"]>,
+    tags?: number[],
+  ) {
+    const sTags = [...new Set(tags)].sort().map((x) => x.toString());
+    return sTags.length
+      ? [
+          `${keys.ranktag}:${sTags.join(",")}`,
+          keys.team,
+          keys.rank,
+          ...sTags.map((id) => `${this.namespace}:tt:${id}`),
+        ]
+      : [keys.rank, keys.team];
   }
 }

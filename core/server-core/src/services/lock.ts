@@ -6,7 +6,7 @@ type Props = Pick<ServiceCradle, "redisClientFactory">;
 
 const LEASE_PREFIX = "lease";
 
-const SCRIPTS: Record<string, string> = {
+const SCRIPTS = {
   renew:
     'local val = redis.call("GET", KEYS[1]);' +
     'if val == ARGV[1] then redis.call("EXPIRE", KEYS[1], ARGV[2]);return 1;' +
@@ -15,7 +15,6 @@ const SCRIPTS: Record<string, string> = {
 
 export class LockService {
   private readonly redisClientFactory;
-  private readonly scriptCache: Map<string, string> = new Map();
 
   constructor({ redisClientFactory }: Props) {
     this.redisClientFactory = redisClientFactory;
@@ -50,8 +49,8 @@ export class LockService {
 
   async renewLease(name: string, token: string, durationSeconds = 60) {
     if (
-      !(await this.executeScript(
-        "renew",
+      !(await this.redisClientFactory.executeScript(
+        SCRIPTS.renew,
         [`${LEASE_PREFIX}:${name}`],
         [token, durationSeconds.toString()],
       ))
@@ -69,30 +68,5 @@ export class LockService {
       return;
     }
     return this.renewLease(name, token, 0);
-  }
-
-  private async executeScript(name: string, keys: string[], args: string[]) {
-    const client = await this.redisClientFactory.getClient();
-    let sha = this.scriptCache.get(name);
-    if (!sha) {
-      sha = await client.scriptLoad(SCRIPTS[name]);
-      this.scriptCache.set(name, sha);
-    }
-    try {
-      return await client.evalSha(sha, {
-        keys,
-        arguments: args,
-      });
-    } catch (e) {
-      if (e instanceof ErrorReply && e.message.startsWith("NOSCRIPT")) {
-        this.scriptCache.set(name, await client.scriptLoad(SCRIPTS[name]));
-        return await client.evalSha(sha, {
-          keys,
-          arguments: args,
-        });
-      } else {
-        throw e;
-      }
-    }
   }
 }

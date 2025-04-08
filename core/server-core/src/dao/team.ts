@@ -164,7 +164,6 @@ export class TeamDAO {
       .selectFrom("team as t")
       .distinctOn("t.id")
       .leftJoin("team_tag_member as ttm", "t.id", "ttm.team_id")
-      .leftJoin("team_tag as tt", "ttm.tag_id", "tt.id")
       .innerJoin(
         this.db // check that team has activity
           .selectFrom("submission")
@@ -179,11 +178,9 @@ export class TeamDAO {
         "t.id",
         "t.division_id",
         "t.flags",
-        sql<
-          number[]
-        >`COALESCE(array_agg(ttm.tag_id) FILTER (WHERE ttm.tag_id IS NOT NULL AND tt.is_visible = true), ARRAY[]::integer[])`.as(
-          "tag_ids",
-        ),
+        sql<number[]>`COALESCE(
+          array_agg(ttm.tag_id) FILTER (WHERE ttm.tag_id IS NOT NULL),
+          ARRAY[]::integer[])`.as("tag_ids"),
       ])
       .groupBy("t.id");
 

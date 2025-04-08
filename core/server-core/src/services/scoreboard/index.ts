@@ -75,12 +75,18 @@ export class ScoreboardService {
     this.divisionDAO = new DivisionDAO(databaseClient.get());
   }
 
-  async getScoreboard(division_id: number, start: number, end: number) {
+  async getScoreboard(
+    division_id: number,
+    start: number,
+    end: number,
+    tags?: number[],
+  ) {
     return this.scoreboardDataLoader.getScoreboard(
       SCOREBOARD_LATEST,
       division_id,
       start,
       end,
+      tags,
     );
   }
 
