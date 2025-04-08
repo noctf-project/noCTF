@@ -4,7 +4,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 
 const DEFAULT_CONFIG = (r: FastifyRequest) => ({
   key: r.routeOptions.url && `all:${r.user ? "u" + r.user.id : "i" + r.ip}`,
-  limit: r.user ? 250 : 1000,
+  limit: r.user ? 200 : 500,
   windowSeconds: 60,
 });
 
@@ -30,7 +30,7 @@ export const RateLimitHook = async (
 
   const next = await rateLimitService.evaluate(buckets);
   if (next) {
-    reply.header("x-ratelimit-reset", next);
+    reply.header("retry-after", Math.ceil(next / 1000));
     throw new TooManyRequestsError("You're trying too hard");
   }
 };
