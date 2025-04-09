@@ -31,7 +31,7 @@
   import { onMount } from "svelte";
   import api, { API_BASE_URL } from "$lib/api/index.svelte";
   import { getRelativeTime } from "$lib/utils/time";
-  import TeamNamesService from "$lib/state/team_names.svelte";
+  import TeamNamesService from "$lib/state/team_query.svelte";
   import { toasts } from "$lib/stores/toast";
 
   let {
@@ -44,8 +44,12 @@
   }: ChallengeModalProps = $props();
 
   let flagInput = $state("");
-  let flagSubmitStatus: undefined | "incorrect" | "correct" | "queued" =
-    $state();
+  let flagSubmitStatus:
+    | undefined
+    | "invalid"
+    | "incorrect"
+    | "correct"
+    | "queued" = $state();
   let scoreModalVisible = $state(false);
   let scoreModalRef: HTMLElement | undefined = $state();
   let scoresLoading = $state(false);
@@ -81,7 +85,7 @@
     });
 
     if (r.error) {
-      toasts.error(r.error.message);
+      toasts.error((r as { error: { message: string } }).error.message);
       return;
     }
     if (r.data) {

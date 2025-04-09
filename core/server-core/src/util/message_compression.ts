@@ -14,7 +14,7 @@ type Method = {
  * 0: none
  * 1: brotli
  */
-const COMPRESSION_THRESHOLD_BYTES = 256;
+const COMPRESSION_THRESHOLD_BYTES = 2048;
 const METHODS: Method[] = [
   {
     encode: (i, o) => {

@@ -1,4 +1,4 @@
-import { decode, encode } from "cbor-x";
+import { Encoder } from "cbor-x";
 import type { ServiceCradle } from "../index.ts";
 import { Compress, Decompress } from "../util/message_compression.ts";
 import { Stopwatch } from "../util/stopwatch.ts";
@@ -14,16 +14,23 @@ const DEFAULT_LOAD_PARAMS: LoadParams = {
   forceFetch: false,
 };
 
-type Props = Pick<ServiceCradle, "redisClientFactory" | "metricsClient">;
+type Props = Pick<
+  ServiceCradle,
+  "redisClientFactory" | "metricsClient" | "logger"
+>;
 
 export class CacheService {
+  private readonly logger;
   private readonly redisClient;
   private readonly metricsClient;
 
   private readonly getCoaleascer = new Coleascer();
   private readonly fetchColeascer = new Coleascer();
 
-  constructor({ redisClientFactory, metricsClient }: Props) {
+  private readonly encoder = new Encoder({ pack: true });
+
+  constructor({ redisClientFactory, metricsClient, logger }: Props) {
+    this.logger = logger;
     this.redisClient = redisClientFactory.getClient();
     this.metricsClient = metricsClient;
   }
@@ -94,7 +101,15 @@ export class CacheService {
       ],
       { cache_namespace: namespace },
     );
-    return decode(await Decompress(data));
+    try {
+      return this.encoder.decode(await Decompress(data));
+    } catch (e) {
+      this.logger.error(
+        e,
+        "Unable to decode cache value due to corruption, returning null",
+      );
+      return null;
+    }
   }
 
   async put<T>(
@@ -129,7 +144,7 @@ export class CacheService {
   private async _put(fullKey: string, value: unknown, expireSeconds?: number) {
     if (value === null) return;
     const client = await this.redisClient;
-    const b = await Compress(encode(value));
+    const b = await Compress(this.encoder.encode(value));
     const res = await client.set(
       fullKey,
       Buffer.from(b.buffer, b.byteOffset, b.byteLength),

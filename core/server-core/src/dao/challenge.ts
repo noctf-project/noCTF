@@ -79,7 +79,7 @@ export class ChallengeDAO {
     if (tags) {
       query = query.where("tags", "@>", tags);
     }
-    if (hidden) {
+    if (typeof hidden === "boolean") {
       query = query.where("hidden", "=", hidden);
     }
     if (visible_at) {

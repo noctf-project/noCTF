@@ -4,7 +4,7 @@
     type TeamChartData,
   } from "$lib/components/scoreboard/Graph.svelte";
   import api, { wrapLoadable } from "$lib/api/index.svelte";
-  import TeamNamesService from "$lib/state/team_names.svelte";
+  import TeamQueryService from "$lib/state/team_query.svelte";
   import { getCategoriesFromTags } from "$lib/utils/challenges";
   import { getRelativeTime } from "$lib/utils/time";
   import Pagination from "$lib/components/Pagination.svelte";
@@ -160,7 +160,7 @@
       ? Promise.all(
           apiTop10TeamsChartsData.r?.data.data.map(
             async ({ team_id, graph }) => ({
-              name: await TeamNamesService.get(team_id),
+              name: await TeamQueryService.get(team_id),
               data: graph,
             }),
           ),
@@ -192,7 +192,7 @@
       href={`/team/${team_id}`}
       class={`truncate block cursor-pointer ${nameBg} ${nameFg} p-0.5 px-2 rounded-md font-medium`}
     >
-      {#await TeamNamesService.get(team_id)}
+      {#await TeamQueryService.get(team_id)}
         <div class="skeleton h-4 w-32"></div>
       {:then name}
         {name}

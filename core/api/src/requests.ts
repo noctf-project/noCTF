@@ -179,11 +179,6 @@ export const UpdateTeamRequest = Type.Composite(
 );
 export type UpdateTeamRequest = Static<typeof UpdateTeamRequest>;
 
-export const QueryTeamNamesRequest = Type.Object({
-  ids: Type.Array(Type.Integer({ minimum: 1 }), { maxItems: 100 }),
-});
-export type QueryTeamNamesRequest = Static<typeof QueryTeamNamesRequest>;
-
 export const AdminCreateChallengeRequest = Type.Omit(
   Challenge,
   ["created_at", "updated_at", "id", "version"],
@@ -209,3 +204,12 @@ export const SolveChallengeRequest = Type.Object(
   { additionalProperties: false },
 );
 export type SolveChallengeRequest = Static<typeof SolveChallengeRequest>;
+
+export const QueryTeamsRequest = Type.Object({
+  division_id: Type.Optional(Type.Integer()),
+  page: Type.Optional(Type.Integer({ minimum: 1 })),
+  page_size: Type.Optional(Type.Integer()),
+  name_prefix: Type.Optional(Type.String({ maxLength: 64 })),
+  ids: Type.Optional(Type.Array(Type.Integer(), { maxItems: 50 })),
+});
+export type QueryTeamsRequest = Static<typeof QueryTeamsRequest>;
