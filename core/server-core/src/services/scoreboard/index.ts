@@ -257,7 +257,7 @@ export class ScoreboardService {
     >(CACHE_SCORE_NAMESPACE, `d:${id}:challenges_summary`, {
       data: compacted,
       updated_at,
-    });
+    }, 300);
 
     // we want a separate cache value for graphing in case the calculation crashed
     // halfway through
@@ -288,6 +288,7 @@ export class ScoreboardService {
         data: scoreboard,
         updated_at,
       },
+      300
     );
   }
 }
