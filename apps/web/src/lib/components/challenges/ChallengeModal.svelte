@@ -44,8 +44,12 @@
   }: ChallengeModalProps = $props();
 
   let flagInput = $state("");
-  let flagSubmitStatus: undefined | "invalid" | "incorrect" | "correct" | "queued" =
-    $state();
+  let flagSubmitStatus:
+    | undefined
+    | "invalid"
+    | "incorrect"
+    | "correct"
+    | "queued" = $state();
   let scoreModalVisible = $state(false);
   let scoreModalRef: HTMLElement | undefined = $state();
   let scoresLoading = $state(false);
@@ -81,7 +85,7 @@
     });
 
     if (r.error) {
-      toasts.error((r as {error: { message: string }}).error.message);
+      toasts.error((r as { error: { message: string } }).error.message);
       return;
     }
     if (r.data) {

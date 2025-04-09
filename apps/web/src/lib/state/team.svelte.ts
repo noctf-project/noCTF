@@ -2,7 +2,10 @@ import client from "$lib/api/index.svelte";
 import type { PathResponse } from "$lib/api/types";
 import { LRUCache } from "lru-cache";
 
-export type Team = PathResponse<"/teams/query", "post">["data"]["teams"][number];
+export type Team = PathResponse<
+  "/teams/query",
+  "post"
+>["data"]["teams"][number];
 
 // TODO: this can probably get deprecated
 export class TeamService {
@@ -41,7 +44,7 @@ export class TeamService {
   }
 
   private async preloadAll() {
-    const { data, error } = await client.POST("/teams/query", {body: {}});
+    const { data, error } = await client.POST("/teams/query", { body: {} });
     if (error) {
       throw new Error("Error fetching teams", { cause: error });
     }

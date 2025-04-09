@@ -15,7 +15,6 @@ import {
 } from "@noctf/api/requests";
 import {
   GetTeamResponse,
-  QueryTeamNamesResponse,
   ListDivisionsResponse,
   ListTeamsResponse,
   MeTeamResponse,
@@ -248,27 +247,26 @@ export async function routes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (request) => {
       const admin = policyService.evaluate(request.user?.id, adminPolicy);
 
       const page = request.body.page || 1;
       const page_size =
         (admin
           ? request.body.page_size
-          : Math.min(TEAM_PAGE_SIZE, request.body.page_size)) ||
-        TEAM_PAGE_SIZE;
+          : Math.min(TEAM_PAGE_SIZE, request.body.page_size)) || TEAM_PAGE_SIZE;
       const query = {
         flags: ["!hidden"],
         division_id: request.body.division_id,
         name_prefix: request.body.name_prefix,
-        ids: request.body.ids
+        ids: request.body.ids,
       };
       const [teams, total] = await Promise.all([
         teamService.listSummary(query, {
           limit: page_size,
           offset: (page - 1) * page_size,
         }),
-        query.ids ? teamService.getCount(query) : 0,
+        !(query.ids && query.ids.length) ? teamService.getCount(query) : 0,
       ]);
 
       return {
