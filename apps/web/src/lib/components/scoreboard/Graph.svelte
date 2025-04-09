@@ -49,10 +49,12 @@
     const datasets = teamsData.map((team, index) => {
       return {
         label: team.name,
-        data: team.data.map(([timestamp, score]) => ({
-          x: timestamp,
-          y: score,
-        })),
+        data: team.data
+          .filter((v) => v[0] != 0)
+          .map(([timestamp, score]) => ({
+            x: timestamp,
+            y: score,
+          })),
         borderColor: lineColours[index % lineColours.length],
         backgroundColor: lineColours[index % lineColours.length],
         tension: 0,
@@ -247,7 +249,7 @@
         labelSpan.style.textOverflow = "ellipsis";
         labelSpan.style.maxWidth = "150px";
         labelSpan.style.display = "inline-block";
-        
+
         const valueSpan = document.createElement("span");
         valueSpan.style.whiteSpace = "nowrap";
         valueSpan.style.marginLeft = "4px";
@@ -255,10 +257,10 @@
         if (result.point) {
           const labelText = document.createTextNode(result.label);
           const valueText = document.createTextNode(`: ${result.point.y}`);
-          
+
           labelSpan.appendChild(labelText);
           valueSpan.appendChild(valueText);
-          
+
           td.appendChild(span);
           td.appendChild(labelSpan);
           td.appendChild(valueSpan);
@@ -282,14 +284,14 @@
 
     // @ts-expect-error: it exists
     const { x, y } = tooltip._eventPosition;
-    
+
     tooltipEl.style.opacity = "1";
     tooltipEl.style.top = `${positionY + y - 40}px`;
-    
+
     const tooltipWidth = tooltipEl.offsetWidth;
     const rightSidePosition = positionX + x + tooltipWidth + 10;
     const viewportWidth = window.innerWidth;
-    
+
     if (rightSidePosition > viewportWidth) {
       tooltipEl.style.left = `${positionX + x - 10}px`;
       tooltipEl.style.transform = "translate(-100%, 0)";
