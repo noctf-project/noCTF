@@ -14,16 +14,18 @@ const DEFAULT_LOAD_PARAMS: LoadParams = {
   forceFetch: false,
 };
 
-type Props = Pick<ServiceCradle, "redisClientFactory" | "metricsClient">;
+type Props = Pick<ServiceCradle, "redisClientFactory" | "metricsClient" | "logger">;
 
 export class CacheService {
+  private readonly logger;
   private readonly redisClient;
   private readonly metricsClient;
 
   private readonly getCoaleascer = new Coleascer();
   private readonly fetchColeascer = new Coleascer();
 
-  constructor({ redisClientFactory, metricsClient }: Props) {
+  constructor({ redisClientFactory, metricsClient, logger }: Props) {
+    this.logger = logger;
     this.redisClient = redisClientFactory.getClient();
     this.metricsClient = metricsClient;
   }
@@ -94,7 +96,12 @@ export class CacheService {
       ],
       { cache_namespace: namespace },
     );
-    return decode(await Decompress(data));
+    try {
+      return decode(await Decompress(data));
+    } catch (e) {
+      this.logger.error(e, "Unable to decode cache value due to corruption, returning null");
+      return null;
+    }
   }
 
   async put<T>(
