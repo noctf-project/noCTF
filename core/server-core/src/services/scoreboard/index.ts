@@ -158,7 +158,7 @@ export class ScoreboardService {
         const {
           value: { start_time_s, end_time_s },
         } = await this.configService.get<SetupConfig>(SetupConfig.$id!);
-        const ranks = await this.scoreboardDataLoader.getRanks(
+        const [_count, ranks] = await this.scoreboardDataLoader.getRanks(
           SCOREBOARD_LATEST,
           division,
           0,

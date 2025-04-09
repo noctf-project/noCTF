@@ -14,12 +14,11 @@ import { LocalCache } from "../../util/local_cache.ts";
 
 const SCRIPT_PREPARE_RANK = `
 local dest_key = KEYS[1]
-local teams_key = KEYS[2]
-local ranks_key = KEYS[3]
-local num_keys = #KEYS - 3
+local ranks_key = KEYS[2]
+local num_keys = #KEYS - 2
 local source_keys = {}
 for i = 1, num_keys do
-  source_keys[i] = KEYS[i + 3]
+  source_keys[i] = KEYS[i + 2]
 end
 
 local count = nil
@@ -32,26 +31,18 @@ if num_keys > 0 then
     redis.call('EXPIRE', dest_key, 60)
   end
 end`;
-const SCRIPT_GET_RANKS =
-  SCRIPT_PREPARE_RANK +
-  `
-return redis.call('ZRANGE', dest_key, ARGV[1], ARGV[2])`;
 
-const SCRIPT_GET_SCOREBOARD =
-  SCRIPT_PREPARE_RANK +
-  `
-local teams = redis.call('ZRANGE', dest_key, ARGV[1], ARGV[2])
+const SCRIPT_GET_SCOREBOARD = `
+local ranks_key = KEYS[1]
+local teams_key = KEYS[2]
+local exists = redis.call('EXISTS', ranks_key)
+if exists == 0 then
+  return nil
+end
 
+local teams = redis.call('ZRANGE', ranks_key, ARGV[1], ARGV[2])
 local ret = {}
-if count == nil then
-  ret[1] = redis.call('ZCARD', dest_key)
-else
-  ret[1] = count
-end
-if #teams == 0 then
-  ret[2] = {}
-  return ret
-end
+ret[1] = redis.call('ZCARD', ranks_key)
 ret[2] = redis.call('HMGET', teams_key, unpack(teams))
 return ret`;
 
@@ -108,27 +99,74 @@ export class ScoreboardDataLoader {
   ): Promise<{ total: number; entries: ScoreboardEntry[] }> {
     const version = await this.getVersionPointer(pointer, division_id);
     if (!version) return { total: 0, entries: [] };
-    const keys = this.getCacheKeys(version, division_id);
+    const sTags = [...new Set(tags)].sort();
+
     return this.getScoreboardCoaleascer.get(
-      `${division_id}:${start}:${end}`,
+      `${version}:${division_id}:${start}:${end}:${sTags.join()}`,
       async () => {
-        const [total, compressed]: [number, Buffer[]] =
-          await this.factory.executeScript(
-            SCRIPT_GET_SCOREBOARD,
-            this.getScriptKeys(keys, tags),
-            [start.toString(), end.toString()],
-            true,
-          );
+        const keys = this.getCacheKeys(version, division_id);
+        const set = sTags.length
+          ? `${keys.ranktag}:${sTags.join(",")}`
+          : keys.rank;
+
+        let result: [number, Buffer[]] | null;
+        result = await this.factory.executeScript(
+          SCRIPT_GET_SCOREBOARD,
+          [set, keys.team],
+          [start.toString(), end.toString()],
+          true,
+        );
+        if (!result && !sTags.length) return { total: 0, entries: [] };
+        if (result) {
+          const entries = (
+            await RunInParallelWithLimit(result[1], 8, async (x) => {
+              return decode(await Decompress(x));
+            })
+          )
+            .map((x) => x.status === "fulfilled" && x.value)
+            .filter((x) => x) as ScoreboardEntry[];
+          return { total: result[0], entries };
+        }
+        await this.createTaggedRankTable(set, keys.rank, sTags);
+        result = await this.factory.executeScript(
+          SCRIPT_GET_SCOREBOARD,
+          [set, keys.team],
+          [start.toString(), end.toString()],
+          true,
+        );
+        if (!result) return { total: 0, entries: [] };
+
         const entries = (
-          await RunInParallelWithLimit(compressed, 8, async (x) => {
+          await RunInParallelWithLimit(result[1], 8, async (x) => {
             return decode(await Decompress(x));
           })
         )
           .map((x) => x.status === "fulfilled" && x.value)
           .filter((x) => x) as ScoreboardEntry[];
-        return { total, entries };
+        return { total: result[0], entries };
       },
     );
+
+    // return this.getScoreboardCoaleascer.get(
+    //   `${version}:${division_id}:${start}:${end}:${sTags.join()}`,
+    //   async () => {
+    //     const client = await this.factory.getClient();
+    //     const [total, ranks] = await this.getRanks(pointer, division_id, start, end, tags);
+    //     const compressed = await client.hmGet(
+    //       client.commandOptions({ returnBuffers: true }),
+    //       keys.team,
+    //       ranks.map((r) => r.toString()),
+    //     );
+    //     const entries = (
+    //       await RunInParallelWithLimit(compressed, 8, async (x) => {
+    //         return decode(await Decompress(x));
+    //       })
+    //     )
+    //       .map((x) => x.status === "fulfilled" && x.value)
+    //       .filter((x) => x) as ScoreboardEntry[];
+    //     return { total, entries };
+    //   },
+    // );
   }
 
   async getRanks(
@@ -137,18 +175,38 @@ export class ScoreboardDataLoader {
     start: number,
     end: number,
     tags?: number[],
-  ): Promise<number[]> {
+  ): Promise<[number, number[]]> {
+    const client = await this.factory.getClient();
+    const query = async (k: string) => {
+      const multi = client.multi();
+      multi.exists(k);
+      multi.zCard(k);
+      multi.zRange(k, start, end);
+      const result = (await multi.exec()) as [number, number, string[]];
+      if (!result[0]) return null;
+      return [result[1], result[2].map((x) => parseInt(x))] as [
+        number,
+        number[],
+      ];
+    };
     const version = await this.getVersionPointer(pointer, division_id);
-    if (!version) return [];
+    if (!version) return [0, []];
     const keys = this.getCacheKeys(version, division_id);
-    return (
-      await this.factory.executeScript<string[]>(
-        SCRIPT_GET_RANKS,
-        this.getScriptKeys(keys, tags),
-        [start.toString(), end.toString()],
-        true,
-      )
-    ).map((x) => parseInt(x));
+
+    let result: [number, number[]] | null;
+    if (!tags || !tags.length) {
+      result = await query(keys.rank);
+      if (!result) return [0, []];
+      return result;
+    }
+    const sTags = [...new Set(tags)].sort();
+    const rankKey = `${keys.ranktag}:${sTags.join(",")}`;
+
+    result = await query(rankKey);
+    if (!result) await this.createTaggedRankTable(rankKey, keys.rank, sTags);
+    result = await query(rankKey);
+    if (!result) return [0, []];
+    return result;
   }
 
   async getChallengeSolves(
@@ -288,18 +346,19 @@ export class ScoreboardDataLoader {
     };
   }
 
-  private getScriptKeys(
-    keys: ReturnType<ScoreboardDataLoader["getCacheKeys"]>,
-    tags?: number[],
+  private async createTaggedRankTable(
+    taggedKey: string,
+    rankKey: string,
+    sortedTags: number[],
   ) {
-    const sTags = [...new Set(tags)].sort().map((x) => x.toString());
-    return sTags.length
-      ? [
-          `${keys.ranktag}:${sTags.join(",")}`,
-          keys.team,
-          keys.rank,
-          ...sTags.map((id) => `${this.namespace}:tt:${id}`),
-        ]
-      : [keys.rank, keys.team];
+    await this.factory.executeScript(
+      SCRIPT_PREPARE_RANK,
+      [
+        taggedKey,
+        rankKey,
+        ...sortedTags.map((id) => `${this.namespace}:tt:${id}`),
+      ],
+      [],
+    );
   }
 }

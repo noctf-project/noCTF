@@ -71,8 +71,9 @@ export class RateLimitService {
       if (estimate >= limit) {
         const diff = estimate - limit;
         const ttl = Math.floor(
-            Math.min(diff / read[0], 1) *
-              (windowSeconds - (now % windowSeconds)) * 1000,
+          Math.min(diff / read[0], 1) *
+            (windowSeconds - (now % windowSeconds)) *
+            1000,
         );
         if (ttl > 0) {
           this.blocked.set(key, 1, { ttl });
