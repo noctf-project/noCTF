@@ -69,25 +69,71 @@
       .sort((a, b) => a.points - b.points) || [],
   );
 
+  const apiTeams = $derived(
+    apiScoreboard.r?.data?.data?.scores.map((s, i) => ({
+      ...s,
+      rank: currentPage * TEAMS_PER_PAGE + (i + 1),
+      last_solve: new Date(s.last_solve),
+      solves: s.solves.map(({ created_at, ...rest }) => ({
+        ...rest,
+        created_at: new Date(created_at),
+      })),
+      awards: s.awards.map(({ created_at, ...rest }) => ({
+        ...rest,
+        created_at: new Date(created_at),
+      })),
+    })) || [],
+  );
+
+  let isMyTeamInCurrentPage = $derived(
+    !!authState.user?.team_id &&
+      apiTeams.some((t) => t.team_id === authState.user!.team_id),
+  );
+
+  let apiMyTeam = $derived(
+    authState.user?.team_id && !isMyTeamInCurrentPage
+      ? wrapLoadable(
+          api.GET("/scoreboard/teams/{id}", {
+            params: {
+              path: { id: authState.user.team_id },
+            },
+          }),
+        )
+      : undefined,
+  );
+
+  const myTeamEntry = $derived.by(() => {
+    if (!apiMyTeam?.r?.data?.data) return null;
+
+    const teamData = apiMyTeam.r.data.data;
+    return {
+      team_id: teamData.team_id,
+      rank: teamData.rank,
+      score: teamData.score,
+      last_solve: new Date(teamData.last_solve),
+      solves: teamData.solves.map(({ created_at, ...rest }) => ({
+        ...rest,
+        created_at: new Date(created_at),
+      })),
+      awards: teamData.awards.map(({ created_at, ...rest }) => ({
+        ...rest,
+        created_at: new Date(created_at),
+      })),
+    };
+  });
+
+  const allTeamsToDisplay = $derived.by(() => {
+    if (!myTeamEntry || isMyTeamInCurrentPage) {
+      return apiTeams;
+    }
+
+    return myTeamEntry.rank < apiTeams[0]!.rank
+      ? [myTeamEntry, ...apiTeams]
+      : [...apiTeams, myTeamEntry];
+  });
+
   const currentPageTeams: Map<number, ScoreboardEntry> = $derived(
-    new Map(
-      apiScoreboard.r?.data?.data?.scores.map((s, i) => [
-        s.team_id,
-        {
-          ...s,
-          rank: currentPage * TEAMS_PER_PAGE + (i + 1),
-          last_solve: new Date(s.last_solve),
-          solves: s.solves.map(({ created_at, ...rest }) => ({
-            ...rest,
-            created_at: new Date(created_at),
-          })),
-          awards: s.awards.map(({ created_at, ...rest }) => ({
-            ...rest,
-            created_at: new Date(created_at),
-          })),
-        },
-      ]) || [],
-    ),
+    new Map(allTeamsToDisplay.map((team) => [team.team_id, team])),
   );
 
   $effect(() => {
@@ -405,7 +451,11 @@
               <tbody>
                 {#each paginatedTeamIds as team_id (`row-${team_id}`)}
                   {@const entry = currentPageTeams.get(team_id)!}
-                  <tr class="bg-base-100 hover:bg-base-300/30">
+                  {@const isMe = authState.user?.team_id === team_id}
+                  <tr
+                    class="bg-base-100 hover:bg-base-300/30 {isMe &&
+                      'border-y-2 border-base-400'}"
+                  >
                     <td
                       class="border-b border-base-300 py-2 px-3 text-center h-10 font-bold sticky left-0 z-10 bg-base-100 min-w-12 max-w-12"
                     >
@@ -480,7 +530,11 @@
               <tbody>
                 {#each paginatedTeamIds as team_id (`compact-row-${team_id}`)}
                   {@const entry = currentPageTeams.get(team_id)!}
-                  <tr class="bg-base-100 hover:bg-base-300/30">
+                  {@const isMe = authState.user?.team_id === team_id}
+                  <tr
+                    class="bg-base-100 hover:bg-base-300/30 {isMe &&
+                      'border-y-2 border-base-400'}"
+                  >
                     <td
                       class="border border-base-300 py-2 px-3 text-center h-10 font-bold"
                     >
