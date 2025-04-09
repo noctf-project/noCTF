@@ -287,7 +287,7 @@ export class ScoreboardDataLoader {
       .filter((x) => x) as [string, Buffer][];
 
     const multi = client.multi();
-    const saved: string[] = [];
+    const saved: string[] = Object.values(keys);
     if (scoreboard.length)
       multi.zAdd(
         keys.rank,
