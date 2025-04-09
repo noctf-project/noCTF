@@ -2,9 +2,9 @@ import { LRUCache } from "lru-cache";
 import client from "$lib/api/index.svelte";
 
 const DEBOUNCE_INTERVAL = 64;
-const MAXIMUM_QUERIES = 100;
+const MAXIMUM_QUERIES = 50;
 
-export class TeamNamesService {
+export class TeamQueryService {
   private queue: Set<number> = new Set();
   private resolveQueue: [number, (r: string) => void, (r?: any) => void][] = [];
   private debounce: ReturnType<typeof setTimeout> | null = null;
@@ -36,14 +36,14 @@ export class TeamNamesService {
     this.debounce = null;
 
     try {
-      const { data, error } = await client.POST("/team_names", {
+      const { data, error } = await client.POST("/teams/query", {
         body: {
           ids: ids.values().toArray(),
         },
       });
       if (error) throw new Error(error);
       if (data) {
-        data.data.forEach(({ id, name }) => {
+        data.data.teams.forEach(({ id, name }) => {
           this.cache.set(id, name);
           ids.delete(id);
         });
@@ -60,4 +60,4 @@ export class TeamNamesService {
     }
   }
 }
-export default new TeamNamesService();
+export default new TeamQueryService();

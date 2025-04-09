@@ -128,13 +128,14 @@ export class TeamService {
     params?: {
       flags?: string[];
       division_id?: number;
+      ids?: number[];
     },
     limit?: { limit?: number; offset?: number },
   ) {
     return this.teamDAO.listSummary(params, limit);
   }
 
-  async getCount(params?: { flags?: string[]; division_id?: number }) {
+  async getCount(params?: { flags?: string[]; division_id?: number; ids?: number[]; }) {
     return this.teamDAO.getCount(params);
   }
 
