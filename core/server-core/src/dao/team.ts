@@ -290,6 +290,7 @@ export class TeamDAO {
 
   private listQuery(params?: {
     flags?: string[];
+    ids?: number[];
     name_prefix?: string;
     division_id?: number;
   }) {
@@ -311,6 +312,9 @@ export class TeamDAO {
     }
     if (params?.division_id) {
       query = query.where("division_id", "=", params.division_id);
+    }
+    if (params?.ids && params?.ids.length) {
+      query = query.where("id", "in", params.ids);
     }
     return query;
   }

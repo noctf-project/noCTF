@@ -2,8 +2,9 @@ import client from "$lib/api/index.svelte";
 import type { PathResponse } from "$lib/api/types";
 import { LRUCache } from "lru-cache";
 
-export type Team = PathResponse<"/teams/{id}", "get">["data"]["teams"];
+export type Team = PathResponse<"/teams/query", "post">["data"]["teams"][number];
 
+// TODO: this can probably get deprecated
 export class TeamService {
   private isLoaded = false;
   private loadLock: Promise<void> | null = null;
@@ -40,7 +41,7 @@ export class TeamService {
   }
 
   private async preloadAll() {
-    const { data, error } = await client.GET("/teams", {});
+    const { data, error } = await client.POST("/teams/query", {body: {}});
     if (error) {
       throw new Error("Error fetching teams", { cause: error });
     }
@@ -52,15 +53,14 @@ export class TeamService {
   }
 
   private async fetchTeamById(id: number): Promise<Team> {
-    const { data, error } = await client.GET("/teams/{id}", {
-      params: {
-        path: { id },
-      },
+    const { data, error } = await client.POST("/teams/query", {
+      body: { ids: [id] },
     });
     if (error) {
       throw new Error("Error fetching team", { cause: error });
     }
-    return data.data;
+    if (!data.data.teams[0]) throw new Error("Team not found");
+    return data.data.teams[0];
   }
 }
 

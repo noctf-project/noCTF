@@ -10,7 +10,7 @@ import {
 import {
   CreateTeamRequest,
   JoinTeamRequest,
-  QueryTeamNamesRequest,
+  QueryTeamsRequest,
   UpdateTeamRequest,
 } from "@noctf/api/requests";
 import {
@@ -23,10 +23,9 @@ import {
 } from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
 import { IdParams } from "@noctf/api/params";
-import { ListTeamsQuery } from "@noctf/api/query";
 import { Policy } from "@noctf/server-core/util/policy";
 
-export const TEAM_PAGE_SIZE = 100;
+export const TEAM_PAGE_SIZE = 50;
 
 export async function routes(fastify: FastifyInstance) {
   const adminPolicy: Policy = ["admin.team.get"];
@@ -234,34 +233,8 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{
-    Reply: QueryTeamNamesResponse;
-    Body: QueryTeamNamesRequest;
-  }>(
-    "/team_names",
-    {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["team"],
-        response: {
-          200: QueryTeamNamesResponse,
-        },
-        body: QueryTeamNamesRequest,
-        auth: {
-          policy: ["team.get"],
-        },
-      },
-    },
-    async (request) => {
-      const ids = [...new Set(request.body.ids)];
-      return {
-        data: await teamService.queryNames(ids, false),
-      };
-    },
-  );
-
-  fastify.get<{ Querystring: ListTeamsQuery; Reply: ListTeamsResponse }>(
-    "/teams",
+  fastify.post<{ Body: QueryTeamsRequest; Reply: ListTeamsResponse }>(
+    "/teams/query",
     {
       schema: {
         security: [{ bearer: [] }],
@@ -269,7 +242,7 @@ export async function routes(fastify: FastifyInstance) {
         response: {
           200: ListTeamsResponse,
         },
-        querystring: ListTeamsQuery,
+        body: QueryTeamsRequest,
         auth: {
           policy: ["team.get"],
         },
@@ -278,27 +251,28 @@ export async function routes(fastify: FastifyInstance) {
     async (request, reply) => {
       const admin = policyService.evaluate(request.user?.id, adminPolicy);
 
-      const page = request.query.page || 1;
+      const page = request.body.page || 1;
       const page_size =
         (admin
-          ? request.query.page_size
-          : Math.min(TEAM_PAGE_SIZE, request.query.page_size)) ||
+          ? request.body.page_size
+          : Math.min(TEAM_PAGE_SIZE, request.body.page_size)) ||
         TEAM_PAGE_SIZE;
       const query = {
         flags: ["!hidden"],
-        division_id: request.query.division_id,
-        name_prefix: request.query.name_prefix,
+        division_id: request.body.division_id,
+        name_prefix: request.body.name_prefix,
+        ids: request.body.ids
       };
       const [teams, total] = await Promise.all([
         teamService.listSummary(query, {
           limit: page_size,
           offset: (page - 1) * page_size,
         }),
-        teamService.getCount(query),
+        query.ids ? teamService.getCount(query) : 0,
       ]);
 
       return {
-        data: { teams, page_size, total },
+        data: { teams, page_size, total: total || teams.length },
       };
     },
   );
