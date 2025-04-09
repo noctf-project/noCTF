@@ -82,7 +82,6 @@ export async function routes(fastify: FastifyInstance) {
         auth: {
           policy: ["scoreboard.get"],
         },
-        querystring: ScoreboardQuery,
         params: IdParams,
         response: {
           200: ScoreboardGraphsResponse,

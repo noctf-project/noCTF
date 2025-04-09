@@ -27,7 +27,6 @@
 
   export let data: TeamChartData[] = [];
 
-  // TODO: better configuration of colours
   const lineColours: string[] = [
     "#9966FF",
     "#FF6384",
@@ -50,10 +49,12 @@
     const datasets = teamsData.map((team, index) => {
       return {
         label: team.name,
-        data: team.data.map(([timestamp, score]) => ({
-          x: timestamp,
-          y: score,
-        })),
+        data: team.data
+          .filter((v) => v[0] != 0)
+          .map(([timestamp, score]) => ({
+            x: timestamp,
+            y: score,
+          })),
         borderColor: lineColours[index % lineColours.length],
         backgroundColor: lineColours[index % lineColours.length],
         tension: 0,
@@ -80,7 +81,7 @@
       tooltipEl.style.pointerEvents = "none";
       tooltipEl.style.position = "absolute";
       tooltipEl.style.zIndex = "100";
-      tooltipEl.style.minWidth = "200px";
+      tooltipEl.style.minWidth = "250px";
       tooltipEl.style.maxHeight = "400px";
       tooltipEl.style.overflowY = "auto";
 
@@ -229,6 +230,8 @@
         const td = document.createElement("td");
         td.style.borderWidth = "0";
         td.style.padding = "4px";
+        td.style.display = "flex";
+        td.style.alignItems = "center";
 
         const span = document.createElement("span");
         span.style.background = result.backgroundColor;
@@ -238,13 +241,29 @@
         span.style.height = "10px";
         span.style.width = "10px";
         span.style.display = "inline-block";
+        span.style.flexShrink = "0";
 
-        let valueText: string;
+        const labelSpan = document.createElement("span");
+        labelSpan.style.whiteSpace = "nowrap";
+        labelSpan.style.overflow = "hidden";
+        labelSpan.style.textOverflow = "ellipsis";
+        labelSpan.style.maxWidth = "150px";
+        labelSpan.style.display = "inline-block";
+
+        const valueSpan = document.createElement("span");
+        valueSpan.style.whiteSpace = "nowrap";
+        valueSpan.style.marginLeft = "4px";
+
         if (result.point) {
-          valueText = `${result.label}: ${result.point.y}`;
-          const text = document.createTextNode(valueText);
+          const labelText = document.createTextNode(result.label);
+          const valueText = document.createTextNode(`: ${result.point.y}`);
+
+          labelSpan.appendChild(labelText);
+          valueSpan.appendChild(valueText);
+
           td.appendChild(span);
-          td.appendChild(text);
+          td.appendChild(labelSpan);
+          td.appendChild(valueSpan);
           tr.appendChild(td);
           tableBody.appendChild(tr);
         }
@@ -267,9 +286,19 @@
     const { x, y } = tooltip._eventPosition;
 
     tooltipEl.style.opacity = "1";
-    tooltipEl.style.left = `${positionX + x + 140}px`;
     tooltipEl.style.top = `${positionY + y - 40}px`;
-    tooltipEl.style.transform = "translate(-50%, 0)";
+
+    const tooltipWidth = tooltipEl.offsetWidth;
+    const rightSidePosition = positionX + x + tooltipWidth + 10;
+    const viewportWidth = window.innerWidth;
+
+    if (rightSidePosition > viewportWidth) {
+      tooltipEl.style.left = `${positionX + x - 10}px`;
+      tooltipEl.style.transform = "translate(-100%, 0)";
+    } else {
+      tooltipEl.style.left = `${positionX + x + 10}px`;
+      tooltipEl.style.transform = "translate(0, 0)";
+    }
 
     const padding = tooltip.options.padding;
     if (typeof padding === "number") {
