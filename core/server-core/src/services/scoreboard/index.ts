@@ -12,7 +12,6 @@ import { SetupConfig } from "@noctf/api/config";
 import { AwardDAO } from "../../dao/award.ts";
 import { ScoreboardDataLoader } from "./loader.ts";
 import { MinimalTeamInfo, TeamDAO } from "../../dao/team.ts";
-import { partition } from "../../util/object.ts";
 import { RawSolve, SubmissionDAO } from "../../dao/submission.ts";
 
 type Props = Pick<
@@ -33,7 +32,6 @@ type UpdatedContainer<T> = {
 
 export const CACHE_SCORE_HISTORY_NAMESPACE = "core:svc:score_history";
 const CACHE_SCORE_NAMESPACE = "core:svc:score";
-const SCOREBOARD_LATEST = "latest";
 
 export class ScoreboardService {
   private readonly logger;
@@ -82,7 +80,7 @@ export class ScoreboardService {
     tags?: number[],
   ) {
     return this.scoreboardDataLoader.getScoreboard(
-      SCOREBOARD_LATEST,
+      0,
       division_id,
       start,
       end,
@@ -91,11 +89,7 @@ export class ScoreboardService {
   }
 
   async getTeam(division_id: number, team_id: number) {
-    return await this.scoreboardDataLoader.getTeam(
-      SCOREBOARD_LATEST,
-      division_id,
-      team_id,
-    );
+    return await this.scoreboardDataLoader.getTeam(0, division_id, team_id);
   }
 
   async getChallengesSummary(division_id: number) {
@@ -110,7 +104,7 @@ export class ScoreboardService {
 
   async getChallengeSolves(division_id: number, challenge_id: number) {
     return this.scoreboardDataLoader.getChallengeSolves(
-      SCOREBOARD_LATEST,
+      0,
       division_id,
       challenge_id,
     );
@@ -159,7 +153,7 @@ export class ScoreboardService {
           value: { start_time_s, end_time_s },
         } = await this.configService.get<SetupConfig>(SetupConfig.$id!);
         const [_count, ranks] = await this.scoreboardDataLoader.getRanks(
-          SCOREBOARD_LATEST,
+          0,
           division,
           0,
           count - 1,
@@ -241,7 +235,6 @@ export class ScoreboardService {
       scoreboard,
       challengeScores,
     );
-    await this.scoreboardDataLoader.saveVersionPointer(SCOREBOARD_LATEST, info);
 
     const compacted: Record<number, ChallengeSummary> = {};
     for (const { challenge_id, score, solves } of challengeScores.values()) {
@@ -254,10 +247,15 @@ export class ScoreboardService {
     }
     await this.cacheService.put<
       UpdatedContainer<Record<number, ChallengeSummary>>
-    >(CACHE_SCORE_NAMESPACE, `d:${id}:challenges_summary`, {
-      data: compacted,
-      updated_at,
-    }, 300);
+    >(
+      CACHE_SCORE_NAMESPACE,
+      `d:${id}:challenges_summary`,
+      {
+        data: compacted,
+        updated_at,
+      },
+      300,
+    );
 
     // we want a separate cache value for graphing in case the calculation crashed
     // halfway through
@@ -288,7 +286,7 @@ export class ScoreboardService {
         data: scoreboard,
         updated_at,
       },
-      300
+      300,
     );
   }
 }

@@ -52,11 +52,11 @@ export class ScoreboardDataLoader {
     private readonly namespace: string,
   ) {}
 
-  private readonly pointerCache = new LocalCache<
-    string,
+  private readonly latestPointerCache = new LocalCache<
+    number,
     ScoreboardVersionData | null
   >({
-    max: 512,
+    max: 256,
     ttl: 1000,
   });
 
@@ -91,13 +91,13 @@ export class ScoreboardDataLoader {
   }
 
   async getScoreboard(
-    pointer: string | number,
+    pointer: number,
     division_id: number,
     start: number,
     end: number,
     tags?: number[],
   ): Promise<{ total: number; entries: ScoreboardEntry[] }> {
-    const version = await this.getVersionPointer(pointer, division_id);
+    const version = pointer || (await this.getLatestPointer(division_id));
     if (!version) return { total: 0, entries: [] };
     const sTags = [...new Set(tags)].sort();
 
@@ -170,7 +170,7 @@ export class ScoreboardDataLoader {
   }
 
   async getRanks(
-    pointer: string | number,
+    pointer: number,
     division_id: number,
     start: number,
     end: number,
@@ -189,7 +189,7 @@ export class ScoreboardDataLoader {
         number[],
       ];
     };
-    const version = await this.getVersionPointer(pointer, division_id);
+    const version = pointer || (await this.getLatestPointer(division_id));
     if (!version) return [0, []];
     const keys = this.getCacheKeys(version, division_id);
 
@@ -210,11 +210,11 @@ export class ScoreboardDataLoader {
   }
 
   async getChallengeSolves(
-    pointer: string | number,
+    pointer: number,
     division_id: number,
     challenge: number,
   ): Promise<Solve[]> {
-    const version = await this.getVersionPointer(pointer, division_id);
+    const version = pointer || (await this.getLatestPointer(division_id));
     if (!version) return [];
     const keys = this.getCacheKeys(version, division_id);
 
@@ -233,11 +233,11 @@ export class ScoreboardDataLoader {
   }
 
   async getTeam(
-    pointer: string | number,
+    pointer: number,
     division_id: number,
     team: number,
   ): Promise<ScoreboardEntry | null> {
-    const version = await this.getVersionPointer(pointer, division_id);
+    const version = pointer || (await this.getLatestPointer(division_id));
     if (!version) return null;
     const keys = this.getCacheKeys(version, division_id);
     return this.getTeamCoalescer.get(
@@ -259,6 +259,7 @@ export class ScoreboardDataLoader {
     division_id: number,
     scoreboard: ScoreboardEntry[],
     challenges: Map<number, ComputedChallengeScoreData>,
+    latest?: boolean,
   ): Promise<ScoreboardVersionData> {
     const client = await this.factory.getClient();
     const keys = this.getCacheKeys(version, division_id);
@@ -304,31 +305,30 @@ export class ScoreboardDataLoader {
       multi.expire(key, 300);
     }
     await multi.exec();
+    const out = { division_id, version };
 
-    return {
-      division_id,
-      version,
-    };
+    if (latest) this.saveLatestPointer(out);
+    return out;
   }
 
-  async getVersionPointer(pointer: string | number, division_id: number) {
-    if (typeof pointer === "number") return pointer;
+  async getLatestPointer(division_id: number) {
     return (
-      await this.pointerCache.load(`${pointer}:${division_id}`, async () => {
+      await this.latestPointerCache.load(division_id, async () => {
         const client = await this.factory.getClient();
         const result = await client.get(
-          `${this.getDivisionString(division_id)}:p:${pointer}`,
+          `${this.getDivisionString(division_id)}:latest`,
         );
         return result ? (JSON.parse(result) as ScoreboardVersionData) : null;
       })
     )?.version;
   }
 
-  async saveVersionPointer(pointer: string, data: ScoreboardVersionData) {
+  private async saveLatestPointer(data: ScoreboardVersionData) {
     const client = await this.factory.getClient();
     await client.set(
-      `${this.getDivisionString(data.division_id)}:p:${pointer}`,
+      `${this.getDivisionString(data.division_id)}:latest`,
       JSON.stringify(data),
+      { EX: 300 },
     );
   }
 
