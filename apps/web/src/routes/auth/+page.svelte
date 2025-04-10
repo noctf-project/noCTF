@@ -3,7 +3,6 @@
   import { toasts } from "$lib/stores/toast";
   import { performRedirect } from "$lib/utils/url";
   import Icon from "@iconify/svelte";
-  import { onMount } from "svelte";
 
   type FlowStage =
     | "email"
@@ -39,7 +38,7 @@
   ];
 
   // const emailVerificationEnabled = wrapLoadable(api.GET("/admin/challenges"));
-  let emailVerificationEnabled = $state(false); // This should be set based on your config
+  let emailVerificationEnabled = $state(true); // This should be set based on your config
 
   function successRedirect() {
     if (redirectParam) {
@@ -75,7 +74,10 @@
       });
 
       if (checkEmailRes.error) {
-        toasts.error(checkEmailRes.error.message ?? "An unexpected error occurred when validating email. Please try again later.");
+        toasts.error(
+          checkEmailRes.error.message ??
+            "An unexpected error occurred when validating email. Please try again later.",
+        );
         isLoading = false;
         return;
       }
@@ -133,7 +135,10 @@
       });
 
       if (loginRes.error) {
-        toasts.error(loginRes.error.message ?? "An unexpected error occurred when logging in. Please try again later.");
+        toasts.error(
+          loginRes.error.message ??
+            "An unexpected error occurred when logging in. Please try again later.",
+        );
         isLoading = false;
         return;
       }
@@ -165,7 +170,10 @@
       });
 
       if (registerRes.error) {
-        toasts.error(registerRes.error.message || 'An error occured during registration. Please try again later.');
+        toasts.error(
+          registerRes.error.message ||
+            "An error occured during registration. Please try again later.",
+        );
         console.error(registerRes.error);
         isLoading = false;
         return;
@@ -192,7 +200,7 @@
     //   return;
     // }
     try {
-    //   isLoading = true;
+      //   isLoading = true;
       // Replace with your actual API endpoint for initiating password reset
       // const resetReq = await api.POST("/auth/password/reset/init", {
       //   body: { email },
@@ -507,10 +515,7 @@
           <button
             class="btn btn-primary w-full mt-6 shadow-solid"
             type="submit"
-            disabled={isLoading ||
-              !username ||
-              !password 
-              }
+            disabled={isLoading || !username || !password}
           >
             {#if isLoading}
               <span class="loading loading-spinner loading-sm"></span>
@@ -523,9 +528,7 @@
 
       {#if currentStage === "verification-sent"}
         <div class="pb-4 flex flex-col items-center">
-          <div
-            class="rounded-full flex items-center justify-center pb-4"
-          >
+          <div class="rounded-full flex items-center justify-center pb-4">
             <Icon icon="material-symbols:mail-outline" class="text-4xl" />
           </div>
 
@@ -593,14 +596,9 @@
       {/if}
 
       {#if currentStage === "forgot-password-sent"}
-        <div class="py-4 flex flex-col items-center">
-          <div
-            class="w-16 h-16 bg-success/20 text-success rounded-full flex items-center justify-center mb-4"
-          >
-            <Icon
-              icon="material-symbols:mark-email-outline"
-              class="w-16 h-16"
-            />
+        <div class="pb-4 flex flex-col items-center">
+          <div class="rounded-full flex items-center justify-center mb-4">
+            <Icon icon="material-symbols:mail-outline" class="text-4xl" />
           </div>
 
           <p class="text-center mb-4">
