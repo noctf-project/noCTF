@@ -7,16 +7,18 @@ import {
   FinishAuthResponse,
   RegisterAuthTokenResponse,
 } from "@noctf/api/responses";
-import type { AuthRegisterToken } from "@noctf/api/token";
-import { BadRequestError } from "@noctf/server-core/errors";
+import { BadRequestError, ForbiddenError } from "@noctf/server-core/errors";
 import type { FastifyInstance } from "fastify";
 import { Generate } from "./hash_util.ts";
 import type { AssociateIdentity } from "@noctf/server-core/services/identity";
 import { NOCTF_SESSION_COOKIE } from "./const.ts";
+import { TokenProvider } from "./token_provider.ts";
 
 export default async function (fastify: FastifyInstance) {
-  const { identityService, userService, lockService } =
+  const { identityService, userService, lockService, cacheService } =
     fastify.container.cradle;
+
+  const tokenProvider = new TokenProvider({ cacheService });
 
   fastify.post<{
     Body: RegisterAuthTokenRequest;
@@ -35,10 +37,7 @@ export default async function (fastify: FastifyInstance) {
     },
     async (request) => {
       return {
-        data: (await identityService.validateToken(
-          request.body.token,
-          "register",
-        )) as AuthRegisterToken,
+        data: await tokenProvider.lookup("register", request.body.token)
       };
     },
   );
@@ -60,15 +59,13 @@ export default async function (fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const { password, name, token } = request.body;
-      const parsed = (await identityService.validateToken(
-        token,
-        "register",
-      )) as AuthRegisterToken;
+      const data = await tokenProvider.lookup("register", token);
       const id = await lockService.withLease(
-        `token:register:${parsed.jti}`,
+        `token:register:${token}`,
         async () => {
-          const roles = parsed.roles;
-          let identity = parsed.identity as AssociateIdentity[];
+          console.log(data);
+          const roles = data.roles;
+          let identity = data.identity as AssociateIdentity[];
           if (
             identity.length === 1 &&
             identity[0].provider === "email" &&

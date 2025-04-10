@@ -13,12 +13,10 @@ import {
   ScoreboardEntry,
   TeamSummary,
   Solve,
-  TypeDate,
-  Award,
   Submission,
   Division,
 } from "./datatypes.ts";
-import { AuthRegisterToken, AuthTokenType } from "./token.ts";
+import { AuthTokenType, RegisterTokenData } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
 
 export const BaseResponse = Type.Object({
@@ -55,14 +53,14 @@ export type InitAuthOauthResponse = Static<typeof InitAuthOauthResponse>;
 
 export const FinishAuthResponse = Type.Object({
   data: Type.Object({
-    type: AuthTokenType,
+    type: Type.Union([AuthTokenType, Type.Literal("register"), Type.Literal("associate")]),
     token: Type.String(),
   }),
 });
 export type FinishAuthResponse = Static<typeof FinishAuthResponse>;
 
 export const RegisterAuthTokenResponse = Type.Object({
-  data: Type.Omit(AuthRegisterToken, ["type"]),
+  data: Type.Omit(RegisterTokenData, ["type"]),
 });
 export type RegisterAuthTokenResponse = Static<
   typeof RegisterAuthTokenResponse
@@ -298,3 +296,5 @@ export const ListDivisionsResponse = Type.Object({
   ),
 });
 export type ListDivisionsResponse = Static<typeof ListDivisionsResponse>;
+
+

@@ -60,13 +60,6 @@ export class IdentityService {
           "scoped",
           2 * 3600,
         );
-      case "associate":
-      case "register":
-        return this.tokenService.sign(
-          { roles: result.roles, identity: result.identity },
-          result.aud,
-          30 * 60,
-        );
       default:
         throw new ValidationError("invalid token type");
     }

@@ -6,10 +6,14 @@ import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
 import { PasswordProvider } from "./password_provider.ts";
 import type { FastifyInstance } from "fastify";
 import { NOCTF_SESSION_COOKIE } from "./const.ts";
+import { NotFoundError } from "@noctf/server-core/errors";
+import { UserFlag } from "@noctf/server-core/types/enums";
+import { TokenProvider } from "./token_provider.ts";
 
 export default async function (fastify: FastifyInstance) {
-  const { identityService } = fastify.container.cradle;
+  const { identityService, cacheService } = fastify.container.cradle;
   const passwordProvider = new PasswordProvider(fastify.container.cradle);
+  const tokenProvider = new TokenProvider({ cacheService });
 
   fastify.post<{
     Body: InitAuthEmailRequest;
@@ -30,13 +34,22 @@ export default async function (fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const email = request.body.email.toLowerCase();
-      const result = await passwordProvider.authPreCheck(email);
-      const { validate_email } = await passwordProvider.getConfig();
-      if (!result) {
+      try {
+        await passwordProvider.authPreCheck(email);
         return {};
+      } catch (e) {
+        if (!(e instanceof NotFoundError)) throw e;
       }
-
-      const token = identityService.generateToken(result);
+      const { validate_email } = await passwordProvider.getConfig();
+      const token = await tokenProvider.create('register', {
+        identity: [
+          {
+            provider: "email",
+            provider_id: email,
+          },
+        ],
+        roles: validate_email ? [UserFlag.VALID_EMAIL] : [],
+      });
       if (validate_email) {
         // TODO: send registration email
         return {
