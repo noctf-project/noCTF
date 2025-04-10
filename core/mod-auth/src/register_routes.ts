@@ -37,7 +37,7 @@ export default async function (fastify: FastifyInstance) {
     },
     async (request) => {
       return {
-        data: await tokenProvider.lookup("register", request.body.token)
+        data: await tokenProvider.lookup("register", request.body.token),
       };
     },
   );

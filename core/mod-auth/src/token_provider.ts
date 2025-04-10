@@ -5,6 +5,22 @@ import { createHash, randomUUID } from "node:crypto";
 
 type Props = Pick<ServiceCradle, "cacheService">;
 
+export type StateTokenData = {
+  name: string;
+};
+
+type TokenDataMap = {
+  register: RegisterTokenData;
+  associate: RegisterTokenData;
+  state: StateTokenData;
+};
+
+const TOKEN_EXPIRY_SECONDS: Record<keyof TokenDataMap, number> = {
+  register: 3600,
+  associate: 3600,
+  state: 300,
+};
+
 const CACHE_NAMESPACE = "core:auth:token";
 
 export class TokenProvider {
@@ -14,30 +30,44 @@ export class TokenProvider {
     this.cacheService = cacheService;
   }
 
-  async lookup(type: "register"|"associate", token: string): Promise<RegisterTokenData> {
+  async lookup<T extends keyof TokenDataMap>(
+    type: T,
+    token: string,
+  ): Promise<TokenDataMap[T]> {
     const hash = TokenProvider.hash(token);
-    const result = await this.cacheService
-      .get<RegisterTokenData>(CACHE_NAMESPACE,`${type}:${hash}`);
+    const result = await this.cacheService.get<TokenDataMap[T]>(
+      CACHE_NAMESPACE,
+      `${type}:${hash}`,
+    );
     if (!result) throw new ForbiddenError("Invalid token");
     return result;
   }
 
-  async create(type: "register"|"associate", data: RegisterTokenData): Promise<string> {
+  async create<T extends keyof TokenDataMap>(
+    type: T,
+    data: TokenDataMap[T],
+  ): Promise<string> {
     const token = randomUUID();
     const hash = TokenProvider.hash(token);
-    await this.cacheService
-      .put<RegisterTokenData>(CACHE_NAMESPACE,`${type}:${hash}`, data, 3600);
+    await this.cacheService.put(
+      CACHE_NAMESPACE,
+      `${type}:${hash}`,
+      data,
+      TOKEN_EXPIRY_SECONDS[type],
+    );
     return token;
   }
 
-  async invalidate(type: "register"|"associate", token: string) {
+  async invalidate(type: keyof TokenDataMap, token: string) {
     const hash = TokenProvider.hash(token);
-    const result = await this.cacheService
-      .del(CACHE_NAMESPACE,`${type}:${hash}`);
+    const result = await this.cacheService.del(
+      CACHE_NAMESPACE,
+      `${type}:${hash}`,
+    );
     if (!result) throw new ForbiddenError("Token already revoked");
   }
 
   private static hash(token: string) {
-    return createHash("sha256").update(token, 'utf-8').digest('base64url');
+    return createHash("sha256").update(token, "utf-8").digest("base64url");
   }
 }

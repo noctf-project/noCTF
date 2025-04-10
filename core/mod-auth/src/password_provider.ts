@@ -7,15 +7,11 @@ import type {
 import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
 import type { AuthToken } from "@noctf/api/token";
 import { Validate } from "./hash_util.ts";
-import type { Logger } from "@noctf/server-core/types/primitives";
 import type { ServiceCradle } from "@noctf/server-core";
 import { AuthConfig } from "@noctf/api/config";
-import { UserFlag } from "@noctf/server-core/types/enums";
+import { UserNotFoundError } from "./error.ts";
 
-type Props = Pick<
-  ServiceCradle,
-  "configService" | "identityService"
->;
+type Props = Pick<ServiceCradle, "configService" | "identityService">;
 
 export class PasswordProvider implements IdentityProvider {
   private configService: ConfigService;
@@ -54,12 +50,7 @@ export class PasswordProvider implements IdentityProvider {
       email,
     );
     if (!identity) {
-      if (!enable_register_password) {
-        throw new AuthenticationError(
-          "New user registration is currently not available through this provider",
-        );
-      }
-      throw new NotFoundError("User not found");
+      throw new UserNotFoundError("User not found");
     }
     if (!identity.secret_data) {
       throw new AuthenticationError(

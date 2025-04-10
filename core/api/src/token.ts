@@ -22,14 +22,8 @@ export const AuthScopedToken = Type.Object({
 });
 export type AuthScopedToken = Static<typeof AuthScopedToken>;
 
-
-
-export const AuthToken = Type.Union([
-  AuthSessionToken,
-  AuthScopedToken,
-]);
+export const AuthToken = Type.Union([AuthSessionToken, AuthScopedToken]);
 export type AuthToken = Static<typeof AuthToken>;
-
 
 export const RegisterTokenData = Type.Object({
   identity: Type.Array(

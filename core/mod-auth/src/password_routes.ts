@@ -9,6 +9,7 @@ import { NOCTF_SESSION_COOKIE } from "./const.ts";
 import { NotFoundError } from "@noctf/server-core/errors";
 import { UserFlag } from "@noctf/server-core/types/enums";
 import { TokenProvider } from "./token_provider.ts";
+import { UserNotFoundError } from "./error.ts";
 
 export default async function (fastify: FastifyInstance) {
   const { identityService, cacheService } = fastify.container.cradle;
@@ -33,15 +34,17 @@ export default async function (fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
+      const { validate_email, enable_register_password } =
+        await passwordProvider.getConfig();
       const email = request.body.email.toLowerCase();
       try {
         await passwordProvider.authPreCheck(email);
         return {};
       } catch (e) {
-        if (!(e instanceof NotFoundError)) throw e;
+        if (!(e instanceof UserNotFoundError) || !enable_register_password)
+          throw e;
       }
-      const { validate_email } = await passwordProvider.getConfig();
-      const token = await tokenProvider.create('register', {
+      const token = await tokenProvider.create("register", {
         identity: [
           {
             provider: "email",

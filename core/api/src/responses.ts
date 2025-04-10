@@ -53,7 +53,11 @@ export type InitAuthOauthResponse = Static<typeof InitAuthOauthResponse>;
 
 export const FinishAuthResponse = Type.Object({
   data: Type.Object({
-    type: Type.Union([AuthTokenType, Type.Literal("register"), Type.Literal("associate")]),
+    type: Type.Union([
+      AuthTokenType,
+      Type.Literal("register"),
+      Type.Literal("associate"),
+    ]),
     token: Type.String(),
   }),
 });
@@ -296,5 +300,3 @@ export const ListDivisionsResponse = Type.Object({
   ),
 });
 export type ListDivisionsResponse = Static<typeof ListDivisionsResponse>;
-
-
