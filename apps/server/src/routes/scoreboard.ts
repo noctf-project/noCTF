@@ -58,6 +58,7 @@ export async function routes(fastify: FastifyInstance) {
         request.params.id,
         (page - 1) * page_size,
         page * page_size - 1,
+        request.query.tags,
       );
       return {
         data: {

@@ -35,6 +35,7 @@ export class ScoreHistoryDAO {
   }
 
   async getByTeams(teamId: number[], startTime?: Date, endTime?: Date) {
+    if (!teamId.length) return [];
     let query = this.db
       .selectFrom("score_history")
       .select(["team_id", "score", "updated_at"])

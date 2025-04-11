@@ -26,7 +26,7 @@ export class DivisionDAO {
   }
 
   async get(id: number): Promise<Division> {
-    return this.listQuery().where("id", "=", id).executeTakeFirst();
+    return this.listQuery().where("id", "=", id).executeTakeFirstOrThrow();
   }
 
   private listQuery() {
