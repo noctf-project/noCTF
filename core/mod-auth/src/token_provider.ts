@@ -67,7 +67,7 @@ export class TokenProvider {
     if (!result) throw new ForbiddenError("Token already revoked");
   }
 
-  private static hash(token: string) {
+  static hash(token: string) {
     return createHash("sha256").update(token, "utf-8").digest("base64url");
   }
 }

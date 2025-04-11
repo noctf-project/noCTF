@@ -56,11 +56,11 @@ export default async function (fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (request) => {
       const { password, name, token } = request.body;
       const data = await tokenProvider.lookup("register", token);
       const id = await lockService.withLease(
-        `token:register:${token}`,
+        `token:register:${TokenProvider.hash(token)}`,
         async () => {
           const roles = data.roles;
           let identity = data.identity as AssociateIdentity[];
