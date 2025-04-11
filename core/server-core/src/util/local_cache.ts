@@ -9,11 +9,11 @@ export class LocalCache<K = unknown, V = unknown> {
     this.cache = new TTLCache<K, V | Promise<V>>(opts);
   }
 
-  async load(
+  load(
     key: K,
     loader: () => V | Promise<V>,
     setTTL?: ((v: V) => TTLOptions | undefined) | TTLOptions | undefined,
-  ): Promise<V> {
+  ): V | Promise<V> {
     let p = this.cache.get(key);
     if (typeof p === "undefined") {
       p = loader();
@@ -21,18 +21,31 @@ export class LocalCache<K = unknown, V = unknown> {
     } else {
       return p;
     }
-    try {
-      const v = await p;
+    if (!(p instanceof Promise)) {
       this.cache.set(
         key,
-        v,
-        setTTL && (typeof setTTL === "function" ? setTTL(v) : setTTL),
+        p,
+        setTTL && (typeof setTTL === "function" ? setTTL(p) : setTTL),
       );
-      return v;
-    } catch (e) {
-      this.cache.delete(key);
-      throw e;
+      return p;
     }
+    return p
+      .then((v) => {
+        this.cache.set(
+          key,
+          v,
+          setTTL && (typeof setTTL === "function" ? setTTL(v) : setTTL),
+        );
+        return v;
+      })
+      .catch((e) => {
+        this.cache.delete(key);
+        throw e;
+      });
+  }
+
+  delete(key: K) {
+    this.cache.delete(key);
   }
 
   static disposeMetricsHook<K, V>(

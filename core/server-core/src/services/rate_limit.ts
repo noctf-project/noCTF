@@ -51,7 +51,7 @@ export class RateLimitService {
       const blocked = this.blocked.getRemainingTTL(key);
       if (blocked) maxBlocked = Math.max(maxBlocked, blocked);
     }
-    if (maxBlocked) return now + maxBlocked;
+    if (maxBlocked) return maxBlocked;
 
     const data = await this._read(now, buckets);
 
@@ -63,18 +63,17 @@ export class RateLimitService {
       // the request rate is equal number of requests in the current minute
       // plus an interpolated number of requests in the last minute using
       // linear decay (i.e. if we have 60 requests per min)
+      const current = read[1] + write;
       const estimate =
         (read[0] * (windowSeconds - (now % windowSeconds))) / windowSeconds +
-        read[1] +
-        write +
+        current +
         1;
       if (estimate >= limit) {
         const diff = estimate - limit;
         const ttl = Math.floor(
-          Math.min(
-            windowSeconds,
-            Math.max(diff / estimate, 0) * windowSeconds,
-          ) * 1000,
+          Math.min(diff / read[0], 1) *
+            (windowSeconds - (now % windowSeconds)) *
+            1000,
         );
         if (ttl > 0) {
           this.blocked.set(key, 1, { ttl });
@@ -82,7 +81,7 @@ export class RateLimitService {
         }
       }
     }
-    if (maxBlocked) return now + maxBlocked;
+    if (maxBlocked) return maxBlocked;
     for (const { key } of buckets) {
       this.writes.set(key, (this.writes.get(key) || 0) + 1);
     }

@@ -111,12 +111,13 @@ export function ComputeScoreboard(
 } {
   // score, followed by date of last solve for tiebreak purposes
   const teamScores: Map<number, ScoreboardEntry> = new Map(
-    teams.values().map(({ id, flags }) => [
+    teams.values().map(({ id, flags, tag_ids }) => [
       id,
       {
         score: 0,
         team_id: id,
         rank: 0,
+        tag_ids: tag_ids.sort(),
         updated_at: new Date(0),
         last_solve: new Date(0),
         hidden: flags.includes("hidden"),
