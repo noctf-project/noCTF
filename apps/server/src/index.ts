@@ -57,6 +57,7 @@ server.register(fastifyMultipart);
 server.register(fastifyCors, {
   origin: ALLOWED_ORIGINS,
   credentials: true,
+  maxAge: 86400
 });
 
 server.register(async () => {
