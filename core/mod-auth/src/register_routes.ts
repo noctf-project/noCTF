@@ -7,11 +7,10 @@ import {
   FinishAuthResponse,
   RegisterAuthTokenResponse,
 } from "@noctf/api/responses";
-import { BadRequestError, ForbiddenError } from "@noctf/server-core/errors";
+import { BadRequestError } from "@noctf/server-core/errors";
 import type { FastifyInstance } from "fastify";
 import { Generate } from "./hash_util.ts";
 import type { AssociateIdentity } from "@noctf/server-core/services/identity";
-import { NOCTF_SESSION_COOKIE } from "./const.ts";
 import { TokenProvider } from "./token_provider.ts";
 
 export default async function (fastify: FastifyInstance) {
@@ -117,12 +116,6 @@ export default async function (fastify: FastifyInstance) {
       const sessionToken = identityService.generateToken({
         aud: "session",
         sub: id,
-      });
-      reply.setCookie(NOCTF_SESSION_COOKIE, sessionToken, {
-        path: "/",
-        secure: true,
-        httpOnly: true,
-        sameSite: true,
       });
       return {
         data: {

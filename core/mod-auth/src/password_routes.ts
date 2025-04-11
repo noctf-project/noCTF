@@ -91,12 +91,6 @@ export default async function (fastify: FastifyInstance) {
       const token = await passwordProvider.authenticate(email, password);
 
       const sessionToken = identityService.generateToken(token);
-      reply.setCookie(NOCTF_SESSION_COOKIE, sessionToken, {
-        path: "/",
-        secure: true,
-        httpOnly: true,
-        sameSite: true,
-      });
 
       return {
         data: {
