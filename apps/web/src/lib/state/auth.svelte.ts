@@ -1,4 +1,4 @@
-import api from "$lib/api/index.svelte";
+import api, { SESSION_TOKEN_KEY } from "$lib/api/index.svelte";
 
 interface User {
   id: number;
@@ -24,7 +24,12 @@ class AuthState {
   }
 
   async logout() {
-    await api.POST("/auth/logout");
+    try {
+      await api.POST("/auth/logout");
+    } finally {
+      // TODO: make this into a module
+      localStorage.removeItem(SESSION_TOKEN_KEY);
+    }
     window.location.href = "/";
   }
 }
