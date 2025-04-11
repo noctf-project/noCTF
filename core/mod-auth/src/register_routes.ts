@@ -62,7 +62,6 @@ export default async function (fastify: FastifyInstance) {
       const id = await lockService.withLease(
         `token:register:${token}`,
         async () => {
-          console.log(data);
           const roles = data.roles;
           let identity = data.identity as AssociateIdentity[];
           if (
