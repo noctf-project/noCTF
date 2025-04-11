@@ -38,7 +38,7 @@
   ];
 
   // const emailVerificationEnabled = wrapLoadable(api.GET("/admin/challenges"));
-  let emailVerificationEnabled = $state(true); // This should be set based on your config
+  let emailVerificationEnabled = $state(false); // This should be set based on your config
 
   function successRedirect() {
     if (redirectParam) {
@@ -373,6 +373,7 @@
             </label>
             <div class="relative">
               <input
+                autofocus
                 id="password"
                 type={passwordVisible ? "text" : "password"}
                 placeholder="••••••••"
@@ -466,6 +467,7 @@
               <span class="label-text">Username</span>
             </label>
             <input
+              autofocus
               id="name"
               type="text"
               placeholder="Your name"
