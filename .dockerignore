@@ -1,1 +1,7 @@
-**/node_modules
+**/node_modules/
+**/dist/
+**/.svelte-kit/
+apps/server/files/
+app/server/logs/
+**/venv/
+**/__pycache__/

@@ -1,12 +1,9 @@
-import {
-  Challenge,
-  ChallengeMetadata,
-  ChallengeSolveStatus,
-} from "@noctf/api/datatypes";
+import { Challenge, ChallengeMetadata } from "@noctf/api/datatypes";
+import { SubmissionStatus } from "@noctf/api/enums";
 import { TSchema } from "@sinclair/typebox";
 
 export type SolveData = {
-  status: ChallengeSolveStatus;
+  status: SubmissionStatus;
   comment?: string;
 };
 

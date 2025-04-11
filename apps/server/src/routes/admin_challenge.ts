@@ -1,4 +1,3 @@
-import { GetChallengeParams } from "@noctf/api/params";
 import {
   AdminCreateChallengeRequest,
   AdminUpdateChallengeRequest,
@@ -13,6 +12,7 @@ import {
 import { FilterChallengesQuery } from "@noctf/api/query";
 import { ActorType } from "@noctf/server-core/types/enums";
 import type { FastifyInstance } from "fastify";
+import { IdParams } from "@noctf/api/params";
 
 export async function routes(fastify: FastifyInstance) {
   const { challengeService, scoreService } = fastify.container.cradle;
@@ -97,7 +97,7 @@ export async function routes(fastify: FastifyInstance) {
   );
 
   fastify.get<{
-    Params: GetChallengeParams;
+    Params: IdParams;
     Reply: AdminGetChallengeResponse;
   }>(
     "/admin/challenges/:id",
@@ -109,7 +109,7 @@ export async function routes(fastify: FastifyInstance) {
           require: true,
           policy: ["admin.challenge.create"],
         },
-        params: GetChallengeParams,
+        params: IdParams,
         response: {
           200: AdminGetChallengeResponse,
         },
@@ -123,7 +123,7 @@ export async function routes(fastify: FastifyInstance) {
   );
 
   fastify.put<{
-    Params: GetChallengeParams;
+    Params: IdParams;
     Body: AdminUpdateChallengeRequest;
     Reply: AdminUpdateChallengeResponse;
   }>(
@@ -136,7 +136,7 @@ export async function routes(fastify: FastifyInstance) {
           require: true,
           policy: ["admin.challenge.update"],
         },
-        params: GetChallengeParams,
+        params: IdParams,
         body: AdminUpdateChallengeRequest,
         response: {
           200: AdminUpdateChallengeResponse,
@@ -163,7 +163,7 @@ export async function routes(fastify: FastifyInstance) {
   );
 
   fastify.delete<{
-    Params: GetChallengeParams;
+    Params: IdParams;
   }>(
     "/admin/challenges/:id",
     {
@@ -174,7 +174,7 @@ export async function routes(fastify: FastifyInstance) {
           require: true,
           policy: ["admin.challenge.delete"],
         },
-        params: GetChallengeParams,
+        params: IdParams,
       },
     },
     async (request) => {

@@ -5,6 +5,7 @@ import {
   TokenValidationError,
 } from "@noctf/server-core/errors";
 import { NOCTF_SESSION_COOKIE } from "@noctf/mod-auth/const";
+import { CreateThenable } from "@noctf/server-core/util/promises";
 
 const parseCookie = (str: string) =>
   str
@@ -35,15 +36,21 @@ export const AuthnHook = async (request: FastifyRequest) => {
     return;
   }
 
-  const { identityService } = request.server.container.cradle;
-  let tokenData;
+  const { identityService, teamService } = request.server.container.cradle;
+  let tokenData: AuthSessionToken | AuthScopedToken;
   try {
-    tokenData = await identityService.validateToken<
-      AuthSessionToken | AuthScopedToken
-    >(token, ["scoped", "session"], { localVerifyRevocation: true });
+    tokenData = await identityService.validateToken(
+      token,
+      ["scoped", "session"],
+      { localVerifyRevocation: true },
+    );
+
     request.user = {
       id: tokenData.sub,
       token,
+      membership: CreateThenable(() =>
+        teamService.getMembershipForUser(tokenData.sub),
+      ),
     };
   } catch (e) {
     if (!require && e instanceof TokenValidationError) {

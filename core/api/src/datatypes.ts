@@ -1,5 +1,6 @@
 import type { Static } from "@sinclair/typebox";
 import { Type } from "@sinclair/typebox";
+import { SubmissionStatus } from "./enums.ts";
 
 export const TypeDate = Type.Transform(
   Type.Unsafe<Date>({
@@ -37,6 +38,10 @@ export const Team = Type.Object({
   id: Type.Number(),
   name: Type.String({ maxLength: 64 }),
   bio: Type.String({ maxLength: 256 }),
+  country: Type.Union([
+    Type.String({ minLength: 3, maxLength: 3 }),
+    Type.Null(),
+  ]),
   join_code: Type.Union([Type.String({ maxLength: 64 }), Type.Null()]),
   division_id: Type.Number(),
   flags: Type.Array(Type.String()),
@@ -230,18 +235,80 @@ export const Solve = Type.Object(
 );
 export type Solve = Static<typeof Solve>;
 
-export enum ChallengeSolveStatus {
-  Queued = "queued",
-  Incorrect = "incorrect",
-  Correct = "correct",
-}
+export const Award = Type.Object(
+  {
+    id: Type.Number(),
+    team_id: Type.Number(),
+    title: Type.String(),
+    value: Type.Number(),
+    created_at: TypeDate,
+  },
+  { additionalProperties: false },
+);
+export type Award = Static<typeof Award>;
 
 export const ScoreboardEntry = Type.Object({
-  team_id: Type.Number(),
+  team_id: Type.Integer(),
   score: Type.Number(),
-  timestamp: TypeDate,
+  rank: Type.Integer(),
+  last_solve: TypeDate,
+  updated_at: TypeDate,
+  hidden: Type.Boolean(),
+  solves: Type.Array(Type.Omit(Solve, ["team_id"])),
+  awards: Type.Array(Type.Omit(Award, ["team_id"])),
 });
 export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 
+export const TeamSummary = Type.Composite([
+  Type.Omit(Team, ["join_code"]),
+  Type.Object({
+    num_members: Type.Integer(),
+  }),
+]);
+export type TeamSummary = Static<typeof TeamSummary>;
+
 export const PublicTeam = Type.Omit(Team, ["join_code", "flags"]);
 export type PublicTeam = Static<typeof PublicTeam>;
+
+export const Submission = Type.Object({
+  id: Type.Number(),
+  user_id: Type.Union([Type.Number(), Type.Null()]),
+  team_id: Type.Number(),
+  challenge_id: Type.Number(),
+  data: Type.String({ maxLength: 512 }),
+  comments: Type.String({ maxLength: 512 }),
+  source: Type.String({ maxLength: 64 }),
+  hidden: Type.Boolean(),
+  status: SubmissionStatus,
+  created_at: TypeDate,
+  updated_at: TypeDate,
+});
+export type Submission = Static<typeof Submission>;
+
+export const LimitOffset = Type.Object(
+  {
+    limit: Type.Optional(Type.Integer({ minimum: 1 })),
+    offset: Type.Optional(Type.Number({ minimum: 0 })),
+  },
+  { additionalProperties: false },
+);
+export type LimitOffset = Static<typeof LimitOffset>;
+
+export const Division = Type.Object({
+  id: Type.Number(),
+  name: Type.String({ maxLength: 128 }),
+  slug: Type.String({ maxLength: 64 }),
+  description: Type.String({ maxLength: 512 }),
+  is_visible: Type.Boolean(),
+  is_joinable: Type.Boolean(),
+  password: Type.String({ maxLength: 64 }),
+  created_at: TypeDate,
+});
+export type Division = Static<typeof Division>;
+
+export const TeamMembership = Type.Object({
+  division_id: Type.Number(),
+  role: Type.Union([Type.Literal("owner"), Type.Literal("member")]),
+  team_id: Type.Number(),
+});
+export type TeamMembership = Static<typeof TeamMembership>;

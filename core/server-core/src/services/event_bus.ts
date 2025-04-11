@@ -10,7 +10,7 @@ import {
 import type { NATSClientFactory } from "../clients/nats.ts";
 import type { Metric } from "../clients/metrics.ts";
 import { SimpleMutex } from "nats/lib/nats-base-client/util.js";
-import { decode, encode } from "cbor2";
+import { decode, encode } from "cbor-x";
 import { Compress, Decompress } from "../util/message_compression.ts";
 
 type Props = Pick<

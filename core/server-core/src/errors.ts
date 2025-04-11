@@ -70,3 +70,9 @@ export class ConflictError extends ApplicationError {
     super(409, "ConflictError", message || "Conflict", options);
   }
 }
+
+export class TooManyRequestsError extends ApplicationError {
+  constructor(message: string, options?: ErrorOptions) {
+    super(429, "TooManyRequestsError", message, options);
+  }
+}

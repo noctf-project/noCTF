@@ -2,8 +2,8 @@ import { TokenValidationError } from "../errors.ts";
 import jwt from "jsonwebtoken";
 import { nanoid } from "nanoid";
 import type { ServiceCradle } from "../index.ts";
-import type { SerializableMap } from "../types/primitives.ts";
 import { LocalCache } from "../util/local_cache.ts";
+import type { SerializableMap } from "@noctf/api/types";
 
 type Props = Pick<ServiceCradle, "cacheService" | "logger"> & {
   secret: string;
@@ -26,7 +26,7 @@ export class TokenService {
   private logger: Props["logger"];
   private localCache = new LocalCache<string, boolean>({
     max: 10000,
-    ttl: 1000,
+    ttl: 5000,
   });
 
   constructor({ secret, cacheService: cacheService, logger }: Props) {

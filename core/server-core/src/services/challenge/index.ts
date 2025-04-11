@@ -7,7 +7,6 @@ import type { ServiceCradle } from "../../index.ts";
 import type { AuditLogActor } from "../../types/audit_log.ts";
 import type { ChallengePublicMetadataBase } from "@noctf/api/datatypes";
 import {
-  ChallengeSolveStatus,
   type Challenge,
   type ChallengeMetadata,
   type PublicChallenge,
@@ -21,9 +20,10 @@ import {
 } from "../../errors.ts";
 import type { SomeJSONSchema } from "ajv/dist/types/json-schema.js";
 import { SubmissionDAO } from "../../dao/submission.ts";
-import { CACHE_SCORE_NAMESPACE } from "../scoreboard/index.ts";
 import { ChallengePlugin } from "./types.ts";
 import { CoreChallengePlugin } from "./core_plugin.ts";
+import { LocalCache } from "../../util/local_cache.ts";
+import type { SerializableMap } from "@noctf/api/types";
 
 type Props = Pick<
   ServiceCradle,
@@ -36,16 +36,19 @@ type Props = Pick<
   | "scoreService"
 >;
 
-const CACHE_NAMESPACE = "core:svc:challenge";
-
 export class ChallengeService {
   private readonly logger;
   private readonly auditLogService;
-  private readonly cacheService;
   private readonly eventBusService;
   private readonly challengeDAO;
   private readonly submissionDAO;
   private readonly ajv = new Ajv();
+  private readonly listCache = new LocalCache<string, ChallengeMetadata[]>({
+    ttl: 5000,
+  });
+  private readonly getCache = new LocalCache<number, Challenge>({
+    ttl: 5000,
+  });
   private privateMetadataSchema: SomeJSONSchema;
   private privateMetadataSchemaValidator: ValidateFunction;
 
@@ -54,7 +57,6 @@ export class ChallengeService {
   constructor({
     logger,
     auditLogService,
-    cacheService,
     databaseClient,
     eventBusService,
     fileService,
@@ -62,7 +64,6 @@ export class ChallengeService {
   }: Props) {
     this.logger = logger;
     this.auditLogService = auditLogService;
-    this.cacheService = cacheService;
     this.eventBusService = eventBusService;
 
     this.challengeDAO = new ChallengeDAO(databaseClient.get());
@@ -105,7 +106,6 @@ export class ChallengeService {
     if (v.private_metadata)
       await this.validatePrivateMetadata(v.private_metadata);
     const { version } = await this.challengeDAO.update(id, v);
-    await this.cacheService.del(CACHE_NAMESPACE, [`c:${id}`, `m:${id}`]);
     await this.auditLogService.log({
       operation: "challenge.update",
       actor,
@@ -139,18 +139,12 @@ export class ChallengeService {
     if (!options?.cacheKey) {
       return fn();
     }
-    return this.cacheService.load(
-      CACHE_NAMESPACE,
-      `list:${options?.cacheKey}`,
-      fn,
-    );
+    return this.listCache.load(`list:${options?.cacheKey}`, fn);
   }
 
   async get(id: number, cached = false): Promise<Challenge> {
     if (cached) {
-      return this.cacheService.load(CACHE_NAMESPACE, `c:${id}`, () =>
-        this.challengeDAO.get(id),
-      );
+      return this.getCache.load(id, () => this.challengeDAO.get(id));
     }
     return this.challengeDAO.get(id);
   }
@@ -164,10 +158,11 @@ export class ChallengeService {
     teamId: number,
     userId: number,
     data: string,
+    metadata?: SerializableMap,
   ) {
     let challenge;
     if (typeof ch === "number") {
-      challenge = await this.getMetadata(ch);
+      challenge = await this.get(ch, true);
     } else {
       challenge = ch;
     }
@@ -188,38 +183,26 @@ export class ChallengeService {
         { name: impl.name() },
         "Presolve plugin returned a valid result",
       );
-      const solved = state.status === ChallengeSolveStatus.Correct;
+      const solved = state.status === "correct";
       this.submissionDAO.create({
         team_id: teamId,
         user_id: userId,
         challenge_id: challenge.id,
         source: challenge.private_metadata.solve.source,
         data,
-        queued: state.status === ChallengeSolveStatus.Queued,
-        solved,
+        status: state.status,
         comments: state.comment,
+        // eslint-disable @typescript-eslint/no-explicit-any
+        metadata: metadata as any,
       });
       if (solved) {
-        // TODO: emit solve to event bus
-        this.cacheService.del(CACHE_SCORE_NAMESPACE, "scoreboard");
-        this.cacheService.del(CACHE_SCORE_NAMESPACE, `c:${challenge.id}`);
+        // TODO: emit solve to event bus to recalc
       }
       return state.status;
       // TODO: queueing, currently it is just marked as queued. probably emit
       // TODO: to event bus
     }
     throw new NotImplementedError("The challenge is not solvable");
-  }
-
-  /**
-   * Gets the metadata of a challenge. Always returns a cached response
-   * @param id ID Or Slug
-   * @returns Challenge
-   */
-  async getMetadata(id: number) {
-    return this.cacheService.load(CACHE_NAMESPACE, `m:${id}`, () =>
-      this.challengeDAO.getMetadata(id),
-    );
   }
 
   private removePrivateTags(tags: Record<string, string>) {

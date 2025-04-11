@@ -125,7 +125,7 @@
     </div>
   {:else if apiChallenges.r.error}
     <div class="flex flex-col items-center gap-4 mt-16">
-      <p class="text-center text-error">{apiChallenges.r.error.message}</p>
+      <p class="text-center">{apiChallenges.r.error.message}</p>
       <button class="btn btn-primary" onclick={refreshChallenges}>
         Retry
       </button>

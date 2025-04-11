@@ -1,111 +1,46 @@
 import {
+  Award,
   ChallengeMetadata,
   ChallengePrivateMetadataBase,
   ScoreboardEntry,
   Solve,
 } from "@noctf/api/datatypes";
 import { Expression } from "expr-eval";
-import { DBSolve } from "../../dao/solve.ts";
 import { partition } from "../../util/object.ts";
 import { EvaluateScoringExpression } from "../score.ts";
 import { Logger } from "../../types/primitives.ts";
+import { MaxDate } from "../../util/date.ts";
+import { MinimalTeamInfo } from "../../dao/team.ts";
+import { RawSolve } from "../../dao/submission.ts";
 
 export type ChallengeMetadataWithExpr = {
   expr: Expression;
   metadata: ChallengeMetadata;
 };
 
-export type ChallengeSolvesResult = {
+type ChallengeSolvesResult = {
   score: number | null;
   solves: Solve[];
-  last_valid_solve: Date;
+  last_updated: Date;
 };
 
-export type ChallengeScore = {
+export type ComputedChallengeScoreData = {
   challenge_id: number;
   score: number;
-  solves: {
-    team_id: number;
-    score: number;
-    bonus?: number;
-    hidden: boolean;
-    created_at: Date;
-  }[];
+  solves: Solve[];
 };
 
-export function ComputeScoreboardByDivision(
-  challenges: ChallengeMetadataWithExpr[],
-  solvesByChallenge: Record<number, DBSolve[]>,
-  logger?: Logger,
-) {
-  // score, followed by date of last solve for tiebreak purposes
-  const teamScores: Map<number, { score: number; timestamp: Date }> = new Map();
-  const computed = challenges.map((x) => {
-    const result = ComputeScoresForChallenge(
-      x,
-      solvesByChallenge[x.metadata.id] || [],
-      logger,
-    );
-    return [x.metadata.id, result] as [number, ChallengeSolvesResult];
-  });
-  const challengeScores = [];
-  for (const [challenge_id, { score, solves, last_valid_solve }] of computed) {
-    const challengeSolves = [];
-    for (const solve of solves) {
-      challengeSolves.push({
-        team_id: solve.team_id,
-        hidden: solve.hidden,
-        bonus: solve.bonus,
-        score: solve.score,
-        created_at: solve.created_at,
-      });
-      if (solve.hidden) continue;
+export type ChallengeSummary = {
+  challenge_id: number;
+  score: number;
+  solve_count: number;
+  bonuses: number[];
+};
 
-      let team = teamScores.get(solve.team_id);
-      if (!team) {
-        team = {
-          score: 0,
-          timestamp: new Date(0),
-        };
-        teamScores.set(solve.team_id, team);
-      }
-      team.score += solve.score;
-      team.timestamp =
-        last_valid_solve > team.timestamp ? last_valid_solve : team.timestamp;
-    }
-    challengeScores.push({
-      challenge_id,
-      score: score || 0,
-      solves: challengeSolves,
-    });
-  }
-  const scoreboard = Array.from(
-    teamScores.entries().map(([team_id, teamScore]) => ({
-      ...teamScore,
-      team_id,
-    })),
-  );
-
-  const challengeObj = challengeScores.reduce(
-    (prev, cur) => {
-      prev[cur.challenge_id] = cur;
-      return prev;
-    },
-    {} as Record<number, ChallengeScore>,
-  );
-
-  return {
-    scoreboard: scoreboard.sort(
-      (a, b) =>
-        a.score - b.score || a.timestamp.getTime() - b.timestamp.getTime(),
-    ),
-    challenges: challengeObj,
-  };
-}
-
-export function ComputeScoresForChallenge(
+function ComputeScoresForChallenge(
   { metadata, expr }: ChallengeMetadataWithExpr,
-  solves: DBSolve[],
+  teams: Map<number, MinimalTeamInfo>,
+  solves: RawSolve[],
   logger?: Logger,
 ): ChallengeSolvesResult {
   const {
@@ -114,33 +49,41 @@ export function ComputeScoresForChallenge(
 
   const [valid, hidden] = partition(
     solves,
-    ({ team_flags, hidden }) => !(team_flags?.includes("hidden") || hidden),
+    ({ team_id, hidden }) =>
+      !(teams.get(team_id)?.flags.includes("hidden") || hidden),
   );
   try {
     const base = EvaluateScoringExpression(expr, params, valid.length);
-    let last_valid_solve = new Date(0);
-    const rv: Solve[] = valid.map(({ team_id, created_at }, i) => {
-      last_valid_solve = created_at;
+    let last_solve = new Date(0);
+    let last_updated = new Date(0);
+    const rv: Solve[] = valid.map(({ team_id, created_at, updated_at }, i) => {
+      last_solve = created_at;
+      last_updated = MaxDate(last_updated, updated_at);
+      const b = bonus?.[i];
       return {
         team_id,
         challenge_id: metadata.id,
-        bonus: bonus && i + 1,
+        bonus: b,
         hidden: false,
-        score: base + ((bonus && Math.round(bonus[i])) || 0),
+        score: base + ((b && Math.round(b)) || 0),
         created_at,
       };
     });
-    const rh: Solve[] = hidden.map(({ team_id, created_at }) => ({
-      team_id,
-      challenge_id: metadata.id,
-      hidden: true,
-      score: base,
-      created_at,
-    }));
+    const rh: Solve[] = hidden.map(({ team_id, created_at, updated_at }) => {
+      last_updated = MaxDate(last_updated, updated_at);
+
+      return {
+        team_id,
+        challenge_id: metadata.id,
+        hidden: true,
+        score: base,
+        created_at,
+      };
+    });
     return {
       score: base,
       solves: rv.concat(rh),
-      last_valid_solve,
+      last_updated,
     };
   } catch (err) {
     if (logger)
@@ -151,9 +94,110 @@ export function ComputeScoresForChallenge(
     return {
       score: null,
       solves: [],
-      last_valid_solve: new Date(0),
+      last_updated: new Date(0),
     };
   }
+}
+
+export function ComputeScoreboard(
+  teams: Map<number, MinimalTeamInfo>,
+  challenges: ChallengeMetadataWithExpr[],
+  solvesByChallenge: Record<number, RawSolve[]>,
+  awards: Award[],
+  logger?: Logger,
+): {
+  scoreboard: ScoreboardEntry[];
+  challenges: Map<number, ComputedChallengeScoreData>;
+} {
+  // score, followed by date of last solve for tiebreak purposes
+  const teamScores: Map<number, ScoreboardEntry> = new Map(
+    teams.values().map(({ id, flags }) => [
+      id,
+      {
+        score: 0,
+        team_id: id,
+        rank: 0,
+        updated_at: new Date(0),
+        last_solve: new Date(0),
+        hidden: flags.includes("hidden"),
+        solves: [],
+        awards: [],
+      },
+    ]),
+  );
+  const computed = challenges.map((x) => {
+    const result = ComputeScoresForChallenge(
+      x,
+      teams,
+      solvesByChallenge[x.metadata.id] || [],
+      logger,
+    );
+    return [x.metadata.id, result] as [number, ChallengeSolvesResult];
+  });
+  const challengeScores = [];
+  for (const [challenge_id, { score, solves, last_updated }] of computed) {
+    const challengeSolves: Solve[] = [];
+    for (const solve of solves) {
+      challengeSolves.push(solve);
+      let team = teamScores.get(solve.team_id);
+      if (!team) {
+        continue;
+      }
+      team.score += solve.hidden ? 0 : solve.score;
+      team.solves.push(solve);
+      team.last_solve = solve.hidden
+        ? team.last_solve
+        : MaxDate(solve.created_at, team.last_solve);
+      team.updated_at = solve.hidden
+        ? team.updated_at
+        : MaxDate(last_updated, team.updated_at);
+    }
+    challengeScores.push({
+      challenge_id,
+      score: score || 0,
+      solves: challengeSolves,
+    });
+  }
+
+  for (const award of awards) {
+    let team = teamScores.get(award.team_id);
+    if (!team) {
+      continue;
+    }
+    team.awards.push(award);
+    team.score += award.value;
+    team.updated_at = MaxDate(award.created_at, team.updated_at);
+  }
+
+  const scoreboard = Array.from(
+    teamScores.entries().map(([team_id, teamScore]) => ({
+      ...teamScore,
+      team_id,
+    })),
+  );
+
+  const challengesMap = challengeScores.reduce((prev, cur) => {
+    prev.set(cur.challenge_id, cur);
+    return prev;
+  }, new Map<number, ComputedChallengeScoreData>());
+
+  const sorted = scoreboard.sort(
+    (a, b) =>
+      b.score - a.score || a.last_solve.getTime() - b.last_solve.getTime(),
+  );
+  sorted.forEach(
+    (x, i) =>
+      (x.rank =
+        i > 0 &&
+        sorted[i - 1].score === x.score &&
+        sorted[i - 1].last_solve === x.last_solve
+          ? i
+          : i + 1),
+  );
+  return {
+    scoreboard: sorted,
+    challenges: challengesMap,
+  };
 }
 
 export const GetChangedTeamScores = (

@@ -1,59 +1,54 @@
 import type { PathResponse } from "$lib/api/types";
+import { SvelteMap } from "svelte/reactivity";
 import api from "$lib/api/index.svelte";
-import { writable, get } from "svelte/store";
 
 export type TeamScoringData = PathResponse<
-  "/scoreboard/team/{id}",
+  "/scoreboard/teams/{id}",
   "get"
 >["data"];
 
-export const CreateTeamScoresStore = () => {
-  const store = writable({
-    loading: new Map<number, boolean>(),
-    data: new Map<number, TeamScoringData>(),
-  });
+class TeamScoresState {
+  loading = new SvelteMap<number, boolean>();
+  data = new SvelteMap<number, TeamScoringData>();
 
-  const fetchTeam = async (team: number) => {
-    store.update((s) => {
-      s.loading.set(team, true);
-      return s;
-    });
+  constructor() {}
+
+  async fetchTeam(team: number) {
+    this.loading.set(team, true);
+
     try {
-      const { data, error } = await api.GET("/scoreboard/team/{id}", {
-        params: { path: { id: team } },
-      });
-      if (data) {
-        store.update((s) => {
-          s.data.set(team, data.data);
-          s.loading.delete(team);
-          return s;
-        });
+      const { data: response, error } = await api.GET(
+        "/scoreboard/teams/{id}",
+        {
+          params: { path: { id: team } },
+        },
+      );
+
+      if (response) {
+        this.data.set(team, response.data);
+        this.loading.delete(team);
       } else {
         throw new Error(`Fetch returned error: ${error}`);
       }
     } catch (e) {
       console.error("Could not load data", e);
-      store.update((s) => {
-        s.loading.delete(team);
-        return s;
-      });
+      this.loading.delete(team);
     }
-  };
+  }
 
-  return {
-    ...store,
-    loadTeams: (teams: number[]) => {
-      const d = get(store);
-      for (const team of teams) {
-        if (!d.loading.has(team) && !d.data.has(team)) fetchTeam(team);
+  loadTeams(teams: number[]) {
+    for (const team of teams) {
+      if (!this.loading.has(team) && !this.data.has(team)) {
+        this.fetchTeam(team);
       }
-    },
-    clearTeams: () =>
-      store.set({
-        data: new Map(),
-        loading: new Map(),
-      }),
-  };
-};
+    }
+  }
 
-export const teamScoresStore = CreateTeamScoresStore();
+  clearTeams() {
+    this.data.clear();
+    this.loading.clear();
+  }
+}
+
+const teamScoresState = new TeamScoresState();
+export default teamScoresState;

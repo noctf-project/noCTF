@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "@noctf/web",
   "private": true,
   "version": "0.0.1",
   "type": "module",
@@ -13,7 +13,7 @@
   "devDependencies": {
     "@iconify/svelte": "^4.2.0",
     "@noctf/openapi-spec": "workspace:",
-    "@sveltejs/adapter-static": "^3.0.6",
+    "@sveltejs/adapter-static": "^3.0.8",
     "@sveltejs/kit": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^4.0.0",
     "autoprefixer": "^10.4.20",
@@ -33,6 +33,9 @@
     "@tailwindcss/typography": "^0.5.15",
     "axios": "^1.7.9",
     "carta-md": "^4.6.7",
+    "chart.js": "^4.4.8",
+    "chartjs-adapter-date-fns": "^3.0.0",
+    "date-fns": "^4.1.0",
     "expr-eval": "catalog:",
     "lru-cache": "^11.0.2",
     "openapi-fetch": "^0.13.4"

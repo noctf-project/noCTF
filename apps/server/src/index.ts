@@ -40,6 +40,8 @@ import { FileService } from "@noctf/server-core/services/file";
 import { ScoreboardService } from "@noctf/server-core/services/scoreboard/index";
 import { fastifyMultipart } from "@fastify/multipart";
 import { ScoreService } from "@noctf/server-core/services/score";
+import { SubmissionService } from "@noctf/server-core/services/submission";
+import { RateLimitService } from "@noctf/server-core/services/rate_limit";
 
 export const server = fastify({
   logger: {
@@ -91,9 +93,11 @@ server.register(async () => {
     configService: asClass(ConfigService).singleton(),
     identityService: asClass(IdentityService).singleton(),
     policyService: asClass(PolicyService).singleton(),
+    rateLimitService: asClass(RateLimitService).singleton(),
     teamService: asClass(TeamService).singleton(),
     scoreService: asClass(ScoreService).singleton(),
     scoreboardService: asClass(ScoreboardService).singleton(),
+    submissionService: asClass(SubmissionService).singleton(),
     userService: asClass(UserService).singleton(),
     lockService: asClass(LockService).singleton(),
   });
@@ -135,7 +139,7 @@ const logRequest = async (
   reply: { elapsedTime?: number; statusCode?: number },
   flag?: string,
 ) => {
-  const elapsed = +reply.elapsedTime.toFixed(2);
+  const elapsed = +reply.elapsedTime?.toFixed(2);
   server.log.info(
     {
       elapsed,
@@ -148,7 +152,7 @@ const logRequest = async (
     },
     "request",
   );
-  server.container.cradle.metricsClient.recordAggregate(
+  server.container.cradle.metricsClient.record(
     [
       ["ResponseTime", reply.elapsedTime],
       ["ResponseCount", 1],

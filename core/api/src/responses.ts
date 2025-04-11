@@ -7,15 +7,19 @@ import {
   FileMetadata,
   PublicChallenge,
   PublicChallengeSummary,
-  ChallengeSolveStatus,
   Team,
   ScoringStrategy,
   User,
   ScoreboardEntry,
-  PublicTeam,
+  TeamSummary,
   Solve,
+  TypeDate,
+  Award,
+  Submission,
+  Division,
 } from "./datatypes.ts";
 import { AuthRegisterToken, AuthTokenType } from "./token.ts";
+import { SubmissionStatus } from "./enums.ts";
 
 export const BaseResponse = Type.Object({
   error: Type.Optional(Type.String()),
@@ -85,14 +89,33 @@ export const MeTeamResponse = Type.Object({
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
 
 export const GetTeamResponse = Type.Object({
-  data: PublicTeam,
+  data: Type.Composite([
+    Type.Omit(Team, ["join_code", "flags"]),
+    Type.Object({
+      members: Type.Array(Type.String()), // TODO: list members
+    }),
+  ]),
 });
 export type GetTeamResponse = Static<typeof GetTeamResponse>;
 
 export const ListTeamsResponse = Type.Object({
-  data: Type.Array(PublicTeam),
+  data: Type.Object({
+    teams: Type.Array(Type.Omit(TeamSummary, ["flags"])),
+    page_size: Type.Integer(),
+    total: Type.Integer(),
+  }),
 });
 export type ListTeamsResponse = Static<typeof ListTeamsResponse>;
+
+export const QueryTeamNamesResponse = Type.Object({
+  data: Type.Array(
+    Type.Object({
+      id: Type.Number(),
+      name: Type.String(),
+    }),
+  ),
+});
+export type QueryTeamNamesResponse = Static<typeof QueryTeamNamesResponse>;
 
 export const MeUserResponse = Type.Object({
   data: Type.Composite([
@@ -182,9 +205,24 @@ export const AnyResponse = Type.Object(
 );
 export type AnyResponse = Static<typeof AnyResponse>;
 
+export const AdminGetConfigSchemaResponse = Type.Object(
+  {
+    data: Type.Array(
+      Type.Object({
+        namespace: Type.String(),
+        schema: Type.Any(),
+      }),
+    ),
+  },
+  { additionalProperties: false },
+);
+export type AdminGetConfigSchemaResponse = Static<
+  typeof AdminGetConfigSchemaResponse
+>;
+
 export const SolveChallengeResponse = Type.Object(
   {
-    data: Type.Enum(ChallengeSolveStatus),
+    data: SubmissionStatus,
   },
   { additionalProperties: false },
 );
@@ -199,15 +237,31 @@ export type AdminGetScoringStrategiesResponse = Static<
 >;
 
 export const ScoreboardResponse = Type.Object({
-  data: Type.Array(ScoreboardEntry),
+  data: Type.Object({
+    scores: Type.Array(Type.Omit(ScoreboardEntry, ["updated_at"])),
+    page_size: Type.Integer(),
+    total: Type.Integer(),
+  }),
 });
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
 
+export const ScoreboardGraphsResponse = Type.Object({
+  data: Type.Array(
+    Type.Object({
+      team_id: Type.Number(),
+      graph: Type.Array(Type.Tuple([Type.Number(), Type.Number()])),
+    }),
+  ),
+});
+export type ScoreboardGraphsResponse = Static<typeof ScoreboardGraphsResponse>;
+
 export const ScoreboardTeamResponse = Type.Object({
-  data: Type.Object({
-    solves: Type.Array(Solve),
-    graph: Type.Array(Type.Tuple([Type.Number(), Type.Number()])),
-  }),
+  data: Type.Composite([
+    ScoreboardEntry,
+    Type.Object({
+      graph: Type.Array(Type.Tuple([Type.Number(), Type.Number()])),
+    }),
+  ]),
 });
 export type ScoreboardTeamResponse = Static<typeof ScoreboardTeamResponse>;
 
@@ -215,3 +269,32 @@ export const ScoreboardSolvesResponse = Type.Object({
   data: Type.Array(Solve),
 });
 export type ScoreboardSolvesResponse = Static<typeof ScoreboardSolvesResponse>;
+
+export const AdminQuerySubmissionsResponse = Type.Object({
+  data: Type.Array(Submission),
+});
+export type AdminQuerySubmissionsResponse = Static<
+  typeof AdminQuerySubmissionsResponse
+>;
+
+export const AdminUpdateSubmissionsResponse = Type.Object({
+  data: Type.Array(Type.Number()),
+});
+export type AdminUpdateSubmissionsResponse = Static<
+  typeof AdminUpdateSubmissionsResponse
+>;
+
+export const ListDivisionsResponse = Type.Object({
+  data: Type.Array(
+    Type.Composite(
+      [
+        Type.Omit(Division, ["password", "is_visible"]),
+        Type.Object({
+          is_password: Type.Boolean(),
+        }),
+      ],
+      { additionalProperties: false },
+    ),
+  ),
+});
+export type ListDivisionsResponse = Static<typeof ListDivisionsResponse>;

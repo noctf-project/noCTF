@@ -1,11 +1,11 @@
 import type { Static, TSchema } from "@sinclair/typebox";
 import type { ServiceCradle } from "../index.ts";
 import { ValidationError } from "../errors.ts";
-import type { SerializableMap } from "../types/primitives.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
 import type { ValidateFunction } from "ajv";
 import { Ajv } from "ajv";
 import { ConfigDAO } from "../dao/config.ts";
+import type { SerializableMap } from "@noctf/api/types";
 
 type Validator<T> = (kv: T) => Promise<string | null> | string | null;
 
@@ -33,7 +33,7 @@ export class ConfigService {
   private readonly auditLogService;
   private readonly validators: Map<
     string,
-    [ValidateFunction, Validator<unknown>]
+    [TSchema, ValidateFunction, Validator<unknown>]
   > = new Map();
 
   private cache: Map<string, [Promise<ConfigValue<SerializableMap>>, number]> =
@@ -127,7 +127,7 @@ export class ConfigService {
     if (!v) {
       throw new ValidationError("Config namespace does not exist");
     }
-    const [av, validator] = v;
+    const [_schema, av, validator] = v;
     if (!av(value)) {
       throw new ValidationError(
         "JSONSchema: " +
@@ -177,6 +177,7 @@ export class ConfigService {
       throw new Error("schema has no $id field");
     }
     this.validators.set(namespace, [
+      schema,
       this.ajv.compile(schema),
       validator || nullValidator,
     ]);

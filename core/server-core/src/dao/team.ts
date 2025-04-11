@@ -1,11 +1,30 @@
 import type { Insertable, Updateable } from "kysely";
 import type { DBType } from "../clients/database.ts";
-import type { Team } from "@noctf/api/datatypes";
+import type { Team, TeamSummary } from "@noctf/api/datatypes";
 import type { DB, TeamMemberRole } from "@noctf/schema";
 import { FilterUndefined } from "../util/filter.ts";
-import { ConflictError, NotFoundError } from "../errors.ts";
+import { BadRequestError, ConflictError, NotFoundError } from "../errors.ts";
 import { sql } from "kysely";
 import { partition } from "../util/object.ts";
+import { PostgresErrorCode, PostgresErrorConfig } from "../util/pgerror.ts";
+import { TryPGConstraintError } from "../util/pgerror.ts";
+
+const CREATE_ERROR_CONFIG: PostgresErrorConfig = {
+  [PostgresErrorCode.Duplicate]: {
+    team_name_key: () => new ConflictError("The team name already exists"),
+    default: (e) =>
+      new ConflictError("A duplicate entry was detected", { cause: e }),
+  },
+  [PostgresErrorCode.ForeignKeyViolation]: {
+    team_division_id_fkey: () =>
+      new BadRequestError("Division ID does not exist"),
+  },
+};
+
+export type MinimalTeamInfo = {
+  id: number;
+  flags: string[];
+};
 
 export class TeamDAO {
   constructor(private readonly db: DBType) {}
@@ -13,31 +32,40 @@ export class TeamDAO {
   async create({
     name,
     bio,
+    country,
     join_code,
     division_id,
     flags,
   }: Insertable<DB["team"]>): Promise<Team> {
-    const { id, created_at } = await this.db
-      .insertInto("team")
-      .values({
-        name,
-        bio,
-        join_code,
-        division_id,
-        flags,
-      })
-      .returning(["id", "created_at"])
-      .executeTakeFirstOrThrow();
+    try {
+      const { id, created_at } = await this.db
+        .insertInto("team")
+        .values({
+          name,
+          bio,
+          country,
+          join_code,
+          division_id,
+          flags,
+        })
+        .returning(["id", "created_at"])
+        .executeTakeFirstOrThrow();
 
-    return {
-      id,
-      name,
-      bio: bio || "",
-      join_code: join_code || null,
-      division_id,
-      flags: flags || [],
-      created_at,
-    };
+      return {
+        id,
+        name,
+        bio: bio || "",
+        country: country || null,
+        join_code: join_code || null,
+        division_id,
+        flags: flags || [],
+        created_at,
+      };
+    } catch (e) {
+      const pgerror = TryPGConstraintError(e, CREATE_ERROR_CONFIG);
+      if (pgerror) throw pgerror;
+      throw e;
+    }
   }
 
   async findUsingJoinCode(join_code: string) {
@@ -59,6 +87,7 @@ export class TeamDAO {
         "id",
         "name",
         "bio",
+        "country",
         "join_code",
         "division_id",
         "flags",
@@ -72,31 +101,79 @@ export class TeamDAO {
     return result;
   }
 
-  async list(flags?: string[]): Promise<Team[]> {
-    let query = this.db
-      .selectFrom("team")
+  async listSummary(
+    params?: Parameters<TeamDAO["listQuery"]>[0],
+    limit?: { limit?: number; offset?: number },
+  ): Promise<TeamSummary[]> {
+    let query = this.listQuery(params)
       .select([
         "id",
         "name",
         "bio",
-        "join_code",
+        "country",
         "division_id",
-        "flags",
         "created_at",
-      ]);
-    if (flags) {
-      const [no, yes] = partition(flags, (f) => f.startsWith("!"));
+        "flags",
+        (eb) =>
+          eb
+            .selectFrom("team_member")
+            .select(eb.fn.countAll().as("count"))
+            .where("team_member.team_id", "=", eb.ref("team.id"))
+            .as("num_members"),
+      ])
+      .orderBy("id");
+    if (limit?.limit) {
+      query = query.limit(limit.limit);
+    }
+    if (limit?.offset) {
+      query = query.offset(limit.offset);
+    }
+    return query.execute() as Promise<TeamSummary[]>;
+  }
 
-      if (yes.length) {
-        query = query.where("flags", "&&", sql.val(yes));
-      }
-      if (no.length) {
-        query = query.where((eb) =>
-          eb.not(eb("flags", "&&", eb.val(no.map((f) => f.substring(1))))),
-        );
-      }
+  async getCount(
+    params?: Parameters<TeamDAO["listQuery"]>[0],
+  ): Promise<number> {
+    return (
+      await this.listQuery(params)
+        .select(this.db.fn.countAll().as("count"))
+        .executeTakeFirstOrThrow()
+    ).count as number;
+  }
+
+  async queryNames(
+    ids: number[],
+    include_hidden?: boolean,
+  ): Promise<{ id: number; name: string }[]> {
+    let query = this.db
+      .selectFrom("team")
+      .select(["id", "name"])
+      .where("id", "in", ids);
+    if (!include_hidden) {
+      query = query.where((eb) =>
+        eb.not(eb("flags", "&&", eb.val(["hidden"]))),
+      );
     }
     return query.execute();
+  }
+
+  async listWithActivity(division: number): Promise<MinimalTeamInfo[]> {
+    return this.db
+      .selectFrom("team")
+      .select(["id", "flags"])
+      .distinctOn("id")
+      .where("division_id", "=", division)
+      .innerJoin(
+        this.db
+          .selectFrom("submission")
+          .select("team_id")
+          .where("status", "=", "correct")
+          .union(this.db.selectFrom("award").select("team_id"))
+          .as("combined_teams"),
+        "team.id",
+        "combined_teams.team_id",
+      )
+      .execute();
   }
 
   async update(id: number, v: Updateable<DB["team"]>) {
@@ -192,7 +269,8 @@ export class TeamDAO {
   async getMembershipForUser(user_id: number) {
     const result = await this.db
       .selectFrom("team_member")
-      .select(["team_id", "role"])
+      .innerJoin("team", "team.id", "team_member.team_id")
+      .select(["team_id", "role", "team.division_id"])
       .where("user_id", "=", user_id)
       .executeTakeFirst();
 
@@ -208,5 +286,36 @@ export class TeamDAO {
       .select(["user_id", "role"])
       .where("team_id", "=", id)
       .execute();
+  }
+
+  private listQuery(params?: {
+    flags?: string[];
+    ids?: number[];
+    name_prefix?: string;
+    division_id?: number;
+  }) {
+    let query = this.db.selectFrom("team");
+    if (params?.flags) {
+      const [no, yes] = partition(params.flags, (f) => f.startsWith("!"));
+
+      if (yes.length) {
+        query = query.where("flags", "&&", sql.val(yes));
+      }
+      if (no.length) {
+        query = query.where((eb) =>
+          eb.not(eb("flags", "&&", eb.val(no.map((f) => f.substring(1))))),
+        );
+      }
+    }
+    if (params?.name_prefix) {
+      query = query.where("name", "^@", params.name_prefix.toLowerCase());
+    }
+    if (params?.division_id) {
+      query = query.where("division_id", "=", params.division_id);
+    }
+    if (params?.ids && params?.ids.length) {
+      query = query.where("id", "in", params.ids);
+    }
+    return query;
   }
 }

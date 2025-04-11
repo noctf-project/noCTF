@@ -3,11 +3,11 @@
 @import "tailwindcss/utilities";
 
 @layer utilities {
-    .pop {
-        @apply border;
-        @apply border-base-500;
-        @apply shadow-solid;
-    }
+  .pop {
+    @apply border;
+    @apply border-base-500;
+    @apply shadow-solid;
+  }
 }
 
 .markdown-body {
@@ -15,12 +15,12 @@
 }
 
 .carta-font-code {
-  font-family: '...', monospace;
+  font-family: "...", monospace;
   font-size: 1.1rem;
   line-height: 32px;
 }
 
 .markdown-body :where(code):not(:where([class~="not-prose"] *, pre *)) {
   border-radius: 0.3rem;
-  color: var(--fallback-p,oklch(var(--p)/var(--tw-text-opacity, 1)));
+  color: var(--fallback-p, oklch(var(--p) / var(--tw-text-opacity, 1)));
 }

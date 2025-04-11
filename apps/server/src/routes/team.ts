@@ -10,19 +10,65 @@ import {
 import {
   CreateTeamRequest,
   JoinTeamRequest,
+  QueryTeamsRequest,
   UpdateTeamRequest,
 } from "@noctf/api/requests";
 import {
   GetTeamResponse,
+  ListDivisionsResponse,
   ListTeamsResponse,
   MeTeamResponse,
   SuccessResponse,
 } from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
-import { GetTeamParams } from "@noctf/api/params";
+import { IdParams } from "@noctf/api/params";
+import { Policy } from "@noctf/server-core/util/policy";
+
+export const TEAM_PAGE_SIZE = 50;
 
 export async function routes(fastify: FastifyInstance) {
-  const { teamService } = fastify.container.cradle as ServiceCradle;
+  const adminPolicy: Policy = ["admin.team.get"];
+  const { teamService, policyService } = fastify.container
+    .cradle as ServiceCradle;
+
+  fastify.get<{ Reply: ListDivisionsResponse }>(
+    "/divisions",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["division"],
+        auth: {
+          policy: ["OR", "team.self.get", "division.get", "scoreboard.get"],
+        },
+        response: {
+          200: ListDivisionsResponse,
+        },
+      },
+    },
+    async (request) => {
+      const canList = policyService.evaluate(request.user?.id, [
+        "division.get",
+      ]);
+      if (!canList && !request.user) {
+        return { data: [] };
+      }
+      const membership = await request.user?.membership;
+      if (!canList) {
+        if (!membership) return { data: [] };
+        const division = await teamService.getDivision(membership.division_id);
+        if (!division) return { data: [] };
+        return { data: [{ ...division, is_password: !!division.password }] };
+      }
+      return {
+        data: (
+          await teamService.listDivisions({
+            visible_ids: membership ? [membership.division_id] : [],
+            is_visible: true,
+          })
+        ).map((x) => ({ ...x, is_password: !!x.password })),
+      };
+    },
+  );
 
   fastify.post<{ Body: CreateTeamRequest; Reply: MeTeamResponse }>(
     "/teams",
@@ -41,7 +87,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      if (await teamService.getMembershipForUser(request.user.id)) {
+      if (await request.user?.membership) {
         throw new ConflictError("You are currently part of a team");
       }
       const actor = {
@@ -132,7 +178,7 @@ export async function routes(fastify: FastifyInstance) {
         tags: ["team"],
         auth: {
           require: true,
-          policy: ["team.self"],
+          policy: ["team.self.get"],
         },
         response: {
           200: MeTeamResponse,
@@ -140,9 +186,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const membership = await teamService.getMembershipForUser(
-        request.user.id,
-      );
+      const membership = await request.user?.membership;
       if (!membership) {
         throw new NotFoundError("You are not currently part of a team");
       }
@@ -169,9 +213,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const membership = await teamService.getMembershipForUser(
-        request.user.id,
-      );
+      const membership = await request.user?.membership;
       if (!membership) {
         throw new NotFoundError("You are not currently part of a team");
       }
@@ -190,8 +232,8 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{ Reply: ListTeamsResponse }>(
-    "/teams",
+  fastify.post<{ Body: QueryTeamsRequest; Reply: ListTeamsResponse }>(
+    "/teams/query",
     {
       schema: {
         security: [{ bearer: [] }],
@@ -199,35 +241,52 @@ export async function routes(fastify: FastifyInstance) {
         response: {
           200: ListTeamsResponse,
         },
+        body: QueryTeamsRequest,
         auth: {
-          require: true,
-          policy: ["OR", "team.get"],
+          policy: ["team.get"],
         },
       },
     },
-    async (_request, reply) => {
-      const teams = await teamService.list(["!hidden"], "route:/teams");
+    async (request) => {
+      const admin = policyService.evaluate(request.user?.id, adminPolicy);
 
-      reply.header("cache-control", "private, max-age=900");
+      const page = request.body.page || 1;
+      const page_size =
+        (admin
+          ? request.body.page_size
+          : Math.min(TEAM_PAGE_SIZE, request.body.page_size)) || TEAM_PAGE_SIZE;
+      const query = {
+        flags: ["!hidden"],
+        division_id: request.body.division_id,
+        name_prefix: request.body.name_prefix,
+        ids: request.body.ids,
+      };
+      const [teams, total] = await Promise.all([
+        teamService.listSummary(query, {
+          limit: page_size,
+          offset: (page - 1) * page_size,
+        }),
+        !(query.ids && query.ids.length) ? teamService.getCount(query) : 0,
+      ]);
+
       return {
-        data: teams,
+        data: { teams, page_size, total: total || teams.length },
       };
     },
   );
 
-  fastify.get<{ Params: GetTeamParams; Reply: GetTeamResponse }>(
+  fastify.get<{ Params: IdParams; Reply: GetTeamResponse }>(
     "/teams/:id",
     {
       schema: {
         security: [{ bearer: [] }],
         tags: ["team"],
-        params: GetTeamParams,
+        params: IdParams,
         response: {
           200: GetTeamResponse,
         },
         auth: {
-          require: true,
-          policy: ["OR", "team.get"],
+          policy: ["team.get"],
         },
       },
     },
@@ -239,7 +298,7 @@ export async function routes(fastify: FastifyInstance) {
 
       reply.header("cache-control", "private, max-age=900");
       return {
-        data: team,
+        data: { ...team, members: [] }, // TODO: members
       };
     },
   );

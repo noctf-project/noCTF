@@ -31,14 +31,20 @@ EOF
 
 stop() {
   docker compose -p "${PROJECT_NAME}" stop
-  rm .env
+  # Only try to remove .env if it exists
+  if [ -f .env ]; then
+      rm .env
+  fi
   echo "Stopped $PROJECT_NAME"
 }
 
 clean() {
   docker compose -p "${PROJECT_NAME}" down -v
   docker compose -p "${PROJECT_NAME}" rm -f -v
-  rm .env
+  # Only try to remove .env if it exists
+  if [ -f .env ]; then
+      rm .env
+  fi
   echo "Cleaned $PROJECT_NAME"
 }
 

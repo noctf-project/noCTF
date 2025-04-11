@@ -34,6 +34,6 @@ export class AuditLogService {
   }
 
   async query(q: QueryAuditLogRequest): Promise<AuditLogEntry[]> {
-    return this.dao.query(q);
+    return this.dao.query(q, { limit: q.limit, offset: q.offset });
   }
 }
