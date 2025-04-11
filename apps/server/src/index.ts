@@ -52,7 +52,6 @@ export const server = fastify({
   genReqId: () => nanoid(),
   ...{ http2: ENABLE_HTTP2 }, // typescript is being funny
 });
-
 server.register(fastifyCompress);
 server.register(fastifyMultipart);
 server.register(fastifyCors, {

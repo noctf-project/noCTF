@@ -19,14 +19,10 @@ function GlobToRegexPattern(pattern: string): string {
  * @param patterns - List of glob patterns or a single pattern
  * @returns Combined regex that matches any of the patterns
  */
-export function CompileDomainMatcher(patterns: DomainPattern): RegExp {
+export function CompileDomainMatcher(patterns: string | string[]): RegExp {
   if (typeof patterns === "string") {
     const regexPattern = GlobToRegexPattern(patterns.toLowerCase());
-    return new RegExp(`^${regexPattern}$`);
-  }
-
-  if (!Array.isArray(patterns)) {
-    throw new Error("Patterns must be an array of strings or a single string");
+    return new RegExp(`^(http|https)://${regexPattern}(:[0-9]+)?$`);
   }
 
   const regexPatterns = patterns.map((pattern) => {
@@ -40,5 +36,5 @@ export function CompileDomainMatcher(patterns: DomainPattern): RegExp {
   });
 
   const combinedPattern = regexPatterns.map((p) => `(${p})`).join("|");
-  return new RegExp(`^(?:${combinedPattern})$`);
+  return new RegExp(`^(http|https)://(?:${combinedPattern})(:[0-9]+)?$`);
 }
