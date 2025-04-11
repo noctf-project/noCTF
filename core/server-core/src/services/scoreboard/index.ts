@@ -229,11 +229,12 @@ export class ScoreboardService {
     );
     const updated_at = new Date();
 
-    const info = await this.scoreboardDataLoader.saveIndexed(
+    await this.scoreboardDataLoader.saveIndexed(
       updated_at.getTime(),
       id,
       scoreboard,
       challengeScores,
+      true
     );
 
     const compacted: Record<number, ChallengeSummary> = {};
