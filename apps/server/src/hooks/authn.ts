@@ -16,7 +16,7 @@ export const AuthnHook = async (request: FastifyRequest) => {
     token = request.headers["authorization"].substring(7);
   }
   if (!token && require) {
-    throw new AuthenticationError("no cookie or authorization header supplied");
+    throw new AuthenticationError("no authorization header supplied");
   } else if (!token && !require) {
     return;
   }
