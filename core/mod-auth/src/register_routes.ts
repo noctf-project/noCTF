@@ -3,6 +3,7 @@ import {
   RegisterAuthTokenRequest,
 } from "@noctf/api/requests";
 import {
+  BaseResponse,
   FinishAuthResponse,
   RegisterAuthTokenResponse,
 } from "@noctf/api/responses";
@@ -28,6 +29,7 @@ export default async function (fastify: FastifyInstance) {
         body: RegisterAuthTokenRequest,
         response: {
           200: RegisterAuthTokenResponse,
+          default: BaseResponse,
         },
       },
     },
@@ -52,6 +54,7 @@ export default async function (fastify: FastifyInstance) {
         body: RegisterAuthRequest,
         response: {
           200: FinishAuthResponse,
+          default: BaseResponse,
         },
       },
     },
