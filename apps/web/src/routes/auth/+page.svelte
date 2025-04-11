@@ -183,6 +183,7 @@
 
       if (registerRes.data?.data?.type === "session") {
         toasts.success("Account created successfully!");
+        localStorage.setItem(SESSION_TOKEN_KEY, registerRes.data.data.token);
         successRedirect();
       } else {
         toasts.error("Registration failed");
