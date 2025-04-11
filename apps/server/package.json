@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "vitest --coverage",
+    "test:unit": "vitest --coverage",
     "typecheck": "tsc -noEmit",
     "build": "node esbuild.mjs",
     "release": "pnpm run typecheck && pnpm run build /build && pnpm run test --run",
