@@ -6,10 +6,15 @@ import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
 import { PasswordProvider } from "./password_provider.ts";
 import type { FastifyInstance } from "fastify";
 import { NOCTF_SESSION_COOKIE } from "./const.ts";
+import { NotFoundError } from "@noctf/server-core/errors";
+import { UserFlag } from "@noctf/server-core/types/enums";
+import { TokenProvider } from "./token_provider.ts";
+import { UserNotFoundError } from "./error.ts";
 
 export default async function (fastify: FastifyInstance) {
-  const { identityService } = fastify.container.cradle;
+  const { identityService, cacheService } = fastify.container.cradle;
   const passwordProvider = new PasswordProvider(fastify.container.cradle);
+  const tokenProvider = new TokenProvider({ cacheService });
 
   fastify.post<{
     Body: InitAuthEmailRequest;
@@ -29,14 +34,25 @@ export default async function (fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
+      const { validate_email, enable_register_password } =
+        await passwordProvider.getConfig();
       const email = request.body.email.toLowerCase();
-      const result = await passwordProvider.authPreCheck(email);
-      const { validate_email } = await passwordProvider.getConfig();
-      if (!result) {
+      try {
+        await passwordProvider.authPreCheck(email);
         return {};
+      } catch (e) {
+        if (!(e instanceof UserNotFoundError) || !enable_register_password)
+          throw e;
       }
-
-      const token = identityService.generateToken(result);
+      const token = await tokenProvider.create("register", {
+        identity: [
+          {
+            provider: "email",
+            provider_id: email,
+          },
+        ],
+        roles: validate_email ? [UserFlag.VALID_EMAIL] : [],
+      });
       if (validate_email) {
         // TODO: send registration email
         return {
@@ -75,12 +91,6 @@ export default async function (fastify: FastifyInstance) {
       const token = await passwordProvider.authenticate(email, password);
 
       const sessionToken = identityService.generateToken(token);
-      reply.setCookie(NOCTF_SESSION_COOKIE, sessionToken, {
-        path: "/",
-        secure: true,
-        httpOnly: true,
-        sameSite: true,
-      });
 
       return {
         data: {
