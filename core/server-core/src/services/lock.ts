@@ -1,8 +1,7 @@
 import type { ServiceCradle } from "../index.ts";
 import { nanoid } from "nanoid";
-import { ErrorReply } from "redis";
 
-type Props = Pick<ServiceCradle, "redisClientFactory">;
+type Props = Pick<ServiceCradle, "redisClientFactory" | "logger">;
 
 const LEASE_PREFIX = "lease";
 
@@ -13,27 +12,42 @@ const SCRIPTS = {
     "else return 0 end",
 };
 
+export class LockServiceError extends Error {}
+
 export class LockService {
   private readonly redisClientFactory;
+  private readonly logger;
 
-  constructor({ redisClientFactory }: Props) {
+  constructor({ redisClientFactory, logger }: Props) {
     this.redisClientFactory = redisClientFactory;
+    this.logger = logger;
   }
 
   async withLease<T>(
     name: string,
     handler: () => Promise<T>,
-    durationSeconds = 60,
+    durationSeconds = 10,
   ): Promise<T> {
     const token = await this.acquireLease(name, durationSeconds);
+    let timeout = setInterval(
+      async () => {
+        try {
+          await this.renewLease(name, token, durationSeconds);
+        } catch (e) {
+          this.logger.warn(e, "Could not renew lease on lock");
+        }
+      },
+      (durationSeconds * 1000) / 3,
+    );
     try {
       return await handler();
     } finally {
+      clearTimeout(timeout);
       await this.dropLease(name, token);
     }
   }
 
-  async acquireLease(name: string, durationSeconds = 60) {
+  async acquireLease(name: string, durationSeconds = 10) {
     const token = nanoid();
     const client = await this.redisClientFactory.getClient();
     if (
@@ -42,12 +56,12 @@ export class LockService {
         NX: true,
       }))
     ) {
-      throw new Error("lease already exists");
+      throw new LockServiceError("lease already exists");
     }
     return token;
   }
 
-  async renewLease(name: string, token: string, durationSeconds = 60) {
+  async renewLease(name: string, token: string, durationSeconds = 10) {
     if (
       !(await this.redisClientFactory.executeScript(
         SCRIPTS.renew,
@@ -55,7 +69,7 @@ export class LockService {
         [token, durationSeconds.toString()],
       ))
     ) {
-      throw new Error("lease token mismatch");
+      throw new LockServiceError("lease token mismatch");
     }
     return durationSeconds;
   }

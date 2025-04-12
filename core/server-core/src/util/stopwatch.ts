@@ -24,4 +24,9 @@ export class Stopwatch {
   resume() {
     this.start = performance.now();
   }
+
+  clear() {
+    this.total = 0;
+    this.start = this.start === null ? null : performance.now();
+  }
 }
