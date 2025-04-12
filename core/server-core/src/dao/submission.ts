@@ -39,6 +39,7 @@ export class SubmissionDAO {
     params: {
       comments?: string;
       hidden?: boolean;
+      value?: number | null;
       status?: SubmissionStatus;
     },
   ) {
@@ -52,6 +53,9 @@ export class SubmissionDAO {
     }
     if (typeof params.hidden === "boolean") {
       query = query.set("hidden", params.hidden);
+    }
+    if (typeof params.value === "number" || params.value === null) {
+      query = query.set("value", params.value);
     }
     if (params.status) {
       query = query.set("status", params.status);
@@ -99,6 +103,7 @@ export class SubmissionDAO {
         "comments",
         "source",
         "hidden",
+        "value",
         "status",
         "created_at",
         "updated_at",
