@@ -50,7 +50,7 @@ export class PasswordProvider implements IdentityProvider {
       email,
     );
     if (!identity) {
-      throw new UserNotFoundError("User not found");
+      throw new UserNotFoundError();
     }
     if (!identity.secret_data) {
       throw new AuthenticationError(

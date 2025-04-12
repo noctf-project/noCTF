@@ -234,7 +234,7 @@ export class ScoreboardService {
       id,
       scoreboard,
       challengeScores,
-      true
+      true,
     );
 
     const compacted: Record<number, ChallengeSummary> = {};
