@@ -14,6 +14,7 @@ export type RawSolve = {
   hidden: boolean;
   created_at: Date;
   updated_at: Date;
+  value: number | null;
 };
 
 export class SubmissionDAO {
@@ -151,17 +152,18 @@ export class SubmissionDAO {
     },
   ): Promise<RawSolve[]> {
     let query = this.db
-      .selectFrom("submission")
-      .innerJoin("team", "submission.team_id", "team.id")
+      .selectFrom("submission as s")
+      .innerJoin("team", "s.team_id", "team.id")
       .select([
-        "submission.id as id",
-        "submission.team_id as team_id",
-        "submission.challenge_id as challenge_id",
-        "submission.hidden as hidden",
-        "submission.created_at as created_at",
-        "submission.updated_at as updated_at",
+        "s.id as id",
+        "s.team_id as team_id",
+        "s.challenge_id as challenge_id",
+        "s.hidden as hidden",
+        "s.created_at as created_at",
+        "s.updated_at as updated_at",
+        "s.value as value",
       ])
-      .orderBy("submission.created_at", params?.sort || "asc");
+      .orderBy("s.created_at", params?.sort || "asc");
     if (division_id) {
       query = query.where("team.division_id", "=", division_id);
     }
