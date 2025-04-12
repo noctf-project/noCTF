@@ -19,8 +19,8 @@ export const Slug = Type.String({
 export type Slug = Static<typeof Slug>;
 
 export const EmailAddress = Type.Object({
-  email: Type.String({ format: "email", maxLength: 255 }),
-  name: Type.Optional(Type.String({ maxLength: 128 })),
+  address: Type.String({ format: "email", maxLength: 255 }),
+  name: Type.String({ maxLength: 128 }),
 });
 export type EmailAddress = Static<typeof EmailAddress>;
 

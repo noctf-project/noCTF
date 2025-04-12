@@ -63,16 +63,15 @@ export default async function (fastify: FastifyInstance) {
         }
         const { name, root_url } = (await configService.get(SetupConfig.$id!))
           ?.value;
-        await emailService.sendToEmail(
-          {
-            to: [{ email }],
-          },
-          `${name} - Verify Your Email`,
-          EMAIL_VERIFICATION_TEMPLATE({
+        await emailService.sendEmail({
+    
+          to: [{ address: email, name: "" }],
+          subject: `${name} - Verify Your Email`,
+          text: EMAIL_VERIFICATION_TEMPLATE({
             root_url,
             token,
           }),
-        );
+        });
         return {
           message: "Please check your email for a link to create your account",
         };

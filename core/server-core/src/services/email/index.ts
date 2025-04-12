@@ -1,9 +1,8 @@
 import { EmailConfig } from "@noctf/api/config";
 import { ServiceCradle } from "../../index.ts";
-import { EmailProvider } from "./types.ts";
-import { EmailAddress } from "@noctf/api/datatypes";
+import { EmailPayload, EmailProvider } from "./types.ts";
 import { DummyEmailProvider } from "./dummy.ts";
-import { SMTPEmailProvider } from "./smtp.ts";
+import { NodeMailerProvider } from "./nodemailer.ts";
 
 type Props = Pick<ServiceCradle, "logger" | "configService">;
 
@@ -18,7 +17,7 @@ export class EmailService {
     this.logger = logger;
     void this.init();
     this.register(new DummyEmailProvider({ logger: this.logger }));
-    this.register(new SMTPEmailProvider({ logger: this.logger }));
+    this.register(new NodeMailerProvider({ logger: this.logger, configService }));
   }
 
   async init() {
@@ -26,8 +25,17 @@ export class EmailService {
       provider: "dummy",
       from: {
         name: "noCTF Administrator",
-        email: "noreply@example.com",
+        address: "noreply@example.com",
       },
+    }, async (v) => {
+      const provider = this.providers.get(v.provider);
+      if (!provider) return `Provider ${v.provider} does not exist`;
+      try {
+        await provider.validate(v.config);
+      } catch (e) {
+        return e.message;
+      }
+      return null;
     });
   }
 
@@ -38,26 +46,13 @@ export class EmailService {
     this.providers.set(provider.name, provider);
   }
 
-  async sendToEmail(
-    recipients: {
-      to?: EmailAddress[];
-      cc?: EmailAddress[];
-      bcc?: EmailAddress[];
-    },
-    subject: string,
-    body: string,
-  ) {
+  async sendEmail(payload: Omit<EmailPayload, "from">) {
     const { provider: name, from } = (
       await this.configService.get<EmailConfig>(EmailConfig.$id!)
     )?.value;
     const provider = this.providers.get(name);
     if (!provider) throw new Error(`Provider ${name} does not exist`);
     if (!provider.queued)
-      await provider.send({
-        ...recipients,
-        from,
-        subject,
-        body,
-      });
+      await provider.send({ ...payload, from });
   }
 }

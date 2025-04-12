@@ -13,6 +13,6 @@ export const DEFAULT_CONFIG: AuthConfig = {
 export const EMAIL_VERIFICATION_TEMPLATE = Handlebars.compile(`Hello,
 Thanks for creating an account.
 
-Click the following link to continue creating your account:
+Click the following link to continue with registration:
 {{ root_url }}/auth/register?token={{ token }}
 `);
