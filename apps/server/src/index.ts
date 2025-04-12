@@ -43,6 +43,7 @@ import { ScoreService } from "@noctf/server-core/services/score";
 import { SubmissionService } from "@noctf/server-core/services/submission";
 import { RateLimitService } from "@noctf/server-core/services/rate_limit";
 import { CompileDomainMatcher } from "./util/domain.ts";
+import { EmailService } from "@noctf/server-core/services/email/index";
 
 export const server = fastify({
   logger: {
@@ -80,8 +81,9 @@ server.register(async () => {
         new MetricsClient(logger, METRICS_PATH, METRICS_FILE_NAME_FORMAT),
     ).singleton(),
     cacheService: asClass(CacheService).singleton(),
-    challengeService: asClass(ChallengeService).singleton(),
     auditLogService: asClass(AuditLogService).singleton(),
+    challengeService: asClass(ChallengeService).singleton(),
+    emailService: asClass(EmailService).singleton(),
     eventBusService: asClass(EventBusService).singleton(),
     fileService: asClass(FileService).singleton(),
     tokenService: asFunction(

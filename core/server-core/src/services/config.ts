@@ -4,6 +4,7 @@ import { ValidationError } from "../errors.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
 import type { ValidateFunction } from "ajv";
 import { Ajv } from "ajv";
+import { default as AddFormats } from "ajv-formats";
 import { ConfigDAO } from "../dao/config.ts";
 import type { SerializableMap } from "@noctf/api/types";
 
@@ -40,6 +41,9 @@ export class ConfigService {
     new Map();
 
   constructor({ logger, databaseClient, auditLogService }: Props) {
+    // This is cursed but ajv types are currently broken
+    // https://github.com/ajv-validator/ajv-formats/issues/85
+    (AddFormats as unknown as (a: Ajv) => void)(this.ajv);
     this.logger = logger;
     this.auditLogService = auditLogService;
     this.dao = new ConfigDAO(databaseClient.get());

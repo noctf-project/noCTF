@@ -1,6 +1,6 @@
 import type { Static } from "@sinclair/typebox";
 import { Type } from "@sinclair/typebox";
-import { ScoringStrategy } from "./datatypes.ts";
+import { EmailAddress, ScoringStrategy } from "./datatypes.ts";
 
 export const TeamConfig = Type.Object(
   {
@@ -69,6 +69,11 @@ export const SetupConfig = Type.Object(
     active: Type.Boolean({
       title: "Global flag to activate/deactivate the CTF",
     }),
+    root_url: Type.String({
+      format: "uri",
+      title: "Public URL of the Scoreboard",
+    }),
+    name: Type.String({ title: "Name of the CTF" }),
     start_time_s: Type.Optional(
       Type.Number({ title: "CTF Start Time (Epoch seconds)" }),
     ),
@@ -105,3 +110,13 @@ export const ScoreConfig = Type.Object(
   { $id: "core.score", additionalProperties: false },
 );
 export type ScoreConfig = Static<typeof ScoreConfig>;
+
+export const EmailConfig = Type.Object(
+  {
+    provider: Type.String({ title: "Provider Name" }),
+    from: EmailAddress,
+    config: Type.Optional(Type.Any({ title: "Provider Specific Config" })),
+  },
+  { $id: "core.email", additionalProperties: false },
+);
+export type EmailConfig = Static<typeof EmailConfig>;
