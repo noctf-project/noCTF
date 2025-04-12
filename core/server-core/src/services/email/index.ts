@@ -129,8 +129,9 @@ export class EmailService {
     return out;
   }
 
-  async worker() {
+  async worker(signal: AbortSignal) {
     await this.eventBusService.subscribe<EmailMessage>(
+      signal,
       "EmailWorker",
       ["queue.email"],
       {

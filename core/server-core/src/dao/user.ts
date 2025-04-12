@@ -36,6 +36,7 @@ export class UserDAO {
 
       .select(["u.name as name", "ui.provider_id as provider_id"])
       .where("u.id", "=", id)
+      .where("ui.provider", "=", provider)
       .executeTakeFirst();
   }
 
