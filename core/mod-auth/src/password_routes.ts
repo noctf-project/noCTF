@@ -61,14 +61,15 @@ export default async function (fastify: FastifyInstance) {
             message: "Email Verification Required",
           });
         }
-        const { name, root_url } = (await configService.get(SetupConfig.$id!))
-          ?.value;
+        const { root_url, name: ctf_name } = (
+          await configService.get<SetupConfig>(SetupConfig.$id!)
+        )?.value;
         await emailService.sendEmail({
-    
           to: [{ address: email, name: "" }],
-          subject: `${name} - Verify Your Email`,
+          subject: "Verify Your Email",
           text: EMAIL_VERIFICATION_TEMPLATE({
             root_url,
+            ctf_name,
             token,
           }),
         });

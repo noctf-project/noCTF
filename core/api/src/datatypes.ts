@@ -24,6 +24,19 @@ export const EmailAddress = Type.Object({
 });
 export type EmailAddress = Static<typeof EmailAddress>;
 
+export const EmailAddressOrUserId = Type.Union([EmailAddress, Type.Integer()]);
+export type EmailAddressOrUserId = Static<typeof EmailAddressOrUserId>;
+
+export const EmailMessage = Type.Object({
+  from: EmailAddress,
+  to: Type.Optional(Type.Array(EmailAddressOrUserId)),
+  cc: Type.Optional(Type.Array(EmailAddressOrUserId)),
+  bcc: Type.Optional(Type.Array(EmailAddressOrUserId)),
+  subject: Type.String(),
+  text: Type.String(),
+});
+export type EmailMessage = Static<typeof EmailMessage>;
+
 export const AuthMethod = Type.Object({
   provider: Type.String(),
   name: Type.Optional(Type.String()),
