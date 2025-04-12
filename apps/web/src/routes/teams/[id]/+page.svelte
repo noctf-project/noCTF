@@ -1,6 +1,6 @@
 <script lang="ts">
   import { countryCodeToFlag } from "$lib/utils/country_flags";
-  import TeamService from "$lib/state/team.svelte";
+  import TeamQueryService from "$lib/state/team_query.svelte";
   import { wrapLoadable } from "$lib/api/index.svelte";
   import type { PageData } from "./$types";
 
@@ -30,7 +30,7 @@
   }
 
   let props: { data: PageData } = $props();
-  let teamLoader = wrapLoadable(TeamService.getTeamById(props.data.teamId));
+  let teamLoader = wrapLoadable(TeamQueryService.get(props.data.teamId));
   let team = $derived(teamLoader.r);
 </script>
 
