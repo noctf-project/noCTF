@@ -17,7 +17,7 @@
     score: number;
     last_solve: Date;
     solves: {
-      score: number;
+      value: number;
       bonus?: number;
       created_at: Date;
       challenge_id: number;
@@ -63,7 +63,7 @@
       .map((c) => ({
         id: c.id,
         title: c.title,
-        points: c.score!,
+        points: c.value || 0,
         categories: getCategoriesFromTags(c.tags),
       }))
       .sort((a, b) => a.points - b.points) || [],

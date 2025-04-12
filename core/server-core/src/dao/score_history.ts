@@ -1,4 +1,3 @@
-import { ScoreboardEntry } from "@noctf/api/datatypes";
 import { DBType } from "../clients/database.ts";
 
 export class ScoreHistoryDAO {

@@ -29,7 +29,7 @@ export class LockService {
     durationSeconds = 10,
   ): Promise<T> {
     const token = await this.acquireLease(name, durationSeconds);
-    let timeout = setInterval(
+    const timeout = setInterval(
       async () => {
         try {
           await this.renewLease(name, token, durationSeconds);

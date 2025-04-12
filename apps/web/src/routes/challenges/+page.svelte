@@ -45,7 +45,7 @@
           title: c.title,
           categories: getCategoriesFromTags(c.tags),
           solves: c.solve_count,
-          points: c.score!,
+          points: c.value || 0,
           isSolved: c.solved_by_me,
           difficulty: getDifficultyFromTags(c.tags),
         }))

@@ -1,6 +1,5 @@
 import { Division } from "@noctf/api/datatypes";
 import { DBType } from "../clients/database.ts";
-import { NotFoundError } from "../errors.ts";
 
 export class DivisionDAO {
   constructor(private readonly db: DBType) {}

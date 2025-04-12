@@ -228,7 +228,7 @@ export const Solve = Type.Object(
     challenge_id: Type.Number(),
     hidden: Type.Boolean(),
     bonus: Type.Optional(Type.Number()),
-    score: Type.Number(),
+    value: Type.Number(),
     created_at: TypeDate,
   },
   { additionalProperties: false },

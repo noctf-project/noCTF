@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, it, vi } from "vitest";
 import { ScoreboardService } from "./index.ts";
 import { mockDeep } from "vitest-mock-extended";
 import type { CacheService } from "../cache.ts";

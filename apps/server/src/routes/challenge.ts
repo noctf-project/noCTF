@@ -64,11 +64,11 @@ export async function routes(fastify: FastifyInstance) {
           entry.solves.forEach(({ challenge_id }) => solves.add(challenge_id));
         }
       }
-      const scores = Object.fromEntries(
+      const values = Object.fromEntries(
         challenges.map((c) => [
           c.id,
           {
-            score: scoreObj[c.id]?.score || 0,
+            value: scoreObj[c.id]?.value || 0,
             solve_count: scoreObj[c.id]?.solve_count || 0,
             solved_by_me: solves.has(c.id),
           },
@@ -86,7 +86,7 @@ export async function routes(fastify: FastifyInstance) {
         data: {
           challenges: challenges
             .filter(({ id }) => visible.has(id))
-            .map((c) => ({ ...c, ...scores[c.id] })),
+            .map((c) => ({ ...c, ...values[c.id] })),
         },
       };
     },

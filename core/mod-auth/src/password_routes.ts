@@ -5,8 +5,6 @@ import {
 import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
 import { PasswordProvider } from "./password_provider.ts";
 import type { FastifyInstance } from "fastify";
-import { NOCTF_SESSION_COOKIE } from "./const.ts";
-import { NotFoundError } from "@noctf/server-core/errors";
 import { UserFlag } from "@noctf/server-core/types/enums";
 import { TokenProvider } from "./token_provider.ts";
 import { UserNotFoundError } from "./error.ts";
@@ -85,7 +83,7 @@ export default async function (fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (request) => {
       const email = request.body.email.toLowerCase();
       const password = request.body.password;
       const token = await passwordProvider.authenticate(email, password);
