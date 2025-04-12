@@ -118,6 +118,7 @@ export const AdminUpdateSubmissionsRequest = Type.Object(
     ids: Type.Array(Type.Number(), { minItems: 1 }),
     status: Type.Optional(SubmissionStatus),
     hidden: Type.Optional(Type.Boolean()),
+    value: Type.Optional(Type.Union([Type.Null(), Type.Number()])),
     comments: Type.Optional(Type.String({ maxLength: 512 })),
   },
   { additionalProperties: false },

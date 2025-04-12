@@ -53,20 +53,27 @@ function ComputeScoresForChallenge(
       !(teams.get(team_id)?.flags.includes("hidden") || hidden),
   );
   try {
-    const base = EvaluateScoringExpression(expr, params, valid.length);
+    const base = EvaluateScoringExpression(
+      expr,
+      params,
+      valid.filter(({ value }) => value === null).length,
+    );
     let last_updated = new Date(0);
-    const rv: Solve[] = valid.map(({ team_id, created_at, updated_at }, i) => {
-      last_updated = MaxDate(last_updated, updated_at);
-      const b = bonus?.[i];
-      return {
-        team_id,
-        challenge_id: metadata.id,
-        bonus: b,
-        hidden: false,
-        value: base + ((b && Math.round(b)) || 0),
-        created_at,
-      };
-    });
+    let bonusIdx = 0;
+    const rv: Solve[] = valid.map(
+      ({ team_id, created_at, updated_at, value }) => {
+        last_updated = MaxDate(last_updated, updated_at);
+        const b = value !== null ? undefined : bonus?.[bonusIdx++];
+        return {
+          team_id,
+          challenge_id: metadata.id,
+          bonus: b,
+          hidden: false,
+          value: value !== null ? value : base + ((b && Math.round(b)) || 0),
+          created_at,
+        };
+      },
+    );
     const rh: Solve[] = hidden.map(({ team_id, created_at, updated_at }) => {
       last_updated = MaxDate(last_updated, updated_at);
 

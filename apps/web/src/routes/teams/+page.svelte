@@ -140,7 +140,7 @@
                 class="text-lg text-base-content/70"
               />
               <span class="text-sm font-medium"
-                >{team.num_members} member{team.num_members === 1
+                >{team.members.length} member{team.members.length === 1
                   ? ""
                   : "s"}</span
               >

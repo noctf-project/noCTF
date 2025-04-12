@@ -263,7 +263,12 @@ export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 export const TeamSummary = Type.Composite([
   Type.Omit(Team, ["join_code"]),
   Type.Object({
-    num_members: Type.Integer(),
+    members: Type.Array(
+      Type.Object({
+        user_id: Type.Integer(),
+        role: Type.Union([Type.Literal("owner"), Type.Literal("member")]),
+      }),
+    ),
   }),
 ]);
 export type TeamSummary = Static<typeof TeamSummary>;
@@ -280,6 +285,7 @@ export const Submission = Type.Object({
   comments: Type.String({ maxLength: 512 }),
   source: Type.String({ maxLength: 64 }),
   hidden: Type.Boolean(),
+  value: Type.Union([Type.Null(), Type.Number()]),
   status: SubmissionStatus,
   created_at: TypeDate,
   updated_at: TypeDate,
