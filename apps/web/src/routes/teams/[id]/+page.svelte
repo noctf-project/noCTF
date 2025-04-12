@@ -2,6 +2,7 @@
   import { countryCodeToFlag } from "$lib/utils/country_flags";
   import TeamService from "$lib/state/team.svelte";
   import { wrapLoadable } from "$lib/api/index.svelte";
+  import type { PageData } from "./$types";
 
   function getIfNotNullOrEmpty(
     str: string | undefined | null,
@@ -28,10 +29,9 @@
     return bioString;
   }
 
-  let { teamId } = $props<{ teamId: number }>();
-  let teamLoader = wrapLoadable(TeamService.getTeamById(teamId));
+  let props: { data: PageData } = $props();
+  let teamLoader = wrapLoadable(TeamService.getTeamById(props.data.teamId));
   let team = $derived(teamLoader.r);
-  $inspect(team);
 </script>
 
 {#if !teamLoader.loading && team != null}
