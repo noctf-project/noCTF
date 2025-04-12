@@ -9,5 +9,6 @@ export type FilterChallengesQuery = Static<typeof FilterChallengesQuery>;
 export const ScoreboardQuery = Type.Object({
   page: Type.Optional(Type.Integer({ minimum: 1 })),
   page_size: Type.Optional(Type.Integer()),
+  tags: Type.Optional(Type.Array(Type.Number(), { maxItems: 10 })),
 });
 export type ScoreboardQuery = Static<typeof ScoreboardQuery>;

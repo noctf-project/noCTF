@@ -42,21 +42,23 @@ import { fastifyMultipart } from "@fastify/multipart";
 import { ScoreService } from "@noctf/server-core/services/score";
 import { SubmissionService } from "@noctf/server-core/services/submission";
 import { RateLimitService } from "@noctf/server-core/services/rate_limit";
+import { CompileDomainMatcher } from "./util/domain.ts";
 
 export const server = fastify({
   logger: {
     level: LOG_LEVEL,
   },
   disableRequestLogging: true,
+  trustProxy: true,
   genReqId: () => nanoid(),
   ...{ http2: ENABLE_HTTP2 }, // typescript is being funny
 });
-
 server.register(fastifyCompress);
 server.register(fastifyMultipart);
 server.register(fastifyCors, {
-  origin: ALLOWED_ORIGINS,
+  origin: CompileDomainMatcher(ALLOWED_ORIGINS),
   credentials: true,
+  maxAge: 86400,
 });
 
 server.register(async () => {

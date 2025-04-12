@@ -249,6 +249,7 @@ export type Award = Static<typeof Award>;
 
 export const ScoreboardEntry = Type.Object({
   team_id: Type.Integer(),
+  tag_ids: Type.Array(Type.Integer()),
   score: Type.Number(),
   rank: Type.Integer(),
   last_solve: TypeDate,
@@ -312,3 +313,9 @@ export const TeamMembership = Type.Object({
   team_id: Type.Number(),
 });
 export type TeamMembership = Static<typeof TeamMembership>;
+
+export const ScoreboardVersionData = Type.Object({
+  version: Type.Number(),
+  division_id: Type.Number(),
+});
+export type ScoreboardVersionData = Static<typeof ScoreboardVersionData>;

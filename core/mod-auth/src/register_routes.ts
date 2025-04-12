@@ -3,19 +3,21 @@ import {
   RegisterAuthTokenRequest,
 } from "@noctf/api/requests";
 import {
+  BaseResponse,
   FinishAuthResponse,
   RegisterAuthTokenResponse,
 } from "@noctf/api/responses";
-import type { AuthRegisterToken } from "@noctf/api/token";
 import { BadRequestError } from "@noctf/server-core/errors";
 import type { FastifyInstance } from "fastify";
 import { Generate } from "./hash_util.ts";
 import type { AssociateIdentity } from "@noctf/server-core/services/identity";
-import { NOCTF_SESSION_COOKIE } from "./const.ts";
+import { TokenProvider } from "./token_provider.ts";
 
 export default async function (fastify: FastifyInstance) {
-  const { identityService, userService, lockService } =
+  const { identityService, userService, lockService, cacheService } =
     fastify.container.cradle;
+
+  const tokenProvider = new TokenProvider({ cacheService });
 
   fastify.post<{
     Body: RegisterAuthTokenRequest;
@@ -28,15 +30,13 @@ export default async function (fastify: FastifyInstance) {
         body: RegisterAuthTokenRequest,
         response: {
           200: RegisterAuthTokenResponse,
+          default: BaseResponse,
         },
       },
     },
     async (request) => {
       return {
-        data: (await identityService.validateToken(
-          request.body.token,
-          "register",
-        )) as AuthRegisterToken,
+        data: await tokenProvider.lookup("register", request.body.token),
       };
     },
   );
@@ -52,20 +52,18 @@ export default async function (fastify: FastifyInstance) {
         body: RegisterAuthRequest,
         response: {
           200: FinishAuthResponse,
+          default: BaseResponse,
         },
       },
     },
-    async (request, reply) => {
+    async (request) => {
       const { password, name, token } = request.body;
-      const parsed = (await identityService.validateToken(
-        token,
-        "register",
-      )) as AuthRegisterToken;
+      const data = await tokenProvider.lookup("register", token);
       const id = await lockService.withLease(
-        `token:register:${parsed.jti}`,
+        `token:register:${TokenProvider.hash(token)}`,
         async () => {
-          const roles = parsed.roles;
-          let identity = parsed.identity as AssociateIdentity[];
+          const roles = data.roles;
+          let identity = data.identity as AssociateIdentity[];
           if (
             identity.length === 1 &&
             identity[0].provider === "email" &&
@@ -117,12 +115,6 @@ export default async function (fastify: FastifyInstance) {
       const sessionToken = identityService.generateToken({
         aud: "session",
         sub: id,
-      });
-      reply.setCookie(NOCTF_SESSION_COOKIE, sessionToken, {
-        path: "/",
-        secure: true,
-        httpOnly: true,
-        sameSite: true,
       });
       return {
         data: {

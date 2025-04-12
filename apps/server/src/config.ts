@@ -1,8 +1,8 @@
 export const HOST = process.env.HOST || "localhost";
 export const PORT = parseInt(process.env.PORT) || 8000;
-export const ALLOWED_ORIGINS = process.env.WEB_URL
-  ? process.env.WEB_URL.split(",")
-  : ["http://localhost:5173"];
+export const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",")
+  : ["localhost"];
 export const LOG_LEVEL = process.env.LOG_LEVEL || "info";
 export const POSTGRES_URL =
   process.env.POSTGRES_URL || "postgres://localhost/noctf";

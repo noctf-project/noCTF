@@ -7,23 +7,17 @@ import type {
 import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
 import type { AuthToken } from "@noctf/api/token";
 import { Validate } from "./hash_util.ts";
-import type { Logger } from "@noctf/server-core/types/primitives";
 import type { ServiceCradle } from "@noctf/server-core";
 import { AuthConfig } from "@noctf/api/config";
-import { UserFlag } from "@noctf/server-core/types/enums";
+import { UserNotFoundError } from "./error.ts";
 
-type Props = Pick<
-  ServiceCradle,
-  "logger" | "configService" | "identityService"
->;
+type Props = Pick<ServiceCradle, "configService" | "identityService">;
 
 export class PasswordProvider implements IdentityProvider {
-  private logger: Logger;
   private configService: ConfigService;
   private identityService: IdentityService;
 
-  constructor({ logger, configService, identityService }: Props) {
-    this.logger = logger;
+  constructor({ configService, identityService }: Props) {
     this.configService = configService;
     this.identityService = identityService;
 
@@ -45,8 +39,8 @@ export class PasswordProvider implements IdentityProvider {
     return [];
   }
 
-  async authPreCheck(email: string): Promise<AuthToken | null> {
-    const { enable_login_password, enable_register_password, validate_email } =
+  async authPreCheck(email: string): Promise<void> {
+    const { enable_login_password, enable_register_password } =
       await this.getConfig();
     if (!enable_login_password) {
       throw new NotFoundError("The requested auth provider cannot be found");
@@ -56,21 +50,7 @@ export class PasswordProvider implements IdentityProvider {
       email,
     );
     if (!identity) {
-      if (!enable_register_password) {
-        throw new AuthenticationError(
-          "New user registration is currently not available through this provider",
-        );
-      }
-      return {
-        aud: "register",
-        identity: [
-          {
-            provider: "email",
-            provider_id: email,
-          },
-        ],
-        roles: validate_email ? [UserFlag.VALID_EMAIL] : [],
-      };
+      throw new UserNotFoundError("User not found");
     }
     if (!identity.secret_data) {
       throw new AuthenticationError(

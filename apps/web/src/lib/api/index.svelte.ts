@@ -1,11 +1,24 @@
-import createClient from "openapi-fetch";
+import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "@noctf/openapi-spec";
 
-export const API_BASE_URL = "http://localhost:8000";
+export const SESSION_TOKEN_KEY = "noctf-session-token";
+
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 const client = createClient<paths>({
   baseUrl: API_BASE_URL,
   credentials: "include",
 });
+
+const authMiddleware: Middleware = {
+  async onRequest({ request }) {
+    // TODO: make this into a module/service
+    const token = localStorage.getItem(SESSION_TOKEN_KEY);
+    if (token) request.headers.set("authorization", `Bearer ${token}`);
+    return request;
+  },
+};
+client.use(authMiddleware);
 
 type Loadable<T> =
   | {

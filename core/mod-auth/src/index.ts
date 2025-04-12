@@ -1,6 +1,5 @@
-import fastifyCookie from "@fastify/cookie";
 import type { ListAuthMethodsResponse } from "@noctf/api/responses";
-import { DEFAULT_CONFIG, NOCTF_SESSION_COOKIE } from "./const.ts";
+import { DEFAULT_CONFIG } from "./const.ts";
 import password_routes from "./password_routes.ts";
 import oauth_routes from "./oauth_routes.ts";
 import register_routes from "./register_routes.ts";
@@ -11,7 +10,6 @@ import "@noctf/server-core/types/fastify";
 export async function initServer(fastify: FastifyInstance) {
   const { identityService, configService, logger } = fastify.container.cradle;
   await configService.register(AuthConfig, DEFAULT_CONFIG);
-  fastify.register(fastifyCookie);
   fastify.register(oauth_routes);
   fastify.register(password_routes);
   fastify.register(register_routes);
@@ -45,7 +43,6 @@ export async function initServer(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         await identityService.revokeToken(request.user.token, "session");
-        reply.clearCookie(NOCTF_SESSION_COOKIE);
       } catch (e) {
         logger.debug("failed to revoke session token", e);
       }

@@ -1,4 +1,4 @@
-ARG NODE_VERSION=22-slim
+ARG NODE_VERSION=23-slim
 
 
 FROM node:$NODE_VERSION AS build

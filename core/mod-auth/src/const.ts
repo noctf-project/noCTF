@@ -2,8 +2,6 @@ import type { AuthConfig } from "@noctf/api/config";
 
 export const CACHE_NAMESPACE = "core:mod:auth";
 
-export const NOCTF_SESSION_COOKIE = "noctf-session";
-
 export const DEFAULT_CONFIG: AuthConfig = {
   enable_register_password: true,
   enable_login_password: true,
