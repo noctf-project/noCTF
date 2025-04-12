@@ -25,8 +25,8 @@ export class PolicyService {
   private readonly logger;
 
   private readonly userRolesCache = new LocalCache<number, string[]>({
-    max: 8192,
-    ttl: 5000,
+    max: 16384,
+    ttl: POLICY_EXPIRATION,
   });
 
   // Smallish table so we can cache the entirety of it
