@@ -280,6 +280,7 @@ export const Submission = Type.Object({
   comments: Type.String({ maxLength: 512 }),
   source: Type.String({ maxLength: 64 }),
   hidden: Type.Boolean(),
+  value: Type.Union([Type.Null(), Type.Number()]),
   status: SubmissionStatus,
   created_at: TypeDate,
   updated_at: TypeDate,
