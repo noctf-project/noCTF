@@ -85,18 +85,13 @@
       }
 
       // Handle different responses based on if email exists
-      if (
-        checkEmailRes.data &&
-        Object.keys(checkEmailRes.data.data || {}).length === 0
-      ) {
-        // Email exists, proceed to login
-        currentStage = "login";
-      } else if (checkEmailRes.data?.data?.token) {
-        // New user, store token for registration
+      if (checkEmailRes.data?.data?.token) {
         registrationToken = checkEmailRes.data.data.token;
-      } else {
-        // Unexpected response
+        currentStage = "register";
+      } else if (checkEmailRes.error) {
         toasts.error("Unexpected response from server");
+      } else {
+        currentStage = "login";
       }
     } catch (error) {
       toasts.error("An error occurred during email check");
