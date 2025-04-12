@@ -263,7 +263,12 @@ export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 export const TeamSummary = Type.Composite([
   Type.Omit(Team, ["join_code"]),
   Type.Object({
-    num_members: Type.Integer(),
+    members: Type.Array(
+      Type.Object({
+        user_id: Type.Integer(),
+        role: Type.Union([Type.Literal("owner"), Type.Literal("member")]),
+      }),
+    ),
   }),
 ]);
 export type TeamSummary = Static<typeof TeamSummary>;

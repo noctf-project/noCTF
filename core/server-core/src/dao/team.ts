@@ -8,6 +8,7 @@ import { sql } from "kysely";
 import { partition } from "../util/object.ts";
 import { PostgresErrorCode, PostgresErrorConfig } from "../util/pgerror.ts";
 import { TryPGConstraintError } from "../util/pgerror.ts";
+import { jsonArrayFrom } from "kysely/helpers/postgres";
 
 const CREATE_ERROR_CONFIG: PostgresErrorConfig = {
   [PostgresErrorCode.Duplicate]: {
@@ -109,19 +110,19 @@ export class TeamDAO {
   ): Promise<TeamSummary[]> {
     let query = this.listQuery(params)
       .select([
-        "id",
-        "name",
-        "bio",
-        "country",
-        "division_id",
-        "created_at",
-        "flags",
-        (eb) =>
-          eb
-            .selectFrom("team_member")
-            .select(eb.fn.countAll().as("count"))
-            .where("team_member.team_id", "=", eb.ref("team.id"))
-            .as("num_members"),
+        "team.id",
+        "team.name",
+        "team.bio",
+        "team.country",
+        "team.division_id",
+        "team.created_at",
+        "team.flags",
+        jsonArrayFrom(
+          this.db
+            .selectFrom("team_member as tm")
+            .select(["tm.user_id as user_id", "tm.role as role"])
+            .whereRef("tm.team_id", "=", sql`team.id`),
+        ).as("members"),
       ])
       .orderBy("id");
     if (limit?.limit) {
