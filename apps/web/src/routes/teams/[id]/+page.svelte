@@ -32,6 +32,7 @@
   let props: { data: PageData } = $props();
   let teamLoader = wrapLoadable(TeamQueryService.get(props.data.teamId));
   let team = $derived(teamLoader.r);
+  $inspect(team);
 </script>
 
 {#if !teamLoader.loading && team != null}
