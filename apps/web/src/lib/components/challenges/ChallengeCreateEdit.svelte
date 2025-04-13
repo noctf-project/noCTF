@@ -27,7 +27,7 @@
 
   export interface ExistingFile {
     filename: string;
-    ref: string;
+    id: number;
   }
 
   export interface ChallData {
@@ -196,12 +196,9 @@
       private_metadata,
     };
     let fileRefsToAdd: {
-      [k in string]: { ref: string; is_attachment: boolean };
+      [k in string]: { id: number; is_attachment: boolean };
     } = Object.fromEntries(
-      existingFiles.map((f) => [
-        f.filename,
-        { ref: f.ref, is_attachment: true },
-      ]),
+      existingFiles.map((f) => [f.filename, { id: f.id, is_attachment: true }]),
     );
 
     let challengeId, version;
@@ -243,6 +240,7 @@
         const res = await api.POST("/admin/files", {
           async fetch(input) {
             const axiosResponse = await axios.post(input.url, formData, {
+              // TODO: this is dodgy, migrate into file
               headers: {
                 Authorization: `Bearer ${window.localStorage.getItem(SESSION_TOKEN_KEY)}`,
               },
@@ -265,8 +263,8 @@
           creationError = res.error.message;
           return;
         }
-        const { filename, ref } = res.data.data;
-        fileRefsToAdd[filename] = { ref, is_attachment: true };
+        const { filename, id } = res.data.data;
+        fileRefsToAdd[filename] = { id, is_attachment: true };
       }
     }
 

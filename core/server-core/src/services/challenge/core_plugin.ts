@@ -118,7 +118,13 @@ export class CoreChallengePlugin implements ChallengePlugin {
         Object.keys(m.files).map((filename) =>
           FILE_METADATA_LIMITER(() =>
             this.fileService.getMetadata(m.files[filename].id),
-          ).then(({ hash, size, url }) => ({ filename, hash, size, url, is_attachment: m.files[filename].is_attachment })),
+          ).then(({ hash, size, url }) => ({
+            filename,
+            hash,
+            size,
+            url,
+            is_attachment: m.files[filename].is_attachment,
+          })),
         ),
       ).then((p) =>
         p
