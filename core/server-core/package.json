@@ -26,6 +26,7 @@
     "jsonwebtoken": "^9.0.2",
     "kysely": "catalog:",
     "mime-types": "^2.1.35",
+    "minio": "^8.0.5",
     "nanoid": "catalog:",
     "nats": "^2.28.2",
     "nodemailer": "^6.10.0",

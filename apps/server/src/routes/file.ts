@@ -1,7 +1,7 @@
-import { IdParams, LocalFileParams } from "@noctf/api/params";
+import { LocalFileParams } from "@noctf/api/params";
 import { GetFileQuery } from "@noctf/api/query";
 import { BadRequestError } from "@noctf/server-core/errors";
-import { LocalFileProvider } from "@noctf/server-core/services/file";
+import type { LocalFileProvider } from "@noctf/server-core/services/file/local";
 import { FastifyInstance } from "fastify";
 
 export async function routes(fastify: FastifyInstance) {

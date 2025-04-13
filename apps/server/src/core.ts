@@ -19,7 +19,7 @@ import { initServer as authzServer } from "@noctf/authz-server";
 import type { FastifyInstance } from "fastify";
 import { AuthnHook } from "./hooks/authn.ts";
 import { AuthzHook } from "./hooks/authz.ts";
-import { LocalFileProvider } from "@noctf/server-core/services/file";
+import { LocalFileProvider } from "@noctf/server-core/services/file/local";
 import { FILE_LOCAL_PATH, TOKEN_SECRET } from "./config.ts";
 import { RateLimitHook } from "./hooks/rate_limit.ts";
 
