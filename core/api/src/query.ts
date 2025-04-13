@@ -12,3 +12,12 @@ export const ScoreboardQuery = Type.Object({
   tags: Type.Optional(Type.Array(Type.Number(), { maxItems: 10 })),
 });
 export type ScoreboardQuery = Static<typeof ScoreboardQuery>;
+
+export const GetFileQuery = Type.Object(
+  {
+    sig: Type.String({ maxLength: 255 }),
+    iat: Type.Number(),
+  },
+  { additionalProperties: false },
+);
+export type GetFileQuery = Static<typeof GetFileQuery>;

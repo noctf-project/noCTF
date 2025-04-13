@@ -1,6 +1,5 @@
 import { FileParams } from "@noctf/api/params";
 import type { FastifyInstance } from "fastify";
-import { ServeFileHandler } from "../hooks/file.ts";
 import { AdminFileMetadataResponse } from "@noctf/api/responses";
 import { BadRequestError } from "@noctf/server-core/errors";
 
@@ -8,7 +7,7 @@ export async function routes(fastify: FastifyInstance) {
   const { fileService } = fastify.container.cradle;
 
   fastify.get<{ Params: FileParams; Reply: AdminFileMetadataResponse }>(
-    "/admin/files/:ref/meta",
+    "/admin/files/:ref",
     {
       schema: {
         security: [{ bearer: [] }],
@@ -27,24 +26,6 @@ export async function routes(fastify: FastifyInstance) {
       return {
         data: await fileService.getMetadata(request.params.ref),
       };
-    },
-  );
-
-  fastify.get<{ Params: FileParams }>(
-    "/admin/files/:ref",
-    {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        auth: {
-          require: true,
-          policy: ["admin.file.get"],
-        },
-        params: FileParams,
-      },
-    },
-    async (request, reply) => {
-      return ServeFileHandler(request.params.ref, request, reply);
     },
   );
 

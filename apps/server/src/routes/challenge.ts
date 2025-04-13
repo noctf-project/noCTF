@@ -1,5 +1,4 @@
-import type { ChallengePrivateMetadataBase } from "@noctf/api/datatypes";
-import { GetChallengeFileParams, IdParams } from "@noctf/api/params";
+import { IdParams } from "@noctf/api/params";
 import {
   GetChallengeResponse,
   GetChallengeSolvesResponse,
@@ -8,7 +7,6 @@ import {
 } from "@noctf/api/responses";
 import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
 import type { FastifyInstance } from "fastify";
-import { ServeFileHandler } from "../hooks/file.ts";
 import { SolveChallengeRequest } from "@noctf/api/requests";
 import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
@@ -228,42 +226,6 @@ export async function routes(fastify: FastifyInstance) {
           { ip: request.ip },
         ),
       };
-    },
-  );
-
-  fastify.get<{ Params: GetChallengeFileParams }>(
-    "/challenges/:id/files/:filename",
-    {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["challenge"],
-        auth: {
-          policy: ["challenge.get"],
-        },
-        params: GetChallengeFileParams,
-      },
-    },
-    async (request, reply) => {
-      const ctime = Date.now();
-      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
-      const { id } = request.params;
-
-      // Cannot cache directly as could be rendered with team_id as param
-      const challenge = await challengeService.get(id, true);
-      if (
-        !admin &&
-        (challenge.hidden ||
-          (challenge.visible_at !== null &&
-            ctime < challenge.visible_at.getTime()))
-      ) {
-        throw new NotFoundError("Challenge not found");
-      }
-      const ref = (challenge.private_metadata as ChallengePrivateMetadataBase)
-        .files?.[request.params.filename]?.ref;
-      if (!ref) {
-        throw new NotFoundError("File not found");
-      }
-      return ServeFileHandler(ref, request, reply);
     },
   );
 }

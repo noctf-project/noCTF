@@ -114,12 +114,16 @@ export class CoreChallengePlugin implements ChallengePlugin {
               ? m.solve.manual!.input_type
               : ChallengeSolveInputType.None,
       },
-      files: await Promise.all(
+      files: await Promise.allSettled(
         Object.keys(m.files).map((name) =>
           FILE_METADATA_LIMITER(() =>
             this.fileService.getMetadata(m.files[name].ref),
-          ).then(({ hash, size }) => ({ name, hash, size })),
+          ).then(({ hash, size, url }) => ({ name, hash, size, url })),
         ),
+      ).then((p) =>
+        p
+          .map((m) => m.status === "fulfilled" && m.value)
+          .filter((v): v is Exclude<typeof v, false> => !!v),
       ),
     };
   };

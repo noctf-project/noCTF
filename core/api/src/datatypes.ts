@@ -129,6 +129,7 @@ export const ChallengePublicMetadataBase = Type.Object(
         name: Type.String(),
         size: Type.Number(),
         hash: Type.String(),
+        url: Type.String(),
       }),
     ),
   },
@@ -203,6 +204,7 @@ export const FileMetadata = Type.Object({
   mime: Type.String(),
   size: Type.Number(),
   hash: Type.String(),
+  url: Type.String(),
 });
 export type FileMetadata = Static<typeof FileMetadata>;
 

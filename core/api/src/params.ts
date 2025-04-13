@@ -9,15 +9,6 @@ export const IdParams = Type.Object(
 );
 export type IdParams = Static<typeof IdParams>;
 
-export const GetChallengeFileParams = Type.Object(
-  {
-    id: Type.Number(),
-    filename: Type.String(),
-  },
-  { additionalProperties: false },
-);
-export type GetChallengeFileParams = Static<typeof GetChallengeFileParams>;
-
 export const FileParams = Type.Object(
   {
     ref: Type.String({ maxLength: 64, pattern: "^[A-Za-z0-9_-]+" }),

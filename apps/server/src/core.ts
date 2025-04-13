@@ -6,6 +6,7 @@ import { routes as adminSetup } from "./routes/admin_setup.ts";
 import { routes as adminSubmission } from "./routes/admin_submission.ts";
 
 import { routes as challenge } from "./routes/challenge.ts";
+import { routes as file } from "./routes/file.ts";
 import { routes as user } from "./routes/user.ts";
 import { routes as team } from "./routes/team.ts";
 import { routes as scoreboard } from "./routes/scoreboard.ts";
@@ -19,7 +20,7 @@ import type { FastifyInstance } from "fastify";
 import { AuthnHook } from "./hooks/authn.ts";
 import { AuthzHook } from "./hooks/authz.ts";
 import { LocalFileProvider } from "@noctf/server-core/services/file";
-import { FILE_LOCAL_PATH } from "./config.ts";
+import { FILE_LOCAL_PATH, TOKEN_SECRET } from "./config.ts";
 import { RateLimitHook } from "./hooks/rate_limit.ts";
 
 export default async function (fastify: FastifyInstance) {
@@ -28,7 +29,11 @@ export default async function (fastify: FastifyInstance) {
   fastify.addHook("preHandler", RateLimitHook);
 
   const { fileService } = fastify.container.cradle;
-  fileService.register(new LocalFileProvider(FILE_LOCAL_PATH));
+  const localFileProvider = new LocalFileProvider(
+    FILE_LOCAL_PATH,
+    TOKEN_SECRET,
+  );
+  fileService.register(localFileProvider);
 
   fastify.register(adminAuditLog);
   fastify.register(adminChallenge);
@@ -37,13 +42,14 @@ export default async function (fastify: FastifyInstance) {
   fastify.register(adminSetup);
   fastify.register(adminSubmission);
 
+  fastify.register(challenge);
+  fastify.register(file);
   fastify.register(user);
   fastify.register(team);
   fastify.register(scoreboard);
 
   fastify.register(auth);
   fastify.register(captcha);
-  fastify.register(challenge);
   fastify.register(tickets);
   fastify.register(authzServer);
 }

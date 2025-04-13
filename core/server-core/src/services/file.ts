@@ -1,6 +1,6 @@
 import type { Readable } from "node:stream";
 import { PassThrough } from "node:stream";
-import { createHash } from "node:crypto";
+import { BinaryLike, createHash, createHmac } from "node:crypto";
 import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { lookup } from "mime-types";
@@ -10,21 +10,17 @@ import { FileConfig } from "@noctf/api/config";
 import type { ServiceCradle } from "../index.ts";
 import type { FileMetadata } from "@noctf/api/datatypes";
 import { nanoid } from "nanoid";
-import { BadRequestError, NotFoundError } from "../errors.ts";
+import { BadRequestError, ForbiddenError, NotFoundError } from "../errors.ts";
+import { ConfigService } from "./config.ts";
 
 type Props = Pick<ServiceCradle, "cacheService" | "configService">;
 
 export interface FileProvider {
   name: string;
   upload(ref: string, rs: Readable): Promise<void>;
-  download(
-    ref: string,
-    start?: number,
-    end?: number,
-  ): Promise<string | [Readable, FileMetadata]>;
   delete(ref: string): Promise<void>;
   getMetadata(ref: string): Promise<FileMetadata>;
-  setMetadata(ref: string, meta: FileMetadata): Promise<void>;
+  setMetadata(ref: string, meta: Omit<FileMetadata, "url">): Promise<void>;
 }
 
 const CACHE_METADATA_NAMESPACE = "core:file:metadata";
@@ -56,9 +52,14 @@ export class FileService {
     this.providers.set(name, provider);
   }
 
+  getProvider(name: string) {
+    const provider = this.providers.get(name);
+    if (!provider) throw new Error(`Provider ${name} does not exist`);
+    return provider;
+  }
+
   async getMetadata(id: string): Promise<FileMetadata> {
     const { provider, ref } = this.getRef(id);
-    console.log(provider, ref);
     return this.cacheService.load(
       CACHE_METADATA_NAMESPACE,
       id,
@@ -86,7 +87,7 @@ export class FileService {
       this.size(sSize),
       provider.upload(id, sUpload),
     ]);
-    const metadata: FileMetadata = {
+    const metadata: Omit<FileMetadata, "url"> = {
       hash,
       ref: `${upload}:${id}`,
       size,
@@ -95,22 +96,13 @@ export class FileService {
     };
     await provider.setMetadata(id, metadata);
 
-    return metadata;
+    return { ...metadata, url: "" };
   }
 
   async delete(id: string): Promise<void> {
     const { provider, ref } = this.getRef(id);
     await provider.delete(ref);
     await this.cacheService.del(CACHE_METADATA_NAMESPACE, ref);
-  }
-
-  async download(
-    id: string,
-    start?: number,
-    end?: number,
-  ): Promise<string | [Readable, FileMetadata]> {
-    const { provider, ref } = this.getRef(id);
-    return provider.download(ref, start, end);
   }
 
   private hash(rs: Readable): Promise<string> {
@@ -147,12 +139,19 @@ export class FileService {
 export class LocalFileProvider implements FileProvider {
   private static METADATA_PATH = "meta";
   private static OBJECT_PATH = "object";
+  private static SIGNED_URL_WINDOW = 600; // File is active for a max of twice as long as this
+  private static CLOCK_SKEW_WINDOW = 30;
 
-  private readonly root;
   public readonly name = "local";
+  private readonly secret;
 
-  constructor(root: string) {
-    this.root = root;
+  constructor(
+    private readonly root: string,
+    secret: BinaryLike,
+  ) {
+    this.secret = createHmac("sha256", secret)
+      .update("file.provider.local")
+      .digest();
     mkdirSync(join(root, LocalFileProvider.OBJECT_PATH), { recursive: true });
     mkdirSync(join(root, LocalFileProvider.METADATA_PATH), { recursive: true });
   }
@@ -186,12 +185,16 @@ export class LocalFileProvider implements FileProvider {
 
   async getMetadata(ref: string): Promise<FileMetadata> {
     try {
-      return JSON.parse(
-        await readFile(
-          join(this.root, LocalFileProvider.METADATA_PATH, ref),
-          "utf-8",
+      const { iat, sig } = this.signURL(ref);
+      return {
+        ...JSON.parse(
+          await readFile(
+            join(this.root, LocalFileProvider.METADATA_PATH, ref),
+            "utf-8",
+          ),
         ),
-      );
+        url: `files/${encodeURIComponent(ref)}?iat=${iat}&sig=${sig.digest("base64url")}`,
+      };
     } catch (e) {
       if (e.code === "ENOENT") {
         throw new NotFoundError("File not found");
@@ -200,11 +203,53 @@ export class LocalFileProvider implements FileProvider {
     }
   }
 
+  private signURL(id: string, iat?: number) {
+    if (!(typeof iat === "number")) {
+      iat = Math.floor(Date.now() / 1000);
+      iat =
+        LocalFileProvider.SIGNED_URL_WINDOW *
+        Math.floor(iat / LocalFileProvider.SIGNED_URL_WINDOW);
+    }
+    const payload = `v1!${id}!${iat}`;
+    const sig = createHmac("sha256", this.secret).update(payload);
+    return {
+      id,
+      iat,
+      sig,
+    };
+  }
+
   async download(
     ref: string,
     start?: number,
     end?: number,
-  ): Promise<string | [Readable, FileMetadata]> {
+    signature?: { iat: number; sig: string },
+  ): Promise<[Readable, FileMetadata]> {
+    if (signature && signature.iat) {
+      const { sig } = this.signURL(ref, signature.iat);
+      try {
+        if (!Buffer.from(signature.sig, "base64url").equals(sig.digest())) {
+          throw new ForbiddenError("Invalid signature");
+        }
+      } catch (e) {
+        if (!(e instanceof ForbiddenError))
+          throw new ForbiddenError("Invalid signature");
+        throw e;
+      }
+      const now = Math.floor(Date.now() / 1000);
+      // add a random skewing factor
+      if (signature.iat - LocalFileProvider.CLOCK_SKEW_WINDOW > now) {
+        throw new ForbiddenError("Invalid signature timestamp");
+      }
+      if (
+        signature.iat +
+          LocalFileProvider.SIGNED_URL_WINDOW * 2 +
+          LocalFileProvider.CLOCK_SKEW_WINDOW <
+        now
+      ) {
+        throw new ForbiddenError("Signature expired");
+      }
+    }
     // Just to check if file exists
     const metadata = await this.getMetadata(ref);
     if (!start) {
