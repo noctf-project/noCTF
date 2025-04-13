@@ -30,7 +30,7 @@ export async function routes(fastify: FastifyInstance) {
   );
 
   fastify.delete<{ Params: IdParams }>(
-    "/admin/files/:ref",
+    "/admin/files/:id",
     {
       schema: {
         security: [{ bearer: [] }],
