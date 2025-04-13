@@ -11,6 +11,7 @@
 
   let currentPage = $state(0);
   let searchQuery = $state("");
+  let previousSearchQuery = $state("");
   let debouncedSearchQuery = $state("");
   let isLoading = $state(true);
   let teams: Team[] = $state([]);
@@ -23,7 +24,13 @@
       untrack(() => {
         if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
         searchDebounceTimer = setTimeout(() => {
-          debouncedSearchQuery = searchQuery;
+          if (searchQuery !== debouncedSearchQuery) {
+            previousSearchQuery = debouncedSearchQuery;
+            debouncedSearchQuery = searchQuery;
+            if (previousSearchQuery !== searchQuery) {
+              currentPage = 0;
+            }
+          }
           searchDebounceTimer = null;
         }, SEARCH_DEBOUNCE_MS);
       });
@@ -33,12 +40,6 @@
   $effect(() => {
     // re-trigger a load if the search changed or currentPage changed
     if (debouncedSearchQuery !== undefined || currentPage !== undefined) {
-      untrack(() => {
-        // we are searching, and it is non-empty, so reset the page
-        if (searchQuery == debouncedSearchQuery && searchQuery) {
-          currentPage = 0;
-        }
-      });
       loadTeams();
     }
   });
@@ -74,7 +75,11 @@
       clearTimeout(searchDebounceTimer);
       searchDebounceTimer = null;
     }
+    previousSearchQuery = debouncedSearchQuery;
     debouncedSearchQuery = "";
+    if (previousSearchQuery) {
+      currentPage = 0;
+    }
   }
 
   onMount(() => {
