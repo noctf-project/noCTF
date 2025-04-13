@@ -141,10 +141,17 @@ export class ConfigService {
       );
     }
     if (!noValidate) {
-      const result = await validator(value);
-      if (result) {
+      try {
+        const result = await validator(value);
+        if (result) {
+          throw new ValidationError(
+            `Config validation failed with error: ${result}`,
+          );
+        }
+      } catch (e) {
+        if (e instanceof ValidationError) throw e;
         throw new ValidationError(
-          `Config validation failed with error: ${result}`,
+          `Config validation failed with error: ${e.message}`,
         );
       }
     }
@@ -174,7 +181,7 @@ export class ConfigService {
   async register<T extends TSchema>(
     schema: T,
     defaultCfg: Static<T>,
-    validator?: Validator<T>,
+    validator?: Validator<Static<T>>,
   ) {
     const namespace = schema.$id;
     if (!namespace) {

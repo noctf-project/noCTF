@@ -4,6 +4,8 @@ export interface EmailProvider {
   readonly name: string;
   readonly queued: boolean;
   send(payload: EmailPayload): Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  validate(config: any): Promise<void>;
 }
 
 export interface EmailPayload {
@@ -12,5 +14,5 @@ export interface EmailPayload {
   cc?: EmailAddress[];
   bcc?: EmailAddress[];
   subject: string;
-  body: string;
+  text: string;
 }

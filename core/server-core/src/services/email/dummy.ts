@@ -13,6 +13,8 @@ export class DummyEmailProvider implements EmailProvider {
     this.logger = logger;
   }
 
+  async validate(): Promise<void> {}
+
   async send(payload: EmailPayload): Promise<void> {
     this.logger.info(payload, "New Email Message");
   }

@@ -41,7 +41,7 @@ export async function initServer(fastify: FastifyInstance) {
   );
 }
 
-export async function initWorker(cradle: ServiceCradle) {
+export async function initWorker(signal: AbortSignal, cradle: ServiceCradle) {
   const { eventBusService } = cradle;
   const ticketService = new TicketService(cradle);
   const discordProvider = new DiscordProvider({ ...cradle, ticketService });
@@ -91,6 +91,7 @@ export async function initWorker(cradle: ServiceCradle) {
   };
 
   await eventBusService.subscribe<TicketStateMessage | TicketApplyMessage>(
+    signal,
     "TicketWorker",
     ["queue.ticket.state", "queue.ticket.apply"],
     {

@@ -19,10 +19,22 @@ export const Slug = Type.String({
 export type Slug = Static<typeof Slug>;
 
 export const EmailAddress = Type.Object({
-  email: Type.String({ format: "email", maxLength: 255 }),
-  name: Type.Optional(Type.String({ maxLength: 128 })),
+  address: Type.String({ format: "email", maxLength: 255 }),
+  name: Type.String({ maxLength: 128 }),
 });
 export type EmailAddress = Static<typeof EmailAddress>;
+
+export const EmailAddressOrUserId = Type.Union([EmailAddress, Type.Integer()]);
+export type EmailAddressOrUserId = Static<typeof EmailAddressOrUserId>;
+
+export const EmailMessage = Type.Object({
+  to: Type.Optional(Type.Array(EmailAddressOrUserId)),
+  cc: Type.Optional(Type.Array(EmailAddressOrUserId)),
+  bcc: Type.Optional(Type.Array(EmailAddressOrUserId)),
+  subject: Type.String(),
+  text: Type.String(),
+});
+export type EmailMessage = Static<typeof EmailMessage>;
 
 export const AuthMethod = Type.Object({
   provider: Type.String(),
@@ -163,12 +175,7 @@ export const Challenge = Type.Object({
 export type Challenge = Static<typeof Challenge>;
 
 export const PublicChallenge = Type.Intersect([
-  Type.Omit(Challenge, [
-    "private_metadata",
-    "tags",
-    "version",
-    "created_at",
-  ]),
+  Type.Omit(Challenge, ["private_metadata", "tags", "version", "created_at"]),
   Type.Object({
     metadata: ChallengePublicMetadataBase,
   }),

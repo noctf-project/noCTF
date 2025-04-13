@@ -100,11 +100,7 @@ export class IdentityService {
     return this.cacheService.load(
       CACHE_NAMESPACE,
       `pvd_uid:${user_id}:${provider}`,
-      async () =>
-        await this.dao.getIdentityForUser({
-          user_id,
-          provider,
-        }),
+      async () => await this.dao.getIdentityForUser(user_id, provider),
     );
   }
 

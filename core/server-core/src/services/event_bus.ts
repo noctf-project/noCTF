@@ -25,15 +25,13 @@ export type EventItem<T> = {
   attempt: number;
   data: T;
 };
+
 export type EventSubscribeOptions<T> = {
   handler: EventHandlerFn<T>;
   backoff?: (attempts: number) => number;
   concurrency?: number;
 };
-export type EventPublishOptions = {
-  delay?: number;
-  attempts?: number;
-};
+
 export type EventSubscriberHandle<T> = {
   _type: string;
   _data: string | EventHandlerFn<T>;
@@ -93,6 +91,7 @@ export class EventBusService {
    * published to a remote queue. this is more reliable, since jobs can be retried by bullmq.
    */
   async subscribe<T>(
+    signal: AbortSignal,
     consumer: string,
     subjects: string[],
     options: EventSubscribeOptions<T>,
@@ -139,14 +138,18 @@ export class EventBusService {
       }
     }
 
-    void this.listen(type, consumer, options);
+    await this.listen(signal, type, consumer, options);
   }
 
   async publish<T>(subject: string, data: T) {
+    if (!this.natsClient) {
+      await this.init();
+    }
     await this.natsClient.publish(subject, await Compress(encode(data)));
   }
 
   private async listen<T>(
+    signal: AbortSignal,
     streamType: StreamType,
     name: string,
     options: EventSubscribeOptions<T>,
@@ -156,7 +159,7 @@ export class EventBusService {
     const jetstream = this.natsClient.jetstream();
     const stream = STREAMS[streamType];
     const q = await jetstream.consumers.get(stream.name, name);
-    while (true) {
+    while (!signal.aborted) {
       this.logger.info(
         { consumer: name, stream: stream.name },
         "Waiting for messages",

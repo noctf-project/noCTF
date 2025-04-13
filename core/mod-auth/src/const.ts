@@ -11,8 +11,9 @@ export const DEFAULT_CONFIG: AuthConfig = {
 };
 
 export const EMAIL_VERIFICATION_TEMPLATE = Handlebars.compile(`Hello,
-Thanks for creating an account.
 
-Click the following link to continue creating your account:
+Someone tried to register for {{ ctf_name }} using your email address.
+
+If it was you, please click the following link to continue with creating your account:
 {{ root_url }}/auth/register?token={{ token }}
 `);
