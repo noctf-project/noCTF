@@ -189,7 +189,7 @@
   <div class={`flex items-center gap-2 ${!isCompact ? "w-full" : ""}`}>
     <span class="text-xl flex-shrink-0">{countryCodeToFlag("un")}</span>
     <a
-      href={`/team/${team_id}`}
+      href={`/teams/${team_id}`}
       class={`truncate block cursor-pointer ${nameBg} ${nameFg} p-0.5 px-2 rounded-md font-medium`}
     >
       {#await TeamQueryService.get(team_id)}
