@@ -102,7 +102,8 @@ export const ChallengePrivateMetadataBase = Type.Object(
       },
       { additionalProperties: false },
     ),
-    files: Type.Array(
+    files: Type.Record(
+      Type.String(),
       Type.Object(
         {
           id: Type.Number(),
