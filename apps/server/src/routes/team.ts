@@ -24,7 +24,7 @@ import { ActorType } from "@noctf/server-core/types/enums";
 import { IdParams } from "@noctf/api/params";
 import { Policy } from "@noctf/server-core/util/policy";
 
-export const TEAM_PAGE_SIZE = 50;
+export const TEAM_PAGE_SIZE = 60;
 
 export async function routes(fastify: FastifyInstance) {
   const adminPolicy: Policy = ["admin.team.get"];
