@@ -55,7 +55,11 @@ export const server = fastify({
   ...{ http2: ENABLE_HTTP2 }, // typescript is being funny
 });
 if (ENABLE_COMPRESSION) server.register(fastifyCompress);
-server.register(fastifyMultipart);
+server.register(fastifyMultipart, {
+  limits: {
+    fileSize: 1024 * 1024 * 1024, // 1GB
+  },
+});
 server.register(fastifyCors, {
   origin: CompileDomainMatcher(ALLOWED_ORIGINS),
   credentials: true,

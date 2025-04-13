@@ -43,26 +43,27 @@ export class FileService {
   async init() {
     await this.configService.register(FileConfig, {
       upload: "local",
-      download: "local",
     });
   }
 
   register(provider: FileProvider) {
     const name = provider.name;
+    if (name.indexOf(":") !== -1)
+      throw new Error("Provider name cannot have a colon");
     if (this.providers.has(name)) {
       throw new Error(`Provider ${name} is already registered`);
     }
     this.providers.set(name, provider);
   }
 
-  async getMetadata(ref: string): Promise<FileMetadata> {
-    const {
-      value: { upload },
-    } = await this.configService.get<FileConfig>(FileConfig.$id!);
-    const provider = this.providers.get(upload);
-    if (!provider) throw new Error(`Provider ${upload} does not exist`);
-    return this.cacheService.load(CACHE_METADATA_NAMESPACE, ref, () =>
-      provider.getMetadata(ref),
+  async getMetadata(id: string): Promise<FileMetadata> {
+    const { provider, ref } = this.getRef(id);
+    console.log(provider, ref);
+    return this.cacheService.load(
+      CACHE_METADATA_NAMESPACE,
+      id,
+      () => provider.getMetadata(ref),
+      { expireSeconds: 600 }, // ideally this should never change files are immutable
     );
   }
 
@@ -72,7 +73,7 @@ export class FileService {
     } = await this.configService.get<FileConfig>(FileConfig.$id!);
     const provider = this.providers.get(upload);
     if (!provider) throw new Error(`Provider ${upload} does not exist`);
-    const ref = nanoid();
+    const id = nanoid();
     const sHash = new PassThrough();
     const sSize = new PassThrough();
     const sUpload = new PassThrough();
@@ -83,40 +84,32 @@ export class FileService {
     const [hash, size] = await Promise.all([
       this.hash(sHash),
       this.size(sSize),
-      provider.upload(ref, sUpload),
+      provider.upload(id, sUpload),
     ]);
     const metadata: FileMetadata = {
       hash,
-      ref,
+      ref: `${upload}:${id}`,
       size,
       filename,
       mime: lookup(filename) || "application/octet-stream",
     };
-    await provider.setMetadata(ref, metadata);
+    await provider.setMetadata(id, metadata);
 
     return metadata;
   }
 
-  async delete(ref: string): Promise<void> {
-    const {
-      value: { upload },
-    } = await this.configService.get<FileConfig>(FileConfig.$id!);
-    const provider = this.providers.get(upload);
-    if (!provider) throw new Error(`Provider ${upload} does not exist`);
+  async delete(id: string): Promise<void> {
+    const { provider, ref } = this.getRef(id);
     await provider.delete(ref);
     await this.cacheService.del(CACHE_METADATA_NAMESPACE, ref);
   }
 
   async download(
-    ref: string,
+    id: string,
     start?: number,
     end?: number,
   ): Promise<string | [Readable, FileMetadata]> {
-    const {
-      value: { download },
-    } = await this.configService.get<FileConfig>(FileConfig.$id!);
-    const provider = this.providers.get(download);
-    if (!provider) throw new Error(`Provider ${download} does not exist`);
+    const { provider, ref } = this.getRef(id);
     return provider.download(ref, start, end);
   }
 
@@ -136,6 +129,18 @@ export class FileService {
       rs.on("data", (c) => (size += c.length));
       rs.on("end", () => resolve(size));
     });
+  }
+
+  private getRef(id: string) {
+    const colon = id.indexOf(":");
+    if (colon === -1) throw new Error("Invalid file ref");
+    const name = id.slice(0, colon);
+    const provider = this.providers.get(name);
+    if (!provider) throw new Error(`Provider ${name} does not exist`);
+    return {
+      provider,
+      ref: id.slice(colon + 1),
+    };
   }
 }
 

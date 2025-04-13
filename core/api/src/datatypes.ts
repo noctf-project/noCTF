@@ -157,12 +157,7 @@ export const Challenge = Type.Object({
 export type Challenge = Static<typeof Challenge>;
 
 export const PublicChallenge = Type.Intersect([
-  Type.Omit(Challenge, [
-    "private_metadata",
-    "tags",
-    "version",
-    "created_at",
-  ]),
+  Type.Omit(Challenge, ["private_metadata", "tags", "version", "created_at"]),
   Type.Object({
     metadata: ChallengePublicMetadataBase,
   }),

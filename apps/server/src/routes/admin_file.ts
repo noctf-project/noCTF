@@ -88,7 +88,29 @@ export async function routes(fastify: FastifyInstance) {
         throw new BadRequestError("Filename doesn't exist or is too long");
       }
       const filename = data.filename.replace(/[^a-zA-Z0-9_\-. ]/g, "");
+      request.raw.on("close", () => {
+        if (request.raw.readableAborted) {
+          data.file.emit("end");
+        }
+      });
+      data.file.on("limit", () => {
+        data.file.emit("end");
+      });
       const result = await fileService.upload(filename, data.file);
+
+      if (request.raw.readableAborted) {
+        fastify.log.warn({ ref: result.ref }, "File upload aborted");
+        void fileService.delete(result.ref).catch(() => {});
+        throw new BadRequestError("FileUploadError", "File upload aborted");
+      }
+      if (data.file.truncated) {
+        fastify.log.warn({ ref: result.ref }, "File upload over limit");
+        void fileService.delete(result.ref).catch(() => {});
+        throw new BadRequestError(
+          "FileUploadError",
+          "File size exceeded limit",
+        );
+      }
 
       return reply.status(201).send({
         data: result,

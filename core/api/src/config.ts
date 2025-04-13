@@ -90,9 +90,6 @@ export const FileConfig = Type.Object(
     upload: Type.String({
       title: "File Upload Provider",
     }),
-    download: Type.String({
-      title: "File Download Provider",
-    }),
   },
   { $id: "core.file", additionalProperties: false },
 );
