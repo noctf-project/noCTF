@@ -124,7 +124,7 @@ export const ChallengePrivateMetadataBase = Type.Object(
       Type.String(),
       Type.Object(
         {
-          ref: Type.String(),
+          id: Type.Number(),
           is_attachment: Type.Boolean(),
         },
         { additionalProperties: false },
@@ -144,9 +144,11 @@ export const ChallengePublicMetadataBase = Type.Object(
     }),
     files: Type.Array(
       Type.Object({
-        name: Type.String(),
+        filename: Type.String(),
         size: Type.Number(),
         hash: Type.String(),
+        url: Type.String(),
+        is_attachment: Type.Boolean(),
       }),
     ),
   },
@@ -216,11 +218,14 @@ export const CaptchaValidationString = Type.Optional(
 export type CaptchaValidationString = Static<typeof CaptchaValidationString>;
 
 export const FileMetadata = Type.Object({
+  id: Type.Number(),
   filename: Type.String(),
   ref: Type.String(),
   mime: Type.String(),
   size: Type.Number(),
   hash: Type.String(),
+  url: Type.String(),
+  provider: Type.String(),
 });
 export type FileMetadata = Static<typeof FileMetadata>;
 

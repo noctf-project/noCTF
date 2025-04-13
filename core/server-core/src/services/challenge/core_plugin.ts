@@ -114,12 +114,22 @@ export class CoreChallengePlugin implements ChallengePlugin {
               ? m.solve.manual!.input_type
               : ChallengeSolveInputType.None,
       },
-      files: await Promise.all(
-        Object.keys(m.files).map((name) =>
+      files: await Promise.allSettled(
+        Object.keys(m.files).map((filename) =>
           FILE_METADATA_LIMITER(() =>
-            this.fileService.getMetadata(m.files[name].ref),
-          ).then(({ hash, size }) => ({ name, hash, size })),
+            this.fileService.getMetadata(m.files[filename].id),
+          ).then(({ hash, size, url }) => ({
+            filename,
+            hash,
+            size,
+            url,
+            is_attachment: m.files[filename].is_attachment,
+          })),
         ),
+      ).then((p) =>
+        p
+          .map((m) => m.status === "fulfilled" && m.value)
+          .filter((v): v is Exclude<typeof v, false> => !!v),
       ),
     };
   };
@@ -148,7 +158,7 @@ export class CoreChallengePlugin implements ChallengePlugin {
     const filePromises = await Promise.allSettled(
       keys.map((k) =>
         FILE_METADATA_LIMITER(() =>
-          this.fileService.getMetadata(m.files[k].ref),
+          this.fileService.getMetadata(m.files[k].id),
         ),
       ),
     );

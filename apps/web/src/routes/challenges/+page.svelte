@@ -72,7 +72,10 @@
       if (r.data) {
         const challDetails: ChallDetails = {
           description: r.data.data.description,
-          files: r.data.data.metadata.files.map((f) => f.name),
+          files: r.data.data.metadata.files.map(({ filename, url }) => ({
+            filename,
+            url,
+          })),
         };
         challDetailsMap[challData.id] = challDetails;
         modalChallDetails = challDetails;

@@ -12,6 +12,22 @@ export async function up(db: Kysely<any>): Promise<void> {
     .execute();
 
   await schema
+    .createTable("file")
+    .addColumn("id", "integer", (col) =>
+      col.primaryKey().generatedByDefaultAsIdentity(),
+    )
+    .addColumn("hash", "bytea", (col) => col.notNull())
+    .addColumn("ref", "varchar", (col) => col.notNull())
+    .addColumn("filename", "varchar(255)", (col) => col.notNull())
+    .addColumn("provider", "varchar(64)", (col) => col.notNull())
+    .addColumn("mime", "varchar(64)", (col) => col.notNull())
+    .addColumn("size", "bigint", (col) => col.notNull())
+    .addColumn("created_at", "timestamptz", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
+    .execute();
+
+  await schema
     .createTable("session")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
@@ -52,5 +68,6 @@ export async function up(db: Kysely<any>): Promise<void> {
 export async function down(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
   await schema.dropTable("session").execute();
+  await schema.dropTable("file").execute();
   await schema.dropTable("lock").execute();
 }
