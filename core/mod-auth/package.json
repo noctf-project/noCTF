@@ -17,7 +17,8 @@
     "@sinclair/typebox": "catalog:",
     "fastify": "catalog:",
     "ky": "catalog:",
-    "kysely": "catalog:"
+    "kysely": "catalog:",
+    "handlebars": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:",

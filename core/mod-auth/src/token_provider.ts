@@ -18,7 +18,7 @@ type TokenDataMap = {
 const TOKEN_EXPIRY_SECONDS: Record<keyof TokenDataMap, number> = {
   register: 3600,
   associate: 3600,
-  state: 300,
+  state: 600,
 };
 
 const CACHE_NAMESPACE = "core:auth:token";

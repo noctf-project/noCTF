@@ -8,9 +8,12 @@ import type { FastifyInstance } from "fastify";
 import { UserFlag } from "@noctf/server-core/types/enums";
 import { TokenProvider } from "./token_provider.ts";
 import { UserNotFoundError } from "./error.ts";
+import { EMAIL_VERIFICATION_TEMPLATE } from "./const.ts";
+import { SetupConfig } from "@noctf/api/config";
 
 export default async function (fastify: FastifyInstance) {
-  const { identityService, cacheService } = fastify.container.cradle;
+  const { identityService, configService, cacheService, emailService } =
+    fastify.container.cradle;
   const passwordProvider = new PasswordProvider(fastify.container.cradle);
   const tokenProvider = new TokenProvider({ cacheService });
 
@@ -52,7 +55,24 @@ export default async function (fastify: FastifyInstance) {
         roles: validate_email ? [UserFlag.VALID_EMAIL] : [],
       });
       if (validate_email) {
-        // TODO: send registration email
+        if (!request.body.verify) {
+          return reply.code(400).send({
+            error: "EmailVerificationRequired",
+            message: "Email Verification Required",
+          });
+        }
+        const { name, root_url } = (await configService.get(SetupConfig.$id!))
+          ?.value;
+        await emailService.sendToEmail(
+          {
+            to: [{ email }],
+          },
+          `${name} - Verify Your Email`,
+          EMAIL_VERIFICATION_TEMPLATE({
+            root_url,
+            token,
+          }),
+        );
         return {
           message: "Please check your email for a link to create your account",
         };
