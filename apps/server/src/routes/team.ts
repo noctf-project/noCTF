@@ -248,7 +248,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const admin = policyService.evaluate(request.user?.id, adminPolicy);
+      const admin = await policyService.evaluate(request.user?.id, adminPolicy);
 
       const page = request.body.page || 1;
       const page_size =

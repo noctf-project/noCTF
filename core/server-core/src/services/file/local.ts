@@ -4,7 +4,11 @@ import { readFile, unlink, writeFile } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { type BinaryLike, createHmac } from "node:crypto";
 import { join } from "node:path";
-import { BadRequestError, ForbiddenError, NotFoundError } from "../../errors.ts";
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+} from "../../errors.ts";
 import { Readable } from "node:stream";
 import { nanoid } from "nanoid";
 import { FileMetadata } from "@noctf/api/datatypes";
