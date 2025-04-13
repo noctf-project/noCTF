@@ -51,7 +51,7 @@
     categories: getCategoriesFromTags(tags),
     score,
     flags: flag as Flag[] ?? [],
-    files: Object.keys(files).map((filename) => ({ filename, ref: files[filename]!.ref })),
+    files: Object.keys(files).map((filename) => ({ filename, id: files[filename]!.id })),
     version,
   }}
   <ChallengeCreateEdit mode="edit" challData={editChallData} />
