@@ -28,7 +28,6 @@ export const EmailAddressOrUserId = Type.Union([EmailAddress, Type.Integer()]);
 export type EmailAddressOrUserId = Static<typeof EmailAddressOrUserId>;
 
 export const EmailMessage = Type.Object({
-  from: EmailAddress,
   to: Type.Optional(Type.Array(EmailAddressOrUserId)),
   cc: Type.Optional(Type.Array(EmailAddressOrUserId)),
   bcc: Type.Optional(Type.Array(EmailAddressOrUserId)),
