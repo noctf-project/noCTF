@@ -176,13 +176,7 @@ export const Challenge = Type.Object({
 export type Challenge = Static<typeof Challenge>;
 
 export const PublicChallenge = Type.Intersect([
-  Type.Omit(Challenge, [
-    "private_metadata",
-    "tags",
-    "version",
-    "created_at",
-    "updated_at",
-  ]),
+  Type.Omit(Challenge, ["private_metadata", "tags", "version", "created_at"]),
   Type.Object({
     metadata: ChallengePublicMetadataBase,
   }),
@@ -247,7 +241,7 @@ export const Solve = Type.Object(
     challenge_id: Type.Number(),
     hidden: Type.Boolean(),
     bonus: Type.Optional(Type.Number()),
-    score: Type.Number(),
+    value: Type.Number(),
     created_at: TypeDate,
   },
   { additionalProperties: false },
@@ -282,7 +276,12 @@ export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 export const TeamSummary = Type.Composite([
   Type.Omit(Team, ["join_code"]),
   Type.Object({
-    num_members: Type.Integer(),
+    members: Type.Array(
+      Type.Object({
+        user_id: Type.Integer(),
+        role: Type.Union([Type.Literal("owner"), Type.Literal("member")]),
+      }),
+    ),
   }),
 ]);
 export type TeamSummary = Static<typeof TeamSummary>;
@@ -299,6 +298,7 @@ export const Submission = Type.Object({
   comments: Type.String({ maxLength: 512 }),
   source: Type.String({ maxLength: 64 }),
   hidden: Type.Boolean(),
+  value: Type.Union([Type.Null(), Type.Number()]),
   status: SubmissionStatus,
   created_at: TypeDate,
   updated_at: TypeDate,

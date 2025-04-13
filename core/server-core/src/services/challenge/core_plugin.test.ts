@@ -5,7 +5,6 @@ import { Logger } from "../../types/primitives.ts";
 import { ScoreService } from "../score.ts";
 import { FileService } from "../file.ts";
 import { Challenge, ChallengeMetadata } from "@noctf/api/datatypes";
-import { SubmissionStatus } from "@noctf/api/enums";
 
 describe(CoreChallengePlugin, () => {
   const logger = mockDeep<Logger>();

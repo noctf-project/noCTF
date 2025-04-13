@@ -31,6 +31,7 @@ import {
   REDIS_URL,
   ENABLE_SWAGGER,
   ALLOWED_ORIGINS,
+  ENABLE_COMPRESSION,
 } from "./config.ts";
 import core from "./core.ts";
 import { MetricsClient } from "@noctf/server-core/clients/metrics";
@@ -54,7 +55,7 @@ export const server = fastify({
   genReqId: () => nanoid(),
   ...{ http2: ENABLE_HTTP2 }, // typescript is being funny
 });
-server.register(fastifyCompress);
+if (ENABLE_COMPRESSION) server.register(fastifyCompress);
 server.register(fastifyMultipart);
 server.register(fastifyCors, {
   origin: CompileDomainMatcher(ALLOWED_ORIGINS),

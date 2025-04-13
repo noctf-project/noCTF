@@ -74,11 +74,11 @@ describe(RateLimitService, () => {
 
     // @ts-ignore - accessing private property for test
     const blocked = service["blocked"] as TTLCache<string, number>;
-    vi.mocked(blocked.getRemainingTTL).mockReturnValueOnce(30);
+    vi.mocked(blocked.getRemainingTTL).mockReturnValueOnce(1030);
 
     const result = await service.evaluate(buckets);
 
-    expect(result).toBe(1000 + 30);
+    expect(result).toBe(1030);
     expect(mockRedisClient.mGet).not.toHaveBeenCalled();
   });
 

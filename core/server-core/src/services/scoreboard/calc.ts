@@ -19,20 +19,20 @@ export type ChallengeMetadataWithExpr = {
 };
 
 type ChallengeSolvesResult = {
-  score: number | null;
+  value: number | null;
   solves: Solve[];
   last_updated: Date;
 };
 
 export type ComputedChallengeScoreData = {
   challenge_id: number;
-  score: number;
+  value: number;
   solves: Solve[];
 };
 
 export type ChallengeSummary = {
   challenge_id: number;
-  score: number;
+  value: number;
   solve_count: number;
   bonuses: number[];
 };
@@ -53,22 +53,27 @@ function ComputeScoresForChallenge(
       !(teams.get(team_id)?.flags.includes("hidden") || hidden),
   );
   try {
-    const base = EvaluateScoringExpression(expr, params, valid.length);
-    let last_solve = new Date(0);
+    const base = EvaluateScoringExpression(
+      expr,
+      params,
+      valid.filter(({ value }) => value === null).length,
+    );
     let last_updated = new Date(0);
-    const rv: Solve[] = valid.map(({ team_id, created_at, updated_at }, i) => {
-      last_solve = created_at;
-      last_updated = MaxDate(last_updated, updated_at);
-      const b = bonus?.[i];
-      return {
-        team_id,
-        challenge_id: metadata.id,
-        bonus: b,
-        hidden: false,
-        score: base + ((b && Math.round(b)) || 0),
-        created_at,
-      };
-    });
+    let bonusIdx = 0;
+    const rv: Solve[] = valid.map(
+      ({ team_id, created_at, updated_at, value }) => {
+        last_updated = MaxDate(last_updated, updated_at);
+        const b = value !== null ? undefined : bonus?.[bonusIdx++];
+        return {
+          team_id,
+          challenge_id: metadata.id,
+          bonus: b,
+          hidden: false,
+          value: value !== null ? value : base + ((b && Math.round(b)) || 0),
+          created_at,
+        };
+      },
+    );
     const rh: Solve[] = hidden.map(({ team_id, created_at, updated_at }) => {
       last_updated = MaxDate(last_updated, updated_at);
 
@@ -76,12 +81,12 @@ function ComputeScoresForChallenge(
         team_id,
         challenge_id: metadata.id,
         hidden: true,
-        score: base,
+        value: base,
         created_at,
       };
     });
     return {
-      score: base,
+      value: base,
       solves: rv.concat(rh),
       last_updated,
     };
@@ -92,7 +97,7 @@ function ComputeScoresForChallenge(
         err,
       );
     return {
-      score: null,
+      value: null,
       solves: [],
       last_updated: new Date(0),
     };
@@ -135,16 +140,16 @@ export function ComputeScoreboard(
     );
     return [x.metadata.id, result] as [number, ChallengeSolvesResult];
   });
-  const challengeScores = [];
-  for (const [challenge_id, { score, solves, last_updated }] of computed) {
+  const challengeScores: ComputedChallengeScoreData[] = [];
+  for (const [challenge_id, { value, solves, last_updated }] of computed) {
     const challengeSolves: Solve[] = [];
     for (const solve of solves) {
       challengeSolves.push(solve);
-      let team = teamScores.get(solve.team_id);
+      const team = teamScores.get(solve.team_id);
       if (!team) {
         continue;
       }
-      team.score += solve.hidden ? 0 : solve.score;
+      team.score += solve.hidden ? 0 : solve.value;
       team.solves.push(solve);
       team.last_solve = solve.hidden
         ? team.last_solve
@@ -155,13 +160,13 @@ export function ComputeScoreboard(
     }
     challengeScores.push({
       challenge_id,
-      score: score || 0,
+      value: value || 0,
       solves: challengeSolves,
     });
   }
 
   for (const award of awards) {
-    let team = teamScores.get(award.team_id);
+    const team = teamScores.get(award.team_id);
     if (!team) {
       continue;
     }

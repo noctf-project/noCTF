@@ -263,6 +263,121 @@ describe(ComputeScoreboard, () => {
     });
   });
 
+  it("Value overrides for solves do not count towards dynamic scoring", () => {
+    vi.mocked(EvaluateScoringExpression).mockReturnValue(1 as any);
+    const result = ComputeScoreboard(
+      new Map([
+        [1, { id: 1, flags: [], division_id: 1, tag_ids: [] }],
+        [2, { id: 2, flags: [], division_id: 1, tag_ids: [] }],
+      ]),
+      [
+        {
+          metadata: {
+            ...challenge1,
+            private_metadata: {
+              ...challenge1.private_metadata,
+              score: { ...challenge1.private_metadata.score, bonus: [2] },
+            },
+          },
+          expr: mockDeep<Expression>(),
+        },
+      ],
+      {
+        1: [
+          {
+            challenge_id: 1,
+            hidden: false,
+            id: 1,
+            created_at: new Date(1) as unknown as Timestamp & Date, // fuck TS
+            updated_at: new Date(1) as unknown as Timestamp & Date,
+            team_id: 1,
+            value: null,
+          },
+          {
+            challenge_id: 1,
+            hidden: false,
+            id: 2,
+            created_at: new Date(3) as unknown as Timestamp & Date, // fuck TS
+            updated_at: new Date(3) as unknown as Timestamp & Date,
+            team_id: 2,
+            value: 100,
+          },
+        ],
+      },
+      [],
+    );
+    expect(result).toEqual({
+      scoreboard: [
+        {
+          score: 100,
+          updated_at: new Date(3),
+          last_solve: new Date(3),
+          team_id: 2,
+          hidden: false,
+          rank: 1,
+          tag_ids: [],
+          awards: [],
+          solves: [
+            expect.objectContaining({
+              bonus: undefined,
+              created_at: new Date(3),
+              hidden: false,
+              challenge_id: 1,
+              value: 100,
+            }),
+          ],
+        },
+        {
+          score: 3,
+          updated_at: new Date(3),
+          last_solve: new Date(1),
+          team_id: 1,
+          hidden: false,
+          rank: 2,
+          tag_ids: [],
+          awards: [],
+          solves: [
+            expect.objectContaining({
+              bonus: 2,
+              created_at: new Date(1),
+              hidden: false,
+              challenge_id: 1,
+              value: 3,
+            }),
+          ],
+        },
+      ],
+      challenges: new Map([
+        [
+          1,
+          {
+            challenge_id: 1,
+            value: 1,
+            solves: [
+              {
+                bonus: 2,
+                created_at: new Date(1),
+                hidden: false,
+                challenge_id: 1,
+                value: 3,
+                team_id: 1,
+              },
+              {
+                bonus: undefined,
+                created_at: new Date(3),
+                hidden: false,
+                challenge_id: 1,
+                value: 100,
+                team_id: 2,
+              },
+            ],
+          },
+        ],
+      ]),
+    });
+    vi.mocked(EvaluateScoringExpression).mockReturnValue(1 as any);
+  });
+
   it("Calculates challenge scores, uses the last valid solve date as the date", () => {
     vi.mocked(EvaluateScoringExpression).mockReturnValue(1 as any);
     const result = ComputeScoreboard(
@@ -286,6 +401,7 @@ describe(ComputeScoreboard, () => {
             created_at: new Date(1) as unknown as Timestamp & Date, // fuck TS
             updated_at: new Date(1) as unknown as Timestamp & Date,
             team_id: 1,
+            value: null,
           },
           {
             challenge_id: 1,
@@ -294,6 +410,7 @@ describe(ComputeScoreboard, () => {
             created_at: new Date(2) as unknown as Timestamp & Date, // fuck TS
             updated_at: new Date(2) as unknown as Timestamp & Date,
             team_id: 3,
+            value: null,
           },
           {
             challenge_id: 1,
@@ -302,6 +419,7 @@ describe(ComputeScoreboard, () => {
             created_at: new Date(3) as unknown as Timestamp & Date, // fuck TS
             updated_at: new Date(3) as unknown as Timestamp & Date,
             team_id: 2,
+            value: null,
           },
         ],
       },
@@ -324,7 +442,7 @@ describe(ComputeScoreboard, () => {
               created_at: new Date(1),
               hidden: false,
               challenge_id: 1,
-              score: 1,
+              value: 1,
             }),
           ],
         },
@@ -343,7 +461,7 @@ describe(ComputeScoreboard, () => {
               created_at: new Date(2),
               hidden: false,
               challenge_id: 1,
-              score: 1,
+              value: 1,
             }),
           ],
         },
@@ -362,7 +480,7 @@ describe(ComputeScoreboard, () => {
               created_at: new Date(3),
               hidden: false,
               challenge_id: 1,
-              score: 1,
+              value: 1,
             }),
           ],
         },
@@ -372,14 +490,14 @@ describe(ComputeScoreboard, () => {
           1,
           {
             challenge_id: 1,
-            score: 1,
+            value: 1,
             solves: [
               {
                 bonus: undefined,
                 created_at: new Date(1),
                 hidden: false,
                 challenge_id: 1,
-                score: 1,
+                value: 1,
                 team_id: 1,
               },
               {
@@ -387,7 +505,7 @@ describe(ComputeScoreboard, () => {
                 created_at: new Date(2),
                 hidden: false,
                 challenge_id: 1,
-                score: 1,
+                value: 1,
                 team_id: 3,
               },
               {
@@ -395,7 +513,7 @@ describe(ComputeScoreboard, () => {
                 created_at: new Date(3),
                 hidden: false,
                 challenge_id: 1,
-                score: 1,
+                value: 1,
                 team_id: 2,
               },
             ],
@@ -427,6 +545,7 @@ describe(ComputeScoreboard, () => {
             created_at: new Date(1) as unknown as Timestamp & Date, // fuck TS
             updated_at: new Date(1) as unknown as Timestamp & Date,
             team_id: 1,
+            value: null,
           },
         ],
       },
@@ -489,7 +608,7 @@ describe(ComputeScoreboard, () => {
               created_at: new Date(1),
               hidden: false,
               challenge_id: 1,
-              score: 1,
+              value: 1,
               team_id: 1,
             },
           ],
@@ -500,14 +619,14 @@ describe(ComputeScoreboard, () => {
           1,
           {
             challenge_id: 1,
-            score: 1,
+            value: 1,
             solves: [
               {
                 bonus: undefined,
                 created_at: new Date(1),
                 hidden: false,
                 challenge_id: 1,
-                score: 1,
+                value: 1,
                 team_id: 1,
               },
             ],

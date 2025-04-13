@@ -40,6 +40,15 @@ export class UserDAO {
       .executeTakeFirst();
   }
 
+  async getRoles(id: number): Promise<string[]> {
+    const result = await this.db
+      .selectFrom("user")
+      .select(["roles"])
+      .where("id", "=", id)
+      .executeTakeFirst();
+    return result?.roles || [];
+  }
+
   async create({
     name,
     bio,

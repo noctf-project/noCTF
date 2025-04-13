@@ -272,6 +272,7 @@ export class ChallengeService {
         metadata: metadata as unknown as ChallengePublicMetadataBase,
         hidden: c.hidden,
         visible_at: c.visible_at,
+        updated_at: c.updated_at,
       };
     });
   }

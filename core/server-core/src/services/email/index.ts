@@ -1,6 +1,6 @@
 import { EmailConfig, SetupConfig } from "@noctf/api/config";
 import { ServiceCradle } from "../../index.ts";
-import { EmailPayload, EmailProvider } from "./types.ts";
+import { EmailProvider } from "./types.ts";
 import { DummyEmailProvider } from "./dummy.ts";
 import { NodeMailerProvider } from "./nodemailer.ts";
 import {
@@ -8,7 +8,6 @@ import {
   EmailAddressOrUserId,
   EmailMessage,
 } from "@noctf/api/datatypes";
-import { UserIdentityDAO } from "../../dao/user_identity.ts";
 import { UserDAO } from "../../dao/user.ts";
 
 type Props = Pick<

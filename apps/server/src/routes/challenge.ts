@@ -64,11 +64,11 @@ export async function routes(fastify: FastifyInstance) {
           entry.solves.forEach(({ challenge_id }) => solves.add(challenge_id));
         }
       }
-      const scores = Object.fromEntries(
+      const values = Object.fromEntries(
         challenges.map((c) => [
           c.id,
           {
-            score: scoreObj[c.id]?.score || 0,
+            value: scoreObj[c.id]?.value || 0,
             solve_count: scoreObj[c.id]?.solve_count || 0,
             solved_by_me: solves.has(c.id),
           },
@@ -86,7 +86,7 @@ export async function routes(fastify: FastifyInstance) {
         data: {
           challenges: challenges
             .filter(({ id }) => visible.has(id))
-            .map((c) => ({ ...c, ...scores[c.id] })),
+            .map((c) => ({ ...c, ...values[c.id] })),
         },
       };
     },
@@ -107,7 +107,7 @@ export async function routes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request) => {
+    async (request, reply) => {
       const ctime = Date.now();
       const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
       const { id } = request.params;
@@ -122,7 +122,7 @@ export async function routes(fastify: FastifyInstance) {
       ) {
         throw new NotFoundError("Challenge not found");
       }
-      // TODO: render public metadata, add type
+      reply.header("cache-control", "private, max-age=60");
       return {
         data: challenge,
       };

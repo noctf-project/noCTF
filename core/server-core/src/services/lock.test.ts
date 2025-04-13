@@ -3,9 +3,11 @@ import { anyString, mock } from "vitest-mock-extended";
 import { LockService } from "./lock.ts";
 import type { RedisClientFactory } from "../clients/redis.ts";
 import type { createClient } from "redis";
+import { Logger } from "../types/primitives.ts";
 
 describe("LockService", () => {
   const redisClientFactory = mock<RedisClientFactory>();
+  const logger = mock<Logger>();
   const redisClient = mock<ReturnType<typeof createClient>>();
 
   beforeEach(() => {
@@ -17,13 +19,13 @@ describe("LockService", () => {
   });
 
   it("Acquires a lease", async () => {
-    const service = new LockService({ redisClientFactory });
+    const service = new LockService({ logger, redisClientFactory });
     redisClient.set.mockResolvedValue("OK");
     await service.acquireLease("lol", 60);
   });
 
   it("Fails to acquire a lease if one already exists", async () => {
-    const service = new LockService({ redisClientFactory });
+    const service = new LockService({ logger, redisClientFactory });
     redisClient.set.mockResolvedValue(null);
     await expect(() => service.acquireLease("lol", 60)).rejects.toThrowError(
       "lease already exists",
@@ -35,7 +37,7 @@ describe("LockService", () => {
   });
 
   it("Renews a lease", async () => {
-    const service = new LockService({ redisClientFactory });
+    const service = new LockService({ logger, redisClientFactory });
     redisClientFactory.executeScript.mockResolvedValue(1);
     await service.renewLease("lol", "token", 60);
     expect(redisClientFactory.executeScript).toBeCalledWith(
@@ -46,7 +48,7 @@ describe("LockService", () => {
   });
 
   it("Renews a lease - exec throws another error", async () => {
-    const service = new LockService({ redisClientFactory });
+    const service = new LockService({ logger, redisClientFactory });
     redisClientFactory.executeScript.mockRejectedValue(new Error("lol"));
     await expect(() =>
       service.renewLease("lol", "token", 60),
@@ -54,7 +56,7 @@ describe("LockService", () => {
   });
 
   it("Fails to renew a lease", async () => {
-    const service = new LockService({ redisClientFactory });
+    const service = new LockService({ logger, redisClientFactory });
     redisClientFactory.executeScript.mockResolvedValue(0);
     await expect(() =>
       service.renewLease("lol", "token", 60),
@@ -62,7 +64,7 @@ describe("LockService", () => {
   });
 
   it("Drops a lease", async () => {
-    const service = new LockService({ redisClientFactory });
+    const service = new LockService({ logger, redisClientFactory });
     redisClientFactory.executeScript.mockResolvedValue(1);
     await service.dropLease("lol", "token");
     expect(redisClientFactory.executeScript).toBeCalledWith(
@@ -73,7 +75,7 @@ describe("LockService", () => {
   });
 
   it("Fails to drop a lease", async () => {
-    const service = new LockService({ redisClientFactory });
+    const service = new LockService({ logger, redisClientFactory });
     redisClient.evalSha.mockResolvedValue(0);
     await expect(() => service.dropLease("lol", "token")).rejects.toThrowError(
       "lease token mismatch",
@@ -81,7 +83,7 @@ describe("LockService", () => {
   });
 
   it("Drops a lease forcefully", async () => {
-    const service = new LockService({ redisClientFactory });
+    const service = new LockService({ logger, redisClientFactory });
     await service.dropLease("lol");
     expect(redisClient.del).toBeCalledWith("lease:lol");
     expect(redisClient.evalSha).not.toHaveBeenCalled();

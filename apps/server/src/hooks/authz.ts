@@ -5,16 +5,6 @@ import { LocalCache } from "@noctf/server-core/util/local_cache";
 let cache: LocalCache;
 
 export const AuthzHook = async (request: FastifyRequest) => {
-  if (!cache) {
-    cache = new LocalCache({
-      max: 10000,
-      ttl: 5000,
-      dispose: LocalCache.disposeMetricsHook(
-        request.server.container.cradle.metricsClient,
-        "AuthzHook",
-      ),
-    });
-  }
   const { policyService } = request.server.container.cradle;
 
   const policy = request.routeOptions.schema?.auth?.policy;
@@ -22,13 +12,7 @@ export const AuthzHook = async (request: FastifyRequest) => {
     return;
   }
   const expanded = typeof policy === "function" ? await policy() : policy;
-  const routeKey = `${request.user?.id || 0}${request.routeOptions.method}${request.routeOptions.url}`;
-
-  if (
-    !(await cache.load(routeKey, () =>
-      policyService.evaluate(request.user?.id || 0, expanded),
-    ))
-  ) {
+  if (!policyService.evaluate(request.user?.id || 0, expanded)) {
     throw new ForbiddenError("Access denied by policy");
   }
 };

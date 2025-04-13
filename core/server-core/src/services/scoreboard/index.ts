@@ -238,10 +238,10 @@ export class ScoreboardService {
     );
 
     const compacted: Record<number, ChallengeSummary> = {};
-    for (const { challenge_id, score, solves } of challengeScores.values()) {
+    for (const { challenge_id, value, solves } of challengeScores.values()) {
       compacted[challenge_id] = {
         challenge_id,
-        score,
+        value,
         solve_count: solves.filter(({ hidden }) => !hidden).length,
         bonuses: solves.map(({ bonus }) => bonus).filter((x) => x) as number[], // assuming solves are ordered
       };

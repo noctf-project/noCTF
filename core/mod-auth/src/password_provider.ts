@@ -40,8 +40,7 @@ export class PasswordProvider implements IdentityProvider {
   }
 
   async authPreCheck(email: string): Promise<void> {
-    const { enable_login_password, enable_register_password } =
-      await this.getConfig();
+    const { enable_login_password } = await this.getConfig();
     if (!enable_login_password) {
       throw new NotFoundError("The requested auth provider cannot be found");
     }

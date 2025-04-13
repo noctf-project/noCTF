@@ -1,5 +1,4 @@
 import type { AuthMethod } from "@noctf/api/datatypes";
-import type { AuthToken } from "@noctf/api/token";
 import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
 import { get } from "@noctf/server-core/util/object";
 import { AuthConfig } from "@noctf/api/config";

@@ -40,7 +40,7 @@ export async function initServer(fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (request) => {
       try {
         await identityService.revokeToken(request.user.token, "session");
       } catch (e) {
