@@ -28,6 +28,7 @@
   export interface ExistingFile {
     filename: string;
     id: number;
+    is_attachment: boolean;
   }
 
   export interface ChallData {
@@ -184,7 +185,7 @@
         strategy: scoringType,
         params: scoringParams,
       },
-      files: {},
+      files: [],
     };
     const payload = {
       slug,
@@ -195,11 +196,10 @@
       tags: createTags(),
       private_metadata,
     };
-    let fileRefsToAdd: {
-      [k in string]: { id: number; is_attachment: boolean };
-    } = Object.fromEntries(
-      existingFiles.map((f) => [f.filename, { id: f.id, is_attachment: true }]),
-    );
+    let fileRefsToAdd = existingFiles.map((f) => ({
+      id: f.id,
+      is_attachment: true,
+    }));
 
     let challengeId, version;
 
@@ -263,8 +263,8 @@
           creationError = res.error.message;
           return;
         }
-        const { filename, id } = res.data.data;
-        fileRefsToAdd[filename] = { id, is_attachment: true };
+        const { id } = res.data.data;
+        fileRefsToAdd.push({ id, is_attachment: true });
       }
     }
 
