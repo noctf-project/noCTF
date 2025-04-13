@@ -162,7 +162,6 @@ export const PublicChallenge = Type.Intersect([
     "tags",
     "version",
     "created_at",
-    "updated_at",
   ]),
   Type.Object({
     metadata: ChallengePublicMetadataBase,

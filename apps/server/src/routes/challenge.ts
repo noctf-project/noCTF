@@ -107,7 +107,7 @@ export async function routes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request) => {
+    async (request, reply) => {
       const ctime = Date.now();
       const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
       const { id } = request.params;
@@ -122,7 +122,7 @@ export async function routes(fastify: FastifyInstance) {
       ) {
         throw new NotFoundError("Challenge not found");
       }
-      // TODO: render public metadata, add type
+      reply.header("cache-control", "private, max-age=60");
       return {
         data: challenge,
       };
