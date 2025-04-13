@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "kysely-codegen --url 'env(POSTGRES_URL)' --out-file dist/index.d.ts",
+    "build": "kysely-codegen",
     "release": "pnpm run build",
     "dev": "echo 'Nothing to do' && exit"
   },
@@ -15,7 +15,7 @@
     "kysely": "catalog:"
   },
   "devDependencies": {
-    "kysely-codegen": "^0.17.0",
+    "kysely-codegen": "^0.18.0",
     "typescript": "catalog:"
   },
   "type": "module",

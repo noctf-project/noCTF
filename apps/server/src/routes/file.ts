@@ -1,4 +1,4 @@
-import { FileParams } from "@noctf/api/params";
+import { IdParams, LocalFileParams } from "@noctf/api/params";
 import { GetFileQuery } from "@noctf/api/query";
 import { BadRequestError } from "@noctf/server-core/errors";
 import { LocalFileProvider } from "@noctf/server-core/services/file";
@@ -7,16 +7,13 @@ import { FastifyInstance } from "fastify";
 export async function routes(fastify: FastifyInstance) {
   const { fileService } = fastify.container.cradle;
 
-  fastify.get<{ Params: FileParams; Querystring: GetFileQuery }>(
-    "/files/:ref",
+  fastify.get<{ Params: LocalFileParams; Querystring: GetFileQuery }>(
+    "/files/local/:ref",
     {
       schema: {
         security: [{ bearer: [] }],
-        tags: ["challenge"],
-        auth: {
-          policy: ["challenge.get"],
-        },
-        params: FileParams,
+        tags: ["file"],
+        params: LocalFileParams,
         querystring: GetFileQuery,
       },
     },
@@ -44,21 +41,28 @@ export async function routes(fastify: FastifyInstance) {
         }
         range = [start, end];
       }
+
       const provider = fileService.getProvider("local") as LocalFileProvider;
-      const [stream, { mime, size, filename }] = await provider.download(
+      provider.checkSignature(
+        request.params.ref,
+        request.query.iat,
+        request.query.sig,
+      );
+      const [stream, metadata] = await provider.download(
         request.params.ref,
         range?.[0],
         range?.[1],
-        request.query,
       );
-      reply.header("content-type", mime);
+      reply.header("content-type", metadata.mime);
       reply.header(
         "content-length",
-        range ? (range[1] || size - 1) + 1 - (range[0] || 0) : size,
+        range
+          ? (range[1] || metadata.size - 1) + 1 - (range[0] || 0)
+          : metadata.size,
       );
       reply.header(
         "content-disposition",
-        `attachment; filename=${JSON.stringify(filename)}`,
+        `attachment; filename=${JSON.stringify(metadata.filename)}`,
       );
       reply.header("cache-control", "max-age=86400");
       if (range) reply.status(206);

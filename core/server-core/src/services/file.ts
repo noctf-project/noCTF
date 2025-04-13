@@ -5,34 +5,38 @@ import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { lookup } from "mime-types";
 import { createReadStream, createWriteStream, mkdirSync } from "node:fs";
-import { readFile, writeFile, unlink } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
+import { unlink } from "node:fs/promises";
 import { FileConfig } from "@noctf/api/config";
 import type { ServiceCradle } from "../index.ts";
 import type { FileMetadata } from "@noctf/api/datatypes";
 import { nanoid } from "nanoid";
 import { BadRequestError, ForbiddenError, NotFoundError } from "../errors.ts";
-import { ConfigService } from "./config.ts";
+import { FileDAO } from "../dao/file.ts";
 
-type Props = Pick<ServiceCradle, "cacheService" | "configService">;
+type Props = Pick<ServiceCradle, "configService" | "databaseClient">;
 
 export interface FileProvider {
   name: string;
-  upload(ref: string, rs: Readable): Promise<void>;
+  upload(rs: Readable): Promise<string>;
   delete(ref: string): Promise<void>;
-  getMetadata(ref: string): Promise<FileMetadata>;
-  setMetadata(ref: string, meta: Omit<FileMetadata, "url">): Promise<void>;
+  getURL(ref: string): Promise<string>;
+  setMetadata(meta: Omit<FileMetadata, "url">): Promise<void>;
+  download(
+    ref: string,
+    start?: number,
+    end?: number,
+  ): Promise<[Readable, Omit<FileMetadata, "url">]>;
 }
-
-const CACHE_METADATA_NAMESPACE = "core:file:metadata";
 
 export class FileService {
   private readonly configService;
-  private readonly cacheService;
+  private readonly fileDAO;
   private readonly providers: Map<string, FileProvider> = new Map();
 
-  constructor({ configService, cacheService }: Props) {
+  constructor({ configService, databaseClient }: Props) {
     this.configService = configService;
-    this.cacheService = cacheService;
+    this.fileDAO = new FileDAO(databaseClient.get());
     void this.init();
   }
 
@@ -44,8 +48,6 @@ export class FileService {
 
   register(provider: FileProvider) {
     const name = provider.name;
-    if (name.indexOf(":") !== -1)
-      throw new Error("Provider name cannot have a colon");
     if (this.providers.has(name)) {
       throw new Error(`Provider ${name} is already registered`);
     }
@@ -58,14 +60,16 @@ export class FileService {
     return provider;
   }
 
-  async getMetadata(id: string): Promise<FileMetadata> {
-    const { provider, ref } = this.getRef(id);
-    return this.cacheService.load(
-      CACHE_METADATA_NAMESPACE,
-      id,
-      () => provider.getMetadata(ref),
-      { expireSeconds: 600 }, // ideally this should never change files are immutable
-    );
+  async getMetadata(id: number): Promise<FileMetadata> {
+    const metadata = await this.fileDAO.get(id);
+    const provider = this.providers.get(metadata.provider);
+    if (!provider)
+      throw new Error(`Provider ${metadata.provider} does not exist`);
+    return {
+      ...metadata,
+      hash: `sha256:${metadata.hash.toString("hex")}`,
+      url: await provider.getURL(metadata.ref),
+    };
   }
 
   async upload(filename: string, readStream: Readable): Promise<FileMetadata> {
@@ -74,7 +78,6 @@ export class FileService {
     } = await this.configService.get<FileConfig>(FileConfig.$id!);
     const provider = this.providers.get(upload);
     if (!provider) throw new Error(`Provider ${upload} does not exist`);
-    const id = nanoid();
     const sHash = new PassThrough();
     const sSize = new PassThrough();
     const sUpload = new PassThrough();
@@ -82,35 +85,46 @@ export class FileService {
     readStream.pipe(sSize);
     readStream.pipe(sUpload);
 
-    const [hash, size] = await Promise.all([
+    const [hash, size, ref] = await Promise.all([
       this.hash(sHash),
       this.size(sSize),
-      provider.upload(id, sUpload),
+      provider.upload(sUpload),
     ]);
-    const metadata: Omit<FileMetadata, "url"> = {
+
+    const metadata = await this.fileDAO.create({
       hash,
-      ref: `${upload}:${id}`,
+      ref,
       size,
       filename,
       mime: lookup(filename) || "application/octet-stream",
+      provider: upload,
+    });
+    const storeMetadata = {
+      ...metadata,
+      hash: `sha256:${metadata.hash.toString("hex")}`,
     };
-    await provider.setMetadata(id, metadata);
+    await provider.setMetadata(storeMetadata);
 
-    return { ...metadata, url: "" };
+    return {
+      ...storeMetadata,
+      url: await provider.getURL(ref),
+    };
   }
 
-  async delete(id: string): Promise<void> {
-    const { provider, ref } = this.getRef(id);
+  async delete(id: number): Promise<void> {
+    const { provider: name, ref } = await this.getMetadata(id);
+    const provider = this.providers.get(name);
+    if (!provider) throw new Error(`Provider ${name} does not exist`);
     await provider.delete(ref);
-    await this.cacheService.del(CACHE_METADATA_NAMESPACE, ref);
+    await this.fileDAO.delete(id);
   }
 
-  private hash(rs: Readable): Promise<string> {
+  private hash(rs: Readable): Promise<Buffer> {
     const hasher = createHash("sha256");
     return new Promise((resolve, reject) => {
       rs.on("error", reject);
       rs.on("data", (c) => hasher.update(c));
-      rs.on("end", () => resolve(hasher.digest("hex")));
+      rs.on("end", () => resolve(hasher.digest()));
     });
   }
 
@@ -122,23 +136,12 @@ export class FileService {
       rs.on("end", () => resolve(size));
     });
   }
-
-  private getRef(id: string) {
-    const colon = id.indexOf(":");
-    if (colon === -1) throw new Error("Invalid file ref");
-    const name = id.slice(0, colon);
-    const provider = this.providers.get(name);
-    if (!provider) throw new Error(`Provider ${name} does not exist`);
-    return {
-      provider,
-      ref: id.slice(colon + 1),
-    };
-  }
 }
 
 export class LocalFileProvider implements FileProvider {
   private static METADATA_PATH = "meta";
   private static OBJECT_PATH = "object";
+
   private static SIGNED_URL_WINDOW = 600; // File is active for a max of twice as long as this
   private static CLOCK_SKEW_WINDOW = 30;
 
@@ -158,8 +161,10 @@ export class LocalFileProvider implements FileProvider {
 
   async delete(ref: string): Promise<void> {
     try {
-      await unlink(join(this.root, LocalFileProvider.METADATA_PATH, ref));
-      await unlink(join(this.root, LocalFileProvider.OBJECT_PATH, ref));
+      await Promise.all([
+        unlink(join(this.root, LocalFileProvider.METADATA_PATH, ref)),
+        unlink(join(this.root, LocalFileProvider.OBJECT_PATH, ref)),
+      ]);
     } catch (e) {
       if (e.code === "ENOENT") {
         throw new NotFoundError("File not found");
@@ -169,23 +174,70 @@ export class LocalFileProvider implements FileProvider {
     return;
   }
 
-  async upload(ref: string, rs: Readable): Promise<void> {
-    return pipeline(
+  async upload(rs: Readable): Promise<string> {
+    const ref = nanoid();
+    await pipeline(
       rs,
       createWriteStream(join(this.root, LocalFileProvider.OBJECT_PATH, ref)),
     );
+    return ref;
   }
 
-  async setMetadata(ref: string, meta: FileMetadata): Promise<void> {
+  async getURL(ref: string) {
+    const { iat, sig } = this.signURL(ref);
+    return `files/local/${ref}?iat=${iat}&sig=${sig.toString("base64url")}`;
+  }
+
+  private signURL(ref: string, iat?: number) {
+    if (!(typeof iat === "number")) {
+      iat = Math.floor(Date.now() / 1000);
+      iat =
+        LocalFileProvider.SIGNED_URL_WINDOW *
+        Math.floor(iat / LocalFileProvider.SIGNED_URL_WINDOW);
+    }
+    const payload = `v1!${ref}!${iat}`;
+    const sig = createHmac("sha256", this.secret).update(payload).digest();
+    return {
+      iat,
+      sig,
+    };
+  }
+
+  async setMetadata(meta: FileMetadata): Promise<void> {
     await writeFile(
-      join(this.root, LocalFileProvider.METADATA_PATH, ref),
+      join(this.root, LocalFileProvider.METADATA_PATH, meta.ref),
       JSON.stringify(meta),
     );
   }
 
-  async getMetadata(ref: string): Promise<FileMetadata> {
+  checkSignature(ref: string, iat: number, signature: string) {
+    const { sig: expected } = this.signURL(ref, iat);
     try {
-      const { iat, sig } = this.signURL(ref);
+      if (!Buffer.from(signature, "base64url").equals(expected)) {
+        throw new ForbiddenError("Invalid signature");
+      }
+    } catch (e) {
+      if (!(e instanceof ForbiddenError))
+        throw new ForbiddenError("Invalid signature");
+      throw e;
+    }
+    const now = Math.floor(Date.now() / 1000);
+    // add a random skewing factor
+    if (iat - LocalFileProvider.CLOCK_SKEW_WINDOW > now) {
+      throw new ForbiddenError("Invalid signature timestamp");
+    }
+    if (
+      iat +
+        LocalFileProvider.SIGNED_URL_WINDOW * 2 +
+        LocalFileProvider.CLOCK_SKEW_WINDOW <
+      now
+    ) {
+      throw new ForbiddenError("Signature expired");
+    }
+  }
+
+  private async getMetadata(ref: string): Promise<Omit<FileMetadata, "url">> {
+    try {
       return {
         ...JSON.parse(
           await readFile(
@@ -193,7 +245,6 @@ export class LocalFileProvider implements FileProvider {
             "utf-8",
           ),
         ),
-        url: `files/${encodeURIComponent(ref)}?iat=${iat}&sig=${sig.digest("base64url")}`,
       };
     } catch (e) {
       if (e.code === "ENOENT") {
@@ -203,53 +254,11 @@ export class LocalFileProvider implements FileProvider {
     }
   }
 
-  private signURL(id: string, iat?: number) {
-    if (!(typeof iat === "number")) {
-      iat = Math.floor(Date.now() / 1000);
-      iat =
-        LocalFileProvider.SIGNED_URL_WINDOW *
-        Math.floor(iat / LocalFileProvider.SIGNED_URL_WINDOW);
-    }
-    const payload = `v1!${id}!${iat}`;
-    const sig = createHmac("sha256", this.secret).update(payload);
-    return {
-      id,
-      iat,
-      sig,
-    };
-  }
-
   async download(
     ref: string,
     start?: number,
     end?: number,
-    signature?: { iat: number; sig: string },
-  ): Promise<[Readable, FileMetadata]> {
-    if (signature && signature.iat) {
-      const { sig } = this.signURL(ref, signature.iat);
-      try {
-        if (!Buffer.from(signature.sig, "base64url").equals(sig.digest())) {
-          throw new ForbiddenError("Invalid signature");
-        }
-      } catch (e) {
-        if (!(e instanceof ForbiddenError))
-          throw new ForbiddenError("Invalid signature");
-        throw e;
-      }
-      const now = Math.floor(Date.now() / 1000);
-      // add a random skewing factor
-      if (signature.iat - LocalFileProvider.CLOCK_SKEW_WINDOW > now) {
-        throw new ForbiddenError("Invalid signature timestamp");
-      }
-      if (
-        signature.iat +
-          LocalFileProvider.SIGNED_URL_WINDOW * 2 +
-          LocalFileProvider.CLOCK_SKEW_WINDOW <
-        now
-      ) {
-        throw new ForbiddenError("Signature expired");
-      }
-    }
+  ): Promise<[Readable, Omit<FileMetadata, "url">]> {
     // Just to check if file exists
     const metadata = await this.getMetadata(ref);
     if (!start) {

@@ -52,7 +52,7 @@
   import "carta-md/default.css";
   import { Parser } from "expr-eval";
 
-  import api, { wrapLoadable } from "$lib/api/index.svelte";
+  import api, { SESSION_TOKEN_KEY, wrapLoadable } from "$lib/api/index.svelte";
   import {
     categoryToIcon,
     difficultyToBgColour,
@@ -243,7 +243,9 @@
         const res = await api.POST("/admin/files", {
           async fetch(input) {
             const axiosResponse = await axios.post(input.url, formData, {
-              withCredentials: true,
+              headers: {
+                Authorization: `Bearer ${window.localStorage.getItem(SESSION_TOKEN_KEY)}`,
+              },
               onUploadProgress: (progressEvent_1) => {
                 creationFileUploadProgress = Math.round(
                   (progressEvent_1.loaded * 100) / (progressEvent_1.total ?? 0),

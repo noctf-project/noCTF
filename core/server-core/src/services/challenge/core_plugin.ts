@@ -115,10 +115,10 @@ export class CoreChallengePlugin implements ChallengePlugin {
               : ChallengeSolveInputType.None,
       },
       files: await Promise.allSettled(
-        Object.keys(m.files).map((name) =>
-          FILE_METADATA_LIMITER(() =>
-            this.fileService.getMetadata(m.files[name].ref),
-          ).then(({ hash, size, url }) => ({ name, hash, size, url })),
+        m.files.map(({ id }) =>
+          FILE_METADATA_LIMITER(() => this.fileService.getMetadata(id)).then(
+            ({ filename, hash, size, url }) => ({ filename, hash, size, url }),
+          ),
         ),
       ).then((p) =>
         p
@@ -148,20 +148,17 @@ export class CoreChallengePlugin implements ChallengePlugin {
       );
     }
 
-    const keys = Object.keys(m.files);
     const filePromises = await Promise.allSettled(
-      keys.map((k) =>
-        FILE_METADATA_LIMITER(() =>
-          this.fileService.getMetadata(m.files[k].ref),
-        ),
+      m.files.map((k) =>
+        FILE_METADATA_LIMITER(() => this.fileService.getMetadata(k.id)),
       ),
     );
     const filesFailed = filePromises
-      .map(({ status }, i) => status === "rejected" && keys[i])
+      .map(({ status }, i) => status === "rejected" && m.files[i].id)
       .filter((x) => x);
     if (filesFailed.length) {
       throw new ValidationError(
-        `Failed to validate that files refs exist for: ${filesFailed.join(", ")}`,
+        `Failed to validate that files id exist for: ${filesFailed.join(", ")}`,
       );
     }
   };
