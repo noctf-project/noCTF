@@ -129,6 +129,7 @@ export const ChallengePublicMetadataBase = Type.Object(
         size: Type.Number(),
         hash: Type.String(),
         url: Type.String(),
+        is_attachment: Type.Boolean(),
       }),
     ),
   },

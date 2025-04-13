@@ -115,9 +115,15 @@ export class CoreChallengePlugin implements ChallengePlugin {
               : ChallengeSolveInputType.None,
       },
       files: await Promise.allSettled(
-        m.files.map(({ id }) =>
+        m.files.map(({ id, is_attachment }) =>
           FILE_METADATA_LIMITER(() => this.fileService.getMetadata(id)).then(
-            ({ filename, hash, size, url }) => ({ filename, hash, size, url }),
+            ({ filename, hash, size, url }) => ({
+              filename,
+              hash,
+              size,
+              url,
+              is_attachment,
+            }),
           ),
         ),
       ).then((p) =>
