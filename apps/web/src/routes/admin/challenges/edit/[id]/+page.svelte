@@ -70,7 +70,6 @@
   {@const {
     solve: { flag },
     score,
-    files,
   } = private_metadata}
   {@const editChallData: ChallData = {
     id, title, description,

@@ -12,7 +12,7 @@ import type { Policy } from "@noctf/server-core/util/policy";
 import { ActorType } from "@noctf/server-core/types/enums";
 
 export async function routes(fastify: FastifyInstance) {
-  const { submissionService, auditLogService } = fastify.container.cradle;
+  const { submissionService } = fastify.container.cradle;
 
   const auth = {
     require: true,

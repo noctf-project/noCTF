@@ -198,7 +198,7 @@ export class ChallengeService {
         data,
         status: state.status,
         comments: state.comment,
-        // eslint-disable @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         metadata: metadata as any,
       });
       if (solved) {

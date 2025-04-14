@@ -1,8 +1,5 @@
 import type { FastifyRequest } from "fastify";
 import { ForbiddenError } from "@noctf/server-core/errors";
-import { LocalCache } from "@noctf/server-core/util/local_cache";
-
-let cache: LocalCache;
 
 export const AuthzHook = async (request: FastifyRequest) => {
   const { policyService } = request.server.container.cradle;

@@ -12,7 +12,9 @@ export type Team = PathResponse<
 
 export class TeamQueryService {
   private queue: Set<number> = new Set();
-  private resolveQueue: [number, (r: Team) => void, (r?: any) => void][] = [];
+
+  private resolveQueue: [number, (r: Team) => void, (r?: unknown) => void][] =
+    [];
   private debounce: ReturnType<typeof setTimeout> | null = null;
 
   // Needed to use a sentinel value to represent not found, and also to stop

@@ -1,4 +1,4 @@
-import { initWorker as initTickets, initWorker } from "@noctf/mod-tickets";
+import { initWorker as initTickets } from "@noctf/mod-tickets";
 import { server } from "../index.ts";
 import { WorkerRegistry } from "@noctf/server-core/worker/registry";
 import { SignalledWorker } from "@noctf/server-core/worker/signalled";
@@ -11,7 +11,7 @@ server.ready(async () => {
   registry.register(
     new SignalledWorker({
       name: "queue.tickets",
-      handler: (signal) => initWorker(signal, server.container.cradle),
+      handler: (signal) => initTickets(signal, server.container.cradle),
       logger,
     }),
   );
