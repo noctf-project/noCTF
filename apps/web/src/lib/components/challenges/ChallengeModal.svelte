@@ -376,8 +376,8 @@
                         >
                           {#await TeamNamesService.get(teamId)}
                             loading...
-                          {:then name}
-                            {name}
+                          {:then team}
+                            {team?.name}
                           {/await}
                         </a>
                       </td>
