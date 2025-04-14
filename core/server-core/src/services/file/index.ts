@@ -7,26 +7,36 @@ import { FileConfig } from "@noctf/api/config";
 import type { ServiceCradle } from "../../index.ts";
 import type { FileMetadata } from "@noctf/api/datatypes";
 import { FileDAO } from "../../dao/file.ts";
+import { ProviderFileMetadata } from "./types.ts";
+import { TSchema } from "@sinclair/typebox";
 
 type Props = Pick<ServiceCradle, "configService" | "databaseClient">;
 
-export interface FileProvider {
+export interface FileProvider<T extends FileProviderInstance> {
   name: string;
-  upload(rs: Readable): Promise<string>;
+  getInstance(config: any): T | Promise<T>;
+  getSchema(): TSchema | null;
+}
+
+export interface FileProviderInstance {
+  upload(rs: Readable, pm: Omit<ProviderFileMetadata, "size">): Promise<string>;
   delete(ref: string): Promise<void>;
   getURL(ref: string): Promise<string>;
-  setMetadata(meta: Omit<FileMetadata, "url">): Promise<void>;
   download(
     ref: string,
     start?: number,
     end?: number,
-  ): Promise<[Readable, Omit<FileMetadata, "url">]>;
+  ): Promise<[Readable, ProviderFileMetadata]>;
 }
 
 export class FileService {
   private readonly configService;
   private readonly fileDAO;
-  private readonly providers: Map<string, FileProvider> = new Map();
+  private readonly providers: Map<string, FileProvider<FileProviderInstance>> =
+    new Map();
+
+  private instances: Map<string, FileProviderInstance> = new Map();
+  private configVersion: number;
 
   constructor({ configService, databaseClient }: Props) {
     this.configService = configService;
@@ -37,10 +47,13 @@ export class FileService {
   async init() {
     await this.configService.register(FileConfig, {
       upload: "local",
+      instances: {
+        local: {},
+      },
     });
   }
 
-  register(provider: FileProvider) {
+  register(provider: FileProvider<FileProviderInstance>) {
     const name = provider.name;
     if (this.providers.has(name)) {
       throw new Error(`Provider ${name} is already registered`);
@@ -48,21 +61,32 @@ export class FileService {
     this.providers.set(name, provider);
   }
 
-  getProvider(name: string) {
-    const provider = this.providers.get(name);
-    if (!provider) throw new Error(`Provider ${name} does not exist`);
-    return provider;
+  async getInstance(name: string) {
+    const config = await this.configService.get<FileConfig>(FileConfig.$id!);
+    if (this.configVersion !== config.version) {
+      this.instances = new Map();
+      this.configVersion = this.configVersion;
+    }
+    let instance = this.instances.get(name);
+    if (instance) return instance;
+    if (!config.value.instances[name])
+      throw new Error(`Could not find provider instance ${name} in config`);
+    const colon = name.indexOf(":");
+    const pType = colon === -1 ? name : name.substring(0, colon);
+    const provider = this.providers.get(pType);
+    if (!provider) throw new Error(`Provider ${pType} not registered`);
+    instance = await provider.getInstance(config.value.instances[name]);
+    this.instances.set(name, instance);
+    return instance;
   }
 
   async getMetadata(id: number): Promise<FileMetadata> {
     const metadata = await this.fileDAO.get(id);
-    const provider = this.providers.get(metadata.provider);
-    if (!provider)
-      throw new Error(`Provider ${metadata.provider} does not exist`);
+    const instance = await this.getInstance(metadata.provider);
     return {
       ...metadata,
       hash: `sha256:${metadata.hash.toString("hex")}`,
-      url: await provider.getURL(metadata.ref),
+      url: await instance.getURL(metadata.ref),
     };
   }
 
@@ -70,19 +94,19 @@ export class FileService {
     const {
       value: { upload },
     } = await this.configService.get<FileConfig>(FileConfig.$id!);
-    const provider = this.providers.get(upload);
-    if (!provider) throw new Error(`Provider ${upload} does not exist`);
+    const instance = await this.getInstance(upload);
     const sHash = new PassThrough();
     const sSize = new PassThrough();
     const sUpload = new PassThrough();
     readStream.pipe(sHash);
     readStream.pipe(sSize);
     readStream.pipe(sUpload);
+    const mime = lookup(filename) || "application/octet-stream";
 
     const [hash, size, ref] = await Promise.all([
       this.hash(sHash),
       this.size(sSize),
-      provider.upload(sUpload),
+      instance.upload(sUpload, { filename, mime }),
     ]);
 
     const metadata = await this.fileDAO.create({
@@ -90,26 +114,24 @@ export class FileService {
       ref,
       size,
       filename,
-      mime: lookup(filename) || "application/octet-stream",
+      mime,
       provider: upload,
     });
     const storeMetadata = {
       ...metadata,
       hash: `sha256:${metadata.hash.toString("hex")}`,
     };
-    await provider.setMetadata(storeMetadata);
 
     return {
       ...storeMetadata,
-      url: await provider.getURL(ref),
+      url: await instance.getURL(ref),
     };
   }
 
   async delete(id: number): Promise<void> {
     const { provider: name, ref } = await this.getMetadata(id);
-    const provider = this.providers.get(name);
-    if (!provider) throw new Error(`Provider ${name} does not exist`);
-    await provider.delete(ref);
+    const instance = await this.getInstance(name);
+    await instance.delete(ref);
     await this.fileDAO.delete(id);
   }
 

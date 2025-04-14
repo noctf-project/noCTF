@@ -22,6 +22,7 @@ import { AuthzHook } from "./hooks/authz.ts";
 import { LocalFileProvider } from "@noctf/server-core/services/file/local";
 import { FILE_LOCAL_PATH, TOKEN_SECRET } from "./config.ts";
 import { RateLimitHook } from "./hooks/rate_limit.ts";
+import { S3FileProvider } from "@noctf/server-core/services/file/s3";
 
 export default async function (fastify: FastifyInstance) {
   fastify.addHook("preHandler", AuthnHook);
@@ -29,11 +30,8 @@ export default async function (fastify: FastifyInstance) {
   fastify.addHook("preHandler", RateLimitHook);
 
   const { fileService } = fastify.container.cradle;
-  const localFileProvider = new LocalFileProvider(
-    FILE_LOCAL_PATH,
-    TOKEN_SECRET,
-  );
-  fileService.register(localFileProvider);
+  fileService.register(new LocalFileProvider(FILE_LOCAL_PATH, TOKEN_SECRET));
+  fileService.register(new S3FileProvider());
 
   fastify.register(adminAuditLog);
   fastify.register(adminChallenge);

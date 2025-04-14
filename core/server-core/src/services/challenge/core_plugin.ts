@@ -128,8 +128,15 @@ export class CoreChallengePlugin implements ChallengePlugin {
         ),
       ).then((p) =>
         p
-          .map((m) => m.status === "fulfilled" && m.value)
-          .filter((v): v is Exclude<typeof v, false> => !!v),
+          .map((r, i) => {
+            if (r.status === "fulfilled") return r.value;
+            this.logger.warn(
+              { error: r.reason, file_id: m.files[i].id },
+              "Could not fetch file metadata",
+            );
+            return null;
+          })
+          .filter((v): v is Exclude<typeof v, null> => !!v),
       ),
     };
   };

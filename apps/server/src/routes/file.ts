@@ -1,7 +1,10 @@
 import { LocalFileParams } from "@noctf/api/params";
 import { GetFileQuery } from "@noctf/api/query";
 import { BadRequestError } from "@noctf/server-core/errors";
-import type { LocalFileProvider } from "@noctf/server-core/services/file/local";
+import type {
+  LocalFileProvider,
+  LocalFileProviderInstance,
+} from "@noctf/server-core/services/file/local";
 import { FastifyInstance } from "fastify";
 
 export async function routes(fastify: FastifyInstance) {
@@ -42,7 +45,9 @@ export async function routes(fastify: FastifyInstance) {
         range = [start, end];
       }
 
-      const provider = fileService.getProvider("local") as LocalFileProvider;
+      const provider = (await fileService.getInstance(
+        "local",
+      )) as LocalFileProviderInstance;
       provider.checkSignature(
         request.params.ref,
         request.query.iat,

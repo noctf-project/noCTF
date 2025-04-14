@@ -95,6 +95,7 @@ export const FileConfig = Type.Object(
     upload: Type.String({
       title: "File Upload Provider",
     }),
+    instances: Type.Record(Type.String(), Type.Any()),
   },
   { $id: "core.file", additionalProperties: false },
 );
