@@ -6,29 +6,8 @@
   import { goto } from "$app/navigation";
   import loginState from "./auth.svelte";
 
-  type FlowStage =
-    | "email"
-    | "login"
-    | "register"
-    | "verification-required"
-    | "verification-sent"
-    | "forgot-password-request"
-    | "forgot-password-sent";
-
-  // let loginState.currentStage: FlowStage = $state("email");
-  // let loginState.currentStage: FlowStage = $state("register");
-
-  // Form fields
-  // let email = $state("");
-  // let username = $state("");
-  // let password = $state("");
-  // let rememberMe = $state(false);
-
-  // UI states
   let isLoading = $state(false);
   let passwordVisible = $state(false);
-  // let passwordStrength = $state(0);
-  let registrationToken = $state("");
 
   // URL params
   let urlParams = new URLSearchParams(window.location.search);
@@ -44,7 +23,7 @@
     if (redirectParam) {
       performRedirect(redirectParam);
     } else {
-      window.location.replace("/");
+      goto("/");
     }
   }
 
@@ -108,18 +87,6 @@
     }
   }
 
-  async function handleRegister() {
-    try {
-      isLoading = true;
-      if (await loginState.register()) successRedirect();
-    } catch (error) {
-      toasts.error("An error occurred during registration");
-      console.error(error);
-    } finally {
-      isLoading = false;
-    }
-  }
-
   // TODO: Implement when password reset API is available
   async function handleForgotPasswordRequest() {
     // if (!email) {
@@ -165,9 +132,6 @@
       case "login":
         handleLogin();
         break;
-      case "register":
-        handleRegister();
-        break;
       case "forgot-password-request":
         handleForgotPasswordRequest();
         break;
@@ -195,9 +159,6 @@
         {:else if loginState.currentStage === "login"}
           <h2 class="text-2xl font-bold">Welcome back</h2>
           <p class="text-gray-600">Enter your password to continue</p>
-        {:else if loginState.currentStage === "register"}
-          <h2 class="text-2xl font-bold">Create an account</h2>
-          <p class="text-gray-600">Complete your details to get started</p>
         {:else if loginState.currentStage === "verification-sent"}
           <h2 class="text-2xl font-bold">Check your email</h2>
           <p class="text-gray-600">We've sent a verification link</p>
@@ -360,97 +321,6 @@
               <span class="loading loading-spinner loading-sm"></span>
             {:else}
               Sign In
-            {/if}
-          </button>
-        </form>
-      {/if}
-
-      {#if loginState.currentStage === "register"}
-        <form onsubmit={handleSubmit}>
-          <div class="form-control">
-            <label for="email-locked-reg" class="label">
-              <span class="label-text">Email</span>
-            </label>
-            <div class="relative">
-              <input
-                id="email-locked-reg"
-                type="email"
-                class="input input-bordered w-full pr-10 bg-base-200"
-                value={loginState.email}
-                disabled
-              />
-              <button
-                type="button"
-                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                onclick={goBack}
-                title="Change email"
-              >
-                <Icon icon="material-symbols:edit" class="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          <div class="form-control mt-4">
-            <label for="name" class="label">
-              <span class="label-text">Username</span>
-            </label>
-            <input
-              autofocus
-              id="name"
-              type="text"
-              placeholder="Your name"
-              class="input input-bordered w-full"
-              bind:value={loginState.username}
-              required
-              autocomplete="name"
-            />
-          </div>
-
-          <div class="form-control mt-4">
-            <label for="password-reg" class="label">
-              <span class="label-text">Password</span>
-            </label>
-            <div class="relative">
-              <input
-                id="password-reg"
-                type={passwordVisible ? "text" : "password"}
-                placeholder="••••••••"
-                class="input input-bordered w-full pr-10"
-                bind:value={loginState.password}
-                required
-                autocomplete="new-password"
-                minlength={8}
-              />
-              <button
-                type="button"
-                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                onclick={() => (passwordVisible = !passwordVisible)}
-                title={passwordVisible ? "Hide password" : "Show password"}
-              >
-                {#if passwordVisible}
-                  <Icon
-                    icon="material-symbols:visibility-off-outline"
-                    class="w-5 h-5"
-                  />
-                {:else}
-                  <Icon
-                    icon="material-symbols:visibility-outline"
-                    class="w-5 h-5"
-                  />
-                {/if}
-              </button>
-            </div>
-          </div>
-
-          <button
-            class="btn btn-primary w-full mt-6 shadow-solid"
-            type="submit"
-            disabled={isLoading || !loginState.username || !loginState.password}
-          >
-            {#if isLoading}
-              <span class="loading loading-spinner loading-sm"></span>
-            {:else}
-              Create Account
             {/if}
           </button>
         </form>

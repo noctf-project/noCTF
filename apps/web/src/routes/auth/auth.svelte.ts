@@ -1,5 +1,6 @@
 import { goto } from "$app/navigation";
 import api, { SESSION_TOKEN_KEY } from "$lib/api/index.svelte";
+import authState from "$lib/state/auth.svelte";
 import { toasts } from "$lib/stores/toast";
 
 type FlowStage =
@@ -42,6 +43,7 @@ class LoginState {
     if (checkEmailRes.data?.data?.token) {
       this.registrationToken = checkEmailRes.data.data.token;
       this.currentStage = "register";
+      goto("/auth/register");
     } else if (checkEmailRes.error) {
       toasts.error("Unexpected response from server");
     } else {
@@ -83,6 +85,7 @@ class LoginState {
     }
     if (loginRes.data?.data?.type === "session") {
       localStorage.setItem(SESSION_TOKEN_KEY, loginRes.data.data.token);
+      authState.fetchState();
       return true;
     } else {
       toasts.error("Login failed");
@@ -95,7 +98,7 @@ class LoginState {
       body: {
         token: this.registrationToken,
         name: this.username,
-        email: this.email,
+        email: this.email, // this email doesn't actually matter since the backend should use the token to get the email
         password: this.password,
         captcha: "", // Assuming captcha is handled elsewhere or not needed here
       },
@@ -113,6 +116,7 @@ class LoginState {
     if (registerRes.data?.data?.type === "session") {
       toasts.success("Account created successfully!");
       localStorage.setItem(SESSION_TOKEN_KEY, registerRes.data.data.token);
+      authState.fetchState();
       return true;
     } else {
       toasts.error("Registration failed");
