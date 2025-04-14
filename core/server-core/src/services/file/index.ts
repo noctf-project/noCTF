@@ -7,27 +7,10 @@ import { FileConfig } from "@noctf/api/config";
 import type { ServiceCradle } from "../../index.ts";
 import type { FileMetadata } from "@noctf/api/datatypes";
 import { FileDAO } from "../../dao/file.ts";
-import { ProviderFileMetadata } from "./types.ts";
-import { TSchema } from "@sinclair/typebox";
+import { FileProvider, FileProviderInstance } from "./types.ts";
+import { Value } from "@sinclair/typebox/value";
 
 type Props = Pick<ServiceCradle, "configService" | "databaseClient">;
-
-export interface FileProvider<T extends FileProviderInstance> {
-  name: string;
-  getInstance(config: any): T | Promise<T>;
-  getSchema(): TSchema | null;
-}
-
-export interface FileProviderInstance {
-  upload(rs: Readable, pm: Omit<ProviderFileMetadata, "size">): Promise<string>;
-  delete(ref: string): Promise<void>;
-  getURL(ref: string): Promise<string>;
-  download(
-    ref: string,
-    start?: number,
-    end?: number,
-  ): Promise<[Readable, ProviderFileMetadata]>;
-}
 
 export class FileService {
   private readonly configService;
@@ -45,12 +28,31 @@ export class FileService {
   }
 
   async init() {
-    await this.configService.register(FileConfig, {
-      upload: "local",
-      instances: {
-        local: {},
+    await this.configService.register(
+      FileConfig,
+      {
+        upload: "local",
+        instances: {
+          local: {},
+        },
       },
-    });
+      (cfg) => {
+        if (!cfg.instances[cfg.upload])
+          throw new Error("upload provider is not in instances");
+        const keys = Object.keys(cfg.instances);
+        for (const name of keys) {
+          const provider = this.getProviderFromInstance(name);
+          const schema = provider.getSchema();
+          if (schema) {
+            const errors = [...Value.Errors(schema, cfg.instances[name])];
+            if (errors.length)
+              throw new Error(
+                `JSONSchema Validation Error: ${JSON.stringify(errors)}`,
+              );
+          }
+        }
+      },
+    );
   }
 
   register(provider: FileProvider<FileProviderInstance>) {
@@ -71,10 +73,7 @@ export class FileService {
     if (instance) return instance;
     if (!config.value.instances[name])
       throw new Error(`Could not find provider instance ${name} in config`);
-    const colon = name.indexOf(":");
-    const pType = colon === -1 ? name : name.substring(0, colon);
-    const provider = this.providers.get(pType);
-    if (!provider) throw new Error(`Provider ${pType} not registered`);
+    const provider = this.getProviderFromInstance(name);
     instance = await provider.getInstance(config.value.instances[name]);
     this.instances.set(name, instance);
     return instance;
@@ -142,6 +141,14 @@ export class FileService {
       rs.on("data", (c) => hasher.update(c));
       rs.on("end", () => resolve(hasher.digest()));
     });
+  }
+
+  private getProviderFromInstance(instance: string) {
+    const colon = instance.indexOf(":");
+    const pType = colon === -1 ? instance : instance.substring(0, colon);
+    const provider = this.providers.get(pType);
+    if (!provider) throw new Error(`Provider ${pType} not registered`);
+    return provider;
   }
 
   private size(rs: Readable): Promise<number> {

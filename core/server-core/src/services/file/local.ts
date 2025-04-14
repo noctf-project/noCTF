@@ -1,4 +1,8 @@
-import { FileProvider, FileProviderInstance } from "./index.ts";
+import {
+  FileProvider,
+  FileProviderInstance,
+  ProviderFileMetadata,
+} from "./types.ts";
 import { createReadStream, createWriteStream, mkdirSync } from "node:fs";
 import { readFile, stat, unlink, writeFile } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
@@ -11,7 +15,6 @@ import {
 } from "../../errors.ts";
 import { Readable } from "node:stream";
 import { nanoid } from "nanoid";
-import { ProviderFileMetadata } from "./types.ts";
 
 export class LocalFileProvider
   implements FileProvider<LocalFileProviderInstance>

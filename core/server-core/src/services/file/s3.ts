@@ -1,9 +1,12 @@
 import { FileMetadata } from "@noctf/api/datatypes";
 import { Readable } from "stream";
-import { FileProvider, FileProviderInstance } from "./index.ts";
 import { nanoid } from "nanoid";
 import { Client } from "minio";
-import { ProviderFileMetadata } from "./types.ts";
+import {
+  FileProvider,
+  FileProviderInstance,
+  ProviderFileMetadata,
+} from "./types.ts";
 import { Static, Type } from "@sinclair/typebox";
 
 export const S3FileProviderConfig = Type.Object({
