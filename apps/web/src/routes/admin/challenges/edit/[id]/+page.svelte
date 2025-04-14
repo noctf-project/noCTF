@@ -23,7 +23,7 @@
       });
 
       if (error) {
-        toasts.error(error.message);
+        toasts.error(error.message || "An unknown error occurred");
         throw new Error("challenge not found");
       }
       const challenge = data.data;

@@ -45,6 +45,8 @@ import { SubmissionService } from "@noctf/server-core/services/submission";
 import { RateLimitService } from "@noctf/server-core/services/rate_limit";
 import { CompileDomainMatcher } from "./util/domain.ts";
 import { EmailService } from "@noctf/server-core/services/email/index";
+import { TSchema } from "@sinclair/typebox";
+import { BaseResponse } from "@noctf/api/responses";
 
 export const server = fastify({
   logger: {
@@ -142,6 +144,14 @@ if (ENABLE_SWAGGER) {
 }
 
 server.register(core);
+server.addHook("onRoute", (routeOptions) => {
+  if (routeOptions.schema && routeOptions.schema.response) {
+    const response = routeOptions.schema.response as { default: TSchema };
+    if (!response.default) {
+      response.default = BaseResponse;
+    }
+  }
+});
 
 const logRequest = async (
   request: FastifyRequest,
