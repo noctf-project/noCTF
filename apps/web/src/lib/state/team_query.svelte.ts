@@ -3,7 +3,7 @@ import client from "$lib/api/index.svelte";
 import type { PathResponse } from "$lib/api/types";
 
 const DEBOUNCE_INTERVAL = 64;
-const MAXIMUM_QUERIES = 50;
+const MAXIMUM_QUERIES = 60;
 
 export type Team = PathResponse<
   "/teams/query",
@@ -12,7 +12,6 @@ export type Team = PathResponse<
 
 export class TeamQueryService {
   private queue: Set<number> = new Set();
-
   private resolveQueue: [number, (r: Team) => void, (r?: unknown) => void][] =
     [];
   private debounce: ReturnType<typeof setTimeout> | null = null;
@@ -35,6 +34,43 @@ export class TeamQueryService {
     );
     if (this.queue.size >= MAXIMUM_QUERIES) void this.fetch();
     return p;
+  }
+
+  async queryTeams({
+    page = 1,
+    page_size = 60,
+    name_prefix = undefined,
+    division_id = undefined,
+    ids = undefined,
+  }: {
+    page?: number;
+    page_size?: number;
+    name_prefix?: string;
+    division_id?: number;
+    ids?: number[];
+  }): Promise<{ teams: Team[]; total: number }> {
+    try {
+      const { data, error } = await client.POST("/teams/query", {
+        body: {
+          page,
+          page_size,
+          name_prefix,
+          division_id,
+          ids,
+        },
+      });
+
+      if (error) throw new Error(error);
+
+      data.data.teams.forEach((team) => {
+        this.cache.set(team.id, team);
+      });
+
+      return { teams: data.data.teams, total: data.data.total };
+    } catch (e) {
+      console.error("Error querying teams:", e);
+      throw e;
+    }
   }
 
   private async fetch() {

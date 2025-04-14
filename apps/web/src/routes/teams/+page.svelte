@@ -1,50 +1,91 @@
 <script lang="ts">
   import Icon from "@iconify/svelte";
-  import TeamService from "$lib/state/team.svelte";
-  import type { Team } from "$lib/state/team.svelte";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { toasts } from "$lib/stores/toast";
   import { countryCodeToFlag } from "$lib/utils/country_flags";
   import Pagination from "$lib/components/Pagination.svelte";
+  import TeamQueryService, { type Team } from "$lib/state/team_query.svelte";
 
   const TEAMS_PER_PAGE = 60;
+  const SEARCH_DEBOUNCE_MS = 300;
 
   let currentPage = $state(0);
   let searchQuery = $state("");
+  let previousSearchQuery = $state("");
+  let debouncedSearchQuery = $state("");
   let isLoading = $state(true);
-  let allTeams: Team[] = $state([]);
-
-  const filteredTeams = $derived(
-    searchQuery
-      ? allTeams.filter((team) =>
-          team.name.toLowerCase().includes(searchQuery.toLowerCase()),
-        )
-      : allTeams,
-  );
-
-  const paginatedTeams = $derived(
-    filteredTeams.slice(
-      currentPage * TEAMS_PER_PAGE,
-      (currentPage + 1) * TEAMS_PER_PAGE,
-    ),
-  );
+  let teams: Team[] = $state([]);
+  let totalTeams = $state(0);
+  let totalTeamsRegistered = $state(0);
+  let searchDebounceTimer: ReturnType<typeof setTimeout> | null = $state(null);
 
   $effect(() => {
-    if (searchQuery) {
-      currentPage = 0;
+    if (searchQuery || searchQuery == "") {
+      untrack(() => {
+        if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+          if (searchQuery !== debouncedSearchQuery) {
+            previousSearchQuery = debouncedSearchQuery;
+            debouncedSearchQuery = searchQuery;
+            if (previousSearchQuery !== searchQuery) {
+              currentPage = 0;
+            }
+          }
+          searchDebounceTimer = null;
+        }, SEARCH_DEBOUNCE_MS);
+      });
     }
   });
 
-  onMount(async () => {
+  $effect(() => {
+    // re-trigger a load if the search changed or currentPage changed
+    if (debouncedSearchQuery !== undefined || currentPage !== undefined) {
+      loadTeams();
+    }
+  });
+
+  async function loadTeams() {
     try {
-      const teams = await TeamService.getAllTeams();
-      allTeams = teams;
+      isLoading = true;
+
+      const result = await TeamQueryService.queryTeams({
+        page: currentPage + 1,
+        page_size: TEAMS_PER_PAGE,
+        name_prefix: debouncedSearchQuery,
+      });
+
+      teams = result.teams;
+      totalTeams = result.total;
+
+      // this should always get set on the first query when the page loads
+      if (!debouncedSearchQuery) {
+        totalTeamsRegistered = result.total;
+      }
     } catch (error) {
       console.error("Failed to load teams:", error);
       toasts.error("Failed to load teams. Please try again later.");
     } finally {
       isLoading = false;
     }
+  }
+
+  function clearSearch() {
+    searchQuery = "";
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = null;
+    }
+    previousSearchQuery = debouncedSearchQuery;
+    debouncedSearchQuery = "";
+    if (previousSearchQuery) {
+      currentPage = 0;
+    }
+  }
+
+  onMount(() => {
+    return () => {
+      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+    };
   });
 </script>
 
@@ -53,7 +94,8 @@
 
   <div class="flex flex-row md:flex-row justify-between items-end mb-8 gap-6">
     <div class="text-lg">
-      <span class="font-semibold text-primary">{allTeams.length}</span> teams registered
+      <span class="font-semibold text-primary">{totalTeamsRegistered}</span> teams
+      registered
     </div>
 
     <div class="relative w-full md:w-96">
@@ -71,7 +113,7 @@
       {#if searchQuery}
         <button
           class="absolute inset-y-0 end-0 flex items-center pe-4 hover:text-error"
-          onclick={() => (searchQuery = "")}
+          onclick={clearSearch}
         >
           <Icon icon="material-symbols:close" />
         </button>
@@ -84,7 +126,7 @@
       <div class="loading loading-spinner loading-lg text-primary"></div>
       <p class="text-center">Loading teams...</p>
     </div>
-  {:else if filteredTeams.length === 0}
+  {:else if teams.length === 0}
     <div
       class="border border-base-300 rounded-xl bg-base-100 flex flex-col items-center py-16 px-4 text-center"
     >
@@ -100,7 +142,7 @@
       {#if searchQuery}
         <button
           class="btn btn-outline gap-2 pop hover:pop"
-          onclick={() => (searchQuery = "")}
+          onclick={clearSearch}
         >
           <Icon icon="material-symbols:refresh" />
           Clear search
@@ -111,7 +153,7 @@
     <div
       class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
     >
-      {#each paginatedTeams as team (`team-${team.id}`)}
+      {#each teams as team (`team-${team.id}`)}
         <a
           href="/teams/{team.id}"
           class="group relative bg-base-100 overflow-hidden rounded-xl border border-base-300 p-5 flex flex-col
@@ -124,7 +166,7 @@
               {team.name}
             </h2>
             <div class="flex-shrink-0 opacity-80" title="Country">
-              {countryCodeToFlag("au")}
+              {countryCodeToFlag(team.country || "un")}
             </div>
           </div>
 
@@ -155,8 +197,9 @@
     </div>
 
     <Pagination
-      totalItems={filteredTeams.length}
+      totalItems={totalTeams}
       itemsPerPage={TEAMS_PER_PAGE}
+      initialPage={currentPage}
       onChange={(page) => (currentPage = page)}
       className="mt-10"
     />
