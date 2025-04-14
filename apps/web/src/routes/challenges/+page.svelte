@@ -22,7 +22,7 @@
       apiChallenges.r = r;
     } catch (e) {
       console.error("Challenge refresh failed", e);
-      toasts.error("Failed to connect to the server - please try again");
+      toasts.error("Failed to connect to the server - please try again later");
       return;
     }
   };
@@ -68,7 +68,6 @@
     } else {
       modalLoading = true;
       try {
-        // Add try-catch for the specific challenge fetch
         const r = await api.GET("/challenges/{id}", {
           params: { path: { id: challData.id } },
         });
@@ -86,19 +85,17 @@
             modalChallDetails = challDetails;
           }
         } else if (r.error) {
-          // Handle API error for specific challenge
           console.error("Failed to load challenge details:", r.error);
           if (modalChallData?.id === challData.id) {
-            // Optionally show error in modal or use a toast
             toasts.error(`Failed to load details for ${challData.title}`);
-            modalVisible = false; // Close modal on error, or handle differently
+            modalVisible = false;
           }
         }
       } catch (e) {
         console.error("Failed to load challenge details:", e);
         if (modalChallData?.id === challData.id) {
           toasts.error(`Failed to load details for ${challData.title}`);
-          modalVisible = false; // Close modal on error
+          modalVisible = false;
         }
       } finally {
         // Ensure loading is turned off if modal is still for this challenge
@@ -111,9 +108,6 @@
 
   function closeModal() {
     modalVisible = false;
-    // Optional: clear modal data when closing to prevent stale data flash
-    // modalChallData = undefined;
-    // modalChallDetails = undefined;
   }
 </script>
 
@@ -147,7 +141,7 @@
         class="flex flex-row flex-wrap gap-4 justify-center md:justify-start content-start"
       >
         {#if challenges && challenges.length > 0}
-          {#each challenges as challenge (challenge.id)}
+          {#each challenges as challenge (challenge)}
             <ChallengeCard data={challenge} onclick={onChallengeClicked} />
           {/each}
         {:else if allChallenges && challenges && challenges.length === 0}
@@ -168,7 +162,7 @@
       challData={modalChallData}
       challDetails={modalChallDetails}
       onClose={closeModal}
-      onSolve={() => setTimeout(refreshChallenges, 5000)}
+      onSolve={() => setTimeout(refreshChallenges, 2000)}
     />
   {/if}
 </div>
