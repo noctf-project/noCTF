@@ -9,7 +9,7 @@ export const AuthzHook = async (request: FastifyRequest) => {
     return;
   }
   const expanded = typeof policy === "function" ? await policy() : policy;
-  if (!policyService.evaluate(request.user?.id || 0, expanded)) {
+  if (!await policyService.evaluate(request.user?.id || 0, expanded)) {
     throw new ForbiddenError("Access denied by policy");
   }
 };

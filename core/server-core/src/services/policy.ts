@@ -42,7 +42,7 @@ export class PolicyService {
     this.userDAO = new UserDAO(databaseClient.get());
   }
 
-  async getPermissionsForUser(userId: number) {
+  async getPoliciesForUser(userId: number) {
     const [roles, policies] = await Promise.all([
       this.userRolesCache.load(userId, () => this.userDAO.getRoles(userId)),
       this.getPolicies(),
@@ -74,11 +74,13 @@ export class PolicyService {
   }
 
   async evaluate(userId: number, policy: Policy) {
-    const roles = await (userId
-      ? this.getPermissionsForUser(userId)
+    const policies = await (userId
+      ? this.getPoliciesForUser(userId)
       : this.getPoliciesForPublic());
-    for (const { permissions } of roles) {
-      if (Evaluate(policy, permissions)) return true;
+    for (const { permissions, name } of policies) {
+      const result = Evaluate(policy, permissions);
+      this.logger.debug({ policy_name: name, result }, "Policy evaluation result");
+      if (result) return true;
     }
     return false;
   }
