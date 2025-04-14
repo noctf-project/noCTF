@@ -46,10 +46,10 @@ export class TeamQueryService {
     try {
       const { data, error } = await client.POST("/teams/query", {
         body: {
-          ids: ids.values().toArray(),
+          ids: [...ids],
         },
       });
-      if (error) throw new Error(error);
+      if (error) throw new Error(error?.message || JSON.stringify(error));
       if (data) {
         data.data.teams.forEach((t) => {
           this.cache.set(t.id, t);
