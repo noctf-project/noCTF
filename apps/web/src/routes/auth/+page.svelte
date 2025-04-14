@@ -1,5 +1,5 @@
 <script lang="ts">
-  import api, { wrapLoadable } from "$lib/api/index.svelte";
+  import api, { SESSION_TOKEN_KEY, wrapLoadable } from "$lib/api/index.svelte";
   import { toasts } from "$lib/stores/toast";
   import { performRedirect } from "$lib/utils/url";
   import Icon from "@iconify/svelte";
@@ -152,6 +152,7 @@
         return;
       }
       if (loginRes.data?.data?.type === "session") {
+        localStorage.setItem(SESSION_TOKEN_KEY, loginRes.data.data.token);
         successRedirect();
       } else {
         toasts.error("Login failed");
@@ -190,6 +191,7 @@
 
       if (registerRes.data?.data?.type === "session") {
         toasts.success("Account created successfully!");
+        localStorage.setItem(SESSION_TOKEN_KEY, registerRes.data.data.token);
         successRedirect();
       } else {
         toasts.error("Registration failed");
