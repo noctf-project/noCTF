@@ -11,8 +11,8 @@ export const S3FileProviderConfig = Type.Object({
   useSSL: Type.Optional(Type.Boolean()),
   port: Type.Optional(Type.Integer({ minimum: 1, maximum: 65535 })),
   region: Type.String({ pattern: "^[a-z0-9-]+$", maxLength: 63 }),
-  accessKey: Type.String(), // TODO: support injecting through env var
-  secretKey: Type.String(),
+  accessKey: Type.Optional(Type.String()),
+  secretKey: Type.Optional(Type.String()),
   bucket: Type.String({ pattern: "^[a-zA-Z0-9-_\\.]+$", maxLength: 63 }),
 });
 export type S3FileProviderConfig = Static<typeof S3FileProviderConfig>;
@@ -31,6 +31,7 @@ export class S3FileProvider implements FileProvider<S3FileProviderInstance> {
 
 export class S3FileProviderInstance implements FileProviderInstance {
   private static SIGNED_URL_WINDOW = 600; // File is active for a max of twice as long as this
+  private static readonly PREFIX = "noctf-files/";
 
   private readonly client;
 
@@ -45,8 +46,9 @@ export class S3FileProviderInstance implements FileProviderInstance {
     rs: Readable,
     pm: Omit<ProviderFileMetadata, "size">,
   ): Promise<string> {
-    const ref = `noctf-files/${nanoid()}`;
-    await this.client.putObject(this.bucket, ref, rs, undefined, {
+    const ref = nanoid();
+    const path = `${S3FileProviderInstance.PREFIX}${ref}`;
+    await this.client.putObject(this.bucket, path, rs, undefined, {
       "content-disposition": `attachment; filename=${JSON.stringify(pm.filename)}`,
       "content-type": pm.mime,
     });
@@ -58,6 +60,7 @@ export class S3FileProviderInstance implements FileProviderInstance {
   }
 
   async getURL(ref: string): Promise<string> {
+    const path = `${S3FileProviderInstance.PREFIX}${ref}`;
     // windowing to improve caching
     let iat = Math.floor(Date.now() / 1000);
     iat =
