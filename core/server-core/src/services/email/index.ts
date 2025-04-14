@@ -49,13 +49,8 @@ export class EmailService {
       },
       async (v) => {
         const provider = this.providers.get(v.provider);
-        if (!provider) return `Provider ${v.provider} does not exist`;
-        try {
-          await provider.validate(v.config);
-        } catch (e) {
-          return e.message;
-        }
-        return null;
+        if (!provider) throw new Error(`Provider ${v.provider} does not exist`);
+        await provider.validate(v.config);
       },
     );
   }

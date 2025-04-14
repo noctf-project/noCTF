@@ -31,7 +31,7 @@ export class NodeMailerProvider implements EmailProvider {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async validate(config: any): Promise<void> {
+  async validate(config: Parameters<typeof createTransport>[0]): Promise<void> {
     const transport = createTransport(config);
     await transport.verify();
   }

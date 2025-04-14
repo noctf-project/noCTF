@@ -14,7 +14,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     ({ initialized }) => {
       if (!initialized) {
-        return "cannot set intialized to false";
+        throw new Error("cannot set intialized to false");
       }
     },
   );
