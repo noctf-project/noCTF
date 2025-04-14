@@ -1,5 +1,3 @@
-import { DB } from "@noctf/schema";
-import { AllNonNullable } from "../types/primitives.ts";
 import { DBType } from "../clients/database.ts";
 import { Award } from "@noctf/api/datatypes";
 

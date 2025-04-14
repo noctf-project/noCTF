@@ -264,7 +264,13 @@ describe(ComputeScoreboard, () => {
   });
 
   it("Value overrides for solves do not count towards dynamic scoring", () => {
-    vi.mocked(EvaluateScoringExpression).mockReturnValue(1 as any);
+    vi.mocked(
+      EvaluateScoringExpression as (
+        expr: Expression,
+        params: Record<string, number>,
+        n: number,
+      ) => number,
+    ).mockReturnValue(1);
     const result = ComputeScoreboard(
       new Map([
         [1, { id: 1, flags: [], division_id: 1, tag_ids: [] }],
@@ -375,11 +381,23 @@ describe(ComputeScoreboard, () => {
         ],
       ]),
     });
-    vi.mocked(EvaluateScoringExpression).mockReturnValue(1 as any);
+    vi.mocked(
+      EvaluateScoringExpression as (
+        expr: Expression,
+        params: Record<string, number>,
+        n: number,
+      ) => number,
+    ).mockReturnValue(1);
   });
 
   it("Calculates challenge scores, uses the last valid solve date as the date", () => {
-    vi.mocked(EvaluateScoringExpression).mockReturnValue(1 as any);
+    vi.mocked(
+      EvaluateScoringExpression as (
+        expr: Expression,
+        params: Record<string, number>,
+        n: number,
+      ) => number,
+    ).mockReturnValue(1);
     const result = ComputeScoreboard(
       new Map([
         [1, { id: 1, flags: [], division_id: 1, tag_ids: [] }],
@@ -524,7 +542,13 @@ describe(ComputeScoreboard, () => {
   });
 
   it("Calculates challenge scores and adds awards to date", () => {
-    vi.mocked(EvaluateScoringExpression).mockReturnValue(1 as any);
+    vi.mocked(
+      EvaluateScoringExpression as (
+        expr: Expression,
+        params: Record<string, number>,
+        n: number,
+      ) => number,
+    ).mockReturnValue(1);
     const result = ComputeScoreboard(
       new Map([
         [1, { id: 1, flags: [], division_id: 1, tag_ids: [] }],
@@ -542,7 +566,7 @@ describe(ComputeScoreboard, () => {
             challenge_id: 1,
             hidden: false,
             id: 1,
-            created_at: new Date(1) as unknown as Timestamp & Date, // fuck TS
+            created_at: new Date(1) as unknown as Timestamp & Date,
             updated_at: new Date(1) as unknown as Timestamp & Date,
             team_id: 1,
             value: null,
@@ -551,15 +575,15 @@ describe(ComputeScoreboard, () => {
       },
       [
         {
-          created_at: new Date(2) as any, // fuck TS
-          id: 1 as any, // fuck TS
+          created_at: new Date(2),
+          id: 1,
           team_id: 1,
           title: "test",
           value: 1,
         },
         {
-          created_at: new Date(3) as any, // fuck TS
-          id: 2 as any, // fuck TS
+          created_at: new Date(3),
+          id: 2,
           team_id: 2,
           title: "test",
           value: 3,
@@ -578,8 +602,8 @@ describe(ComputeScoreboard, () => {
           tag_ids: [],
           awards: [
             expect.objectContaining({
-              created_at: new Date(3) as any, // fuck TS
-              id: 2 as any, // fuck TS
+              created_at: new Date(3),
+              id: 2,
               title: "test",
               value: 3,
             }),
@@ -596,8 +620,8 @@ describe(ComputeScoreboard, () => {
           tag_ids: [],
           awards: [
             expect.objectContaining({
-              created_at: new Date(2) as any, // fuck TS
-              id: 1 as any, // fuck TS
+              created_at: new Date(2),
+              id: 1,
               title: "test",
               value: 1,
             }),

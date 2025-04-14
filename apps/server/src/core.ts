@@ -10,6 +10,7 @@ import { routes as file } from "./routes/file.ts";
 import { routes as user } from "./routes/user.ts";
 import { routes as team } from "./routes/team.ts";
 import { routes as scoreboard } from "./routes/scoreboard.ts";
+import { routes as site } from "./routes/site.ts";
 
 import { initServer as auth } from "@noctf/mod-auth";
 import { initServer as captcha } from "@noctf/mod-captcha";
@@ -22,18 +23,17 @@ import { AuthzHook } from "./hooks/authz.ts";
 import { LocalFileProvider } from "@noctf/server-core/services/file/local";
 import { FILE_LOCAL_PATH, TOKEN_SECRET } from "./config.ts";
 import { RateLimitHook } from "./hooks/rate_limit.ts";
+import { NodeMailerProvider } from "@noctf/server-core/services/email/nodemailer";
 
 export default async function (fastify: FastifyInstance) {
   fastify.addHook("preHandler", AuthnHook);
   fastify.addHook("preHandler", AuthzHook);
   fastify.addHook("preHandler", RateLimitHook);
 
-  const { fileService } = fastify.container.cradle;
-  const localFileProvider = new LocalFileProvider(
-    FILE_LOCAL_PATH,
-    TOKEN_SECRET,
-  );
-  fileService.register(localFileProvider);
+  const { configService, emailService, fileService } = fastify.container.cradle;
+  fileService.register(new LocalFileProvider(FILE_LOCAL_PATH, TOKEN_SECRET));
+
+  emailService.register(new NodeMailerProvider({ configService }));
 
   fastify.register(adminAuditLog);
   fastify.register(adminChallenge);
@@ -47,6 +47,7 @@ export default async function (fastify: FastifyInstance) {
   fastify.register(user);
   fastify.register(team);
   fastify.register(scoreboard);
+  fastify.register(site);
 
   fastify.register(auth);
   fastify.register(captcha);

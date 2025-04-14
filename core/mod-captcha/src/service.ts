@@ -26,9 +26,8 @@ export class CaptchaService {
 
   private validateConfig({ provider }: CaptchaConfig) {
     if (provider && !this.providers.has(provider)) {
-      return `Captcha provider ${provider} does not exist`;
+      throw new Error(`Captcha provider ${provider} does not exist`);
     }
-    return null;
   }
 
   async getConfig(): Promise<CaptchaConfig> {

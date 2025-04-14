@@ -160,7 +160,7 @@
       ? Promise.all(
           apiTop10TeamsChartsData.r?.data.data.map(
             async ({ team_id, graph }) => ({
-              name: (await TeamQueryService.get(team_id))!.name,
+              name: (await TeamQueryService.get(team_id))?.name,
               data: graph,
             }),
           ),

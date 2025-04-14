@@ -8,11 +8,9 @@ import { default as AddFormats } from "ajv-formats";
 import { ConfigDAO } from "../dao/config.ts";
 import type { SerializableMap } from "@noctf/api/types";
 
-type Validator<T> = (kv: T) => Promise<string | null> | string | null;
+type Validator<T> = (kv: T) => Promise<void> | void;
 
-const nullValidator = async (): Promise<null> => {
-  return null;
-};
+const nullValidator = () => {};
 
 type Props = Pick<
   ServiceCradle,
@@ -142,12 +140,7 @@ export class ConfigService {
     }
     if (!noValidate) {
       try {
-        const result = await validator(value);
-        if (result) {
-          throw new ValidationError(
-            `Config validation failed with error: ${result}`,
-          );
-        }
+        await validator(value);
       } catch (e) {
         if (e instanceof ValidationError) throw e;
         throw new ValidationError(
