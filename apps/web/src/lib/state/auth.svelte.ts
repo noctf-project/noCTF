@@ -11,7 +11,7 @@ interface User {
 
 class AuthState {
   user?: User = $state();
-  isInitialised: boolean = false;
+  isInitialised: boolean = $state(false);
   isAuthenticated: boolean = $derived(!!this.user?.id);
   isAdmin: boolean = $derived(!!this.user?.roles?.includes("admin"));
 
