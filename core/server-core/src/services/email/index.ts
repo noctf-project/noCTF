@@ -35,9 +35,6 @@ export class EmailService {
     this.logger = logger;
     void this.init();
     this.register(new DummyEmailProvider({ logger: this.logger }));
-    this.register(
-      new NodeMailerProvider({ logger: this.logger, configService }),
-    );
   }
 
   async init() {
