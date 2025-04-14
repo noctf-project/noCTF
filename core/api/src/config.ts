@@ -61,6 +61,8 @@ export const CaptchaConfig = Type.Object(
 );
 export type CaptchaConfig = Static<typeof CaptchaConfig>;
 
+// do not put admin private information in this config
+// the data below is being exposed to players
 export const SetupConfig = Type.Object(
   {
     initialized: Type.Boolean({

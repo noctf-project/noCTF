@@ -10,6 +10,7 @@ import { routes as file } from "./routes/file.ts";
 import { routes as user } from "./routes/user.ts";
 import { routes as team } from "./routes/team.ts";
 import { routes as scoreboard } from "./routes/scoreboard.ts";
+import { routes as site } from "./routes/site.ts";
 
 import { initServer as auth } from "@noctf/mod-auth";
 import { initServer as captcha } from "@noctf/mod-captcha";
@@ -47,6 +48,7 @@ export default async function (fastify: FastifyInstance) {
   fastify.register(user);
   fastify.register(team);
   fastify.register(scoreboard);
+  fastify.register(site);
 
   fastify.register(auth);
   fastify.register(captcha);
