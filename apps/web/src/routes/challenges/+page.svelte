@@ -45,7 +45,7 @@
           title: c.title,
           categories: getCategoriesFromTags(c.tags),
           solves: c.solve_count,
-          points: c.score!,
+          points: c.value || 0,
           isSolved: c.solved_by_me,
           difficulty: getDifficultyFromTags(c.tags),
         }))
@@ -75,8 +75,10 @@
         if (r.data) {
           const challDetails: ChallDetails = {
             description: r.data.data.description,
-            // Ensure metadata and files exist before mapping
-            files: r.data.data.metadata?.files?.map((f) => f.name) ?? [],
+            files: r.data.data.metadata.files.map(({ filename, url }) => ({
+              filename,
+              url,
+            })),
           };
           challDetailsMap[challData.id] = challDetails;
           // Only update if the modal is still meant for this challenge

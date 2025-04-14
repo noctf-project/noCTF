@@ -31,29 +31,36 @@ import {
   REDIS_URL,
   ENABLE_SWAGGER,
   ALLOWED_ORIGINS,
+  ENABLE_COMPRESSION,
 } from "./config.ts";
 import core from "./core.ts";
 import { MetricsClient } from "@noctf/server-core/clients/metrics";
 import { NATSClientFactory } from "@noctf/server-core/clients/nats";
 import { ChallengeService } from "@noctf/server-core/services/challenge/index";
-import { FileService } from "@noctf/server-core/services/file";
+import { FileService } from "@noctf/server-core/services/file/index";
 import { ScoreboardService } from "@noctf/server-core/services/scoreboard/index";
 import { fastifyMultipart } from "@fastify/multipart";
 import { ScoreService } from "@noctf/server-core/services/score";
 import { SubmissionService } from "@noctf/server-core/services/submission";
 import { RateLimitService } from "@noctf/server-core/services/rate_limit";
 import { CompileDomainMatcher } from "./util/domain.ts";
+import { EmailService } from "@noctf/server-core/services/email/index";
 
 export const server = fastify({
   logger: {
     level: LOG_LEVEL,
   },
   disableRequestLogging: true,
+  trustProxy: true,
   genReqId: () => nanoid(),
   ...{ http2: ENABLE_HTTP2 }, // typescript is being funny
 });
-server.register(fastifyCompress);
-server.register(fastifyMultipart);
+if (ENABLE_COMPRESSION) server.register(fastifyCompress);
+server.register(fastifyMultipart, {
+  limits: {
+    fileSize: 1024 * 1024 * 1024, // 1GB
+  },
+});
 server.register(fastifyCors, {
   origin: CompileDomainMatcher(ALLOWED_ORIGINS),
   credentials: true,
@@ -79,8 +86,9 @@ server.register(async () => {
         new MetricsClient(logger, METRICS_PATH, METRICS_FILE_NAME_FORMAT),
     ).singleton(),
     cacheService: asClass(CacheService).singleton(),
-    challengeService: asClass(ChallengeService).singleton(),
     auditLogService: asClass(AuditLogService).singleton(),
+    challengeService: asClass(ChallengeService).singleton(),
+    emailService: asClass(EmailService).singleton(),
     eventBusService: asClass(EventBusService).singleton(),
     fileService: asClass(FileService).singleton(),
     tokenService: asFunction(

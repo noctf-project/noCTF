@@ -116,7 +116,7 @@ export class CacheService {
     namespace: string,
     key: string,
     value: T,
-    expireSeconds?: number,
+    expireSeconds = DEFAULT_LOAD_PARAMS.expireSeconds,
   ) {
     const k = `${namespace}:${key}`;
     return this._put(k, value, expireSeconds);

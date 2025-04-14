@@ -15,11 +15,12 @@ import type { LockService } from "./services/lock.ts";
 import type { MetricsClient } from "./clients/metrics.ts";
 import type { NATSClientFactory } from "./clients/nats.ts";
 import type { ChallengeService } from "./services/challenge/index.ts";
-import type { FileService } from "./services/file.ts";
+import type { FileService } from "./services/file/index.ts";
 import type { ScoreService } from "./services/score.ts";
 import type { ScoreboardService } from "./services/scoreboard/index.ts";
 import type { SubmissionService } from "./services/submission.ts";
-import { RateLimitService } from "./services/rate_limit.ts";
+import type { RateLimitService } from "./services/rate_limit.ts";
+import type { EmailService } from "./services/email/index.ts";
 
 export type ServiceCradle = {
   logger: Logger;
@@ -30,6 +31,7 @@ export type ServiceCradle = {
   auditLogService: AuditLogService;
   cacheService: CacheService;
   challengeService: ChallengeService;
+  emailService: EmailService;
   eventBusService: EventBusService;
   fileService: FileService;
   tokenService: TokenService;

@@ -8,6 +8,7 @@ import { sql } from "kysely";
 import { partition } from "../util/object.ts";
 import { PostgresErrorCode, PostgresErrorConfig } from "../util/pgerror.ts";
 import { TryPGConstraintError } from "../util/pgerror.ts";
+import { jsonArrayFrom } from "kysely/helpers/postgres";
 
 const CREATE_ERROR_CONFIG: PostgresErrorConfig = {
   [PostgresErrorCode.Duplicate]: {
@@ -23,7 +24,9 @@ const CREATE_ERROR_CONFIG: PostgresErrorConfig = {
 
 export type MinimalTeamInfo = {
   id: number;
+  division_id: number;
   flags: string[];
+  tag_ids: number[];
 };
 
 export class TeamDAO {
@@ -107,19 +110,19 @@ export class TeamDAO {
   ): Promise<TeamSummary[]> {
     let query = this.listQuery(params)
       .select([
-        "id",
-        "name",
-        "bio",
-        "country",
-        "division_id",
-        "created_at",
-        "flags",
-        (eb) =>
-          eb
-            .selectFrom("team_member")
-            .select(eb.fn.countAll().as("count"))
-            .where("team_member.team_id", "=", eb.ref("team.id"))
-            .as("num_members"),
+        "team.id",
+        "team.name",
+        "team.bio",
+        "team.country",
+        "team.division_id",
+        "team.created_at",
+        "team.flags",
+        jsonArrayFrom(
+          this.db
+            .selectFrom("team_member as tm")
+            .select(["tm.user_id as user_id", "tm.role as role"])
+            .whereRef("tm.team_id", "=", sql`team.id`),
+        ).as("members"),
       ])
       .orderBy("id");
     if (limit?.limit) {
@@ -157,23 +160,33 @@ export class TeamDAO {
     return query.execute();
   }
 
-  async listWithActivity(division: number): Promise<MinimalTeamInfo[]> {
-    return this.db
-      .selectFrom("team")
-      .select(["id", "flags"])
-      .distinctOn("id")
-      .where("division_id", "=", division)
+  async listForScoreboard(division?: number): Promise<MinimalTeamInfo[]> {
+    let query = this.db
+      .selectFrom("team as t")
+      .distinctOn("t.id")
+      .leftJoin("team_tag_member as ttm", "t.id", "ttm.team_id")
       .innerJoin(
-        this.db
+        this.db // check that team has activity
           .selectFrom("submission")
           .select("team_id")
           .where("status", "=", "correct")
           .union(this.db.selectFrom("award").select("team_id"))
           .as("combined_teams"),
-        "team.id",
+        "t.id",
         "combined_teams.team_id",
       )
-      .execute();
+      .select([
+        "t.id",
+        "t.division_id",
+        "t.flags",
+        sql<number[]>`COALESCE(
+          array_agg(ttm.tag_id) FILTER (WHERE ttm.tag_id IS NOT NULL),
+          ARRAY[]::integer[])`.as("tag_ids"),
+      ])
+      .groupBy("t.id");
+
+    if (division) query = query.where("t.division_id", "=", division);
+    return await query.execute();
   }
 
   async update(id: number, v: Updateable<DB["team"]>) {

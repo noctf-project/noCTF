@@ -3,8 +3,6 @@ import type { DBType } from "../clients/database.ts";
 import { sql } from "kysely";
 import type { AuditLogEntry, LimitOffset } from "@noctf/api/datatypes";
 
-const MAX_QUERY_LIMIT = 100;
-
 export class AuditLogDAO {
   constructor(private readonly db: DBType) {}
   async create({

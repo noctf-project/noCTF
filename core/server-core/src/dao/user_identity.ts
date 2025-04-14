@@ -52,10 +52,7 @@ export class UserIdentityDAO {
       .execute();
   }
 
-  async getIdentityForUser({
-    user_id,
-    provider,
-  }: Pick<UserIdentity, "user_id" | "provider">) {
+  async getIdentityForUser(user_id: number, provider: string) {
     return this.selectIdentity()
       .where("user_id", "=", user_id)
       .where("provider", "=", provider)

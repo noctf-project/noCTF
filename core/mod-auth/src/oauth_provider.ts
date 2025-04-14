@@ -1,17 +1,13 @@
 import type { AuthMethod } from "@noctf/api/datatypes";
-import type { AuthToken } from "@noctf/api/token";
 import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
 import { get } from "@noctf/server-core/util/object";
 import { AuthConfig } from "@noctf/api/config";
 import { CACHE_NAMESPACE } from "./const.ts";
 import type { ServiceCradle } from "@noctf/server-core";
 import type { IdentityProvider } from "@noctf/server-core/services/identity";
-
-type StateToken = {
-  name: string;
-  exp: number;
-  jti: string;
-};
+import { UserNotFoundError } from "./error.ts";
+import { FinishAuthResponse } from "@noctf/api/responses";
+import { TokenProvider } from "./token_provider.ts";
 
 export const TOKEN_AUDIENCE = "noctf/auth/oauth/state";
 
@@ -93,9 +89,9 @@ export class OAuthConfigProvider {
 
 export class OAuthIdentityProvider implements IdentityProvider {
   constructor(
-    private configProvider: OAuthConfigProvider,
-    private identityService: ServiceCradle["identityService"],
-    private tokenService: ServiceCradle["tokenService"],
+    private readonly configProvider: OAuthConfigProvider,
+    private readonly identityService: ServiceCradle["identityService"],
+    private readonly tokenProvider: TokenProvider,
   ) {}
 
   async listMethods(): Promise<AuthMethod[]> {
@@ -106,35 +102,38 @@ export class OAuthIdentityProvider implements IdentityProvider {
     state: string,
     code: string,
     redirect_uri: string,
-  ): Promise<AuthToken> {
-    const { name } = await this.validateState(state);
-
-    const method = await this.configProvider.getMethod(name);
+  ): Promise<FinishAuthResponse["data"]> {
+    const data = await this.tokenProvider.lookup("state", state);
+    const method = await this.configProvider.getMethod(data.name);
     const id = await this.getExternalId(method, code, redirect_uri);
     const identity = await this.identityService.getIdentityForProvider(
-      `${this.id()}:${name}`,
+      `${this.id()}:${data.name}`,
       id,
     );
+    await this.tokenProvider.invalidate("state", state);
     if (!identity) {
       if (method.is_registration_enabled) {
         return {
-          aud: "register",
-          identity: [
-            {
-              provider: `${this.id()}:${name}`,
-              provider_id: id,
-            },
-          ],
+          type: "register",
+          token: await this.tokenProvider.create("register", {
+            identity: [
+              {
+                provider: `${this.id()}:${data.name}`,
+                provider_id: id,
+              },
+            ],
+          }),
         };
       } else {
-        throw new AuthenticationError(
-          "New user registration is currently not available through this provider",
-        );
+        throw new UserNotFoundError("User not found");
       }
     }
     return {
-      aud: "session",
-      sub: identity.user_id,
+      type: "session",
+      token: this.identityService.generateToken({
+        aud: "session",
+        sub: identity.user_id,
+      }),
     };
   }
 
@@ -144,22 +143,15 @@ export class OAuthIdentityProvider implements IdentityProvider {
     code: string,
     redirect_uri: string,
   ) {
-    const { name } = await this.validateState(state);
-    const method = await this.configProvider.getMethod(name);
+    const data = await this.tokenProvider.lookup("state", state);
+    const method = await this.configProvider.getMethod(data.name);
     const provider_id = await this.getExternalId(method, code, redirect_uri);
     await this.identityService.associateIdentity({
       user_id,
-      provider: `${this.id()}:${name}`,
+      provider: `${this.id()}:${data.name}`,
       provider_id,
       secret_data: null,
     });
-  }
-
-  private async validateState(state: string) {
-    return this.tokenService.validate(
-      state,
-      TOKEN_AUDIENCE,
-    ) as Promise<StateToken>;
   }
 
   async generateAuthoriseUrl(name: string) {
@@ -170,13 +162,9 @@ export class OAuthIdentityProvider implements IdentityProvider {
     url.searchParams.set("response_type", "code");
     url.searchParams.set(
       "state",
-      this.tokenService.sign(
-        {
-          name,
-        } as StateToken,
-        TOKEN_AUDIENCE,
-        5 * 60,
-      ),
+      await this.tokenProvider.create("state", {
+        name,
+      }),
     );
     return url.toString();
   }

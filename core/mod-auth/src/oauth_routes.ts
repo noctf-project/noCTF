@@ -13,6 +13,7 @@ import {
   OAuthIdentityProvider,
 } from "./oauth_provider.ts";
 import type { FastifyInstance } from "fastify";
+import { TokenProvider } from "./token_provider.ts";
 
 export default async function (fastify: FastifyInstance) {
   const {
@@ -20,7 +21,6 @@ export default async function (fastify: FastifyInstance) {
     configService,
     cacheService: cacheService,
     databaseClient,
-    tokenService,
   } = fastify.container.cradle;
   const configProvider = new OAuthConfigProvider(
     configService,
@@ -30,7 +30,7 @@ export default async function (fastify: FastifyInstance) {
   const provider = new OAuthIdentityProvider(
     configProvider,
     identityService,
-    tokenService,
+    new TokenProvider({ cacheService }),
   );
   identityService.register(provider);
 
@@ -82,12 +82,8 @@ export default async function (fastify: FastifyInstance) {
     },
     async (request) => {
       const { state, code, redirect_uri } = request.body;
-      const token = await provider.authenticate(state, code, redirect_uri);
       return {
-        data: {
-          type: token.aud,
-          token: identityService.generateToken(token),
-        },
+        data: await provider.authenticate(state, code, redirect_uri),
       };
     },
   );

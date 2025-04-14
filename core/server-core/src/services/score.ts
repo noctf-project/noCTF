@@ -74,7 +74,7 @@ export class ScoreService {
 
   private readonly exprCache = new LocalCache<string, Expression>({
     max: 1000,
-    ttl: 3600 * 1000,
+    ttl: Infinity,
   });
 
   constructor({ configService }: Props) {

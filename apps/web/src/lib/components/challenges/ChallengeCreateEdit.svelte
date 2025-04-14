@@ -27,7 +27,8 @@
 
   export interface ExistingFile {
     filename: string;
-    ref: string;
+    id: number;
+    is_attachment: boolean;
   }
 
   export interface ChallData {
@@ -52,7 +53,7 @@
   import "carta-md/default.css";
   import { Parser } from "expr-eval";
 
-  import api, { wrapLoadable } from "$lib/api/index.svelte";
+  import api, { SESSION_TOKEN_KEY, wrapLoadable } from "$lib/api/index.svelte";
   import {
     categoryToIcon,
     difficultyToBgColour,
@@ -184,7 +185,7 @@
         strategy: scoringType,
         params: scoringParams,
       },
-      files: {},
+      files: [],
     };
     const payload = {
       slug,
@@ -195,14 +196,10 @@
       tags: createTags(),
       private_metadata,
     };
-    let fileRefsToAdd: {
-      [k in string]: { ref: string; is_attachment: boolean };
-    } = Object.fromEntries(
-      existingFiles.map((f) => [
-        f.filename,
-        { ref: f.ref, is_attachment: true },
-      ]),
-    );
+    let fileRefsToAdd = existingFiles.map((f) => ({
+      id: f.id,
+      is_attachment: true,
+    }));
 
     let challengeId, version;
 
@@ -243,7 +240,10 @@
         const res = await api.POST("/admin/files", {
           async fetch(input) {
             const axiosResponse = await axios.post(input.url, formData, {
-              withCredentials: true,
+              // TODO: this is dodgy, migrate into file
+              headers: {
+                Authorization: `Bearer ${window.localStorage.getItem(SESSION_TOKEN_KEY)}`,
+              },
               onUploadProgress: (progressEvent_1) => {
                 creationFileUploadProgress = Math.round(
                   (progressEvent_1.loaded * 100) / (progressEvent_1.total ?? 0),
@@ -263,8 +263,8 @@
           creationError = res.error.message;
           return;
         }
-        const { filename, ref } = res.data.data;
-        fileRefsToAdd[filename] = { ref, is_attachment: true };
+        const { id } = res.data.data;
+        fileRefsToAdd.push({ id, is_attachment: true });
       }
     }
 

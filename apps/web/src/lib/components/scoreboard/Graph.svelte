@@ -1,6 +1,6 @@
 <script lang="ts" module>
   export interface TeamChartData {
-    name: string;
+    name: string | undefined;
     data: Array<[number, number]>; // [timestamp, score]
   }
 

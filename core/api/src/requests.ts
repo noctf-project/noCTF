@@ -29,6 +29,7 @@ export type FinishAuthOauthRequest = Static<typeof FinishAuthOauthRequest>;
 export const InitAuthEmailRequest = Type.Object(
   {
     email: Type.String({ format: "email" }),
+    verify: Type.Optional(Type.Boolean()),
   },
   { additionalProperties: false },
 );
@@ -118,6 +119,7 @@ export const AdminUpdateSubmissionsRequest = Type.Object(
     ids: Type.Array(Type.Number(), { minItems: 1 }),
     status: Type.Optional(SubmissionStatus),
     hidden: Type.Optional(Type.Boolean()),
+    value: Type.Optional(Type.Union([Type.Null(), Type.Number()])),
     comments: Type.Optional(Type.String({ maxLength: 512 })),
   },
   { additionalProperties: false },

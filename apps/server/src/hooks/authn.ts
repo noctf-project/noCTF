@@ -4,20 +4,7 @@ import {
   AuthenticationError,
   TokenValidationError,
 } from "@noctf/server-core/errors";
-import { NOCTF_SESSION_COOKIE } from "@noctf/mod-auth/const";
 import { CreateThenable } from "@noctf/server-core/util/promises";
-
-const parseCookie = (str: string) =>
-  str
-    .split(";")
-    .map((v) => v.split("="))
-    .reduce(
-      (acc, v) => {
-        acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim());
-        return acc;
-      },
-      {} as { [key: string]: string },
-    );
 
 export const AuthnHook = async (request: FastifyRequest) => {
   const { require, scopes } = request.routeOptions.schema?.auth || {};
@@ -27,11 +14,9 @@ export const AuthnHook = async (request: FastifyRequest) => {
     request.headers["authorization"].startsWith("Bearer ")
   ) {
     token = request.headers["authorization"].substring(7);
-  } else if (request.headers["cookie"]) {
-    token = parseCookie(request.headers["cookie"])[NOCTF_SESSION_COOKIE];
   }
   if (!token && require) {
-    throw new AuthenticationError("no cookie or authorization header supplied");
+    throw new AuthenticationError("no authorization header supplied");
   } else if (!token && !require) {
     return;
   }

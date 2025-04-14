@@ -18,6 +18,24 @@ export const Slug = Type.String({
 });
 export type Slug = Static<typeof Slug>;
 
+export const EmailAddress = Type.Object({
+  address: Type.String({ format: "email", maxLength: 255 }),
+  name: Type.String({ maxLength: 128 }),
+});
+export type EmailAddress = Static<typeof EmailAddress>;
+
+export const EmailAddressOrUserId = Type.Union([EmailAddress, Type.Integer()]);
+export type EmailAddressOrUserId = Static<typeof EmailAddressOrUserId>;
+
+export const EmailMessage = Type.Object({
+  to: Type.Optional(Type.Array(EmailAddressOrUserId)),
+  cc: Type.Optional(Type.Array(EmailAddressOrUserId)),
+  bcc: Type.Optional(Type.Array(EmailAddressOrUserId)),
+  subject: Type.String(),
+  text: Type.String(),
+});
+export type EmailMessage = Static<typeof EmailMessage>;
+
 export const AuthMethod = Type.Object({
   provider: Type.String(),
   name: Type.Optional(Type.String()),
@@ -102,11 +120,10 @@ export const ChallengePrivateMetadataBase = Type.Object(
       },
       { additionalProperties: false },
     ),
-    files: Type.Record(
-      Type.String(),
+    files: Type.Array(
       Type.Object(
         {
-          ref: Type.String(),
+          id: Type.Number(),
           is_attachment: Type.Boolean(),
         },
         { additionalProperties: false },
@@ -126,9 +143,11 @@ export const ChallengePublicMetadataBase = Type.Object(
     }),
     files: Type.Array(
       Type.Object({
-        name: Type.String(),
+        filename: Type.String(),
         size: Type.Number(),
         hash: Type.String(),
+        url: Type.String(),
+        is_attachment: Type.Boolean(),
       }),
     ),
   },
@@ -157,13 +176,7 @@ export const Challenge = Type.Object({
 export type Challenge = Static<typeof Challenge>;
 
 export const PublicChallenge = Type.Intersect([
-  Type.Omit(Challenge, [
-    "private_metadata",
-    "tags",
-    "version",
-    "created_at",
-    "updated_at",
-  ]),
+  Type.Omit(Challenge, ["private_metadata", "tags", "version", "created_at"]),
   Type.Object({
     metadata: ChallengePublicMetadataBase,
   }),
@@ -204,11 +217,14 @@ export const CaptchaValidationString = Type.Optional(
 export type CaptchaValidationString = Static<typeof CaptchaValidationString>;
 
 export const FileMetadata = Type.Object({
+  id: Type.Number(),
   filename: Type.String(),
   ref: Type.String(),
   mime: Type.String(),
   size: Type.Number(),
   hash: Type.String(),
+  url: Type.String(),
+  provider: Type.String(),
 });
 export type FileMetadata = Static<typeof FileMetadata>;
 
@@ -228,7 +244,7 @@ export const Solve = Type.Object(
     challenge_id: Type.Number(),
     hidden: Type.Boolean(),
     bonus: Type.Optional(Type.Number()),
-    score: Type.Number(),
+    value: Type.Number(),
     created_at: TypeDate,
   },
   { additionalProperties: false },
@@ -249,6 +265,7 @@ export type Award = Static<typeof Award>;
 
 export const ScoreboardEntry = Type.Object({
   team_id: Type.Integer(),
+  tag_ids: Type.Array(Type.Integer()),
   score: Type.Number(),
   rank: Type.Integer(),
   last_solve: TypeDate,
@@ -262,7 +279,12 @@ export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 export const TeamSummary = Type.Composite([
   Type.Omit(Team, ["join_code"]),
   Type.Object({
-    num_members: Type.Integer(),
+    members: Type.Array(
+      Type.Object({
+        user_id: Type.Integer(),
+        role: Type.Union([Type.Literal("owner"), Type.Literal("member")]),
+      }),
+    ),
   }),
 ]);
 export type TeamSummary = Static<typeof TeamSummary>;
@@ -279,6 +301,7 @@ export const Submission = Type.Object({
   comments: Type.String({ maxLength: 512 }),
   source: Type.String({ maxLength: 64 }),
   hidden: Type.Boolean(),
+  value: Type.Union([Type.Null(), Type.Number()]),
   status: SubmissionStatus,
   created_at: TypeDate,
   updated_at: TypeDate,
@@ -312,3 +335,9 @@ export const TeamMembership = Type.Object({
   team_id: Type.Number(),
 });
 export type TeamMembership = Static<typeof TeamMembership>;
+
+export const ScoreboardVersionData = Type.Object({
+  version: Type.Number(),
+  division_id: Type.Number(),
+});
+export type ScoreboardVersionData = Static<typeof ScoreboardVersionData>;

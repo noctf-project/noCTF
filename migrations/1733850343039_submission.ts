@@ -26,6 +26,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("data", "text", (col) => col.notNull().defaultTo(""))
     .addColumn("comments", "text", (col) => col.notNull().defaultTo(""))
     .addColumn("source", "varchar(64)", (col) => col.notNull())
+    .addColumn("value", "integer")
     .addColumn("metadata", "jsonb", (col) => col.notNull().defaultTo("{}"))
     .addColumn("hidden", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("status", sql`submission_status`, (col) => col.notNull())
@@ -68,7 +69,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedAlwaysAsIdentity(),
     )
-    .addColumn("value", "integer")
+    .addColumn("value", "integer", (col) => col.notNull())
     .addColumn("title", "varchar(128)", (col) => col.notNull())
     .addColumn("team_id", "integer", (col) =>
       col.notNull().references("team.id").onDelete("cascade"),

@@ -3,7 +3,7 @@
 
   export interface ChallDetails {
     description: string;
-    files: string[];
+    files: { filename: string; url: string }[];
   }
   export interface ChallengeModalProps {
     challData?: ChallengeCardData;
@@ -248,9 +248,11 @@
                 <ul class="flex flex-row gap-4">
                   {#each challDetails!.files as file}
                     <li>
+                      <!-- TODO: this won't work for S3/external -->
                       <a
-                        href="{API_BASE_URL}/challenges/{challData?.id}/files/{file}"
-                        class="link text-primary font-semibold">{file}</a
+                        href="{API_BASE_URL}/{file.url}"
+                        class="link text-primary font-semibold"
+                        >{file.filename}</a
                       >
                     </li>
                   {/each}
@@ -369,13 +371,13 @@
                       </td>
                       <td class="font-medium text-primary max-w-0">
                         <a
-                          href="/team/{teamId}"
+                          href="/teams/{teamId}"
                           class="block truncate hover:text-primary-focus"
                         >
                           {#await TeamNamesService.get(teamId)}
                             loading...
-                          {:then name}
-                            {name}
+                          {:then team}
+                            {team?.name}
                           {/await}
                         </a>
                       </td>

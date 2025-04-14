@@ -44,9 +44,15 @@ export class ChallengeService {
   private readonly submissionDAO;
   private readonly ajv = new Ajv();
   private readonly listCache = new LocalCache<string, ChallengeMetadata[]>({
+    max: 256,
     ttl: 5000,
   });
   private readonly getCache = new LocalCache<number, Challenge>({
+    max: 256,
+    ttl: 5000,
+  });
+  private readonly renderedCache = new LocalCache<number, PublicChallenge>({
+    max: 256,
     ttl: 5000,
   });
   private privateMetadataSchema: SomeJSONSchema;
@@ -252,19 +258,22 @@ export class ChallengeService {
   }
 
   async getRendered(id: number): Promise<PublicChallenge> {
-    const c = await this.get(id, true);
-    let metadata: unknown = {};
-    for (const [_plugin, { render }] of this.plugins) {
-      metadata = { ...(await render(c.private_metadata)) };
-    }
-    return {
-      id: c.id,
-      slug: c.slug,
-      title: c.title,
-      description: c.description,
-      metadata: metadata as unknown as ChallengePublicMetadataBase,
-      hidden: c.hidden,
-      visible_at: c.visible_at,
-    };
+    return await this.renderedCache.load(id, async () => {
+      const c = await this.get(id, true);
+      let metadata: unknown = {};
+      for (const [_plugin, { render }] of this.plugins) {
+        metadata = { ...(await render(c.private_metadata)) };
+      }
+      return {
+        id: c.id,
+        slug: c.slug,
+        title: c.title,
+        description: c.description,
+        metadata: metadata as unknown as ChallengePublicMetadataBase,
+        hidden: c.hidden,
+        visible_at: c.visible_at,
+        updated_at: c.updated_at,
+      };
+    });
   }
 }

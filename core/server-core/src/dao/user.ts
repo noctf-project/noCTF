@@ -18,16 +18,35 @@ export class UserDAO {
     return count != 0 && count != "0";
   }
 
-  async get(id: number): Promise<User> {
-    const result = await this.db
+  async get(id: number): Promise<User | undefined> {
+    return await this.db
       .selectFrom("user")
       .select(["id", "name", "bio", "roles", "created_at"])
       .where("id", "=", id)
       .executeTakeFirst();
-    if (!result) {
-      throw new NotFoundError("User not found");
-    }
-    return result;
+  }
+
+  async getNameAndProviderId(
+    id: number,
+    provider: string,
+  ): Promise<{ name: string; provider_id: string } | undefined> {
+    return await this.db
+      .selectFrom("user as u")
+      .innerJoin("user_identity as ui", "ui.user_id", "u.id")
+
+      .select(["u.name as name", "ui.provider_id as provider_id"])
+      .where("u.id", "=", id)
+      .where("ui.provider", "=", provider)
+      .executeTakeFirst();
+  }
+
+  async getRoles(id: number): Promise<string[]> {
+    const result = await this.db
+      .selectFrom("user")
+      .select(["roles"])
+      .where("id", "=", id)
+      .executeTakeFirst();
+    return result?.roles || [];
   }
 
   async create({

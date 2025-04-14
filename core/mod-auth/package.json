@@ -11,14 +11,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@fastify/cookie": "catalog:",
     "@noctf/api": "workspace:*",
     "@noctf/schema": "workspace:*",
     "@noctf/server-core": "workspace:*",
     "@sinclair/typebox": "catalog:",
     "fastify": "catalog:",
     "ky": "catalog:",
-    "kysely": "catalog:"
+    "kysely": "catalog:",
+    "handlebars": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:",

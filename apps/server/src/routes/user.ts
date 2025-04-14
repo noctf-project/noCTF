@@ -2,6 +2,7 @@ import type { ServiceCradle } from "@noctf/server-core";
 import type { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
 import { MeUserResponse } from "@noctf/api/responses";
+import { NotFoundError } from "@noctf/server-core/errors";
 
 export async function routes(fastify: FastifyInstance) {
   const { userService, teamService } = fastify.container
@@ -28,6 +29,7 @@ export async function routes(fastify: FastifyInstance) {
         ? await teamService.get(membership?.team_id)
         : null;
       const user = await userService.get(request.user.id);
+      if (!user) throw new NotFoundError("User not found");
       return {
         data: {
           ...user,

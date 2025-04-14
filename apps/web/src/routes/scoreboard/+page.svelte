@@ -17,7 +17,7 @@
     score: number;
     last_solve: Date;
     solves: {
-      score: number;
+      value: number;
       bonus?: number;
       created_at: Date;
       challenge_id: number;
@@ -63,7 +63,7 @@
       .map((c) => ({
         id: c.id,
         title: c.title,
-        points: c.score!,
+        points: c.value || 0,
         categories: getCategoriesFromTags(c.tags),
       }))
       .sort((a, b) => a.points - b.points) || [],
@@ -160,7 +160,7 @@
       ? Promise.all(
           apiTop10TeamsChartsData.r?.data.data.map(
             async ({ team_id, graph }) => ({
-              name: await TeamQueryService.get(team_id),
+              name: (await TeamQueryService.get(team_id))?.name,
               data: graph,
             }),
           ),
@@ -189,13 +189,13 @@
   <div class={`flex items-center gap-2 ${!isCompact ? "w-full" : ""}`}>
     <span class="text-xl flex-shrink-0">{countryCodeToFlag("un")}</span>
     <a
-      href={`/team/${team_id}`}
+      href={`/teams/${team_id}`}
       class={`truncate block cursor-pointer ${nameBg} ${nameFg} p-0.5 px-2 rounded-md font-medium`}
     >
       {#await TeamQueryService.get(team_id)}
         <div class="skeleton h-4 w-32"></div>
-      {:then name}
-        {name}
+      {:then team}
+        {team?.name}
       {/await}
     </a>
   </div>

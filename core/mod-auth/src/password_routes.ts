@@ -5,11 +5,17 @@ import {
 import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
 import { PasswordProvider } from "./password_provider.ts";
 import type { FastifyInstance } from "fastify";
-import { NOCTF_SESSION_COOKIE } from "./const.ts";
+import { UserFlag } from "@noctf/server-core/types/enums";
+import { TokenProvider } from "./token_provider.ts";
+import { UserNotFoundError } from "./error.ts";
+import { EMAIL_VERIFICATION_TEMPLATE } from "./const.ts";
+import { SetupConfig } from "@noctf/api/config";
 
 export default async function (fastify: FastifyInstance) {
-  const { identityService } = fastify.container.cradle;
+  const { identityService, configService, cacheService, emailService } =
+    fastify.container.cradle;
   const passwordProvider = new PasswordProvider(fastify.container.cradle);
+  const tokenProvider = new TokenProvider({ cacheService });
 
   fastify.post<{
     Body: InitAuthEmailRequest;
@@ -29,16 +35,44 @@ export default async function (fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
+      const { validate_email, enable_register_password } =
+        await passwordProvider.getConfig();
       const email = request.body.email.toLowerCase();
-      const result = await passwordProvider.authPreCheck(email);
-      const { validate_email } = await passwordProvider.getConfig();
-      if (!result) {
+      try {
+        await passwordProvider.authPreCheck(email);
         return {};
+      } catch (e) {
+        if (!(e instanceof UserNotFoundError) || !enable_register_password)
+          throw e;
       }
-
-      const token = identityService.generateToken(result);
+      const token = await tokenProvider.create("register", {
+        identity: [
+          {
+            provider: "email",
+            provider_id: email,
+          },
+        ],
+        roles: validate_email ? [UserFlag.VALID_EMAIL] : [],
+      });
       if (validate_email) {
-        // TODO: send registration email
+        if (!request.body.verify) {
+          return reply.code(400).send({
+            error: "EmailVerificationRequired",
+            message: "Email Verification Required",
+          });
+        }
+        const { root_url, name: ctf_name } = (
+          await configService.get<SetupConfig>(SetupConfig.$id!)
+        )?.value;
+        await emailService.sendEmail({
+          to: [{ address: email, name: "" }],
+          subject: "Verify Your Email",
+          text: EMAIL_VERIFICATION_TEMPLATE({
+            root_url,
+            ctf_name,
+            token,
+          }),
+        });
         return {
           message: "Please check your email for a link to create your account",
         };
@@ -69,18 +103,12 @@ export default async function (fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (request) => {
       const email = request.body.email.toLowerCase();
       const password = request.body.password;
       const token = await passwordProvider.authenticate(email, password);
 
       const sessionToken = identityService.generateToken(token);
-      reply.setCookie(NOCTF_SESSION_COOKIE, sessionToken, {
-        path: "/",
-        secure: true,
-        httpOnly: true,
-        sameSite: true,
-      });
 
       return {
         data: {

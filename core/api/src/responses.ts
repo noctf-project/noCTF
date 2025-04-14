@@ -13,13 +13,12 @@ import {
   ScoreboardEntry,
   TeamSummary,
   Solve,
-  TypeDate,
-  Award,
   Submission,
   Division,
 } from "./datatypes.ts";
-import { AuthRegisterToken, AuthTokenType } from "./token.ts";
+import { AuthTokenType, RegisterTokenData } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
+import { SetupConfig } from "./config.ts";
 
 export const BaseResponse = Type.Object({
   error: Type.Optional(Type.String()),
@@ -55,14 +54,18 @@ export type InitAuthOauthResponse = Static<typeof InitAuthOauthResponse>;
 
 export const FinishAuthResponse = Type.Object({
   data: Type.Object({
-    type: AuthTokenType,
+    type: Type.Union([
+      AuthTokenType,
+      Type.Literal("register"),
+      Type.Literal("associate"),
+    ]),
     token: Type.String(),
   }),
 });
 export type FinishAuthResponse = Static<typeof FinishAuthResponse>;
 
 export const RegisterAuthTokenResponse = Type.Object({
-  data: Type.Omit(AuthRegisterToken, ["type"]),
+  data: Type.Omit(RegisterTokenData, ["type"]),
 });
 export type RegisterAuthTokenResponse = Static<
   typeof RegisterAuthTokenResponse
@@ -134,7 +137,7 @@ export const ListChallengesResponse = Type.Object({
       Type.Composite([
         PublicChallengeSummary,
         Type.Object({
-          score: Type.Union([Type.Number(), Type.Null()]),
+          value: Type.Union([Type.Number(), Type.Null()]),
           solve_count: Type.Number(),
           solved_by_me: Type.Boolean(),
         }),
@@ -298,3 +301,8 @@ export const ListDivisionsResponse = Type.Object({
   ),
 });
 export type ListDivisionsResponse = Static<typeof ListDivisionsResponse>;
+
+export const GetSiteConfigResponse = Type.Object({
+  data: SetupConfig,
+});
+export type GetSiteConfigResponse = Static<typeof GetSiteConfigResponse>;

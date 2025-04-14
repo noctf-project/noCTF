@@ -1,5 +1,4 @@
-import type { ChallengePrivateMetadataBase } from "@noctf/api/datatypes";
-import { GetChallengeFileParams, IdParams } from "@noctf/api/params";
+import { IdParams } from "@noctf/api/params";
 import {
   GetChallengeResponse,
   GetChallengeSolvesResponse,
@@ -8,7 +7,6 @@ import {
 } from "@noctf/api/responses";
 import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
 import type { FastifyInstance } from "fastify";
-import { ServeFileHandler } from "../hooks/file.ts";
 import { SolveChallengeRequest } from "@noctf/api/requests";
 import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
@@ -64,11 +62,11 @@ export async function routes(fastify: FastifyInstance) {
           entry.solves.forEach(({ challenge_id }) => solves.add(challenge_id));
         }
       }
-      const scores = Object.fromEntries(
+      const values = Object.fromEntries(
         challenges.map((c) => [
           c.id,
           {
-            score: scoreObj[c.id]?.score || 0,
+            value: scoreObj[c.id]?.value || 0,
             solve_count: scoreObj[c.id]?.solve_count || 0,
             solved_by_me: solves.has(c.id),
           },
@@ -86,7 +84,7 @@ export async function routes(fastify: FastifyInstance) {
         data: {
           challenges: challenges
             .filter(({ id }) => visible.has(id))
-            .map((c) => ({ ...c, ...scores[c.id] })),
+            .map((c) => ({ ...c, ...values[c.id] })),
         },
       };
     },
@@ -107,7 +105,7 @@ export async function routes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request) => {
+    async (request, reply) => {
       const ctime = Date.now();
       const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
       const { id } = request.params;
@@ -122,7 +120,7 @@ export async function routes(fastify: FastifyInstance) {
       ) {
         throw new NotFoundError("Challenge not found");
       }
-      // TODO: render public metadata, add type
+      reply.header("cache-control", "private, max-age=60");
       return {
         data: challenge,
       };
@@ -228,42 +226,6 @@ export async function routes(fastify: FastifyInstance) {
           { ip: request.ip },
         ),
       };
-    },
-  );
-
-  fastify.get<{ Params: GetChallengeFileParams }>(
-    "/challenges/:id/files/:filename",
-    {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["challenge"],
-        auth: {
-          policy: ["challenge.get"],
-        },
-        params: GetChallengeFileParams,
-      },
-    },
-    async (request, reply) => {
-      const ctime = Date.now();
-      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
-      const { id } = request.params;
-
-      // Cannot cache directly as could be rendered with team_id as param
-      const challenge = await challengeService.get(id, true);
-      if (
-        !admin &&
-        (challenge.hidden ||
-          (challenge.visible_at !== null &&
-            ctime < challenge.visible_at.getTime()))
-      ) {
-        throw new NotFoundError("Challenge not found");
-      }
-      const ref = (challenge.private_metadata as ChallengePrivateMetadataBase)
-        .files?.[request.params.filename]?.ref;
-      if (!ref) {
-        throw new NotFoundError("File not found");
-      }
-      return ServeFileHandler(ref, request, reply);
     },
   );
 }

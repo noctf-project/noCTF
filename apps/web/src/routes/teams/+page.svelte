@@ -113,7 +113,7 @@
     >
       {#each paginatedTeams as team (`team-${team.id}`)}
         <a
-          href="/team/{team.id}"
+          href="/teams/{team.id}"
           class="group relative bg-base-100 overflow-hidden rounded-xl border border-base-300 p-5 flex flex-col
                  hover:border-primary hover:shadow-md transition-all duration-200 pop hover:pop"
         >
@@ -140,7 +140,7 @@
                 class="text-lg text-base-content/70"
               />
               <span class="text-sm font-medium"
-                >{team.num_members} member{team.num_members === 1
+                >{team.members.length} member{team.members.length === 1
                   ? ""
                   : "s"}</span
               >

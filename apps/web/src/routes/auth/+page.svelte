@@ -8,6 +8,7 @@
     | "email"
     | "login"
     | "register"
+    | "verification-required"
     | "verification-sent"
     | "forgot-password-request"
     | "forgot-password-sent";
@@ -37,9 +38,6 @@
     { name: "GitHub", icon: "mdi:github" },
   ];
 
-  // const emailVerificationEnabled = wrapLoadable(api.GET("/admin/challenges"));
-  let emailVerificationEnabled = $state(false); // This should be set based on your config
-
   function successRedirect() {
     if (redirectParam) {
       performRedirect(redirectParam);
@@ -53,7 +51,8 @@
     if (
       currentStage === "login" ||
       currentStage === "register" ||
-      currentStage === "verification-sent"
+      currentStage === "verification-sent" ||
+      currentStage === "verification-required"
     ) {
       currentStage = "email";
       // Reset sensitive fields when going back
@@ -74,40 +73,50 @@
       });
 
       if (checkEmailRes.error) {
+        if (checkEmailRes.error.error === "EmailVerificationRequired") {
+          currentStage = "verification-required";
+          return;
+        }
         toasts.error(
           checkEmailRes.error.message ??
             "An unexpected error occurred when validating email. Please try again later.",
         );
-        isLoading = false;
         return;
       }
-      console.log(checkEmailRes);
 
       // Handle different responses based on if email exists
-      if (
-        checkEmailRes.data &&
-        Object.keys(checkEmailRes.data.data || {}).length === 0
-      ) {
-        // Email exists, proceed to login
-        currentStage = "login";
-      } else if (checkEmailRes.data?.data?.token) {
-        // New user, store token for registration
+      if (checkEmailRes.data?.data?.token) {
         registrationToken = checkEmailRes.data.data.token;
-
-        if (emailVerificationEnabled) {
-          // If email verification is enabled, show verification message
-          currentStage = "verification-sent";
-        } else {
-          // If email verification is disabled, go to registration form
-          currentStage = "register";
-        }
-      } else {
-        // Unexpected response
+        currentStage = "register";
+      } else if (checkEmailRes.error) {
         toasts.error("Unexpected response from server");
+      } else {
+        currentStage = "login";
       }
     } catch (error) {
       toasts.error("An error occurred during email check");
       console.error(error);
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  async function handleVerifyRequired() {
+    if (!email) return;
+    try {
+      isLoading = true;
+
+      const { error } = await api.POST("/auth/email/init", {
+        body: { email, verify: true },
+      });
+      if (error) {
+        toasts.error(
+          error.message ??
+            "An unexpected error occurred when validating email. Please try again later.",
+        );
+        return;
+      }
+      currentStage = "verification-sent";
     } finally {
       isLoading = false;
     }
@@ -122,7 +131,6 @@
     );
   }
 
-  // TODO: move all of this into AuthState
   async function handleLogin() {
     try {
       isLoading = true;
@@ -157,7 +165,6 @@
     }
   }
 
-  // TODO: move all of this into AuthState
   async function handleRegister() {
     try {
       isLoading = true;
@@ -183,6 +190,7 @@
       }
 
       if (registerRes.data?.data?.type === "session") {
+        toasts.success("Account created successfully!");
         localStorage.setItem(SESSION_TOKEN_KEY, registerRes.data.data.token);
         successRedirect();
       } else {
@@ -529,6 +537,29 @@
             {/if}
           </button>
         </form>
+      {/if}
+
+      {#if currentStage === "verification-required"}
+        <div class="pb-4 flex flex-col items-center">
+          <div class="rounded-full flex items-center justify-center pb-4">
+            <Icon icon="material-symbols:mail-outline" class="text-4xl" />
+          </div>
+
+          <p class="text-center mb-4">
+            We could not find an account with the email <strong>{email}</strong
+            >. If you would like to create an account, please click the button
+            below to be sent a verification email.
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <button class="btn btn-primary w-full" onclick={handleVerifyRequired}>
+            Verify My Email
+          </button>
+          <button class="btn btn-outline w-full" onclick={goBack}>
+            Use a different email
+          </button>
+        </div>
       {/if}
 
       {#if currentStage === "verification-sent"}
