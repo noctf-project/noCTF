@@ -136,7 +136,7 @@
     <div
       class="flex flex-col md:grid grid-cols-[min(25%,20rem)_1fr] gap-6 lg:gap-8 py-8"
     >
-      <div class="sticky top-8 self-start mb-6 md:mb-0 md:mt-8">
+      <div class="md:sticky top-8 self-start mb-6 md:mb-0 md:mt-8">
         <ChallengeFilterer
           challenges={allChallenges || []}
           onFilter={(res) => (challenges = res)}
@@ -168,10 +168,7 @@
       challData={modalChallData}
       challDetails={modalChallDetails}
       onClose={closeModal}
-      onSolve={async () => {
-        await refreshChallenges();
-        closeModal();
-      }}
+      onSolve={() => setTimeout(refreshChallenges, 5000)}
     />
   {/if}
 </div>
