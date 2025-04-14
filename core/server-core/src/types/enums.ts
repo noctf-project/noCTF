@@ -1,4 +1,4 @@
-export enum UserFlag {
+export enum UserRole {
   VALID_EMAIL = "valid_email",
   ADMIN = "admin",
   BLOCKED = "blocked",

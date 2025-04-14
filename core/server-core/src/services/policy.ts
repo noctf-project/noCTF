@@ -4,11 +4,10 @@ import type { Policy } from "../util/policy.ts";
 import { Evaluate } from "../util/policy.ts";
 import { LocalCache } from "../util/local_cache.ts";
 import { UserDAO } from "../dao/user.ts";
+import { AuthConfig } from "@noctf/api/config";
+import { UserRole } from "../types/enums.ts";
 
-type Props = Pick<
-  ServiceCradle,
-  "auditLogService" | "cacheService" | "databaseClient" | "logger"
->;
+type Props = Pick<ServiceCradle, "databaseClient" | "logger" | "configService">;
 
 export const CACHE_NAMESPACE = "core:svc:policy";
 
@@ -20,9 +19,11 @@ export enum StaticRole {
 
 const POLICY_EXPIRATION = 5000;
 export class PolicyService {
+  private readonly logger;
+  private readonly configService;
+
   private readonly policyDAO;
   private readonly userDAO;
-  private readonly logger;
 
   private readonly userRolesCache = new LocalCache<number, string[]>({
     max: 16384,
@@ -34,8 +35,9 @@ export class PolicyService {
     null;
   private policyCacheLastUpdated: number | null = null;
 
-  constructor({ databaseClient, logger }: Props) {
+  constructor({ databaseClient, logger, configService }: Props) {
     this.logger = logger;
+    this.configService = configService;
     this.policyDAO = new PolicyDAO(databaseClient.get());
     this.userDAO = new UserDAO(databaseClient.get());
   }
@@ -46,15 +48,23 @@ export class PolicyService {
       this.getPolicies(),
     ]);
     const roleSet = new Set(roles);
-    const result = policies.filter(
-      ({ match_roles, omit_roles, public: isPublic }) => {
-        const omit = omit_roles.find((r) => roleSet.has(r)) !== undefined;
-        const match =
-          match_roles.length === 0 ||
-          match_roles.find((r) => roleSet.has(r)) !== undefined;
-        return !isPublic && !omit && match;
-      },
-    );
+
+    // hack: inject the role into roleset when doing
+    // permissions checks if valid email is off
+    if (
+      !(await this.configService.get<AuthConfig>(AuthConfig.$id!)).value
+        .validate_email
+    ) {
+      roleSet.add(UserRole.VALID_EMAIL);
+    }
+
+    const result = policies.filter(({ match_roles, omit_roles }) => {
+      const omit = omit_roles.find((r) => roleSet.has(r)) !== undefined;
+      const match =
+        match_roles.length === 0 ||
+        match_roles.find((r) => roleSet.has(r)) !== undefined;
+      return !omit && match;
+    });
     return result;
   }
 

@@ -5,7 +5,7 @@ import {
 import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
 import { PasswordProvider } from "./password_provider.ts";
 import type { FastifyInstance } from "fastify";
-import { UserFlag } from "@noctf/server-core/types/enums";
+import { UserRole } from "@noctf/server-core/types/enums";
 import { TokenProvider } from "./token_provider.ts";
 import { UserNotFoundError } from "./error.ts";
 import { EMAIL_VERIFICATION_TEMPLATE } from "./const.ts";
@@ -52,7 +52,7 @@ export default async function (fastify: FastifyInstance) {
             provider_id: email,
           },
         ],
-        roles: validate_email ? [UserFlag.VALID_EMAIL] : [],
+        roles: validate_email ? [UserRole.VALID_EMAIL] : [],
       });
       if (validate_email) {
         if (!request.body.verify) {
