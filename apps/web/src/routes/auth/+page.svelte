@@ -3,6 +3,8 @@
   import { toasts } from "$lib/stores/toast";
   import { performRedirect } from "$lib/utils/url";
   import Icon from "@iconify/svelte";
+  import { goto } from "$app/navigation";
+  import loginState from "./auth.svelte";
 
   type FlowStage =
     | "email"
@@ -13,14 +15,14 @@
     | "forgot-password-request"
     | "forgot-password-sent";
 
-  let currentStage: FlowStage = $state("email");
-  // let currentStage: FlowStage = $state("register");
+  // let loginState.currentStage: FlowStage = $state("email");
+  // let loginState.currentStage: FlowStage = $state("register");
 
   // Form fields
-  let email = $state("");
-  let username = $state("");
-  let password = $state("");
-  let rememberMe = $state(true);
+  // let email = $state("");
+  // let username = $state("");
+  // let password = $state("");
+  // let rememberMe = $state(false);
 
   // UI states
   let isLoading = $state(false);
@@ -49,50 +51,25 @@
   function goBack() {
     // Generally goes back to email stage, except from password reset flow
     if (
-      currentStage === "login" ||
-      currentStage === "register" ||
-      currentStage === "verification-sent" ||
-      currentStage === "verification-required"
+      loginState.currentStage === "login" ||
+      loginState.currentStage === "register" ||
+      loginState.currentStage === "verification-sent" ||
+      loginState.currentStage === "verification-required"
     ) {
-      currentStage = "email";
+      loginState.currentStage = "email";
       // Reset sensitive fields when going back
-      password = "";
+      loginState.password = "";
     }
     // Specific back buttons are used for forgot password flow stages
   }
 
   async function handleEmailCheck() {
-    if (!email) return;
+    if (!loginState.email) return;
 
     try {
       isLoading = true;
 
-      // Check if the email exists
-      const checkEmailRes = await api.POST("/auth/email/init", {
-        body: { email },
-      });
-
-      if (checkEmailRes.error) {
-        if (checkEmailRes.error.error === "EmailVerificationRequired") {
-          currentStage = "verification-required";
-          return;
-        }
-        toasts.error(
-          checkEmailRes.error.message ??
-            "An unexpected error occurred when validating email. Please try again later.",
-        );
-        return;
-      }
-
-      // Handle different responses based on if email exists
-      if (checkEmailRes.data?.data?.token) {
-        registrationToken = checkEmailRes.data.data.token;
-        currentStage = "register";
-      } else if (checkEmailRes.error) {
-        toasts.error("Unexpected response from server");
-      } else {
-        currentStage = "login";
-      }
+      await loginState.checkEmail();
     } catch (error) {
       toasts.error("An error occurred during email check");
       console.error(error);
@@ -102,21 +79,10 @@
   }
 
   async function handleVerifyRequired() {
-    if (!email) return;
+    if (!loginState.email) return;
     try {
       isLoading = true;
-
-      const { error } = await api.POST("/auth/email/init", {
-        body: { email, verify: true },
-      });
-      if (error) {
-        toasts.error(
-          error.message ??
-            "An unexpected error occurred when validating email. Please try again later.",
-        );
-        return;
-      }
-      currentStage = "verification-sent";
+      await loginState.verifyEmail();
     } finally {
       isLoading = false;
     }
@@ -125,7 +91,6 @@
   async function handleSocialLogin(provider: string) {
     // TODO: Redirect to social login provider went implemented
     // window.location.href = `/auth/${provider}/init?redirect_to=${encodeURIComponent(redirectParam || "/")}`;
-
     toasts.info(
       `Social login with ${provider} is not implemented yet. Please use email login.`,
     );
@@ -134,29 +99,7 @@
   async function handleLogin() {
     try {
       isLoading = true;
-
-      const loginRes = await api.POST("/auth/email/finish", {
-        body: {
-          email,
-          password,
-          remember: rememberMe,
-        },
-      });
-
-      if (loginRes.error) {
-        toasts.error(
-          loginRes.error.message ??
-            "An unexpected error occurred when logging in. Please try again later.",
-        );
-        isLoading = false;
-        return;
-      }
-      if (loginRes.data?.data?.type === "session") {
-        localStorage.setItem(SESSION_TOKEN_KEY, loginRes.data.data.token);
-        successRedirect();
-      } else {
-        toasts.error("Login failed");
-      }
+      if (await loginState.login()) successRedirect();
     } catch (error) {
       toasts.error("An error occurred during login");
       console.error(error);
@@ -168,34 +111,7 @@
   async function handleRegister() {
     try {
       isLoading = true;
-
-      const registerRes = await api.POST("/auth/register/finish", {
-        body: {
-          token: registrationToken,
-          name: username,
-          email,
-          password,
-          captcha: "", // Assuming captcha is handled elsewhere or not needed here
-        },
-      });
-
-      if (registerRes.error) {
-        toasts.error(
-          registerRes.error.message ||
-            "An error occured during registration. Please try again later.",
-        );
-        console.error(registerRes.error);
-        isLoading = false;
-        return;
-      }
-
-      if (registerRes.data?.data?.type === "session") {
-        toasts.success("Account created successfully!");
-        localStorage.setItem(SESSION_TOKEN_KEY, registerRes.data.data.token);
-        successRedirect();
-      } else {
-        toasts.error("Registration failed");
-      }
+      if (await loginState.register()) successRedirect();
     } catch (error) {
       toasts.error("An error occurred during registration");
       console.error(error);
@@ -226,14 +142,14 @@
       //   return;
       // }
 
-      currentStage = "forgot-password-sent";
+      loginState.currentStage = "forgot-password-sent";
       toasts.success("Password reset instructions sent (if account exists).");
     } catch (error) {
       console.error("Password reset submission error:", error);
       toasts.error("An unexpected error occurred. Please try again later.");
     } finally {
       // isLoading will be set false by stage change if successful, or explicitly on error above
-      if (currentStage !== "forgot-password-sent") {
+      if (loginState.currentStage !== "forgot-password-sent") {
         isLoading = false;
       }
     }
@@ -242,7 +158,7 @@
   function handleSubmit(e: Event) {
     e.preventDefault();
 
-    switch (currentStage) {
+    switch (loginState.currentStage) {
       case "email":
         handleEmailCheck();
         break;
@@ -273,30 +189,30 @@
   >
     <div class="card-body">
       <div class="text-center mb-6">
-        {#if currentStage === "email"}
+        {#if loginState.currentStage === "email"}
           <h2 class="text-2xl font-bold">Welcome</h2>
           <p class="text-gray-600">Sign in or create an account</p>
-        {:else if currentStage === "login"}
+        {:else if loginState.currentStage === "login"}
           <h2 class="text-2xl font-bold">Welcome back</h2>
           <p class="text-gray-600">Enter your password to continue</p>
-        {:else if currentStage === "register"}
+        {:else if loginState.currentStage === "register"}
           <h2 class="text-2xl font-bold">Create an account</h2>
           <p class="text-gray-600">Complete your details to get started</p>
-        {:else if currentStage === "verification-sent"}
+        {:else if loginState.currentStage === "verification-sent"}
           <h2 class="text-2xl font-bold">Check your email</h2>
           <p class="text-gray-600">We've sent a verification link</p>
-        {:else if currentStage === "forgot-password-request"}
+        {:else if loginState.currentStage === "forgot-password-request"}
           <h2 class="text-2xl font-bold">Reset Password</h2>
           <p class="text-gray-600">
             Enter your email to receive reset instructions
           </p>
-        {:else if currentStage === "forgot-password-sent"}
+        {:else if loginState.currentStage === "forgot-password-sent"}
           <h2 class="text-2xl font-bold">Check your email</h2>
           <p class="text-gray-600">Password reset instructions sent</p>
         {/if}
       </div>
 
-      {#if currentStage === "email"}
+      {#if loginState.currentStage === "email"}
         <form onsubmit={handleSubmit}>
           <div class="form-control">
             <label for="email" class="label">
@@ -307,7 +223,7 @@
               type="email"
               placeholder="email@example.com"
               class="input input-bordered w-full"
-              bind:value={email}
+              bind:value={loginState.email}
               required
               autocomplete="email"
             />
@@ -316,7 +232,7 @@
           <button
             class="btn btn-primary w-full mt-6 shadow-solid"
             type="submit"
-            disabled={isLoading || !email}
+            disabled={isLoading || !loginState.email}
           >
             {#if isLoading}
               <span class="loading loading-spinner loading-sm"></span>
@@ -353,7 +269,7 @@
         </div>
       {/if}
 
-      {#if currentStage === "login"}
+      {#if loginState.currentStage === "login"}
         <form onsubmit={handleSubmit}>
           <div class="form-control">
             <label for="email-locked" class="label">
@@ -364,7 +280,7 @@
                 id="email-locked"
                 type="email"
                 class="input input-bordered w-full pr-10 bg-base-200"
-                value={email}
+                value={loginState.email}
                 disabled
               />
               <button
@@ -389,7 +305,7 @@
                 type={passwordVisible ? "text" : "password"}
                 placeholder="••••••••"
                 class="input input-bordered w-full pr-10"
-                bind:value={password}
+                bind:value={loginState.password}
                 required
                 autocomplete="current-password"
               />
@@ -420,7 +336,7 @@
                 <input
                   type="checkbox"
                   class="checkbox checkbox-sm mr-2"
-                  bind:checked={rememberMe}
+                  bind:checked={loginState.rememberMe}
                 />
                 <span class="label-text text-sm">Remember me</span>
               </label>
@@ -428,7 +344,8 @@
             <button
               type="button"
               class="text-sm link link-hover self-end"
-              onclick={() => (currentStage = "forgot-password-request")}
+              onclick={() =>
+                (loginState.currentStage = "forgot-password-request")}
             >
               Forgot password?
             </button>
@@ -437,7 +354,7 @@
           <button
             class="btn btn-primary w-full mt-6 shadow-solid"
             type="submit"
-            disabled={isLoading || !password}
+            disabled={isLoading || !loginState.password}
           >
             {#if isLoading}
               <span class="loading loading-spinner loading-sm"></span>
@@ -448,7 +365,7 @@
         </form>
       {/if}
 
-      {#if currentStage === "register"}
+      {#if loginState.currentStage === "register"}
         <form onsubmit={handleSubmit}>
           <div class="form-control">
             <label for="email-locked-reg" class="label">
@@ -459,7 +376,7 @@
                 id="email-locked-reg"
                 type="email"
                 class="input input-bordered w-full pr-10 bg-base-200"
-                value={email}
+                value={loginState.email}
                 disabled
               />
               <button
@@ -483,7 +400,7 @@
               type="text"
               placeholder="Your name"
               class="input input-bordered w-full"
-              bind:value={username}
+              bind:value={loginState.username}
               required
               autocomplete="name"
             />
@@ -499,7 +416,7 @@
                 type={passwordVisible ? "text" : "password"}
                 placeholder="••••••••"
                 class="input input-bordered w-full pr-10"
-                bind:value={password}
+                bind:value={loginState.password}
                 required
                 autocomplete="new-password"
                 minlength={8}
@@ -528,7 +445,7 @@
           <button
             class="btn btn-primary w-full mt-6 shadow-solid"
             type="submit"
-            disabled={isLoading || !username || !password}
+            disabled={isLoading || !loginState.username || !loginState.password}
           >
             {#if isLoading}
               <span class="loading loading-spinner loading-sm"></span>
@@ -539,14 +456,15 @@
         </form>
       {/if}
 
-      {#if currentStage === "verification-required"}
+      {#if loginState.currentStage === "verification-required"}
         <div class="pb-4 flex flex-col items-center">
           <div class="rounded-full flex items-center justify-center pb-4">
             <Icon icon="material-symbols:mail-outline" class="text-4xl" />
           </div>
 
           <p class="text-center mb-4">
-            We could not find an account with the email <strong>{email}</strong
+            We could not find an account with the email <strong
+              >{loginState.email}</strong
             >. If you would like to create an account, please click the button
             below to be sent a verification email.
           </p>
@@ -562,15 +480,16 @@
         </div>
       {/if}
 
-      {#if currentStage === "verification-sent"}
+      {#if loginState.currentStage === "verification-sent"}
         <div class="pb-4 flex flex-col items-center">
           <div class="rounded-full flex items-center justify-center pb-4">
             <Icon icon="material-symbols:mail-outline" class="text-4xl" />
           </div>
 
           <p class="text-center mb-4">
-            We've sent a verification link to <strong>{email}</strong>. Please
-            check your inbox and click the link to complete registration.
+            We've sent a verification link to <strong>{loginState.email}</strong
+            >. Please check your inbox and click the link to complete
+            registration.
           </p>
 
           <p class="text-sm text-gray-500 mb-6">
@@ -583,7 +502,7 @@
         </div>
       {/if}
 
-      {#if currentStage === "forgot-password-request"}
+      {#if loginState.currentStage === "forgot-password-request"}
         <form onsubmit={handleSubmit}>
           <div class="form-control">
             <label for="email-locked-reg" class="label">
@@ -594,7 +513,7 @@
                 id="email-locked-reg"
                 type="email"
                 class="input input-bordered w-full pr-10 bg-base-200"
-                value={email}
+                value={loginState.email}
                 disabled
               />
               <button
@@ -611,7 +530,7 @@
           <button
             class="btn btn-primary w-full mt-6 shadow-solid"
             type="submit"
-            disabled={isLoading || !email}
+            disabled={isLoading || !loginState.email}
           >
             {#if isLoading}
               <span class="loading loading-spinner loading-sm"></span>
@@ -623,7 +542,7 @@
           <button
             type="button"
             class="btn btn-ghost w-full mt-3"
-            onclick={() => (currentStage = "login")}
+            onclick={() => (loginState.currentStage = "login")}
             disabled={isLoading}
           >
             Back to Login
@@ -631,15 +550,16 @@
         </form>
       {/if}
 
-      {#if currentStage === "forgot-password-sent"}
+      {#if loginState.currentStage === "forgot-password-sent"}
         <div class="pb-4 flex flex-col items-center">
           <div class="rounded-full flex items-center justify-center mb-4">
             <Icon icon="material-symbols:mail-outline" class="text-4xl" />
           </div>
 
           <p class="text-center mb-4">
-            If an account exists for <strong>{email}</strong>, you will receive
-            an email with instructions on how to reset your password shortly.
+            If an account exists for <strong>{loginState.email}</strong>, you
+            will receive an email with instructions on how to reset your
+            password shortly.
           </p>
 
           <p class="text-sm text-gray-500 mb-6">
@@ -649,7 +569,7 @@
 
           <button
             class="btn btn-outline w-full"
-            onclick={() => (currentStage = "email")}
+            onclick={() => (loginState.currentStage = "email")}
           >
             Back to Start
           </button>
