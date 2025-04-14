@@ -1,11 +1,15 @@
 <script lang="ts" generics="T">
   import type { Snippet } from "svelte";
   import type { Column } from "./Column";
-  let { columns, cell, border } = $props<{
+  let {
+    columns,
+    cell,
+    border,
+  }: {
     columns: Column[];
     cell: Snippet<[Column]>;
     border?: "regular" | "thick";
-  }>();
+  } = $props();
 </script>
 
 <tr
