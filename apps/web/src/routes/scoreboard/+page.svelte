@@ -539,11 +539,11 @@
           >
             {#snippet row(id, columns)}
               {@const entry = currentPageTeams.get(id)!}
-              {@const isMe = entry.rank === 1}
+              {@const isMe = authState.user?.team_id === id}
               <TableRow {columns} border={isMe ? "thick" : "regular"}>
                 {#snippet cell(column)}
                   {#if column.id === "rank"}
-                    <TableCell {column}>
+                    <TableCell {column} weight="bold">
                       {@render rankDisplay(entry.rank)}
                     </TableCell>
                   {:else if column.id === "team"}
@@ -551,7 +551,7 @@
                       {@render teamName(entry.team_id, true)}
                     </TableCell>
                   {:else if column.id === "score"}
-                    <TableCell {column}>
+                    <TableCell {column} weight="bold">
                       {entry.score}
                     </TableCell>
                   {:else if column.id === "last_solve"}
