@@ -162,7 +162,7 @@ class ChallengeConverter:
                     "strategy": "core:quadratic",
                     "bonus": []
                 },
-                "files": {}  # Ignoring files as requested
+                "files": []  # Ignoring files as requested
             }
         }
         

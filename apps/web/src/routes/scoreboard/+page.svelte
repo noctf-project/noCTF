@@ -160,7 +160,7 @@
       ? Promise.all(
           apiTop10TeamsChartsData.r?.data.data.map(
             async ({ team_id, graph }) => ({
-              name: await TeamQueryService.get(team_id),
+              name: (await TeamQueryService.get(team_id))?.name,
               data: graph,
             }),
           ),
@@ -194,8 +194,8 @@
     >
       {#await TeamQueryService.get(team_id)}
         <div class="skeleton h-4 w-32"></div>
-      {:then name}
-        {name}
+      {:then team}
+        {team?.name}
       {/await}
     </a>
   </div>

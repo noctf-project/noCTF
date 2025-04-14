@@ -18,6 +18,7 @@ import {
 } from "./datatypes.ts";
 import { AuthTokenType, RegisterTokenData } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
+import { SetupConfig } from "./config.ts";
 
 export const BaseResponse = Type.Object({
   error: Type.Optional(Type.String()),
@@ -300,3 +301,8 @@ export const ListDivisionsResponse = Type.Object({
   ),
 });
 export type ListDivisionsResponse = Static<typeof ListDivisionsResponse>;
+
+export const GetSiteConfigResponse = Type.Object({
+  data: SetupConfig,
+});
+export type GetSiteConfigResponse = Static<typeof GetSiteConfigResponse>;
