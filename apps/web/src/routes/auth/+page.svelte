@@ -1,5 +1,5 @@
 <script lang="ts">
-  import api, { SESSION_TOKEN_KEY, wrapLoadable } from "$lib/api/index.svelte";
+  import api, { SESSION_TOKEN_KEY } from "$lib/api/index.svelte";
   import { toasts } from "$lib/stores/toast";
   import { performRedirect } from "$lib/utils/url";
   import Icon from "@iconify/svelte";

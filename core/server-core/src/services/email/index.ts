@@ -2,7 +2,6 @@ import { EmailConfig, SetupConfig } from "@noctf/api/config";
 import { ServiceCradle } from "../../index.ts";
 import { EmailProvider } from "./types.ts";
 import { DummyEmailProvider } from "./dummy.ts";
-import { NodeMailerProvider } from "./nodemailer.ts";
 import {
   EmailAddress,
   EmailAddressOrUserId,
@@ -35,9 +34,6 @@ export class EmailService {
     this.logger = logger;
     void this.init();
     this.register(new DummyEmailProvider({ logger: this.logger }));
-    this.register(
-      new NodeMailerProvider({ logger: this.logger, configService }),
-    );
   }
 
   async init() {
@@ -52,13 +48,8 @@ export class EmailService {
       },
       async (v) => {
         const provider = this.providers.get(v.provider);
-        if (!provider) return `Provider ${v.provider} does not exist`;
-        try {
-          await provider.validate(v.config);
-        } catch (e) {
-          return e.message;
-        }
-        return null;
+        if (!provider) throw new Error(`Provider ${v.provider} does not exist`);
+        await provider.validate(v.config);
       },
     );
   }
@@ -85,7 +76,7 @@ export class EmailService {
   private async doSend(config: EmailConfig, data: EmailMessage) {
     const { name: siteName } = (
       await this.configService.get<SetupConfig>(SetupConfig.$id!)
-    )?.value;
+    ).value;
     const provider = this.providers.get(config.provider);
     if (!provider)
       throw new Error(

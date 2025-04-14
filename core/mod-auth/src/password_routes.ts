@@ -63,7 +63,7 @@ export default async function (fastify: FastifyInstance) {
         }
         const { root_url, name: ctf_name } = (
           await configService.get<SetupConfig>(SetupConfig.$id!)
-        )?.value;
+        ).value;
         await emailService.sendEmail({
           to: [{ address: email, name: "" }],
           subject: "Verify Your Email",

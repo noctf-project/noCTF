@@ -1,11 +1,9 @@
-import { createTransport, Transport, Transporter } from "nodemailer";
+import { createTransport, Transporter } from "nodemailer";
 import { ServiceCradle } from "../../index.ts";
 import { EmailPayload, EmailProvider } from "./types.ts";
 import { EmailConfig } from "@noctf/api/config";
-import { Static, Type } from "@sinclair/typebox";
-import { Value } from "@sinclair/typebox/value";
 
-type Props = Pick<ServiceCradle, "logger" | "configService">;
+type Props = Pick<ServiceCradle, "configService">;
 
 export class NodeMailerProvider implements EmailProvider {
   public readonly name = "nodemailer";
@@ -32,8 +30,7 @@ export class NodeMailerProvider implements EmailProvider {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async validate(config: any): Promise<void> {
+  async validate(config: Parameters<typeof createTransport>[0]): Promise<void> {
     const transport = createTransport(config);
     await transport.verify();
   }
