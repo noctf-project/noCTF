@@ -23,18 +23,17 @@ import { AuthzHook } from "./hooks/authz.ts";
 import { LocalFileProvider } from "@noctf/server-core/services/file/local";
 import { FILE_LOCAL_PATH, TOKEN_SECRET } from "./config.ts";
 import { RateLimitHook } from "./hooks/rate_limit.ts";
+import { NodeMailerProvider } from "@noctf/server-core/services/email/nodemailer";
 
 export default async function (fastify: FastifyInstance) {
   fastify.addHook("preHandler", AuthnHook);
   fastify.addHook("preHandler", AuthzHook);
   fastify.addHook("preHandler", RateLimitHook);
 
-  const { fileService } = fastify.container.cradle;
-  const localFileProvider = new LocalFileProvider(
-    FILE_LOCAL_PATH,
-    TOKEN_SECRET,
-  );
-  fileService.register(localFileProvider);
+  const { configService, emailService, fileService } = fastify.container.cradle;
+  fileService.register(new LocalFileProvider(FILE_LOCAL_PATH, TOKEN_SECRET));
+
+  emailService.register(new NodeMailerProvider({ configService }));
 
   fastify.register(adminAuditLog);
   fastify.register(adminChallenge);
