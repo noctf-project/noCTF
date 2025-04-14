@@ -10,6 +10,9 @@
   import Pagination from "$lib/components/Pagination.svelte";
   import { countryCodeToFlag } from "$lib/utils/country_flags";
   import authState from "$lib/state/auth.svelte";
+  import Table from "$lib/components/table/Table.svelte";
+  import TableRow from "$lib/components/table/TableRow.svelte";
+  import TableCell from "$lib/components/table/TableCell.svelte";
 
   type ScoreboardEntry = {
     team_id: number;
@@ -503,66 +506,68 @@
             {@render viewToggleButton()}
           </div>
 
-          <div
-            class="pop border border-base-500 bg-base-100 rounded-lg overflow-y-hidden overflow-x-auto"
+          <Table
+            data={paginatedTeamIds}
+            columns={[
+              {
+                id: "rank",
+                label: "#",
+                width: "12",
+                textAlign: "center",
+              },
+              {
+                id: "team",
+                label: "Team",
+                width: "auto",
+                textAlign: "left",
+                minWidth: "32",
+                maxWidth: "32",
+              },
+              {
+                id: "score",
+                label: "Score",
+                width: "20",
+                textAlign: "center",
+              },
+              {
+                id: "last_solve",
+                label: "Last Solve",
+                width: "32",
+                textAlign: "center",
+              },
+            ]}
           >
-            <table class="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th
-                    class="border border-base-300 bg-base-200 py-2 px-3 text-center font-bold w-12"
-                    >#</th
-                  >
-                  <th
-                    class="border border-base-300 bg-base-200 py-2 px-3 text-left font-bold min-w-32 max-w-32 lg:w-auto"
-                    >Team</th
-                  >
-                  <th
-                    class="border border-base-300 bg-base-200 py-2 px-3 text-center font-bold w-20"
-                    >Score</th
-                  >
-                  <th
-                    class="border border-base-300 bg-base-200 py-2 px-3 text-center font-bold w-32"
-                    >Last Solve</th
-                  >
-                </tr>
-              </thead>
-              <tbody>
-                {#each paginatedTeamIds as team_id (`compact-row-${team_id}`)}
-                  {@const entry = currentPageTeams.get(team_id)!}
-                  {@const isMe = authState.user?.team_id === team_id}
-                  <tr
-                    class="bg-base-100 hover:bg-base-300/30 {isMe &&
-                      'border-y-2 border-base-400'}"
-                  >
-                    <td
-                      class="border border-base-300 py-2 px-3 text-center h-10 font-bold"
-                    >
+            {#snippet row(id, columns)}
+              {@const entry = currentPageTeams.get(id)!}
+              {@const isMe = entry.rank === 1}
+              <TableRow {columns} border={isMe ? "thick" : "regular"}>
+                {#snippet cell(column)}
+                  {#if column.id === "rank"}
+                    <TableCell {column}>
                       {@render rankDisplay(entry.rank)}
-                    </td>
-                    <td
-                      class="border border-base-300 py-2 px-3 min-w-32 max-w-32 lg:w-auto"
-                    >
+                    </TableCell>
+                  {:else if column.id === "team"}
+                    <TableCell {column}>
                       {@render teamName(entry.team_id, true)}
-                    </td>
-                    <td
-                      class="border border-base-300 py-2 px-3 text-center font-mono font-bold"
-                    >
+                    </TableCell>
+                  {:else if column.id === "score"}
+                    <TableCell {column}>
                       {entry.score}
-                    </td>
-                    <td
-                      class="border border-base-300 py-2 px-3 text-center"
+                    </TableCell>
+                  {:else if column.id === "last_solve"}
+                    <TableCell
+                      {column}
                       title={entry.last_solve.toLocaleString()}
                     >
                       {entry.last_solve?.getTime()
                         ? getRelativeTime(entry.last_solve)
                         : "-"}
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
+                    </TableCell>
+                  {/if}
+                {/snippet}
+              </TableRow>
+            {/snippet}
+          </Table>
         </div>
       {/if}
 
