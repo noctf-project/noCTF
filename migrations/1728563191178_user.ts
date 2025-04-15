@@ -101,15 +101,13 @@ export async function up(db: Kysely<any>): Promise<void> {
         name: "user",
         description: "Standard user permissions",
         permissions: ["*", "!admin.*"],
-        omit_roles: ["blocked"],
-        match_roles: ["valid_email"],
+        match_roles: ["active"],
       },
       {
         name: "user_basic",
-        description:
-          "Subset of permissions for unverified users",
+        description: "Subset of permissions for unverified users",
         permissions: ["user.self"],
-        omit_roles: ["valid_email", "blocked"],
+        omit_roles: ["active", "blocked"],
       },
       {
         name: "admin",

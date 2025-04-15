@@ -1,6 +1,7 @@
 export enum UserRole {
   VALID_EMAIL = "valid_email",
   ADMIN = "admin",
+  ACTIVE = "active",
   BLOCKED = "blocked",
   HIDDEN = "hidden",
 }

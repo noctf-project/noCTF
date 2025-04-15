@@ -48,14 +48,14 @@ export class PolicyService {
       this.getPolicies(),
     ]);
     const roleSet = new Set(roles);
-
-    // hack: inject the role into roleset when doing
-    // permissions checks if valid email is off
+    const isBlocked = roleSet.has(UserRole.BLOCKED);
     if (
-      !(await this.configService.get<AuthConfig>(AuthConfig.$id!)).value
-        .validate_email
+      !isBlocked &&
+      (roleSet.has(UserRole.VALID_EMAIL) ||
+        !(await this.configService.get<AuthConfig>(AuthConfig.$id!)).value
+          .validate_email)
     ) {
-      roleSet.add(UserRole.VALID_EMAIL);
+      roleSet.add(UserRole.ACTIVE);
     }
 
     const result = policies.filter(({ match_roles, omit_roles }) => {
@@ -79,7 +79,10 @@ export class PolicyService {
       : this.getPoliciesForPublic());
     for (const { permissions, name } of policies) {
       const result = Evaluate(policy, permissions);
-      this.logger.debug({ policy_name: name, result }, "Policy evaluation result");
+      this.logger.debug(
+        { policy_name: name, result },
+        "Policy evaluation result",
+      );
       if (result) return true;
     }
     return false;
