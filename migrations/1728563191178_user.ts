@@ -76,7 +76,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.notNull().defaultTo("{}"),
     )
     .addColumn("public", "boolean", (col) => col.notNull().defaultTo(false))
-    .addColumn("enabled", "boolean", (col) => col.notNull().defaultTo(false))
+    .addColumn("is_enabled", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("match_roles", sql`varchar[]`, (col) =>
       col.notNull().defaultTo("{}"),
     )
@@ -97,28 +97,28 @@ export async function up(db: Kysely<any>): Promise<void> {
           "division.get",
         ],
         public: true,
-        enabled: true,
+        is_enabled: true,
       },
       {
         name: "user",
         description: "Standard user permissions",
         permissions: ["*", "!admin.*"],
         match_roles: ["active"],
-        enabled: true,
+        is_enabled: true,
       },
       {
         name: "user_basic",
         description: "Subset of permissions for unverified users",
         permissions: ["user.self"],
         omit_roles: ["active", "blocked"],
-        enabled: true,
+        is_enabled: true,
       },
       {
         name: "admin",
         description: "Administrators",
         permissions: ["*"],
         match_roles: ["admin"],
-        enabled: true,
+        is_enabled: true,
       },
     ])
     .execute();

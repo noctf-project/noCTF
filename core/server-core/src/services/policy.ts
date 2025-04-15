@@ -91,7 +91,9 @@ export class PolicyService {
   private async getEnabledPolicies() {
     if (!this.policyCache) {
       this.logger.debug("Loading initial policy cache");
-      this.policyCache = await this.policyDAO.listPolicies({ enabled: true });
+      this.policyCache = await this.policyDAO.listPolicies({
+        is_enabled: true,
+      });
       this.policyCacheLastUpdated = performance.now();
     }
     if (
@@ -101,7 +103,7 @@ export class PolicyService {
       this.logger.debug("Refreshing policy cache");
       this.policyCacheLastUpdated = null;
       this.policyDAO
-        .listPolicies({ enabled: true })
+        .listPolicies({ is_enabled: true })
         .then((p) => {
           this.policyCache = p;
           this.policyCacheLastUpdated = performance.now();

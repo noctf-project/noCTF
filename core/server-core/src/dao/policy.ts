@@ -3,7 +3,7 @@ import { DBType } from "../clients/database.ts";
 export class PolicyDAO {
   constructor(private readonly db: DBType) {}
 
-  async listPolicies(params: { enabled?: boolean } = {}) {
+  async listPolicies(params: { is_enabled?: boolean } = {}) {
     let query = this.db
       .selectFrom("policy")
       .select([
@@ -14,11 +14,11 @@ export class PolicyDAO {
         "public",
         "match_roles",
         "omit_roles",
-        "enabled",
+        "is_enabled",
       ])
       .orderBy("id");
-    if (typeof params.enabled === "boolean") {
-      query = query.where("enabled", "=", params.enabled);
+    if (typeof params.is_enabled === "boolean") {
+      query = query.where("is_enabled", "=", params.is_enabled);
     }
     return await query.execute();
   }
