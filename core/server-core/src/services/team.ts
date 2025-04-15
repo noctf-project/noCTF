@@ -9,6 +9,7 @@ import { TeamDAO } from "../dao/team.ts";
 import { DivisionDAO } from "../dao/division.ts";
 import { LocalCache } from "../util/local_cache.ts";
 import { TeamMembership } from "@noctf/api/datatypes";
+import { TeamTagDAO } from "../dao/team_tag.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -21,6 +22,7 @@ export class TeamService {
 
   private readonly divisionDAO;
   private readonly teamDAO;
+  private readonly teamTagDAO;
   private readonly membershipCache = new LocalCache<
     number,
     TeamMembership | null
@@ -34,6 +36,7 @@ export class TeamService {
     this.configService = configService;
     this.divisionDAO = new DivisionDAO(databaseClient.get());
     this.teamDAO = new TeamDAO(databaseClient.get());
+    this.teamTagDAO = new TeamTagDAO(databaseClient.get());
     void this.init();
   }
 
@@ -41,8 +44,12 @@ export class TeamService {
     await this.configService.register(TeamConfig, { max_members: 0 });
   }
 
-  async listDivisions(params?: Parameters<DivisionDAO["list"]>[0]) {
-    return this.divisionDAO.list(params);
+  async listTags() {
+    return this.teamTagDAO.list();
+  }
+
+  async listDivisions() {
+    return this.divisionDAO.list();
   }
 
   async getDivision(id: number) {

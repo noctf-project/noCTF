@@ -17,12 +17,14 @@ import {
   GetTeamResponse,
   ListDivisionsResponse,
   ListTeamsResponse,
+  ListTeamTagsResponse,
   MeTeamResponse,
   SuccessResponse,
 } from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
 import { IdParams } from "@noctf/api/params";
 import { Policy } from "@noctf/server-core/util/policy";
+import SingleValueCache from "@noctf/server-core/util/single_value_cache";
 
 export const TEAM_PAGE_SIZE = 60;
 
@@ -30,6 +32,12 @@ export async function routes(fastify: FastifyInstance) {
   const adminPolicy: Policy = ["admin.team.get"];
   const { teamService, policyService } = fastify.container
     .cradle as ServiceCradle;
+
+  const divisionsGetter = new SingleValueCache(
+    () => teamService.listDivisions(),
+    3000,
+  );
+  const tagsGetter = new SingleValueCache(() => teamService.listTags(), 3000);
 
   fastify.get<{ Reply: ListDivisionsResponse }>(
     "/divisions",
@@ -60,12 +68,35 @@ export async function routes(fastify: FastifyInstance) {
         return { data: [{ ...division, is_password: !!division.password }] };
       }
       return {
-        data: (
-          await teamService.listDivisions({
-            visible_ids: membership ? [membership.division_id] : [],
-            is_visible: true,
-          })
-        ).map((x) => ({ ...x, is_password: !!x.password })),
+        data: (await divisionsGetter.get())
+          .filter(
+            ({ is_visible, id }) =>
+              is_visible || membership?.division_id === id,
+          )
+          .map((x) => ({ ...x, is_password: !!x.password })),
+      };
+    },
+  );
+
+  fastify.get<{ Reply: ListTeamTagsResponse }>(
+    "/team_tags",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["team"],
+        response: {
+          200: ListTeamTagsResponse,
+        },
+        auth: {
+          policy: ["team.get"],
+        },
+      },
+    },
+    async () => {
+      return {
+        data: {
+          tags: await tagsGetter.get(),
+        },
       };
     },
   );
@@ -275,6 +306,10 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
+  /***
+   * This method is deprecated
+   * @deprecated
+   */
   fastify.get<{ Params: IdParams; Reply: GetTeamResponse }>(
     "/teams/:id",
     {
