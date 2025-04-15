@@ -3,7 +3,7 @@
 
   export interface ChallDetails {
     description: string;
-    files: { filename: string; url: string }[];
+    files: { filename: string; url: string; size: number; hash: string }[];
   }
   export interface ChallengeModalProps {
     challData?: ChallengeCardData;
@@ -22,7 +22,11 @@
 
 <script lang="ts">
   import { Carta, Markdown } from "carta-md";
-  import { categoryToIcon, difficultyToBgColour } from "$lib/utils/challenges";
+  import {
+    categoryToIcon,
+    difficultyToBgColour,
+    formatFileSize,
+  } from "$lib/utils/challenges";
   import Icon from "@iconify/svelte";
   import { type Difficulty } from "$lib/constants/difficulties";
   import { Tween } from "svelte/motion";
@@ -244,14 +248,23 @@
             </div>
 
             {#if challDetails!.files.length > 0}
-              <div>
+              <div class="flex flex-col gap-2">
+                <div class="flex flex-row gap-1 items-center">
+                  <Icon
+                    icon="material-symbols:attach-file-rounded"
+                    class="text-xl"
+                  ></Icon>
+                  <div class="text-xl font-bold">Files</div>
+                </div>
                 <ul class="flex flex-row gap-4">
                   {#each challDetails!.files as file}
                     <li>
-                      <!-- TODO: this won't work for S3/external -->
                       <a
-                        href="{API_BASE_URL}/{file.url}"
+                        href={file.url.startsWith("http")
+                          ? file.url
+                          : `${API_BASE_URL}/{file.url}`}
                         class="link text-primary font-semibold"
+                        title={`${file.filename} - ${formatFileSize(file.size)} (${file.hash})`}
                         >{file.filename}</a
                       >
                     </li>
