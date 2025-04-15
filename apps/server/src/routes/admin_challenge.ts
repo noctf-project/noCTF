@@ -86,13 +86,14 @@ export async function routes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request) => {
-      return {
-        data: await challengeService.create(request.body, {
-          type: ActorType.USER,
-          id: request.user.id,
-        }),
-      };
+    async (request, reply) => {
+      const result = await challengeService.create(request.body, {
+        type: ActorType.USER,
+        id: request.user.id,
+      });
+      return reply.status(201).send({
+        data: result,
+      });
     },
   );
 

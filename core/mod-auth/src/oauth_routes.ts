@@ -14,6 +14,7 @@ import {
 } from "./oauth_provider.ts";
 import type { FastifyInstance } from "fastify";
 import { TokenProvider } from "./token_provider.ts";
+import { NotFoundError } from "@noctf/server-core/errors";
 
 export default async function (fastify: FastifyInstance) {
   const {
@@ -57,9 +58,7 @@ export default async function (fastify: FastifyInstance) {
         };
       } catch (e) {
         if (e instanceof NoResultError) {
-          return reply.code(404).send({
-            error: "OAuth Provider Not Found",
-          });
+          throw new NotFoundError("OAuth Provider Not Found");
         }
         throw e;
       }
