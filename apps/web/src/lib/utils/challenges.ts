@@ -37,3 +37,14 @@ export const slugify = (title: string) => {
     .replace(/-$/g, "");
   return /^\d/.test(s) ? `n-${s}`.slice(0, 64) : s;
 };
+
+export const formatFileSize = (bytes: number, decimals: number = 2): string => {
+  if (bytes === 0) return "0 B";
+
+  const units: string[] = ["B", "KB", "MB", "GB"];
+  const k: number = 1024;
+
+  const i: number = Math.floor(Math.log(bytes) / Math.log(k));
+  const size: number = bytes / Math.pow(k, i);
+  return `${parseFloat(size.toFixed(decimals))} ${units[i]}`;
+};
