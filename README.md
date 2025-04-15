@@ -11,14 +11,16 @@ dependencies such as PostgreSQL and Redis. The development applications will not
 
 **NOTE:** You will need to have node >=22.0 installed as we rely on `fs.glob()`
 
+TIP: You can run `./dev-tmux.sh` which automates all the below steps (requires tmux).
+
 ```sh
 # Install the dependencies
 pnpm i
 
 # Start the docker dependencies (postgresql, redis, nats)
-# For linux based dev environments
+# For linux based dev environments (connects to containers by IP)
 ./dev.sh start
-# For non-linux based
+# For non-linux based (connects to containers by localhost ports)
 ./dev.sh start-local
 
 # Run the database migrations
