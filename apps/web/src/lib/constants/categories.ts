@@ -8,6 +8,7 @@ export const CATEGORIES = [
   "forensics",
   "osint",
   "blockchain",
+  "beginner",
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
 export const ICON_MAP: { [k in Category | "all"]: string } = {
@@ -21,5 +22,6 @@ export const ICON_MAP: { [k in Category | "all"]: string } = {
   forensics: "material-symbols:document-search-rounded",
   osint: "ph:detective-fill",
   blockchain: "tdesign:blockchain",
+  beginner: "mdi:seedling",
 };
 export const CATEGORY_UNKNOWN_ICON = "carbon:unknown-filled";
