@@ -45,7 +45,7 @@ export class PolicyService {
   async getPoliciesForUser(userId: number) {
     const [roles, policies] = await Promise.all([
       this.userRolesCache.load(userId, () => this.userDAO.getRoles(userId)),
-      this.getPolicies(),
+      this.getEnabledPolicies(),
     ]);
     const roleSet = new Set(roles);
     const isBlocked = roleSet.has(UserRole.BLOCKED);
@@ -69,7 +69,7 @@ export class PolicyService {
   }
 
   async getPoliciesForPublic() {
-    const policies = await this.getPolicies();
+    const policies = await this.getEnabledPolicies();
     return policies.filter(({ public: isPublic }) => isPublic);
   }
 
@@ -88,10 +88,10 @@ export class PolicyService {
     return false;
   }
 
-  private async getPolicies() {
+  private async getEnabledPolicies() {
     if (!this.policyCache) {
       this.logger.debug("Loading initial policy cache");
-      this.policyCache = await this.policyDAO.listPolicies();
+      this.policyCache = await this.policyDAO.listPolicies({ enabled: true });
       this.policyCacheLastUpdated = performance.now();
     }
     if (
@@ -101,7 +101,7 @@ export class PolicyService {
       this.logger.debug("Refreshing policy cache");
       this.policyCacheLastUpdated = null;
       this.policyDAO
-        .listPolicies()
+        .listPolicies({ enabled: true })
         .then((p) => {
           this.policyCache = p;
           this.policyCacheLastUpdated = performance.now();
