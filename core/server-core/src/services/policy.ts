@@ -4,11 +4,10 @@ import type { Policy } from "../util/policy.ts";
 import { Evaluate } from "../util/policy.ts";
 import { LocalCache } from "../util/local_cache.ts";
 import { UserDAO } from "../dao/user.ts";
+import { AuthConfig } from "@noctf/api/config";
+import { UserRole } from "../types/enums.ts";
 
-type Props = Pick<
-  ServiceCradle,
-  "auditLogService" | "cacheService" | "databaseClient" | "logger"
->;
+type Props = Pick<ServiceCradle, "databaseClient" | "logger" | "configService">;
 
 export const CACHE_NAMESPACE = "core:svc:policy";
 
@@ -20,9 +19,11 @@ export enum StaticRole {
 
 const POLICY_EXPIRATION = 5000;
 export class PolicyService {
+  private readonly logger;
+  private readonly configService;
+
   private readonly policyDAO;
   private readonly userDAO;
-  private readonly logger;
 
   private readonly userRolesCache = new LocalCache<number, string[]>({
     max: 16384,
@@ -34,27 +35,36 @@ export class PolicyService {
     null;
   private policyCacheLastUpdated: number | null = null;
 
-  constructor({ databaseClient, logger }: Props) {
+  constructor({ databaseClient, logger, configService }: Props) {
     this.logger = logger;
+    this.configService = configService;
     this.policyDAO = new PolicyDAO(databaseClient.get());
     this.userDAO = new UserDAO(databaseClient.get());
   }
 
-  async getPermissionsForUser(userId: number) {
+  async getPoliciesForUser(userId: number) {
     const [roles, policies] = await Promise.all([
       this.userRolesCache.load(userId, () => this.userDAO.getRoles(userId)),
       this.getPolicies(),
     ]);
     const roleSet = new Set(roles);
-    const result = policies.filter(
-      ({ match_roles, omit_roles, public: isPublic }) => {
-        const omit = omit_roles.find((r) => roleSet.has(r)) !== undefined;
-        const match =
-          match_roles.length === 0 ||
-          match_roles.find((r) => roleSet.has(r)) !== undefined;
-        return !isPublic && !omit && match;
-      },
-    );
+    const isBlocked = roleSet.has(UserRole.BLOCKED);
+    if (
+      !isBlocked &&
+      (roleSet.has(UserRole.VALID_EMAIL) ||
+        !(await this.configService.get<AuthConfig>(AuthConfig.$id!)).value
+          .validate_email)
+    ) {
+      roleSet.add(UserRole.ACTIVE);
+    }
+
+    const result = policies.filter(({ match_roles, omit_roles }) => {
+      const omit = omit_roles.find((r) => roleSet.has(r)) !== undefined;
+      const match =
+        match_roles.length === 0 ||
+        match_roles.find((r) => roleSet.has(r)) !== undefined;
+      return !omit && match;
+    });
     return result;
   }
 
@@ -64,11 +74,16 @@ export class PolicyService {
   }
 
   async evaluate(userId: number, policy: Policy) {
-    const roles = await (userId
-      ? this.getPermissionsForUser(userId)
+    const policies = await (userId
+      ? this.getPoliciesForUser(userId)
       : this.getPoliciesForPublic());
-    for (const { permissions } of roles) {
-      if (Evaluate(policy, permissions)) return true;
+    for (const { permissions, name } of policies) {
+      const result = Evaluate(policy, permissions);
+      this.logger.debug(
+        { policy_name: name, result },
+        "Policy evaluation result",
+      );
+      if (result) return true;
     }
     return false;
   }

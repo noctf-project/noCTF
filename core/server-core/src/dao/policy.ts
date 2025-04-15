@@ -8,6 +8,7 @@ export class PolicyDAO {
       .selectFrom("policy")
       .select([
         "id",
+        "name",
         "description",
         "permissions",
         "public",
