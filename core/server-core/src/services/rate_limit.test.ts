@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mockDeep, mockReset } from "vitest-mock-extended";
+import { mockDeep } from "vitest-mock-extended";
 import TTLCache from "@isaacs/ttlcache";
 import { RateLimitBucket, RateLimitService } from "./rate_limit.ts";
 import { RedisClientFactory } from "../clients/redis.ts";
@@ -72,7 +72,6 @@ describe(RateLimitService, () => {
       { key: "test", windowSeconds: 60, limit: 10 },
     ];
 
-    // @ts-ignore - accessing private property for test
     const blocked = service["blocked"] as TTLCache<string, number>;
     vi.mocked(blocked.getRemainingTTL).mockReturnValueOnce(1030);
 

@@ -1,4 +1,3 @@
-import { File } from "@noctf/schema";
 import { DBType } from "../clients/database.ts";
 import { NotFoundError } from "../errors.ts";
 

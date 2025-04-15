@@ -1,5 +1,6 @@
 import { IdParams } from "@noctf/api/params";
 import {
+  BaseResponse,
   GetChallengeResponse,
   GetChallengeSolvesResponse,
   ListChallengesResponse,
@@ -102,6 +103,7 @@ export async function routes(fastify: FastifyInstance) {
         params: IdParams,
         response: {
           200: GetChallengeResponse,
+          default: BaseResponse,
         },
       },
     },

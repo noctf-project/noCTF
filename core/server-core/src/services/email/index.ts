@@ -2,7 +2,6 @@ import { EmailConfig, SetupConfig } from "@noctf/api/config";
 import { ServiceCradle } from "../../index.ts";
 import { EmailProvider } from "./types.ts";
 import { DummyEmailProvider } from "./dummy.ts";
-import { NodeMailerProvider } from "./nodemailer.ts";
 import {
   EmailAddress,
   EmailAddressOrUserId,
@@ -77,7 +76,7 @@ export class EmailService {
   private async doSend(config: EmailConfig, data: EmailMessage) {
     const { name: siteName } = (
       await this.configService.get<SetupConfig>(SetupConfig.$id!)
-    )?.value;
+    ).value;
     const provider = this.providers.get(config.provider);
     if (!provider)
       throw new Error(
