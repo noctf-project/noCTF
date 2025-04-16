@@ -21,32 +21,33 @@
   import { type Difficulty } from "$lib/constants/difficulties";
 
   const { data, onclick }: ChallengeCardProps = $props();
-  const { title, categories, solves, points, isSolved, difficulty } = data;
+  // Cannot destructure data here, breaks reactivity https://svelte.dev/docs/svelte/$state#Deep-state
+  // const { title, categories, solves, points, isSolved, difficulty } = data;
 </script>
 
 <button
-  class={`text-left card w-60 h-32 pop ${isSolved ? "bg-primary text-primary-content" : "bg-base-100"} rounded-lg shadow-black`}
+  class={`text-left card w-60 h-32 pop ${data.isSolved ? "bg-primary text-primary-content" : "bg-base-100"} rounded-lg shadow-black`}
   onclick={() => onclick(data)}
 >
   <div class="card-body p-3 flex flex-col">
     <div class="card-title line-clamp-1 font-black">
-      {title}
+      {data.title}
     </div>
     <div class="flex flex-row items-center gap-3">
-      {#if difficulty}
+      {#if data.difficulty}
         <div
-          class={`badge badge-sm rounded-xl text-xs font-black border-base-content shadow-solid ${difficultyToBgColour(difficulty as Difficulty)}`}
+          class={`badge badge-sm rounded-xl text-xs font-black border-base-content shadow-solid ${difficultyToBgColour(data.difficulty as Difficulty)}`}
         >
-          {difficulty}
+          {data.difficulty}
         </div>
       {/if}
       <div
-        class={`${isSolved ? "bg-primary-content" : "bg-neutral-400"} w-full h-[1px]`}
+        class={`${data.isSolved ? "bg-primary-content" : "bg-neutral-400"} w-full h-[1px]`}
       ></div>
       <div
-        class={`self-center flex flex-row gap-1 text-2xl ${isSolved ? "text-primary-content" : "text-neutral-400"}`}
+        class={`self-center flex flex-row gap-1 text-2xl ${data.isSolved ? "text-primary-content" : "text-neutral-400"}`}
       >
-        {#each categories as cat}
+        {#each data.categories as cat}
           <div class="tooltip" data-tip={cat}>
             <Icon icon={categoryToIcon(cat)} />
           </div>
@@ -58,16 +59,16 @@
       <div class="flex flex-row justify-between">
         <div class="flex flex-row items-center gap-1 font-bold text-xl">
           <Icon icon="material-symbols:flag" class="text-3xl" />
-          {solves}
+          {data.solves}
         </div>
         <div class="flex flex-row items-center gap-1 font-bold text-xl">
           <Icon
-            icon={isSolved
+            icon={data.isSolved
               ? "material-symbols:check-circle-outline-rounded"
               : "material-symbols:stars-outline-rounded"}
             class="text-3xl"
           />
-          {points}
+          {data.points}
         </div>
       </div>
     </div>

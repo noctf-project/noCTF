@@ -25,7 +25,8 @@ export const getDifficultyFromTags = (tags: { [k in string]: string }) => {
 };
 
 export const getCategoriesFromTags = (tags: { [k in string]: string }) => {
-  return tags?.["categories"]?.split(",") ?? [];
+  const categories = tags?.["categories"];
+  return categories ? categories?.split(",") : ["uncategorized"];
 };
 
 export const slugify = (title: string) => {

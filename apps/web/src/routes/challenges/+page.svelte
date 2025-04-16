@@ -54,6 +54,43 @@
 
   let challenges: ChallengeCardData[] | undefined = $state();
 
+  let challengesByCategory = $derived.by(() => {
+    if (!challenges) {
+      return {}; // Return empty object if no filtered challenges
+    }
+
+    const grouped: { [category: string]: ChallengeCardData[] } = {};
+
+    for (const challenge of challenges) {
+      // If a challenge has no categories, maybe put it in an "Uncategorized" group
+      const categories =
+        challenge.categories.length > 0
+          ? challenge.categories
+          : ["uncategorized"];
+
+      for (const category of categories) {
+        if (!grouped[category]) {
+          grouped[category] = [];
+        }
+        grouped[category].push(challenge);
+      }
+    }
+
+    // Sort challenges within each category by points (ascending)
+    for (const category in grouped) {
+      grouped[category]!.sort((a, b) => (a.points || 0) - (b.points || 0));
+    }
+
+    // Sort categories alphabetically by name
+    const sortedCategories = Object.keys(grouped).sort();
+    const sortedGrouped: { [category: string]: ChallengeCardData[] } = {};
+    for (const category of sortedCategories) {
+      sortedGrouped[category] = grouped[category] || [];
+    }
+
+    return sortedGrouped;
+  });
+
   let modalVisible = $state(false);
   let modalLoading = $state(false);
   let modalChallData: ChallengeCardData | undefined = $state();
@@ -116,10 +153,19 @@
       <div class="loading loading-spinner loading-lg text-primary"></div>
       <p class="text-center">Loading challenges...</p>
     </div>
-  {:else if apiChallenges.r.error}
+  {:else if apiChallenges.error || apiChallenges.r?.error}
     <div class="flex flex-col items-center gap-4 mt-16">
-      <p class="text-center">{apiChallenges.r.error.message}</p>
-      <button class="btn btn-primary" onclick={refreshChallenges}>
+      <p class="text-center">
+        {apiChallenges.r?.error?.message || "Unknown error occurred"}
+      </p>
+      <button
+        class="btn btn-primary"
+        onclick={() => {
+          // Refresh challenges does not reset the loading state
+          // so we need to reset it manually
+          apiChallenges = wrapLoadable(api.GET("/challenges"));
+        }}
+      >
         Retry
       </button>
     </div>
@@ -134,20 +180,32 @@
         />
       </div>
 
-      <div
-        class="flex flex-row flex-wrap gap-4 justify-center md:justify-start content-start"
-      >
-        {#if challenges && challenges.length > 0}
-          {#each challenges as challenge (challenge)}
-            <ChallengeCard data={challenge} onclick={onChallengeClicked} />
+      <div class="flex flex-wrap gap-6">
+        {#if challenges !== undefined && Object.keys(challengesByCategory).length > 0}
+          {#each Object.entries(challengesByCategory) as [category, categoryChallenges] (category)}
+            <div class="">
+              <h2 class="text-xl w-min p-3 rounded font-bold top-0 py-2 z-10">
+                {category}
+              </h2>
+              <div
+                class="flex flex-wrap md:justify-start justify-center pt-2 gap-4 min-w-[150px]"
+              >
+                {#each categoryChallenges as challenge (challenge.id)}
+                  <ChallengeCard
+                    data={challenge}
+                    onclick={onChallengeClicked}
+                  />
+                {/each}
+              </div>
+            </div>
           {/each}
-        {:else if allChallenges && challenges && challenges.length === 0}
-          <p class="w-full text-center text-neutral-500">
+        {:else if challenges !== undefined && challenges.length === 0}
+          <p class="w-full text-center text-neutral-500 py-10">
             No challenges match the current filters.
           </p>
-        {:else if !allChallenges}
-          <p class="w-full text-center text-neutral-500">
-            Challenges loaded incorrectly.
+        {:else if challenges === undefined && !apiChallenges.loading}
+          <p class="w-full text-center text-neutral-500 py-10">
+            Waiting for challenges...
           </p>
         {/if}
       </div>

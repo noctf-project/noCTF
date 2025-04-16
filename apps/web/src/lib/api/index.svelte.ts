@@ -23,15 +23,18 @@ client.use(authMiddleware);
 type Loadable<T> =
   | {
       loading: true;
+      error: undefined;
       r: undefined;
     }
   | {
       loading: false;
+      error: boolean;
       r: T;
     };
 export function wrapLoadable<T>(p: Promise<T>): Loadable<T> {
   const s = $state<Loadable<T>>({
     loading: true,
+    error: undefined,
     r: undefined,
   });
   p.then(
@@ -41,9 +44,12 @@ export function wrapLoadable<T>(p: Promise<T>): Loadable<T> {
     },
     (e) => {
       s.loading = false;
+      s.error = true;
       console.error(e);
     },
-  );
+  ).finally(() => {
+    s.loading = false;
+  });
   return s;
 }
 
