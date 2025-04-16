@@ -71,7 +71,7 @@
   {@const selected =
     (category == "All" && anyFilter) || categoryFilters[category]}
   <button
-    class={`${btnClass} ${selected ? "bg-primary text-primary-content" : "bg-base-100"}`}
+    class={`${btnClass} ${selected ? "bg-primary text-primary-content hover:bg-primary" : "bg-base-100"}`}
     onclick={() => setFilter(category)}
   >
     <Icon icon={categoryToIcon(category)} height="70%" class="w-auto" />
