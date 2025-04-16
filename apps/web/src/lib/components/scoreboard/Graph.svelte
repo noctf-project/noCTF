@@ -25,7 +25,10 @@
   } from "chart.js";
   import "chartjs-adapter-date-fns";
 
-  let { data: teamsData, extraClasses }: { data: TeamChartData[], extraClasses?: string } = $props();
+  let {
+    data: teamsData,
+    extraClasses,
+  }: { data: TeamChartData[]; extraClasses?: string } = $props();
 
   const lineColours: string[] = [
     "#9966FF",

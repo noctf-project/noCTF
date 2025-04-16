@@ -8,7 +8,7 @@ import {
 } from "@noctf/api/responses";
 import { IdParams } from "@noctf/api/params";
 import { NotFoundError } from "@noctf/server-core/errors";
-import { ScoreboardQuery } from "@noctf/api/query";
+import { ScoreboardQuery, ScoreboardTopQuery } from "@noctf/api/query";
 import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
 
@@ -72,7 +72,7 @@ export async function routes(fastify: FastifyInstance) {
 
   fastify.get<{
     Reply: ScoreboardGraphsResponse;
-    Querystring: ScoreboardQuery;
+    Querystring: ScoreboardTopQuery;
     Params: IdParams;
   }>(
     "/scoreboard/divisions/:id/top",
@@ -83,6 +83,7 @@ export async function routes(fastify: FastifyInstance) {
         auth: {
           policy: ["scoreboard.get"],
         },
+        querystring: ScoreboardTopQuery,
         params: IdParams,
         response: {
           200: ScoreboardGraphsResponse,
@@ -94,6 +95,7 @@ export async function routes(fastify: FastifyInstance) {
       const graphs = await scoreboardService.getTopScoreHistory(
         request.params.id,
         10,
+        request.query.tags,
       );
       return {
         data: graphs,

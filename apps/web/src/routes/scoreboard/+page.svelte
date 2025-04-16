@@ -180,10 +180,15 @@
   const paginatedTeamIds = $derived(Array.from(currentPageTeams.keys()));
   const totalPages = $derived(Math.ceil(totalTeams / TEAMS_PER_PAGE));
 
-  const apiTop10TeamsChartsData = wrapLoadable(
-    api.GET("/scoreboard/divisions/{id}/top", {
-      params: { path: { id: DIVISION } },
-    }),
+  const apiTop10TeamsChartsData = $derived(
+    wrapLoadable(
+      api.GET("/scoreboard/divisions/{id}/top", {
+        params: {
+          path: { id: DIVISION },
+          query: { tags: selectedTags.length > 0 ? selectedTags : undefined },
+        },
+      }),
+    ),
   );
 
   let top10TeamsChartsData: Promise<TeamChartData[]> | undefined = $derived(
