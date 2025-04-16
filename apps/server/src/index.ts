@@ -146,9 +146,9 @@ if (ENABLE_SWAGGER) {
 server.register(core);
 server.addHook("onRoute", (routeOptions) => {
   if (routeOptions.schema && routeOptions.schema.response) {
-    const response = routeOptions.schema.response as { default: TSchema };
-    if (!response.default) {
-      response.default = BaseResponse;
+    const response = routeOptions.schema.response as { [key: string]: TSchema };
+    if (!response["500"]) {
+      response["500"] = BaseResponse;
     }
   }
 });

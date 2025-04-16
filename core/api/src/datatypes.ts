@@ -336,6 +336,14 @@ export const TeamMembership = Type.Object({
 });
 export type TeamMembership = Static<typeof TeamMembership>;
 
+export const TeamTag = Type.Object({
+  id: Type.Number(),
+  name: Type.String({ maxLength: 64 }),
+  is_joinable: Type.Boolean(),
+  created_at: TypeDate,
+});
+export type TeamTag = Static<typeof TeamTag>;
+
 export const ScoreboardVersionData = Type.Object({
   version: Type.Number(),
   division_id: Type.Number(),

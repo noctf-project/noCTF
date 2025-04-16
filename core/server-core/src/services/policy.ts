@@ -6,6 +6,7 @@ import { LocalCache } from "../util/local_cache.ts";
 import { UserDAO } from "../dao/user.ts";
 import { AuthConfig } from "@noctf/api/config";
 import { UserRole } from "../types/enums.ts";
+import SingleValueCache from "../util/single_value_cache.ts";
 
 type Props = Pick<ServiceCradle, "databaseClient" | "logger" | "configService">;
 
@@ -29,11 +30,10 @@ export class PolicyService {
     max: 16384,
     ttl: POLICY_EXPIRATION,
   });
-
-  // Smallish table so we can cache the entirety of it
-  private policyCache: Awaited<ReturnType<PolicyDAO["listPolicies"]>> | null =
-    null;
-  private policyCacheLastUpdated: number | null = null;
+  private readonly policyGetter = new SingleValueCache(
+    () => this.policyDAO.listPolicies({ is_enabled: true }),
+    3000,
+  );
 
   constructor({ databaseClient, logger, configService }: Props) {
     this.logger = logger;
@@ -45,7 +45,7 @@ export class PolicyService {
   async getPoliciesForUser(userId: number) {
     const [roles, policies] = await Promise.all([
       this.userRolesCache.load(userId, () => this.userDAO.getRoles(userId)),
-      this.getEnabledPolicies(),
+      this.policyGetter.get(),
     ]);
     const roleSet = new Set(roles);
     const isBlocked = roleSet.has(UserRole.BLOCKED);
@@ -69,7 +69,7 @@ export class PolicyService {
   }
 
   async getPoliciesForPublic() {
-    const policies = await this.getEnabledPolicies();
+    const policies = await this.policyGetter.get();
     return policies.filter(({ public: isPublic }) => isPublic);
   }
 
@@ -86,36 +86,5 @@ export class PolicyService {
       if (result) return true;
     }
     return false;
-  }
-
-  private async getEnabledPolicies() {
-    if (!this.policyCache) {
-      this.logger.debug("Loading initial policy cache");
-      this.policyCache = await this.policyDAO.listPolicies({
-        is_enabled: true,
-      });
-      this.policyCacheLastUpdated = performance.now();
-    }
-    if (
-      this.policyCacheLastUpdated !== null &&
-      this.policyCacheLastUpdated + POLICY_EXPIRATION <= performance.now()
-    ) {
-      this.logger.debug("Refreshing policy cache");
-      this.policyCacheLastUpdated = null;
-      this.policyDAO
-        .listPolicies({ is_enabled: true })
-        .then((p) => {
-          this.policyCache = p;
-          this.policyCacheLastUpdated = performance.now();
-        })
-        .catch((e) => {
-          this.policyCacheLastUpdated = 0;
-          this.logger.warn(
-            e,
-            "Failed to fetch an updated policy, continuing with stale version",
-          );
-        });
-    }
-    return this.policyCache;
   }
 }
