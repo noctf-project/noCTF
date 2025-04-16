@@ -38,11 +38,11 @@
     { name: "GitHub", icon: "mdi:github" },
   ];
 
-  function successRedirect() {
+  function successRedirect(target = "/") {
     if (redirectParam) {
       performRedirect(redirectParam);
     } else {
-      window.location.replace("/");
+      window.location.replace(target);
     }
   }
 
@@ -192,7 +192,8 @@
       if (registerRes.data?.data?.type === "session") {
         toasts.success("Account created successfully!");
         localStorage.setItem(SESSION_TOKEN_KEY, registerRes.data.data.token);
-        successRedirect();
+        // if a user has just registered, the next thing they'll probably want to do is join/create a team
+        successRedirect("/team");
       } else {
         toasts.error("Registration failed");
       }

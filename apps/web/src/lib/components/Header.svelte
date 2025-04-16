@@ -106,25 +106,44 @@
             class="text-3xl lg:text-4xl text-neutral-600"
           />
           <div
-            class="hidden sm:flex flex-col items-start pl-2 lg:min-w-32 gap-0"
+            class="hidden sm:flex flex-col items-start pl-2 lg:min-w-32 max-w-32 gap-0"
           >
-            <div class="text-left text-sm lg:text-base font-medium">
+            <div
+              class="text-left text-sm lg:text-base font-medium w-full truncate"
+            >
               {authState.user?.name}
             </div>
-            <div class="text-neutral-400 text-xs lg:text-sm hidden sm:block">
-              {authState.user?.team_name}
-            </div>
+            {#if authState.user?.team_name}
+              <div
+                class="text-left text-neutral-400 text-xs lg:text-sm hidden sm:block w-full truncate -mt-1"
+              >
+                {authState.user?.team_name}
+              </div>
+            {/if}
           </div>
           <Icon icon="mdi:chevron-down" class="hidden sm:block ml-1" />
         </div>
         <ul
-          class="menu menu-sm dropdown-content mt-3 z-[10] p-2 shadow bg-base-100 rounded-box w-52 gap-1"
+          class="menu menu-sm dropdown-content mt-3 z-[10] p-1 px-2 pop bg-base-100 rounded-box w-52 gap-1"
         >
-          <li><a href="/profile" class={isActive("/profile")}>Profile</a></li>
+          <li class="flex flex-col sm:hidden pointer-events-none w-full gap-0">
+            <div class="w-full font-semibold truncate">
+              {authState.user?.name}
+            </div>
+            <div
+              class="text-neutral-400 w-full font-semibold text-xs -mt-1 truncate"
+            >
+              {authState.user?.team_name}
+            </div>
+          </li>
+          <div class="sm:hidden divider py-0 mt-1 mb-0"></div>
+          <li class="py-1">
+            <a href="/profile" class={isActive("/profile")}>Profile</a>
+          </li>
           <li>
             <button
               onclick={authState.logout}
-              class="text-error w-full text-left">Logout</button
+              class="text-error w-full text-left p-2">Logout</button
             >
           </li>
         </ul>
