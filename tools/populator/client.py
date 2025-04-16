@@ -157,7 +157,7 @@ class ChallengeConverter:
                     "params": {
                         "base": 100,
                         "top": 500,
-                        "decay": 10,
+                        "decay": 100,
                     },
                     "strategy": "core:quadratic",
                     "bonus": []

@@ -35,19 +35,33 @@
     categories: string[];
   };
 
+  type TeamTag = {
+    id: number;
+    name: string;
+    is_joinable: boolean;
+  };
+
   const TEAMS_PER_PAGE = 25;
   const DIVISION = 1;
   let currentPage = $state(0);
   let detailedView = $state(false);
   let totalTeams = $state(0);
+  let selectedTags = $state<number[]>([]);
 
   const apiChallenges = wrapLoadable(api.GET("/challenges"));
+
+  const apiTeamTags = wrapLoadable(api.GET("/team_tags"));
+
   const apiScoreboard = $derived(
     wrapLoadable(
       api.GET("/scoreboard/divisions/{id}", {
         params: {
           path: { id: DIVISION },
-          query: { page: currentPage + 1, page_size: TEAMS_PER_PAGE },
+          query: {
+            page: currentPage + 1,
+            page_size: TEAMS_PER_PAGE,
+            tags: selectedTags.length > 0 ? selectedTags : undefined,
+          },
         },
       }),
     ),
@@ -55,7 +69,8 @@
 
   let initialLoadComplete = $state(false);
   const loading = $derived(
-    (apiChallenges.loading || apiScoreboard.loading) && !initialLoadComplete,
+    (apiChallenges.loading || apiScoreboard.loading || apiTeamTags.loading) &&
+      !initialLoadComplete,
   );
 
   const challenges: ChallengeEntry[] = $derived(
@@ -68,6 +83,8 @@
       }))
       .sort((a, b) => a.points - b.points) || [],
   );
+
+  const teamTags: TeamTag[] = $derived(apiTeamTags.r?.data?.data?.tags || []);
 
   const apiTeams = $derived(
     apiScoreboard.r?.data?.data?.scores.map((s, i) => ({
@@ -146,6 +163,20 @@
     }
   });
 
+  function toggleTagFilter(tagId: number) {
+    if (selectedTags.includes(tagId)) {
+      selectedTags = selectedTags.filter((id) => id !== tagId);
+    } else {
+      selectedTags = [...selectedTags, tagId];
+    }
+    currentPage = 0;
+  }
+
+  function clearTagFilters() {
+    selectedTags = [];
+    currentPage = 0;
+  }
+
   const paginatedTeamIds = $derived(Array.from(currentPageTeams.keys()));
   const totalPages = $derived(Math.ceil(totalTeams / TEAMS_PER_PAGE));
 
@@ -167,10 +198,6 @@
         )
       : undefined,
   );
-
-  function toggleView() {
-    detailedView = !detailedView;
-  }
 
   function getLoadingRowCount() {
     return currentPage === totalPages - 1
@@ -254,30 +281,167 @@
   </td>
 {/snippet}
 
-{#snippet viewToggleButton()}
-  <button
-    class="btn btn-sm btn-primary gap-2 pop hover:pop"
-    onclick={toggleView}
+{#snippet scoreboardControls()}
+  <div
+    class="card pop bg-base-100 shadow-lg mb-2 z-20 {detailedView &&
+      'flex mx-auto w-fit z-20'} h-fit"
   >
-    <Icon
-      icon={detailedView
-        ? "material-symbols:view-agenda-outline"
-        : "material-symbols:grid-view"}
-      class="text-lg"
-    />
-    {detailedView ? "Compact View" : "Detailed View"}
-  </button>
+    <div class="card-body p-4">
+      <div
+        class="flex flex-col sm:flex-row sm:justify-between lg:flex-col items-center gap-4 mb-2"
+      >
+        <h3 class="card-title text-2xl flex items-center gap-2 sm:-mb-1">
+          <Icon icon="material-symbols:leaderboard" class="text-xl" />
+          <div>Scoreboard View</div>
+        </h3>
+
+        <div class="flex items-center gap-2">
+          <div class="join">
+            <button
+              class={`btn btn-sm join-item ${!detailedView ? "btn-primary" : "btn-outline"} pop hover:pop gap-1`}
+              onclick={() => (detailedView = false)}
+            >
+              <Icon icon="material-symbols:grid-view" class="text-lg" />
+              <span>Compact</span>
+            </button>
+            <button
+              class={`btn btn-sm join-item ${detailedView ? "btn-primary" : "btn-outline"} pop hover:pop gap-1`}
+              onclick={() => (detailedView = true)}
+            >
+              <Icon
+                icon="material-symbols:view-agenda-outline"
+                class="text-lg"
+              />
+              <span>Detailed</span>
+            </button>
+          </div>
+
+          {#if selectedTags.length > 0}
+            <button
+              class="btn btn-sm btn-ghost pop hover:pop"
+              onclick={clearTagFilters}
+              title="Clear all filters"
+            >
+              <Icon icon="material-symbols:filter-list-off" class="text-lg" />
+              <span class="hidden sm:inline lg:hidden">Clear filters</span>
+            </button>
+          {/if}
+        </div>
+      </div>
+
+      <div class="divider my-1"></div>
+
+      <div>
+        <h4 class="font-medium mb-2 flex items-center gap-2">
+          <Icon icon="material-symbols:filter-list" class="text-lg" />
+          Team Tags
+        </h4>
+
+        <div class="flex flex-wrap gap-2">
+          {#if apiTeamTags.loading}
+            {#each Array(3) as _}
+              <div class="skeleton h-8 w-20"></div>
+            {/each}
+          {:else if teamTags.length === 0}
+            <div class="text-sm opacity-70">No team tags available</div>
+          {:else}
+            {#each teamTags as tag}
+              {@const isActive = selectedTags.includes(tag.id)}
+              <button
+                class={`btn btn-sm ${isActive ? "btn-primary" : "btn-outline bg-base-200"} pop hover:pop`}
+                onclick={() => toggleTagFilter(tag.id)}
+              >
+                {#if isActive}
+                  <Icon icon="material-symbols:check" class="text-sm" />
+                {/if}
+                {tag.name}
+              </button>
+            {/each}
+          {/if}
+        </div>
+
+        {#if selectedTags.length > 0}
+          <div class="text-xs opacity-70 mt-2">
+            Showing teams with any of the selected tags
+          </div>
+        {/if}
+      </div>
+    </div>
+  </div>
 {/snippet}
 
 {#snippet topGraph()}
-  <div class="mx-auto mt-8 2xl:w-2/3 w-full">
+  <div class="mx-auto mt-8 2xl:w-2/3 w-full mb-8">
     {#if top10TeamsChartsData}
       {#await top10TeamsChartsData then data}
-        <Graph {data} />
+        <Graph {data} extraClasses="h-[33rem]" />
       {/await}
     {:else}
-      <div class="skeleton w-full h-[33rem] mb-32"></div>
+      <div class="skeleton w-full h-[33rem] mb-8"></div>
     {/if}
+  </div>
+{/snippet}
+
+{#snippet compactTable()}
+  <div
+    class="pop border border-base-500 bg-base-100 rounded-lg overflow-y-hidden overflow-x-auto h-full"
+  >
+    <table class="w-full border-collapse">
+      <thead>
+        <tr>
+          <th
+            class="border border-base-300 bg-base-200 py-2 px-3 text-center font-bold w-12"
+            >#</th
+          >
+          <th
+            class="border border-base-300 bg-base-200 py-2 px-3 text-left font-bold min-w-32 max-w-32 lg:w-auto"
+            >Team</th
+          >
+          <th
+            class="border border-base-300 bg-base-200 py-2 px-3 text-center font-bold w-20"
+            >Score</th
+          >
+          <th
+            class="border border-base-300 bg-base-200 py-2 px-3 text-center font-bold w-32"
+            >Last Solve</th
+          >
+        </tr>
+      </thead>
+      <tbody>
+        {#each paginatedTeamIds as team_id (`compact-row-${team_id}`)}
+          {@const entry = currentPageTeams.get(team_id)!}
+          {@const isMe = authState.user?.team_id === team_id}
+          <tr
+            class="bg-base-100 hover:bg-base-300/30 {isMe &&
+              'border-y-2 border-base-400'}"
+          >
+            <td
+              class="border border-base-300 py-2 px-3 text-center h-10 font-bold"
+            >
+              {@render rankDisplay(entry.rank)}
+            </td>
+            <td
+              class="border border-base-300 py-2 px-3 min-w-32 max-w-32 lg:w-auto"
+            >
+              {@render teamName(entry.team_id, true)}
+            </td>
+            <td
+              class="border border-base-300 py-2 px-3 text-center font-mono font-bold"
+            >
+              {entry.score}
+            </td>
+            <td
+              class="border border-base-300 py-2 px-3 text-center"
+              title={entry.last_solve.toLocaleString()}
+            >
+              {entry.last_solve?.getTime()
+                ? getRelativeTime(entry.last_solve)
+                : "-"}
+            </td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
   </div>
 {/snippet}
 
@@ -371,6 +535,7 @@
     ? "w-full mx-auto mt-8 pb-4"
     : "lg:w-10/12 w-11/12 mx-auto mt-8 pb-4"}
 >
+  <div class="text-center text-4xl font-black pb-2">Scoreboard</div>
   {#if loading}
     <div class="flex flex-col items-center gap-4 mt-16">
       <div class="loading loading-spinner loading-lg text-primary"></div>
@@ -380,30 +545,38 @@
     <div class="flex flex-col gap-0">
       {@render topGraph()}
 
-      <div class="overflow-x-auto flex flex-col gap-0">
-        <div class="mt-4 mb-4">
-          {@render viewToggleButton()}
+      {#if detailedView}
+        <div class="flex justify-center">
+          {@render scoreboardControls()}
         </div>
 
-        {#if detailedView}
+        <div class="overflow-x-auto flex flex-col gap-0">
           {@render challengeTitles()}
           {@render loadingSkeletonTable(true)}
-        {:else}
-          <div class="md:w-2/3 mx-auto w-full">
-            {@render loadingSkeletonTable(false)}
+        </div>
+      {:else}
+        <div class="flex flex-col lg:flex-row lg:gap-6 lg:items-start">
+          <div class="w-full lg:w-1/3 mb-6 lg:mb-0">
+            {@render scoreboardControls()}
           </div>
-        {/if}
 
-        {@render loadingPagination()}
-      </div>
+          <div class="w-full lg:w-2/3">
+            <div class="md:w-full mx-auto">
+              {@render loadingSkeletonTable(false)}
+            </div>
+          </div>
+        </div>
+      {/if}
+
+      {@render loadingPagination()}
     </div>
   {:else}
     <div class="flex flex-col gap-0">
       {@render topGraph()}
 
       {#if detailedView}
-        <div class="px-4 z-50">
-          {@render viewToggleButton()}
+        <div class="flex justify-center">
+          {@render scoreboardControls()}
         </div>
 
         <div class="relative flex flex-col -mt-32">
@@ -497,71 +670,13 @@
           </div>
         </div>
       {:else}
-        <!-- Compact View Table -->
-        <div class="lg:w-2/3 mx-auto w-full">
-          <div class="mt-4 mb-8">
-            {@render viewToggleButton()}
+        <div class="flex flex-col lg:flex-row lg:gap-6 lg:items-stretch">
+          <div class="w-full lg:w-1/3 mb-6 lg:mb-0">
+            {@render scoreboardControls()}
           </div>
 
-          <div
-            class="pop border border-base-500 bg-base-100 rounded-lg overflow-y-hidden overflow-x-auto"
-          >
-            <table class="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th
-                    class="border border-base-300 bg-base-200 py-2 px-3 text-center font-bold w-12"
-                    >#</th
-                  >
-                  <th
-                    class="border border-base-300 bg-base-200 py-2 px-3 text-left font-bold min-w-32 max-w-32 lg:w-auto"
-                    >Team</th
-                  >
-                  <th
-                    class="border border-base-300 bg-base-200 py-2 px-3 text-center font-bold w-20"
-                    >Score</th
-                  >
-                  <th
-                    class="border border-base-300 bg-base-200 py-2 px-3 text-center font-bold w-32"
-                    >Last Solve</th
-                  >
-                </tr>
-              </thead>
-              <tbody>
-                {#each paginatedTeamIds as team_id (`compact-row-${team_id}`)}
-                  {@const entry = currentPageTeams.get(team_id)!}
-                  {@const isMe = authState.user?.team_id === team_id}
-                  <tr
-                    class="bg-base-100 hover:bg-base-300/30 {isMe &&
-                      'border-y-2 border-base-400'}"
-                  >
-                    <td
-                      class="border border-base-300 py-2 px-3 text-center h-10 font-bold"
-                    >
-                      {@render rankDisplay(entry.rank)}
-                    </td>
-                    <td
-                      class="border border-base-300 py-2 px-3 min-w-32 max-w-32 lg:w-auto"
-                    >
-                      {@render teamName(entry.team_id, true)}
-                    </td>
-                    <td
-                      class="border border-base-300 py-2 px-3 text-center font-mono font-bold"
-                    >
-                      {entry.score}
-                    </td>
-                    <td
-                      class="border border-base-300 py-2 px-3 text-center"
-                      title={entry.last_solve.toLocaleString()}
-                    >
-                      {entry.last_solve?.getTime()
-                        ? getRelativeTime(entry.last_solve)
-                        : "-"}
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
+          <div class="w-full lg:w-2/3">
+            {@render compactTable()}
           </div>
         </div>
       {/if}
