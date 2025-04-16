@@ -32,7 +32,7 @@
 
   async function handleJoinTeam() {
     if (!teamCode.trim()) {
-      toasts.error("Please enter a team code");
+      toasts.error("Please enter a team join code");
       return;
     }
 
@@ -58,7 +58,7 @@
     } catch (e) {
       console.error("Failed to join team:", e);
       toasts.error(
-        "Failed to join team. Please check your team code and try again.",
+        "Failed to join team. Please check your team join code and try again.",
       );
     } finally {
       isJoining = false;
@@ -113,7 +113,7 @@
   function handleCopyJoinCode() {
     if (createdTeam?.join_code) {
       copyToClipboard(createdTeam.join_code);
-      toasts.success("Team code copied to clipboard!");
+      toasts.success("Team join code copied to clipboard!");
     }
   }
 </script>
@@ -134,13 +134,13 @@
           <h1 class="card-title">Join Team</h1>
           <div class="form-control w-full mt-4">
             <label class="label" for="team-code">
-              <span class="label-text">Team code</span>
+              <span class="label-text">Team join code</span>
             </label>
             <input
               id="team-code"
               bind:value={teamCode}
               type="text"
-              placeholder="Enter team code"
+              placeholder="Enter team join code"
               required
               class="w-full input input-bordered focus:outline-none focus:ring-0 focus:ring-offset-0"
             />
@@ -210,9 +210,12 @@
           </p>
 
           <div class="w-full mt-4">
-            <p class="text-sm text-neutral-500 mb-2">Team Join Code:</p>
+            <label class="label" for="team-code">
+              <span class="label-text">Team join code:</span>
+            </label>
             <div class="flex gap-2">
               <input
+                id="team-code"
                 type="text"
                 value={createdTeam.join_code}
                 class="input input-bordered w-full font-mono text-sm"
