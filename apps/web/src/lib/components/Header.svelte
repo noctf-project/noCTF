@@ -2,19 +2,12 @@
   import { page } from "$app/state";
   import authState from "$lib/state/auth.svelte";
   import Icon from "@iconify/svelte";
-  import { onMount } from "svelte";
 
   const isActive = (path: string) => {
     return page.url.pathname === path
       ? "rounded-md bg-primary text-primary-content font-bold px-3 py-2"
       : "px-3 py-2";
   };
-
-  onMount(async () => {
-    if (!authState.isInitialised) {
-      authState.fetchState();
-    }
-  });
 </script>
 
 <div
@@ -26,7 +19,7 @@
         <div
           tabindex="0"
           role="button"
-          class="btn btn-ghost hover:none lg:hidden"
+          class="btn bg-base-100 pop hover:pop hover:none lg:hidden"
           aria-label="Open menu"
         >
           <svg
@@ -45,7 +38,7 @@
           </svg>
         </div>
         <ul
-          class="menu menu-sm dropdown-content mt-3 z-[10] p-2 shadow bg-base-100 rounded-box w-52"
+          class="menu menu-sm dropdown-content mt-3 z-[10] p-2 pop bg-base-100 rounded-box w-52"
         >
           <li>
             <a href="/challenges" class={isActive("/challenges")}>Challenges</a>
