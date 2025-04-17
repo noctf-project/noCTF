@@ -270,15 +270,22 @@ export class ScoreboardDataLoader {
       .map((x) => x.status === "fulfilled" && x.value)
       .filter((x) => x) as [string, Buffer][];
 
-    const csummary = (Object.values(challenges) as ComputedChallengeScoreData[]).reduce((prev, { challenge_id, value, solves }) => {
-      prev[challenge_id] = {
-        challenge_id,
-        value,
-        solve_count: solves.filter(({ hidden }) => !hidden).length,
-        bonuses: solves.map(({ bonus }) => bonus).filter((x) => x) as number[], // assuming solves are ordered
-      };
-      return prev;
-    }, {} as Record<number, ChallengeSummary>);
+    const csummary = (
+      Object.values(challenges) as ComputedChallengeScoreData[]
+    ).reduce(
+      (prev, { challenge_id, value, solves }) => {
+        prev[challenge_id] = {
+          challenge_id,
+          value,
+          solve_count: solves.filter(({ hidden }) => !hidden).length,
+          bonuses: solves
+            .map(({ bonus }) => bonus)
+            .filter((x) => x) as number[], // assuming solves are ordered
+        };
+        return prev;
+      },
+      {} as Record<number, ChallengeSummary>,
+    );
 
     const multi = client.multi();
     const saved: string[] = Object.values(keys);
@@ -294,7 +301,7 @@ export class ScoreboardDataLoader {
       );
     if (teams.length) multi.hSet(keys.team, teams);
     if (csolves.length) multi.hSet(keys.csolves, csolves);
-    multi.set(keys.csummary, (await Compress(encode(csummary)) as Buffer));
+    multi.set(keys.csummary, (await Compress(encode(csummary))) as Buffer);
     for (const key of saved) {
       multi.expire(key, 300);
     }
@@ -317,7 +324,10 @@ export class ScoreboardDataLoader {
     )?.version;
   }
 
-  async getChallengeSummary(pointer: number, division_id: number): Promise<Record<number, ChallengeSummary>> {
+  async getChallengeSummary(
+    pointer: number,
+    division_id: number,
+  ): Promise<Record<number, ChallengeSummary>> {
     const version = pointer || (await this.getLatestPointer(division_id));
     if (!version) return {};
     return await this.getSummaryCoalescer.get(version, async () => {
@@ -327,7 +337,7 @@ export class ScoreboardDataLoader {
         client.commandOptions({ returnBuffers: true }),
         keys.csummary,
       );
-      return (compressed ? decode(await Decompress(compressed)) : {});
+      return compressed ? decode(await Decompress(compressed)) : {};
     });
   }
 
