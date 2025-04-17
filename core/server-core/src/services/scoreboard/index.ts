@@ -3,7 +3,6 @@ import type { ServiceCradle } from "../../index.ts";
 import { DivisionDAO } from "../../dao/division.ts";
 import {
   ChallengeMetadataWithExpr,
-  ChallengeSummary,
   ComputeScoreboard,
   GetChangedTeamScores,
 } from "./calc.ts";
@@ -64,6 +63,7 @@ export class ScoreboardService {
 
     this.scoreboardDataLoader = new ScoreboardDataLoader(
       redisClientFactory,
+      databaseClient,
       CACHE_SCORE_NAMESPACE,
     );
     this.awardDAO = new AwardDAO(databaseClient.get());
@@ -93,13 +93,7 @@ export class ScoreboardService {
   }
 
   async getChallengesSummary(division_id: number) {
-    const scoreboard = await this.cacheService.get<
-      UpdatedContainer<Record<number, ChallengeSummary>>
-    >(CACHE_SCORE_NAMESPACE, `d:${division_id}:challenges_summary`);
-    if (!scoreboard) {
-      return { data: {}, updated_at: new Date(0) };
-    }
-    return scoreboard;
+    return await this.scoreboardDataLoader.getChallengeSummary(0, division_id);
   }
 
   async getChallengeSolves(division_id: number, challenge_id: number) {
@@ -237,27 +231,6 @@ export class ScoreboardService {
       scoreboard,
       challengeScores,
       true,
-    );
-
-    const compacted: Record<number, ChallengeSummary> = {};
-    for (const { challenge_id, value, solves } of challengeScores.values()) {
-      compacted[challenge_id] = {
-        challenge_id,
-        value,
-        solve_count: solves.filter(({ hidden }) => !hidden).length,
-        bonuses: solves.map(({ bonus }) => bonus).filter((x) => x) as number[], // assuming solves are ordered
-      };
-    }
-    await this.cacheService.put<
-      UpdatedContainer<Record<number, ChallengeSummary>>
-    >(
-      CACHE_SCORE_NAMESPACE,
-      `d:${id}:challenges_summary`,
-      {
-        data: compacted,
-        updated_at,
-      },
-      300,
     );
 
     // we want a separate cache value for graphing in case the calculation crashed
