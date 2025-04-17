@@ -168,6 +168,7 @@ export class SubmissionDAO {
         "s.updated_at as updated_at",
         "s.value as value",
       ])
+      .where("s.status", "=", "correct")
       .orderBy("s.created_at", params?.sort || "asc");
     if (division_id) {
       query = query.where("team.division_id", "=", division_id);
