@@ -25,7 +25,10 @@
   } from "chart.js";
   import "chartjs-adapter-date-fns";
 
-  export let data: TeamChartData[] = [];
+  let {
+    data: teamsData,
+    extraClasses,
+  }: { data: TeamChartData[]; extraClasses?: string } = $props();
 
   const lineColours: string[] = [
     "#9966FF",
@@ -39,8 +42,6 @@
     "#23395B",
     "#A0A0A0",
   ];
-
-  let teamsData: TeamChartData[] = data;
 
   let chartContainer: HTMLCanvasElement;
   let scoreboardChart: Chart;
@@ -426,6 +427,6 @@
   });
 </script>
 
-<div class="card bg-base-100 pop w-full mb-32 p-6 max-h-[70%]">
+<div class="card bg-base-100 pop w-full p-6 {extraClasses}">
   <canvas bind:this={chartContainer}></canvas>
 </div>

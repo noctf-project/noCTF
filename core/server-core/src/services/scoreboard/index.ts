@@ -144,10 +144,11 @@ export class ScoreboardService {
     }
   }
 
-  async getTopScoreHistory(division: number, count: number) {
+  async getTopScoreHistory(division: number, count: number, tags?: number[]) {
+    const sTags = [...new Set(tags)].sort();
     return this.cacheService.load(
       CACHE_SCORE_HISTORY_NAMESPACE,
-      `${division}:${count}`,
+      `${division}:${count}:${sTags.join()}`,
       async () => {
         const {
           value: { start_time_s, end_time_s },
@@ -157,6 +158,7 @@ export class ScoreboardService {
           division,
           0,
           count - 1,
+          tags,
         );
         const partitions = ranks.map((team_id) => ({
           team_id,
