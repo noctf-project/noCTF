@@ -50,7 +50,6 @@ return ret`;
 export class ScoreboardDataLoader {
   constructor(
     private readonly factory: RedisClientFactory,
-    private readonly databaseClient: DatabaseClient,
     private readonly namespace: string,
   ) {}
 
@@ -62,10 +61,15 @@ export class ScoreboardDataLoader {
     ttl: 1000,
   });
 
-  private readonly getScoreboardCoaleascer = new Coleascer();
-  private readonly getChallengesCoalescer = new Coleascer();
-  private readonly getSummaryCoalescer = new Coleascer();
-  private readonly getTeamCoalescer = new Coleascer();
+  private readonly getScoreboardCoaleascer = new Coleascer<{
+    total: number;
+    entries: ScoreboardEntry[];
+  }>();
+  private readonly getChallengesCoalescer = new Coleascer<Solve[]>();
+  private readonly getSummaryCoalescer = new Coleascer<
+    Record<number, ChallengeSummary>
+  >();
+  private readonly getTeamCoalescer = new Coleascer<ScoreboardEntry | null>();
 
   async saveTeamTags(teams: MinimalTeamInfo[]) {
     const tags = new Map<number, number[]>();

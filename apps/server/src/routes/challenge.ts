@@ -48,7 +48,7 @@ export async function routes(fastify: FastifyInstance) {
         request.user?.membership,
       ]);
 
-      const { data: scoreObj } = await scoreboardService.getChallengesSummary(
+      const scoreObj = await scoreboardService.getChallengesSummary(
         team?.division_id || 1, // TODO: configurable default
       );
       const solves = new Set<number>();

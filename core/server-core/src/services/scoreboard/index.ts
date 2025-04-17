@@ -63,7 +63,6 @@ export class ScoreboardService {
 
     this.scoreboardDataLoader = new ScoreboardDataLoader(
       redisClientFactory,
-      databaseClient,
       CACHE_SCORE_NAMESPACE,
     );
     this.awardDAO = new AwardDAO(databaseClient.get());
