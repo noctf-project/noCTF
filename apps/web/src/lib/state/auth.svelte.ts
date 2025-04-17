@@ -11,7 +11,6 @@ interface User {
 }
 
 const USER_DATA_KEY = "noctf-user";
-
 class AuthState {
   user?: User = $state();
   isLoading: boolean = $state(true);
@@ -20,7 +19,22 @@ class AuthState {
 
   constructor() {
     this.loadCachedUser();
-    this.fetchState();
+    this.fetchState().then(() => {
+      // this could be done cleaner, but there are only a few protected pages
+      // so this should be fine for now
+      const path = window.location.pathname;
+      if (!this.isAuthenticated && path === "/team") {
+        window.location.href = "/auth";
+      } else if (this.isAuthenticated && path === "/auth") {
+        window.location.href = "/";
+      } else if (!this.isAdmin && path.startsWith("/admin")) {
+        if (this.isAuthenticated) {
+          window.location.href = "/";
+        } else {
+          window.location.href = "/auth";
+        }
+      }
+    });
   }
 
   private loadCachedUser() {
@@ -61,10 +75,8 @@ class AuthState {
         localStorage.removeItem(USER_DATA_KEY);
       }
     } catch (error) {
-      toasts.error(`Unknown error: ${error}`);
-      this.user = undefined;
-      localStorage.removeItem(SESSION_TOKEN_KEY);
-      localStorage.removeItem(USER_DATA_KEY);
+      toasts.error(`Unknown error: ${error}. Please try refreshing the page.`);
+      console.error(`Unknown error: ${error}`);
     } finally {
       this.isLoading = false;
     }
