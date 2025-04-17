@@ -274,9 +274,7 @@ export class ScoreboardDataLoader {
       .map((x) => x.status === "fulfilled" && x.value)
       .filter((x) => x) as [string, Buffer][];
 
-    const csummary = (
-      Object.values(challenges) as ComputedChallengeScoreData[]
-    ).reduce(
+    const csummary = challenges.values().reduce(
       (prev, { challenge_id, value, solves }) => {
         prev[challenge_id] = {
           challenge_id,
@@ -334,15 +332,18 @@ export class ScoreboardDataLoader {
   ): Promise<Record<number, ChallengeSummary>> {
     const version = pointer || (await this.getLatestPointer(division_id));
     if (!version) return {};
-    return await this.getSummaryCoalescer.get(version, async () => {
-      const keys = this.getCacheKeys(version, division_id);
-      const client = await this.factory.getClient();
-      const compressed = await client.get(
-        client.commandOptions({ returnBuffers: true }),
-        keys.csummary,
-      );
-      return compressed ? decode(await Decompress(compressed)) : {};
-    });
+    return await this.getSummaryCoalescer.get(
+      `${version}:${division_id}`,
+      async () => {
+        const keys = this.getCacheKeys(version, division_id);
+        const client = await this.factory.getClient();
+        const compressed = await client.get(
+          client.commandOptions({ returnBuffers: true }),
+          keys.csummary,
+        );
+        return compressed ? decode(await Decompress(compressed)) : {};
+      },
+    );
   }
 
   private async saveLatestPointer(data: ScoreboardVersionData) {
