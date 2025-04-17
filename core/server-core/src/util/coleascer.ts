@@ -1,9 +1,9 @@
 import type { Primitive } from "@noctf/api/types";
 
-export class Coleascer {
-  private readonly map = new Map<Primitive, Promise<unknown>>();
+export class Coleascer<T> {
+  private readonly map = new Map<Primitive, Promise<T>>();
 
-  get<T>(key: Primitive, handler: () => Promise<T>): Promise<T> {
+  get(key: Primitive, handler: () => Promise<T>): Promise<T> {
     let promise = this.map.get(key);
     if (!promise) {
       promise = handler().finally(() => this.map.delete(key));

@@ -24,8 +24,8 @@ export class CacheService {
   private readonly redisClient;
   private readonly metricsClient;
 
-  private readonly getCoaleascer = new Coleascer();
-  private readonly fetchColeascer = new Coleascer();
+  private readonly getCoaleascer = new Coleascer<unknown>();
+  private readonly fetchColeascer = new Coleascer<unknown>();
 
   private readonly encoder = new Encoder({ pack: true });
 
@@ -55,7 +55,7 @@ export class CacheService {
     const fullKey = `${namespace}:${key}`;
     return this.fetchColeascer.get(fullKey, () =>
       this._fetch(namespace, fullKey, expireSeconds, stopwatch, fetcher),
-    );
+    ) as Promise<T>;
   }
 
   async get<T>(namespace: string, key: string): Promise<T | null> {
