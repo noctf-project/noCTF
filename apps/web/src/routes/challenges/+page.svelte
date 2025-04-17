@@ -180,10 +180,12 @@
       <div class="flex flex-wrap gap-6 h-fit">
         {#if challenges !== undefined && Object.keys(challengesByCategory).length > 0}
           {#each Object.entries(challengesByCategory) as [category, categoryChallenges] (category)}
-            <div class="">
-              <h2 class="text-xl w-min p-3 rounded font-bold top-0 py-2 z-10">
+            <div class="flex flex-col gap-2">
+              <h1
+                class="text-2xl text-center w-full md:text-left p-3 rounded font-bold top-0 py-2 z-10"
+              >
                 {category}
-              </h2>
+              </h1>
               <div
                 class="flex flex-wrap md:justify-start justify-center pt-2 gap-4 min-w-[150px]"
               >
