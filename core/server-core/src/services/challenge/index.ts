@@ -191,7 +191,7 @@ export class ChallengeService {
         "Presolve plugin returned a valid result",
       );
       const solved = state.status === "correct";
-      const { id, solve_count, updated_at } = await this.submissionDAO.create({
+      const { id, updated_at } = await this.submissionDAO.create({
         team_id: teamId,
         user_id: userId,
         challenge_id: challenge.id,
@@ -210,7 +210,7 @@ export class ChallengeService {
           team_id: teamId,
           user_id: userId,
           updated_at,
-          solve_count: parseInt(solve_count || "0") + 1,
+          hidden: false,
         });
       }
       return state.status;

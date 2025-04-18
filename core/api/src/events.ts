@@ -6,9 +6,9 @@ export const SubmissionUpdateEvent = Type.Object(
   {
     id: Type.Integer(),
     team_id: Type.Integer(),
-    user_id: Type.Integer(),
+    user_id: Type.Optional(Type.Integer()),
     challenge_id: Type.Integer(),
-    solve_count: Type.Integer(),
+    hidden: Type.Boolean(),
     updated_at: TypeDate,
     status: SubmissionStatus,
   },

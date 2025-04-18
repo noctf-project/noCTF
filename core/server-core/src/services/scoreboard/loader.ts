@@ -310,7 +310,6 @@ export class ScoreboardDataLoader {
     }
     await multi.exec();
     const out = { division_id, version };
-
     if (latest) this.saveLatestPointer(out);
     return out;
   }

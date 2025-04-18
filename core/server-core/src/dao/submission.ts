@@ -24,16 +24,7 @@ export class SubmissionDAO {
     return await this.db
       .insertInto("submission")
       .values(v)
-      .returning((eb) => [
-        "id",
-        "updated_at",
-        eb
-          .selectFrom("submission")
-          .select(eb.fn.countAll<string>().as("count"))
-          .where("challenge_id", "=", v.challenge_id)
-          .where("status", "=", "correct")
-          .as("solve_count"),
-      ])
+      .returning((eb) => ["id", "updated_at"])
       .executeTakeFirstOrThrow();
   }
 
@@ -59,8 +50,16 @@ export class SubmissionDAO {
     let query = this.db
       .updateTable("submission")
       .where("id", "in", ids)
-      .set("updated_at", new Date())
-      .returning("id");
+      .set("updated_at", sql`CURRENT_TIMESTAMP`)
+      .returning((eb) => [
+        "id",
+        "user_id",
+        "team_id",
+        "challenge_id",
+        "hidden",
+        "updated_at",
+        "status",
+      ]);
     if (typeof params.comments === "string") {
       query = query.set("comments", params.comments);
     }
@@ -74,7 +73,7 @@ export class SubmissionDAO {
       query = query.set("status", params.status);
     }
     try {
-      return (await query.execute()).map(({ id }) => id);
+      return query.execute();
     } catch (e) {
       const pgerror = TryPGConstraintError(e, {
         [PostgresErrorCode.Duplicate]: {

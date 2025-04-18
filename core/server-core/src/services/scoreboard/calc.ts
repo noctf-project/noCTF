@@ -207,10 +207,11 @@ export function ComputeScoreboard(
           ? i
           : i + 1),
   );
+
   return {
     scoreboard: sorted,
     challenges: challengesMap,
-    last_event: last_event,
+    last_event,
   };
 }
 

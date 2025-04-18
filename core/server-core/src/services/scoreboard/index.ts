@@ -104,7 +104,7 @@ export class ScoreboardService {
   }
 
   async computeAndSaveScoreboards(timestamp?: number) {
-    this.logger.info({ timestamp }, "Computing scoreboard");
+    this.logger.info({ event_timestamp: timestamp }, "Computing scoreboard");
     const challenges: ChallengeMetadataWithExpr[] = await Promise.all(
       (
         await this.challengeService.list({
@@ -124,6 +124,7 @@ export class ScoreboardService {
         (await this.divisionDAO.list()).map(async (d) => {
           const pointer = await this.scoreboardDataLoader.getLatestPointer(
             d.id,
+            false,
           );
           if (!timestamp || !pointer || pointer < timestamp) {
             this.logger.info(
@@ -157,6 +158,7 @@ export class ScoreboardService {
         teamMap.get(id) || [],
         challenges,
         id,
+        timestamp,
       );
     }
   }
@@ -228,6 +230,7 @@ export class ScoreboardService {
     teams: MinimalTeamInfo[],
     challenges: ChallengeMetadataWithExpr[],
     id: number,
+    timestamp?: number,
   ) {
     const [solveList, awardList] = await Promise.all([
       this.submissionDAO.getSolvesForCalculation(id),
@@ -252,7 +255,7 @@ export class ScoreboardService {
     );
 
     await this.scoreboardDataLoader.saveIndexed(
-      last_event.getTime(),
+      timestamp || last_event.getTime(),
       id,
       scoreboard,
       challengeScores,
