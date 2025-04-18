@@ -193,6 +193,7 @@ export class TeamService {
       ],
       data: "Joined using code",
     });
+    this.membershipCache.delete(user_id);
 
     return result.id;
   }
@@ -201,10 +202,6 @@ export class TeamService {
     return this.membershipCache.load(userId, () =>
       this.teamDAO.getMembershipForUser(userId),
     );
-  }
-
-  invalidateMembershipCacheEntry(userId: number) {
-    this.membershipCache.delete(userId);
   }
 
   async assignMember(
@@ -221,6 +218,7 @@ export class TeamService {
       ],
       data: message,
     });
+    this.membershipCache.delete(v.user_id);
   }
 
   async unassignMember(
