@@ -258,6 +258,7 @@ describe(ComputeScoreboard, () => {
   it("Does nothing if no results", () => {
     const result = ComputeScoreboard(new Map(), [], {}, []);
     expect(result).toEqual({
+      last_event: new Date(0),
       scoreboard: [],
       challenges: new Map(),
     });
@@ -313,6 +314,7 @@ describe(ComputeScoreboard, () => {
       [],
     );
     expect(result).toEqual({
+      last_event: new Date(3),
       scoreboard: [
         {
           score: 100,
@@ -444,6 +446,7 @@ describe(ComputeScoreboard, () => {
       [],
     );
     expect(result).toEqual({
+      last_event: new Date(3),
       scoreboard: [
         {
           score: 1,
@@ -591,6 +594,7 @@ describe(ComputeScoreboard, () => {
       ],
     );
     expect(result).toEqual({
+      last_event: new Date(3),
       scoreboard: [
         {
           score: 3,
