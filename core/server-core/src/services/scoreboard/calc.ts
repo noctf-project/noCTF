@@ -37,6 +37,10 @@ export type ChallengeSummary = {
   bonuses: number[];
 };
 
+export type MinimalScoreboardEntry = Pick<
+  ScoreboardEntry,
+  "team_id" | "score" | "updated_at" | "last_solve" | "hidden"
+>;
 function ComputeScoresForChallenge(
   { metadata, expr }: ChallengeMetadataWithExpr,
   teams: Map<number, MinimalTeamInfo>,
@@ -215,20 +219,40 @@ export function ComputeScoreboard(
   };
 }
 
+export const GetMinimalScoreboard = (
+  scoreboard: ScoreboardEntry[],
+): MinimalScoreboardEntry[] =>
+  scoreboard.map((s) => ({
+    score: s.score,
+    updated_at: s.updated_at,
+    team_id: s.team_id,
+    last_solve: s.last_solve,
+    hidden: s.hidden,
+  }));
+
 export const GetChangedTeamScores = (
-  s1: ScoreboardEntry[],
-  s2: ScoreboardEntry[],
+  s1: MinimalScoreboardEntry[],
+  s2: MinimalScoreboardEntry[],
 ) => {
-  const map: Map<number, ScoreboardEntry> = new Map();
-  const output: ScoreboardEntry[] = [];
+  const map: Map<number, MinimalScoreboardEntry> = new Map();
+  const output: MinimalScoreboardEntry[] = [];
   for (const entry of s1) {
     map.set(entry.team_id, entry);
   }
   for (const entry of s2) {
     const e2 = map.get(entry.team_id);
+    map.delete(entry.team_id);
     if (entry.score !== e2?.score) {
       output.push(entry);
     }
+  }
+  for (const [_v, v] of map) {
+    output.push({
+      ...v,
+      last_solve: new Date(0),
+      updated_at: new Date(0),
+      score: 0,
+    });
   }
   return output;
 };

@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ComputeScoreboard, GetChangedTeamScores } from "./calc.ts";
+import {
+  ComputeScoreboard,
+  GetChangedTeamScores,
+  MinimalScoreboardEntry,
+} from "./calc.ts";
 import {
   ChallengeMetadata,
   ChallengePrivateMetadataBase,
@@ -117,115 +121,69 @@ describe(GetChangedTeamScores, () => {
     expect(GetChangedTeamScores(s1, s2)).toEqual([]);
   });
 
-  it("diff does not care about missing results in second scoreboard", () => {
-    const s1: ScoreboardEntry[] = [
+  it("diff cares if team score is added or removed", () => {
+    const s1: MinimalScoreboardEntry[] = [
       {
         team_id: 1,
         score: 1,
-        rank: 1,
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
-        tag_ids: [],
-        awards: [],
-        solves: [],
       },
+    ];
+    const s2: MinimalScoreboardEntry[] = [
       {
         team_id: 2,
         score: 2,
-        rank: 2,
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
-        tag_ids: [],
-        awards: [],
-        solves: [],
-      },
-    ];
-    const s2: ScoreboardEntry[] = [];
-    expect(GetChangedTeamScores(s1, s2)).toEqual([]);
-  });
-
-  it("diff cares if team score is added", () => {
-    const s1: ScoreboardEntry[] = [
-      {
-        team_id: 1,
-        score: 1,
-        rank: 1,
-        last_solve: new Date(0),
-        updated_at: new Date(0),
-        hidden: false,
-        tag_ids: [],
-        awards: [],
-        solves: [],
-      },
-    ];
-    const s2: ScoreboardEntry[] = [
-      {
-        team_id: 2,
-        score: 2,
-        rank: 1,
-        last_solve: new Date(0),
-        updated_at: new Date(0),
-        hidden: false,
-        tag_ids: [],
-        awards: [],
-        solves: [],
       },
     ];
     expect(GetChangedTeamScores(s1, s2)).toEqual([
       {
         team_id: 2,
         score: 2,
-        rank: 1,
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
-        tag_ids: [],
-        awards: [],
-        solves: [],
+      },
+      {
+        team_id: 1,
+        score: 0,
+        last_solve: new Date(0),
+        updated_at: new Date(0),
+        hidden: false,
       },
     ]);
   });
 
   it("diff cares if team score is changed", () => {
-    const s1: ScoreboardEntry[] = [
+    const s1: MinimalScoreboardEntry[] = [
       {
         team_id: 1,
         score: 1,
-        rank: 1,
         last_solve: new Date(0),
         updated_at: new Date(0),
         hidden: false,
-        tag_ids: [],
-        awards: [],
-        solves: [],
       },
     ];
-    const s2: ScoreboardEntry[] = [
+    const s2: MinimalScoreboardEntry[] = [
       {
         team_id: 1,
         score: 10,
-        rank: 1,
         last_solve: new Date(1),
         updated_at: new Date(1),
         hidden: false,
-        tag_ids: [],
-        awards: [],
-        solves: [],
       },
     ];
     expect(GetChangedTeamScores(s1, s2)).toEqual([
       {
         team_id: 1,
         score: 10,
-        rank: 1,
         last_solve: new Date(1),
         updated_at: new Date(1),
         hidden: false,
-        tag_ids: [],
-        awards: [],
-        solves: [],
       },
     ]);
   });

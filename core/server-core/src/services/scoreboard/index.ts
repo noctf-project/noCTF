@@ -5,6 +5,8 @@ import {
   ChallengeMetadataWithExpr,
   ComputeScoreboard,
   GetChangedTeamScores,
+  GetMinimalScoreboard,
+  MinimalScoreboardEntry,
 } from "./calc.ts";
 import { ScoreHistoryDAO } from "../../dao/score_history.ts";
 import { SetupConfig } from "@noctf/api/config";
@@ -12,6 +14,7 @@ import { AwardDAO } from "../../dao/award.ts";
 import { ScoreboardDataLoader } from "./loader.ts";
 import { MinimalTeamInfo, TeamDAO } from "../../dao/team.ts";
 import { RawSolve, SubmissionDAO } from "../../dao/submission.ts";
+import { MaxDate } from "../../util/date.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -255,7 +258,7 @@ export class ScoreboardService {
     );
 
     await this.scoreboardDataLoader.saveIndexed(
-      timestamp?.getTime() || last_event.getTime(),
+      MaxDate(timestamp || new Date(0), last_event).getTime(),
       id,
       scoreboard,
       challengeScores,
@@ -265,12 +268,13 @@ export class ScoreboardService {
     // we want a separate cache value for graphing in case the calculation crashed
     // halfway through
     const { data: lastScoreboard } =
-      (await this.cacheService.get<UpdatedContainer<ScoreboardEntry[]>>(
+      (await this.cacheService.get<UpdatedContainer<MinimalScoreboardEntry[]>>(
         CACHE_SCORE_NAMESPACE,
         `d:${id}:calc_graph`,
       )) || {};
 
-    let diff: ScoreboardEntry[] = scoreboard;
+    let minimal = GetMinimalScoreboard(scoreboard);
+    let diff = minimal;
     if (lastScoreboard) {
       diff = GetChangedTeamScores(lastScoreboard, scoreboard);
     }
@@ -284,12 +288,12 @@ export class ScoreboardService {
         ),
     );
 
-    await this.cacheService.put<UpdatedContainer<ScoreboardEntry[]>>(
+    await this.cacheService.put<UpdatedContainer<MinimalScoreboardEntry[]>>(
       CACHE_SCORE_NAMESPACE,
       `d:${id}:calc_graph`,
       {
-        data: scoreboard,
-        updated_at: timestamp || last_event,
+        data: minimal,
+        updated_at: new Date(),
       },
       300,
     );

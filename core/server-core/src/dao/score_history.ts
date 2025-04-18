@@ -1,16 +1,17 @@
+import { sql } from "kysely";
 import { DBType } from "../clients/database.ts";
 
 export class ScoreHistoryDAO {
   constructor(private readonly db: DBType) {}
 
-  async add(entries: { team_id: number; updated_at: Date; score: number }[]) {
+  async add(entries: { team_id: number; score: number }[]) {
     if (!entries.length) return;
     await this.db
       .insertInto("score_history")
       .values(
-        entries.map(({ team_id, updated_at, score }) => ({
+        entries.map(({ team_id, score }) => ({
           team_id,
-          updated_at,
+          updated_at: sql`CURRENT_TIMESTAMP`,
           score,
         })),
       )
