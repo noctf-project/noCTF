@@ -5,8 +5,10 @@
   import { onMount } from "svelte";
 
   let isLoading = $state(true);
+  let forceForm = $state(false);
   onMount(() => {
-    setTimeout(() => (isLoading = false), 250);
+    forceForm = !authState.user?.team_id;
+    setTimeout(() => (isLoading = false), 400);
   });
 </script>
 
@@ -15,7 +17,7 @@
     <div class="loading loading-spinner loading-lg text-primary"></div>
     <p class="text-center">Loading...</p>
   </div>
-{:else if authState.user?.team_id}
+{:else if authState.user?.team_id && !forceForm}
   <TeamPage teamId={authState.user?.team_id} />
 {:else}
   <FormPage />

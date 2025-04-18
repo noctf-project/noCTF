@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from "@iconify/svelte";
   import api from "$lib/api/index.svelte";
+  import authState from "$lib/state/auth.svelte";
   import { toasts } from "$lib/stores/toast";
   import { copyToClipboard } from "$lib/utils/clipboard";
 
@@ -46,7 +47,10 @@
           name: team.name,
         };
         toasts.success(`Successfully joined team: ${team.name}`);
-        pageState = "joined";
+        setTimeout(() => {
+          authState.refresh();
+          pageState = "joined";
+        }, 300);
       } else if (response.error) {
         toasts.error(response.error.message || "Failed to join team");
       }
@@ -92,6 +96,7 @@
         };
         toasts.success(`Team "${team.name}" created successfully!`);
         setTimeout(() => {
+          authState.refresh();
           pageState = "success";
         }, 300);
       } else if (response.error) {

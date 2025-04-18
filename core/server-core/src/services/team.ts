@@ -203,6 +203,10 @@ export class TeamService {
     );
   }
 
+  invalidateMembershipCacheEntry(userId: number) {
+    this.membershipCache.delete(userId);
+  }
+
   async assignMember(
     v: Parameters<TeamDAO["assign"]>[0],
     { actor, message }: AuditParams = {},

@@ -150,6 +150,7 @@ export async function routes(fastify: FastifyInstance) {
           message: "Assigned owner permissions to the team's creator.",
         },
       );
+      teamService.invalidateMembershipCacheEntry(request.user.id);
       return reply.status(201).send({
         data: team,
       });
@@ -177,6 +178,7 @@ export async function routes(fastify: FastifyInstance) {
         request.user.id,
         request.body.join_code,
       );
+      teamService.invalidateMembershipCacheEntry(request.user.id);
 
       return reply.status(201).send({
         data: await teamService.get(id),
