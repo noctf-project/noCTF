@@ -143,7 +143,10 @@ export function ComputeScoreboard(
     return [x.metadata.id, result] as [number, ChallengeSolvesResult];
   });
   const challengeScores: ComputedChallengeScoreData[] = [];
-  for (const [challenge_id, { value, solves, last_event: cLastEvent }] of computed) {
+  for (const [
+    challenge_id,
+    { value, solves, last_event: cLastEvent },
+  ] of computed) {
     const challengeSolves: Solve[] = [];
     for (const solve of solves) {
       challengeSolves.push(solve);
@@ -207,7 +210,7 @@ export function ComputeScoreboard(
   return {
     scoreboard: sorted,
     challenges: challengesMap,
-    last_event: last_event
+    last_event: last_event,
   };
 }
 

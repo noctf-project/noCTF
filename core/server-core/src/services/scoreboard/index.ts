@@ -103,8 +103,8 @@ export class ScoreboardService {
     );
   }
 
-  async computeAndSaveScoreboards() {
-    this.logger.info("Computing scoreboards");
+  async computeAndSaveScoreboards(timestamp?: number) {
+    this.logger.info({ timestamp }, "Computing scoreboard");
     const challenges: ChallengeMetadataWithExpr[] = await Promise.all(
       (
         await this.challengeService.list({
@@ -118,10 +118,34 @@ export class ScoreboardService {
         metadata,
       })),
     );
-    const [teams, divisions] = await Promise.all([
-      this.teamDAO.listForScoreboard(),
-      this.divisionDAO.list(),
-    ]);
+
+    const divisions = (
+      await Promise.all(
+        (await this.divisionDAO.list()).map(async (d) => {
+          const pointer = await this.scoreboardDataLoader.getLatestPointer(
+            d.id,
+          );
+          if (!timestamp || !pointer || pointer < timestamp) {
+            this.logger.info(
+              { division_id: d.id, timestamp },
+              "Queuing division for recalculation",
+            );
+            return d;
+          }
+          this.logger.info(
+            { division_id: d.id, pointer },
+            "Skipping recalculation for division",
+          );
+          await this.scoreboardDataLoader.touch(pointer, d.id);
+          return null;
+        }),
+      )
+    ).filter((v): v is Exclude<typeof v, null> => !!v);
+    if (!divisions.length) {
+      return;
+    }
+
+    const teams = await this.teamDAO.listForScoreboard();
     await this.scoreboardDataLoader.saveTeamTags(teams);
     const teamMap = new Map<number, MinimalTeamInfo[]>(
       divisions.map(({ id }) => [id, []]),
@@ -215,17 +239,20 @@ export class ScoreboardService {
       ({ challenge_id }) => challenge_id,
     ) as Record<number, RawSolve[]>;
 
-    const { scoreboard, challenges: challengeScores } = ComputeScoreboard(
+    const {
+      last_event,
+      scoreboard,
+      challenges: challengeScores,
+    } = ComputeScoreboard(
       new Map(teams.map((x) => [x.id, x])),
       challenges,
       solvesByChallenge,
       awardList,
       this.logger,
     );
-    const updated_at = new Date();
 
     await this.scoreboardDataLoader.saveIndexed(
-      updated_at.getTime(),
+      last_event.getTime(),
       id,
       scoreboard,
       challengeScores,
@@ -259,7 +286,7 @@ export class ScoreboardService {
       `d:${id}:calc_graph`,
       {
         data: scoreboard,
-        updated_at,
+        updated_at: last_event,
       },
       300,
     );

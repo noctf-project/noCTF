@@ -1,5 +1,5 @@
 import type { DB } from "@noctf/schema";
-import type { Insertable } from "kysely";
+import { sql, type Insertable } from "kysely";
 import { DBType } from "../clients/database.ts";
 import { AdminQuerySubmissionsRequest } from "@noctf/api/requests";
 import { LimitOffset, Submission } from "@noctf/api/datatypes";
@@ -21,7 +21,20 @@ export class SubmissionDAO {
   constructor(private readonly db: DBType) {}
 
   async create(v: Insertable<DB["submission"]>) {
-    await this.db.insertInto("submission").values(v).executeTakeFirst();
+    return await this.db
+      .insertInto("submission")
+      .values(v)
+      .returning((eb) => [
+        "id",
+        "updated_at",
+        eb
+          .selectFrom("submission")
+          .select(eb.fn.countAll<string>().as("count"))
+          .where("challenge_id", "=", v.challenge_id)
+          .where("status", "=", "correct")
+          .as("solve_count"),
+      ])
+      .executeTakeFirstOrThrow();
   }
 
   async getCurrentMetadata(challenge_id: number, team_id: number) {
