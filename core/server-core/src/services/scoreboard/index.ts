@@ -103,7 +103,7 @@ export class ScoreboardService {
     );
   }
 
-  async computeAndSaveScoreboards(timestamp?: number) {
+  async computeAndSaveScoreboards(timestamp?: Date) {
     this.logger.info({ event_timestamp: timestamp }, "Computing scoreboard");
     const challenges: ChallengeMetadataWithExpr[] = await Promise.all(
       (
@@ -126,7 +126,7 @@ export class ScoreboardService {
             d.id,
             false,
           );
-          if (!timestamp || !pointer || pointer < timestamp) {
+          if (!timestamp || !pointer || pointer < timestamp.getTime()) {
             this.logger.info(
               { division_id: d.id, timestamp },
               "Queuing division for recalculation",
@@ -230,7 +230,7 @@ export class ScoreboardService {
     teams: MinimalTeamInfo[],
     challenges: ChallengeMetadataWithExpr[],
     id: number,
-    timestamp?: number,
+    timestamp?: Date,
   ) {
     const [solveList, awardList] = await Promise.all([
       this.submissionDAO.getSolvesForCalculation(id),
@@ -255,7 +255,7 @@ export class ScoreboardService {
     );
 
     await this.scoreboardDataLoader.saveIndexed(
-      timestamp || last_event.getTime(),
+      timestamp?.getTime() || last_event.getTime(),
       id,
       scoreboard,
       challengeScores,
@@ -289,7 +289,7 @@ export class ScoreboardService {
       `d:${id}:calc_graph`,
       {
         data: scoreboard,
-        updated_at: last_event,
+        updated_at: timestamp || last_event,
       },
       300,
     );

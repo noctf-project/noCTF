@@ -11,7 +11,7 @@ export const RunLockedScoreboardCalculator = async (
     lockService,
     scoreboardService,
   }: Pick<ServiceCradle, "lockService" | "scoreboardService">,
-  timestamp?: number,
+  timestamp?: Date,
 ) => {
   await lockService.withLease(`singleton:scoreboard`, () =>
     scoreboardService.computeAndSaveScoreboards(timestamp),
@@ -31,7 +31,7 @@ export const ScoreboardCalculatorWorker = async (
       handler: async (data) => {
         let updated_at = new Date(data.timestamp);
         if (data.data.updated_at) updated_at = data.data.updated_at;
-        await RunLockedScoreboardCalculator(c, updated_at.getTime());
+        await RunLockedScoreboardCalculator(c, updated_at);
       },
     },
   );
