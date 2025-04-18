@@ -19,7 +19,7 @@ class AuthState {
 
   constructor() {
     this.loadCachedUser();
-    this.fetchState().then(() => {
+    this.fetch().then(() => {
       // this could be done cleaner, but there are only a few protected pages
       // so this should be fine for now
       const path = window.location.pathname;
@@ -58,13 +58,17 @@ class AuthState {
     }
   }
 
-  async fetchState() {
+  async fetch() {
     const token = localStorage.getItem(SESSION_TOKEN_KEY);
     if (!token) {
       this.isLoading = false;
       return;
     }
 
+    return this.refresh();
+  }
+
+  async refresh() {
     try {
       const r = await api.GET("/user/me");
       if (r.data) {

@@ -193,6 +193,7 @@ export class TeamService {
       ],
       data: "Joined using code",
     });
+    this.membershipCache.delete(user_id);
 
     return result.id;
   }
@@ -217,6 +218,7 @@ export class TeamService {
       ],
       data: message,
     });
+    this.membershipCache.delete(v.user_id);
   }
 
   async unassignMember(
