@@ -5,6 +5,8 @@ import {
   ChallengeMetadataWithExpr,
   ComputeScoreboard,
   GetChangedTeamScores,
+  GetMinimalScoreboard,
+  MinimalScoreboardEntry,
 } from "./calc.ts";
 import { ScoreHistoryDAO } from "../../dao/score_history.ts";
 import { SetupConfig } from "@noctf/api/config";
@@ -12,6 +14,7 @@ import { AwardDAO } from "../../dao/award.ts";
 import { ScoreboardDataLoader } from "./loader.ts";
 import { MinimalTeamInfo, TeamDAO } from "../../dao/team.ts";
 import { RawSolve, SubmissionDAO } from "../../dao/submission.ts";
+import { MaxDate } from "../../util/date.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -103,8 +106,8 @@ export class ScoreboardService {
     );
   }
 
-  async computeAndSaveScoreboards() {
-    this.logger.info("Computing scoreboards");
+  async computeAndSaveScoreboards(timestamp?: Date) {
+    this.logger.info({ event_timestamp: timestamp }, "Computing scoreboard");
     const challenges: ChallengeMetadataWithExpr[] = await Promise.all(
       (
         await this.challengeService.list({
@@ -118,10 +121,35 @@ export class ScoreboardService {
         metadata,
       })),
     );
-    const [teams, divisions] = await Promise.all([
-      this.teamDAO.listForScoreboard(),
-      this.divisionDAO.list(),
-    ]);
+
+    const divisions = (
+      await Promise.all(
+        (await this.divisionDAO.list()).map(async (d) => {
+          const pointer = await this.scoreboardDataLoader.getLatestPointer(
+            d.id,
+            false,
+          );
+          if (!timestamp || !pointer || pointer < timestamp.getTime()) {
+            this.logger.info(
+              { division_id: d.id, timestamp },
+              "Queuing division for recalculation",
+            );
+            return d;
+          }
+          this.logger.info(
+            { division_id: d.id, pointer },
+            "Skipping recalculation for division",
+          );
+          await this.scoreboardDataLoader.touch(pointer, d.id);
+          return null;
+        }),
+      )
+    ).filter((v): v is Exclude<typeof v, null> => !!v);
+    if (!divisions.length) {
+      return;
+    }
+
+    const teams = await this.teamDAO.listForScoreboard();
     await this.scoreboardDataLoader.saveTeamTags(teams);
     const teamMap = new Map<number, MinimalTeamInfo[]>(
       divisions.map(({ id }) => [id, []]),
@@ -133,6 +161,7 @@ export class ScoreboardService {
         teamMap.get(id) || [],
         challenges,
         id,
+        timestamp,
       );
     }
   }
@@ -204,6 +233,7 @@ export class ScoreboardService {
     teams: MinimalTeamInfo[],
     challenges: ChallengeMetadataWithExpr[],
     id: number,
+    timestamp?: Date,
   ) {
     const [solveList, awardList] = await Promise.all([
       this.submissionDAO.getSolvesForCalculation(id),
@@ -215,17 +245,20 @@ export class ScoreboardService {
       ({ challenge_id }) => challenge_id,
     ) as Record<number, RawSolve[]>;
 
-    const { scoreboard, challenges: challengeScores } = ComputeScoreboard(
+    const {
+      last_event,
+      scoreboard,
+      challenges: challengeScores,
+    } = ComputeScoreboard(
       new Map(teams.map((x) => [x.id, x])),
       challenges,
       solvesByChallenge,
       awardList,
       this.logger,
     );
-    const updated_at = new Date();
 
     await this.scoreboardDataLoader.saveIndexed(
-      updated_at.getTime(),
+      MaxDate(timestamp || new Date(0), last_event).getTime(),
       id,
       scoreboard,
       challengeScores,
@@ -235,12 +268,13 @@ export class ScoreboardService {
     // we want a separate cache value for graphing in case the calculation crashed
     // halfway through
     const { data: lastScoreboard } =
-      (await this.cacheService.get<UpdatedContainer<ScoreboardEntry[]>>(
+      (await this.cacheService.get<UpdatedContainer<MinimalScoreboardEntry[]>>(
         CACHE_SCORE_NAMESPACE,
         `d:${id}:calc_graph`,
       )) || {};
 
-    let diff: ScoreboardEntry[] = scoreboard;
+    let minimal = GetMinimalScoreboard(scoreboard);
+    let diff = minimal;
     if (lastScoreboard) {
       diff = GetChangedTeamScores(lastScoreboard, scoreboard);
     }
@@ -254,12 +288,12 @@ export class ScoreboardService {
         ),
     );
 
-    await this.cacheService.put<UpdatedContainer<ScoreboardEntry[]>>(
+    await this.cacheService.put<UpdatedContainer<MinimalScoreboardEntry[]>>(
       CACHE_SCORE_NAMESPACE,
       `d:${id}:calc_graph`,
       {
-        data: scoreboard,
-        updated_at,
+        data: minimal,
+        updated_at: new Date(),
       },
       300,
     );

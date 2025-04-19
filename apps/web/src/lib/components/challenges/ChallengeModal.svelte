@@ -49,11 +49,12 @@
 
   let flagInput = $state("");
   let flagSubmitStatus:
-    | undefined
+    | "waiting"
     | "invalid"
+    | "submitting"
     | "incorrect"
     | "correct"
-    | "queued" = $state();
+    | "queued" = $state("waiting");
   let scoreModalVisible = $state(false);
   let scoreModalRef: HTMLElement | undefined = $state();
   let scoresLoading = $state(false);
@@ -73,12 +74,14 @@
     duration: 600,
     easing: cubicInOut,
   });
-  async function submitFlag() {
-    if (!flagInput) {
+  async function submitFlag(e: Event) {
+    e.preventDefault();
+
+    if (!flagInput || ["submitting", "correct"].includes(flagSubmitStatus)) {
       return;
     }
 
-    flagSubmitStatus = undefined;
+    flagSubmitStatus = "submitting";
 
     // TODO: better progress and error handling
     const r = await api.POST("/challenges/{id}/solves", {
@@ -99,14 +102,14 @@
         onSolve();
       } else {
         setTimeout(() => {
-          flagSubmitStatus = undefined;
+          flagSubmitStatus = "waiting";
         }, 2000);
       }
     }
   }
 
   function performClose() {
-    flagSubmitStatus = undefined;
+    flagSubmitStatus = "waiting";
     scoreModalVisible = false;
     scoresData = undefined;
     scoresLoading = false;
@@ -283,16 +286,19 @@
               class="input input-bordered flex-grow !bg-base-100"
               disabled
             />
-            <button disabled class="btn btn-primary btn-disabled">Submit</button
-            >
           </div>
         {:else}
           <form class="flex gap-2 w-full">
             <div class="relative w-full">
               <input
                 bind:value={flagInput}
-                oninput={() => (flagSubmitStatus = undefined)}
+                oninput={() => {
+                  if (flagSubmitStatus !== "correct") {
+                    flagSubmitStatus = "waiting";
+                  }
+                }}
                 type="text"
+                disabled={["correct", "submitting"].includes(flagSubmitStatus)}
                 placeholder={"noCTF{...}"}
                 required
                 class={"w-full input input-bordered flex-grow pop duration-200 transition-colors focus:outline-none focus:pop focus:ring-0 focus:ring-offset-0 " +
@@ -338,7 +344,7 @@
             <button
               type="submit"
               onclick={submitFlag}
-              class="btn pop btn-primary">Submit</button
+              class="btn pop hover:pop btn-primary">Submit</button
             >
           </form>
         {/if}

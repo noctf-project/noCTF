@@ -21,7 +21,7 @@ export type ChallengeMetadataWithExpr = {
 type ChallengeSolvesResult = {
   value: number | null;
   solves: Solve[];
-  last_updated: Date;
+  last_event: Date;
 };
 
 export type ComputedChallengeScoreData = {
@@ -37,6 +37,10 @@ export type ChallengeSummary = {
   bonuses: number[];
 };
 
+export type MinimalScoreboardEntry = Pick<
+  ScoreboardEntry,
+  "team_id" | "score" | "updated_at" | "last_solve" | "hidden"
+>;
 function ComputeScoresForChallenge(
   { metadata, expr }: ChallengeMetadataWithExpr,
   teams: Map<number, MinimalTeamInfo>,
@@ -58,11 +62,11 @@ function ComputeScoresForChallenge(
       params,
       valid.filter(({ value }) => value === null).length,
     );
-    let last_updated = new Date(0);
+    let last_event = new Date(0);
     let bonusIdx = 0;
     const rv: Solve[] = valid.map(
       ({ team_id, created_at, updated_at, value }) => {
-        last_updated = MaxDate(last_updated, updated_at);
+        last_event = MaxDate(last_event, updated_at);
         const b = value !== null ? undefined : bonus?.[bonusIdx++];
         return {
           team_id,
@@ -75,7 +79,7 @@ function ComputeScoresForChallenge(
       },
     );
     const rh: Solve[] = hidden.map(({ team_id, created_at, updated_at }) => {
-      last_updated = MaxDate(last_updated, updated_at);
+      last_event = MaxDate(last_event, updated_at);
 
       return {
         team_id,
@@ -88,7 +92,7 @@ function ComputeScoresForChallenge(
     return {
       value: base,
       solves: rv.concat(rh),
-      last_updated,
+      last_event: MaxDate(last_event, metadata.updated_at),
     };
   } catch (err) {
     if (logger)
@@ -99,7 +103,7 @@ function ComputeScoresForChallenge(
     return {
       value: null,
       solves: [],
-      last_updated: new Date(0),
+      last_event: new Date(0),
     };
   }
 }
@@ -113,7 +117,9 @@ export function ComputeScoreboard(
 ): {
   scoreboard: ScoreboardEntry[];
   challenges: Map<number, ComputedChallengeScoreData>;
+  last_event: Date;
 } {
+  let last_event = new Date(0);
   // score, followed by date of last solve for tiebreak purposes
   const teamScores: Map<number, ScoreboardEntry> = new Map(
     teams.values().map(({ id, flags, tag_ids }) => [
@@ -141,7 +147,10 @@ export function ComputeScoreboard(
     return [x.metadata.id, result] as [number, ChallengeSolvesResult];
   });
   const challengeScores: ComputedChallengeScoreData[] = [];
-  for (const [challenge_id, { value, solves, last_updated }] of computed) {
+  for (const [
+    challenge_id,
+    { value, solves, last_event: cLastEvent },
+  ] of computed) {
     const challengeSolves: Solve[] = [];
     for (const solve of solves) {
       challengeSolves.push(solve);
@@ -156,8 +165,9 @@ export function ComputeScoreboard(
         : MaxDate(solve.created_at, team.last_solve);
       team.updated_at = solve.hidden
         ? team.updated_at
-        : MaxDate(last_updated, team.updated_at);
+        : MaxDate(cLastEvent, team.updated_at);
     }
+    last_event = MaxDate(cLastEvent, last_event);
     challengeScores.push({
       challenge_id,
       value: value || 0,
@@ -173,6 +183,7 @@ export function ComputeScoreboard(
     team.awards.push(award);
     team.score += award.value;
     team.updated_at = MaxDate(award.created_at, team.updated_at);
+    last_event = MaxDate(team.updated_at, last_event);
   }
 
   const scoreboard = Array.from(
@@ -200,26 +211,48 @@ export function ComputeScoreboard(
           ? i
           : i + 1),
   );
+
   return {
     scoreboard: sorted,
     challenges: challengesMap,
+    last_event,
   };
 }
 
+export const GetMinimalScoreboard = (
+  scoreboard: ScoreboardEntry[],
+): MinimalScoreboardEntry[] =>
+  scoreboard.map((s) => ({
+    score: s.score,
+    updated_at: s.updated_at,
+    team_id: s.team_id,
+    last_solve: s.last_solve,
+    hidden: s.hidden,
+  }));
+
 export const GetChangedTeamScores = (
-  s1: ScoreboardEntry[],
-  s2: ScoreboardEntry[],
+  s1: MinimalScoreboardEntry[],
+  s2: MinimalScoreboardEntry[],
 ) => {
-  const map: Map<number, ScoreboardEntry> = new Map();
-  const output: ScoreboardEntry[] = [];
+  const map: Map<number, MinimalScoreboardEntry> = new Map();
+  const output: MinimalScoreboardEntry[] = [];
   for (const entry of s1) {
     map.set(entry.team_id, entry);
   }
   for (const entry of s2) {
     const e2 = map.get(entry.team_id);
+    map.delete(entry.team_id);
     if (entry.score !== e2?.score) {
       output.push(entry);
     }
+  }
+  for (const [_v, v] of map) {
+    output.push({
+      ...v,
+      last_solve: new Date(0),
+      updated_at: new Date(0),
+      score: 0,
+    });
   }
   return output;
 };

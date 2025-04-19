@@ -2,12 +2,9 @@ import { EmailConfig, SetupConfig } from "@noctf/api/config";
 import { ServiceCradle } from "../../index.ts";
 import { EmailProvider } from "./types.ts";
 import { DummyEmailProvider } from "./dummy.ts";
-import {
-  EmailAddress,
-  EmailAddressOrUserId,
-  EmailMessage,
-} from "@noctf/api/datatypes";
+import { EmailAddress, EmailAddressOrUserId } from "@noctf/api/datatypes";
 import { UserDAO } from "../../dao/user.ts";
+import { EmailQueueEvent } from "@noctf/api/events";
 
 type Props = Pick<
   ServiceCradle,
@@ -61,7 +58,7 @@ export class EmailService {
     this.providers.set(provider.name, provider);
   }
 
-  async sendEmail(data: EmailMessage) {
+  async sendEmail(data: EmailQueueEvent) {
     const config = (await this.configService.get<EmailConfig>(EmailConfig.$id!))
       ?.value;
 
@@ -70,10 +67,10 @@ export class EmailService {
       await this.doSend(config, data);
       return;
     }
-    await this.eventBusService.publish<EmailMessage>("queue.email", data);
+    await this.eventBusService.publish(EmailQueueEvent, data);
   }
 
-  private async doSend(config: EmailConfig, data: EmailMessage) {
+  private async doSend(config: EmailConfig, data: EmailQueueEvent) {
     const { name: siteName } = (
       await this.configService.get<SetupConfig>(SetupConfig.$id!)
     ).value;
@@ -120,10 +117,10 @@ export class EmailService {
   }
 
   async worker(signal: AbortSignal) {
-    await this.eventBusService.subscribe<EmailMessage>(
+    await this.eventBusService.subscribe<EmailQueueEvent>(
       signal,
       "EmailWorker",
-      ["queue.email"],
+      [EmailQueueEvent.$id!],
       {
         concurrency: 3,
         handler: async (data) => {

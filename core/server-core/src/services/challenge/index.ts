@@ -6,6 +6,7 @@ import { ChallengeDAO } from "../../dao/challenge.ts";
 import type { ServiceCradle } from "../../index.ts";
 import type { AuditLogActor } from "../../types/audit_log.ts";
 import type { ChallengePublicMetadataBase } from "@noctf/api/datatypes";
+import { SubmissionUpdateEvent } from "@noctf/api/events";
 import {
   type Challenge,
   type ChallengeMetadata,
@@ -190,7 +191,7 @@ export class ChallengeService {
         "Presolve plugin returned a valid result",
       );
       const solved = state.status === "correct";
-      this.submissionDAO.create({
+      const { id, updated_at } = await this.submissionDAO.create({
         team_id: teamId,
         user_id: userId,
         challenge_id: challenge.id,
@@ -202,7 +203,15 @@ export class ChallengeService {
         metadata: metadata as any,
       });
       if (solved) {
-        // TODO: emit solve to event bus to recalc
+        await this.eventBusService.publish(SubmissionUpdateEvent, {
+          id,
+          challenge_id: challenge.id,
+          status: state.status,
+          team_id: teamId,
+          user_id: userId,
+          updated_at,
+          hidden: false,
+        });
       }
       return state.status;
       // TODO: queueing, currently it is just marked as queued. probably emit

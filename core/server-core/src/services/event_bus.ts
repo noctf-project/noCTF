@@ -12,6 +12,7 @@ import type { Metric } from "../clients/metrics.ts";
 import { SimpleMutex } from "nats/lib/nats-base-client/util.js";
 import { decode, encode } from "cbor-x";
 import { Compress, Decompress } from "../util/message_compression.ts";
+import { Static, TSchema } from "@sinclair/typebox";
 
 type Props = Pick<
   ServiceCradle,
@@ -141,11 +142,17 @@ export class EventBusService {
     await this.listen(signal, type, consumer, options);
   }
 
-  async publish<T>(subject: string, data: T) {
+  async publish<T extends TSchema | string>(
+    subject: T,
+    data: T extends TSchema ? Static<T> : unknown,
+  ) {
     if (!this.natsClient) {
       await this.init();
     }
-    await this.natsClient.publish(subject, await Compress(encode(data)));
+    await this.natsClient.publish(
+      typeof subject === "string" ? subject : subject.$id!,
+      await Compress(encode(data)),
+    );
   }
 
   private async listen<T>(
@@ -154,7 +161,6 @@ export class EventBusService {
     name: string,
     options: EventSubscribeOptions<T>,
   ) {
-    // TODO: customise parallelism
     const rl = new SimpleMutex(options.concurrency || 1);
     const jetstream = this.natsClient.jetstream();
     const stream = STREAMS[streamType];
@@ -167,16 +173,16 @@ export class EventBusService {
       const messages = await q.consume({
         max_messages: options.concurrency || 1,
       });
-      try {
-        for await (const m of messages) {
-          await rl.lock();
-          void this.consume(m, options).finally(() => rl.unlock());
-        }
-      } catch (err) {
-        this.logger.error(
-          { consumer: name, stack: err.stack },
-          "Failed to consume",
-        );
+      for await (const m of messages) {
+        await rl.lock();
+        void this.consume(m, options)
+          .catch((err) =>
+            this.logger.error(
+              { consumer: name, stack: err.stack },
+              "Failed to consume",
+            ),
+          )
+          .finally(() => rl.unlock());
       }
     }
   }
