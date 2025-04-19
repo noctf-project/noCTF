@@ -84,7 +84,7 @@ describe("bisectRight", () => {
     ];
 
     expect(bisectRight(people, 30, (person) => person.age)).toBe(3);
-    expect(bisectRight(people, 32, (person) => person.age)).toBe(3); 
+    expect(bisectRight(people, 32, (person) => person.age)).toBe(3);
 
     const sortedByName = [...people].sort((a, b) =>
       a.name.localeCompare(b.name),

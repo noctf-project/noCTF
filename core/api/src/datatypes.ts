@@ -231,11 +231,12 @@ export type ScoringStrategy = Static<typeof ScoringStrategy>;
 
 export const Solve = Type.Object(
   {
-    team_id: Type.Number(),
-    challenge_id: Type.Number(),
+    team_id: Type.Integer(),
+    user_id: Type.Union([Type.Integer(), Type.Null()]),
+    challenge_id: Type.Integer(),
     hidden: Type.Boolean(),
-    bonus: Type.Optional(Type.Number()),
-    value: Type.Number(),
+    bonus: Type.Optional(Type.Integer()),
+    value: Type.Integer(),
     created_at: TypeDate,
   },
   { additionalProperties: false },

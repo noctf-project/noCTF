@@ -243,6 +243,7 @@ describe(ComputeScoreboard, () => {
             created_at: new Date(1) as unknown as Timestamp & Date, // fuck TS
             updated_at: new Date(1) as unknown as Timestamp & Date,
             team_id: 1,
+            user_id: 1,
             value: null,
           },
           {
@@ -252,6 +253,7 @@ describe(ComputeScoreboard, () => {
             created_at: new Date(3) as unknown as Timestamp & Date, // fuck TS
             updated_at: new Date(3) as unknown as Timestamp & Date,
             team_id: 2,
+            user_id: 2,
             value: 100,
           },
         ],
@@ -277,6 +279,8 @@ describe(ComputeScoreboard, () => {
               hidden: false,
               challenge_id: 1,
               value: 100,
+              team_id: 2,
+              user_id: 2,
             }),
           ],
         },
@@ -296,6 +300,8 @@ describe(ComputeScoreboard, () => {
               hidden: false,
               challenge_id: 1,
               value: 3,
+              team_id: 1,
+              user_id: 1,
             }),
           ],
         },
@@ -314,6 +320,7 @@ describe(ComputeScoreboard, () => {
                 challenge_id: 1,
                 value: 3,
                 team_id: 1,
+                user_id: 1,
               },
               {
                 bonus: undefined,
@@ -322,6 +329,7 @@ describe(ComputeScoreboard, () => {
                 challenge_id: 1,
                 value: 100,
                 team_id: 2,
+                user_id: 2,
               },
             ],
           },
@@ -366,6 +374,7 @@ describe(ComputeScoreboard, () => {
             created_at: new Date(1) as unknown as Timestamp & Date, // fuck TS
             updated_at: new Date(1) as unknown as Timestamp & Date,
             team_id: 1,
+            user_id: 1,
             value: null,
           },
           {
@@ -375,6 +384,7 @@ describe(ComputeScoreboard, () => {
             created_at: new Date(2) as unknown as Timestamp & Date, // fuck TS
             updated_at: new Date(2) as unknown as Timestamp & Date,
             team_id: 3,
+            user_id: 3,
             value: null,
           },
           {
@@ -384,6 +394,7 @@ describe(ComputeScoreboard, () => {
             created_at: new Date(3) as unknown as Timestamp & Date, // fuck TS
             updated_at: new Date(3) as unknown as Timestamp & Date,
             team_id: 2,
+            user_id: 2,
             value: null,
           },
         ],
@@ -465,6 +476,7 @@ describe(ComputeScoreboard, () => {
                 challenge_id: 1,
                 value: 1,
                 team_id: 1,
+                user_id: 1,
               },
               {
                 bonus: undefined,
@@ -473,6 +485,7 @@ describe(ComputeScoreboard, () => {
                 challenge_id: 1,
                 value: 1,
                 team_id: 3,
+                user_id: 3,
               },
               {
                 bonus: undefined,
@@ -481,6 +494,7 @@ describe(ComputeScoreboard, () => {
                 challenge_id: 1,
                 value: 1,
                 team_id: 2,
+                user_id: 2,
               },
             ],
           },
@@ -517,6 +531,7 @@ describe(ComputeScoreboard, () => {
             created_at: new Date(1) as unknown as Timestamp & Date,
             updated_at: new Date(1) as unknown as Timestamp & Date,
             team_id: 1,
+            user_id: 1,
             value: null,
           },
         ],
@@ -583,6 +598,7 @@ describe(ComputeScoreboard, () => {
               challenge_id: 1,
               value: 1,
               team_id: 1,
+              user_id: 1,
             },
           ],
         },
@@ -601,6 +617,7 @@ describe(ComputeScoreboard, () => {
                 challenge_id: 1,
                 value: 1,
                 team_id: 1,
+                user_id: 1,
               },
             ],
           },

@@ -66,11 +66,12 @@ function ComputeScoresForChallenge(
     let last_event = new Date(0);
     let bonusIdx = 0;
     const rv: Solve[] = valid.map(
-      ({ team_id, created_at, updated_at, value }) => {
+      ({ team_id, user_id, created_at, updated_at, value }) => {
         last_event = MaxDate(last_event, updated_at);
         const b = value !== null ? undefined : bonus?.[bonusIdx++];
         return {
           team_id,
+          user_id,
           challenge_id: metadata.id,
           bonus: b,
           hidden: false,
@@ -79,17 +80,20 @@ function ComputeScoresForChallenge(
         };
       },
     );
-    const rh: Solve[] = hidden.map(({ team_id, created_at, updated_at }) => {
-      last_event = MaxDate(last_event, updated_at);
+    const rh: Solve[] = hidden.map(
+      ({ team_id, user_id, created_at, updated_at }) => {
+        last_event = MaxDate(last_event, updated_at);
 
-      return {
-        team_id,
-        challenge_id: metadata.id,
-        hidden: true,
-        value: base,
-        created_at,
-      };
-    });
+        return {
+          team_id,
+          user_id,
+          challenge_id: metadata.id,
+          hidden: true,
+          value: base,
+          created_at,
+        };
+      },
+    );
     return {
       value: base,
       solves: rv.concat(rh),
