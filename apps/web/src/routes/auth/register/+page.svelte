@@ -8,7 +8,7 @@
 
   let passwordVisible = $state(false);
   let isLoading = $state(true);
-  loginState.password = "";
+  let registrationViaToken = $state(false);
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
@@ -25,13 +25,14 @@
 
   // Check for the token in the URL for validation
   onMount(async () => {
+    loginState.password = "";
     // Cannot use existing loginState.urlParams as it does not update across routes
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
-    console.log(token);
 
     if (token) {
       // If a token exists in the URL, try to validate it
+      registrationViaToken = true;
       try {
         await loginState.verifyToken(token);
       } catch (e) {
@@ -55,7 +56,7 @@
 {@render header("Create an account", "Complete your details to get started")}
 
 <form onsubmit={handleSubmit}>
-  {@render emailLocked()}
+  {@render emailLocked({ showEditButton: !registrationViaToken })}
 
   <div class="form-control mt-4">
     <label for="name" class="label">
