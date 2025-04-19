@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ComputeScoreboard, GetChangedTeamScores } from "./calc.ts";
+import {
+  ComputeScoreboard,
+  GetChangedTeamScores,
+  MinimalScoreboardEntry,
+} from "./calc.ts";
 import {
   ChallengeMetadata,
   ChallengePrivateMetadataBase,

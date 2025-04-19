@@ -38,6 +38,10 @@ export type ChallengeSummary = {
   bonuses: number[];
 };
 
+export type MinimalScoreboardEntry = Pick<
+  ScoreboardEntry,
+  "team_id" | "score" | "updated_at" | "last_solve" | "hidden"
+>;
 function ComputeScoresForChallenge(
   { metadata, expr }: ChallengeMetadataWithExpr,
   teams: Map<number, MinimalTeamInfo>,

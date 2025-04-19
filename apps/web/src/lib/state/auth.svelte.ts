@@ -13,6 +13,7 @@ interface User {
 const USER_DATA_KEY = "noctf-user";
 class AuthState {
   user?: User = $state();
+  isInitialised: boolean = $state(false);
   isLoading: boolean = $state(true);
   isAuthenticated: boolean = $derived(!!this.user?.id);
   isAdmin: boolean = $derived(!!this.user?.roles?.includes("admin"));

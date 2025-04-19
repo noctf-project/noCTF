@@ -7,6 +7,7 @@ export default {
       // these options are set automatically — see below
       pages: "dist",
       assets: "dist",
+      runes: true,
       precompress: false,
       strict: true,
       fallback: "404.html",
