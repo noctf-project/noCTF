@@ -121,7 +121,7 @@
     </div>
 
     <button
-      class="btn btn-primary w-full mt-6 shadow-solid"
+      class="btn btn-primary w-full mt-6 pop hover:pop"
       type="submit"
       disabled={isLoading || !loginState.email}
     >
