@@ -427,6 +427,6 @@
   });
 </script>
 
-<div class="card bg-base-100 pop w-full p-6 {extraClasses}">
+<div class="card rounded-lg bg-base-100 pop w-full p-6 {extraClasses}">
   <canvas bind:this={chartContainer}></canvas>
 </div>

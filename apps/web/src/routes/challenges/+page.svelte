@@ -28,10 +28,7 @@
   };
 
   onMount(() => {
-    const refresh = setInterval(
-      refreshChallenges,
-      20000 + Math.floor(Math.random() * 10000),
-    );
+    const refresh = setInterval(refreshChallenges, 20000);
 
     return () => {
       clearInterval(refresh);
