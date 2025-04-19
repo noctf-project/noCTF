@@ -13,7 +13,7 @@
     { name: "Google", icon: "mdi:google" },
     { name: "GitHub", icon: "mdi:github" },
   ];
-
+  
   async function handleEmailCheck() {
     if (!loginState.email) return;
 

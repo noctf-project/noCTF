@@ -1,5 +1,6 @@
 import { IdParams } from "@noctf/api/params";
 import {
+  BaseResponse,
   GetChallengeResponse,
   GetChallengeSolvesResponse,
   ListChallengesResponse,
@@ -47,7 +48,7 @@ export async function routes(fastify: FastifyInstance) {
         request.user?.membership,
       ]);
 
-      const { data: scoreObj } = await scoreboardService.getChallengesSummary(
+      const scoreObj = await scoreboardService.getChallengesSummary(
         team?.division_id || 1, // TODO: configurable default
       );
       const solves = new Set<number>();
@@ -102,6 +103,7 @@ export async function routes(fastify: FastifyInstance) {
         params: IdParams,
         response: {
           200: GetChallengeResponse,
+          default: BaseResponse,
         },
       },
     },

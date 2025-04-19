@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: server
+      target: out_server
     depends_on:
       - redis
       - nats
@@ -21,7 +21,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: web
+      target: out_web
   redis:
     image: valkey/valkey:8-alpine
   nats:

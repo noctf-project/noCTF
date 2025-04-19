@@ -1,6 +1,10 @@
-import { FileProvider } from "./index.ts";
+import {
+  FileProvider,
+  FileProviderInstance,
+  ProviderFileMetadata,
+} from "./types.ts";
 import { createReadStream, createWriteStream, mkdirSync } from "node:fs";
-import { readFile, unlink, writeFile } from "node:fs/promises";
+import { readFile, stat, unlink, writeFile } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { type BinaryLike, createHmac } from "node:crypto";
 import { join } from "node:path";
@@ -11,16 +15,12 @@ import {
 } from "../../errors.ts";
 import { Readable } from "node:stream";
 import { nanoid } from "nanoid";
-import { FileMetadata } from "@noctf/api/datatypes";
 
-export class LocalFileProvider implements FileProvider {
-  private static METADATA_PATH = "meta";
-  private static OBJECT_PATH = "object";
+export class LocalFileProvider
+  implements FileProvider<LocalFileProviderInstance>
+{
+  name = "local";
 
-  private static SIGNED_URL_WINDOW = 600; // File is active for a max of twice as long as this
-  private static CLOCK_SKEW_WINDOW = 30;
-
-  public readonly name = "local";
   private readonly secret;
 
   constructor(
@@ -30,15 +30,41 @@ export class LocalFileProvider implements FileProvider {
     this.secret = createHmac("sha256", secret)
       .update("file.provider.local")
       .digest();
-    mkdirSync(join(root, LocalFileProvider.OBJECT_PATH), { recursive: true });
-    mkdirSync(join(root, LocalFileProvider.METADATA_PATH), { recursive: true });
+  }
+
+  getSchema() {
+    return null;
+  }
+
+  getInstance() {
+    return new LocalFileProviderInstance(this.root, this.secret);
+  }
+}
+
+export class LocalFileProviderInstance implements FileProviderInstance {
+  private static METADATA_PATH = "meta";
+  private static OBJECT_PATH = "object";
+
+  private static SIGNED_URL_WINDOW = 600; // File is active for a max of twice as long as this
+  private static CLOCK_SKEW_WINDOW = 30;
+
+  constructor(
+    private readonly root: string,
+    private readonly secret: BinaryLike,
+  ) {
+    mkdirSync(join(root, LocalFileProviderInstance.OBJECT_PATH), {
+      recursive: true,
+    });
+    mkdirSync(join(root, LocalFileProviderInstance.METADATA_PATH), {
+      recursive: true,
+    });
   }
 
   async delete(ref: string): Promise<void> {
     try {
       await Promise.all([
-        unlink(join(this.root, LocalFileProvider.METADATA_PATH, ref)),
-        unlink(join(this.root, LocalFileProvider.OBJECT_PATH, ref)),
+        unlink(join(this.root, LocalFileProviderInstance.METADATA_PATH, ref)),
+        unlink(join(this.root, LocalFileProviderInstance.OBJECT_PATH, ref)),
       ]);
     } catch (e) {
       if (e.code === "ENOENT") {
@@ -49,12 +75,14 @@ export class LocalFileProvider implements FileProvider {
     return;
   }
 
-  async upload(rs: Readable): Promise<string> {
+  async upload(
+    rs: Readable,
+    m: Omit<ProviderFileMetadata, "size">,
+  ): Promise<string> {
     const ref = nanoid();
-    await pipeline(
-      rs,
-      createWriteStream(join(this.root, LocalFileProvider.OBJECT_PATH, ref)),
-    );
+    const fp = join(this.root, LocalFileProviderInstance.OBJECT_PATH, ref);
+    await pipeline(rs, createWriteStream(fp));
+    await this.setProviderMetadata(ref, { ...m, size: (await stat(fp)).size });
     return ref;
   }
 
@@ -67,8 +95,8 @@ export class LocalFileProvider implements FileProvider {
     if (!(typeof iat === "number")) {
       iat = Math.floor(Date.now() / 1000);
       iat =
-        LocalFileProvider.SIGNED_URL_WINDOW *
-        Math.floor(iat / LocalFileProvider.SIGNED_URL_WINDOW);
+        LocalFileProviderInstance.SIGNED_URL_WINDOW *
+        Math.floor(iat / LocalFileProviderInstance.SIGNED_URL_WINDOW);
     }
     const payload = `v1!${ref}!${iat}`;
     const sig = createHmac("sha256", this.secret).update(payload).digest();
@@ -78,9 +106,12 @@ export class LocalFileProvider implements FileProvider {
     };
   }
 
-  async setMetadata(meta: FileMetadata): Promise<void> {
+  private async setProviderMetadata(
+    ref: string,
+    meta: ProviderFileMetadata,
+  ): Promise<void> {
     await writeFile(
-      join(this.root, LocalFileProvider.METADATA_PATH, meta.ref),
+      join(this.root, LocalFileProviderInstance.METADATA_PATH, ref),
       JSON.stringify(meta),
     );
   }
@@ -98,25 +129,25 @@ export class LocalFileProvider implements FileProvider {
     }
     const now = Math.floor(Date.now() / 1000);
     // add a random skewing factor
-    if (iat - LocalFileProvider.CLOCK_SKEW_WINDOW > now) {
+    if (iat - LocalFileProviderInstance.CLOCK_SKEW_WINDOW > now) {
       throw new ForbiddenError("Invalid signature timestamp");
     }
     if (
       iat +
-        LocalFileProvider.SIGNED_URL_WINDOW * 2 +
-        LocalFileProvider.CLOCK_SKEW_WINDOW <
+        LocalFileProviderInstance.SIGNED_URL_WINDOW * 2 +
+        LocalFileProviderInstance.CLOCK_SKEW_WINDOW <
       now
     ) {
       throw new ForbiddenError("Signature expired");
     }
   }
 
-  private async getMetadata(ref: string): Promise<Omit<FileMetadata, "url">> {
+  private async getMetadata(ref: string): Promise<ProviderFileMetadata> {
     try {
       return {
         ...JSON.parse(
           await readFile(
-            join(this.root, LocalFileProvider.METADATA_PATH, ref),
+            join(this.root, LocalFileProviderInstance.METADATA_PATH, ref),
             "utf-8",
           ),
         ),
@@ -133,7 +164,7 @@ export class LocalFileProvider implements FileProvider {
     ref: string,
     start?: number,
     end?: number,
-  ): Promise<[Readable, Omit<FileMetadata, "url">]> {
+  ): Promise<[Readable, ProviderFileMetadata]> {
     // Just to check if file exists
     const metadata = await this.getMetadata(ref);
     if (!start) {
@@ -146,10 +177,13 @@ export class LocalFileProvider implements FileProvider {
       throw new BadRequestError("Range end is larger than filesize");
     }
     return [
-      createReadStream(join(this.root, LocalFileProvider.OBJECT_PATH, ref), {
-        start,
-        end,
-      }),
+      createReadStream(
+        join(this.root, LocalFileProviderInstance.OBJECT_PATH, ref),
+        {
+          start,
+          end,
+        },
+      ),
       metadata,
     ];
   }

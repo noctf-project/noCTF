@@ -5,12 +5,13 @@ import {
 } from "@noctf/api/datatypes";
 import { RedisClientFactory } from "../../clients/redis.ts";
 import { decode, encode } from "cbor-x";
-import { ComputedChallengeScoreData } from "./calc.ts";
+import { ChallengeSummary, ComputedChallengeScoreData } from "./calc.ts";
 import { Compress, Decompress } from "../../util/message_compression.ts";
 import { Coleascer } from "../../util/coleascer.ts";
 import { RunInParallelWithLimit } from "../../util/semaphore.ts";
 import { MinimalTeamInfo } from "../../dao/team.ts";
 import { LocalCache } from "../../util/local_cache.ts";
+import { DatabaseClient } from "../../clients/database.ts";
 
 const SCRIPT_PREPARE_RANK = `
 local dest_key = KEYS[1]
@@ -60,9 +61,15 @@ export class ScoreboardDataLoader {
     ttl: 1000,
   });
 
-  private readonly getScoreboardCoaleascer = new Coleascer();
-  private readonly getChallengesCoalescer = new Coleascer();
-  private readonly getTeamCoalescer = new Coleascer();
+  private readonly getScoreboardCoaleascer = new Coleascer<{
+    total: number;
+    entries: ScoreboardEntry[];
+  }>();
+  private readonly getChallengesCoalescer = new Coleascer<Solve[]>();
+  private readonly getSummaryCoalescer = new Coleascer<
+    Record<number, ChallengeSummary>
+  >();
+  private readonly getTeamCoalescer = new Coleascer<ScoreboardEntry | null>();
 
   async saveTeamTags(teams: MinimalTeamInfo[]) {
     const tags = new Map<number, number[]>();
@@ -146,27 +153,6 @@ export class ScoreboardDataLoader {
         return { total: result[0], entries };
       },
     );
-
-    // return this.getScoreboardCoaleascer.get(
-    //   `${version}:${division_id}:${start}:${end}:${sTags.join()}`,
-    //   async () => {
-    //     const client = await this.factory.getClient();
-    //     const [total, ranks] = await this.getRanks(pointer, division_id, start, end, tags);
-    //     const compressed = await client.hmGet(
-    //       client.commandOptions({ returnBuffers: true }),
-    //       keys.team,
-    //       ranks.map((r) => r.toString()),
-    //     );
-    //     const entries = (
-    //       await RunInParallelWithLimit(compressed, 8, async (x) => {
-    //         return decode(await Decompress(x));
-    //       })
-    //     )
-    //       .map((x) => x.status === "fulfilled" && x.value)
-    //       .filter((x) => x) as ScoreboardEntry[];
-    //     return { total, entries };
-    //   },
-    // );
   }
 
   async getRanks(
@@ -219,7 +205,7 @@ export class ScoreboardDataLoader {
     const keys = this.getCacheKeys(version, division_id);
 
     return this.getChallengesCoalescer.get(
-      `${division_id}:${challenge}`,
+      `${version}:${division_id}:${challenge}`,
       async () => {
         const client = await this.factory.getClient();
         const compressed = await client.hGet(
@@ -274,6 +260,7 @@ export class ScoreboardDataLoader {
     )
       .map((x) => x.status === "fulfilled" && x.value)
       .filter((x) => x) as [string, Buffer][];
+
     const csolves = (
       await RunInParallelWithLimit(
         challenges.values(),
@@ -286,6 +273,21 @@ export class ScoreboardDataLoader {
     )
       .map((x) => x.status === "fulfilled" && x.value)
       .filter((x) => x) as [string, Buffer][];
+
+    const csummary = challenges.values().reduce(
+      (prev, { challenge_id, value, solves }) => {
+        prev[challenge_id] = {
+          challenge_id,
+          value,
+          solve_count: solves.filter(({ hidden }) => !hidden).length,
+          bonuses: solves
+            .map(({ bonus }) => bonus)
+            .filter((x) => x) as number[], // assuming solves are ordered
+        };
+        return prev;
+      },
+      {} as Record<number, ChallengeSummary>,
+    );
 
     const multi = client.multi();
     const saved: string[] = Object.values(keys);
@@ -301,6 +303,7 @@ export class ScoreboardDataLoader {
       );
     if (teams.length) multi.hSet(keys.team, teams);
     if (csolves.length) multi.hSet(keys.csolves, csolves);
+    multi.set(keys.csummary, (await Compress(encode(csummary))) as Buffer);
     for (const key of saved) {
       multi.expire(key, 300);
     }
@@ -323,6 +326,26 @@ export class ScoreboardDataLoader {
     )?.version;
   }
 
+  async getChallengeSummary(
+    pointer: number,
+    division_id: number,
+  ): Promise<Record<number, ChallengeSummary>> {
+    const version = pointer || (await this.getLatestPointer(division_id));
+    if (!version) return {};
+    return await this.getSummaryCoalescer.get(
+      `${version}:${division_id}`,
+      async () => {
+        const keys = this.getCacheKeys(version, division_id);
+        const client = await this.factory.getClient();
+        const compressed = await client.get(
+          client.commandOptions({ returnBuffers: true }),
+          keys.csummary,
+        );
+        return compressed ? decode(await Decompress(compressed)) : {};
+      },
+    );
+  }
+
   private async saveLatestPointer(data: ScoreboardVersionData) {
     const client = await this.factory.getClient();
     await client.set(
@@ -342,6 +365,7 @@ export class ScoreboardDataLoader {
       rank: `${root}:rank`,
       team: `${root}:team`,
       csolves: `${root}:csolves`,
+      csummary: `${root}:csummary`,
       ranktag: `${root}:ranktag`,
     };
   }

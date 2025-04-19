@@ -71,7 +71,7 @@
   {@const selected =
     (category == "All" && anyFilter) || categoryFilters[category]}
   <button
-    class={`${btnClass} ${selected ? "bg-primary text-primary-content" : "bg-base-100"}`}
+    class={`${btnClass} ${selected ? "bg-primary text-primary-content hover:bg-primary" : "bg-base-100"}`}
     onclick={() => setFilter(category)}
   >
     <Icon icon={categoryToIcon(category)} height="70%" class="w-auto" />
@@ -83,7 +83,7 @@
   </button>
 {/snippet}
 
-<div class="flex flex-col gap-4">
+<div class="flex flex-row flex-wrap justify-center md:flex-col gap-4">
   {@render categoryBtn("All", allSolveCount, allCount)}
   {#each categories as cat}
     {@const counts = getCategoryCounts(cat)}

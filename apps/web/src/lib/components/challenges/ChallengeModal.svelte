@@ -3,7 +3,7 @@
 
   export interface ChallDetails {
     description: string;
-    files: { filename: string; url: string }[];
+    files: { filename: string; url: string; size: number; hash: string }[];
   }
   export interface ChallengeModalProps {
     challData?: ChallengeCardData;
@@ -22,7 +22,11 @@
 
 <script lang="ts">
   import { Carta, Markdown } from "carta-md";
-  import { categoryToIcon, difficultyToBgColour } from "$lib/utils/challenges";
+  import {
+    categoryToIcon,
+    difficultyToBgColour,
+    formatFileSize,
+  } from "$lib/utils/challenges";
   import Icon from "@iconify/svelte";
   import { type Difficulty } from "$lib/constants/difficulties";
   import { Tween } from "svelte/motion";
@@ -163,16 +167,16 @@
   <div
     in:fade={{ duration: 100 }}
     out:fade={{ duration: 100 }}
-    class="fixed inset-0 bg-black bg-opacity-40 flex -mt-32 items-center justify-center p-4 z-50"
+    class="fixed inset-0 bg-black bg-opacity-40 md:flex md:-mt-32 md:items-center p-4 z-50"
   >
     <div
-      class="flex flex-col md:flex-row lg:flex-row gap-4 w-full lg:max-w-[50%]"
+      class="flex flex-col md:flex-row lg:flex-row gap-4 w-full justify-center"
       in:fly={{ y: 25, duration: 150, delay: 100 }}
       out:fade={{ duration: 100 }}
     >
       {/* @ts-expect-error use directive incorrect typing */ null}
       <div
-        class="bg-base-200 rounded-lg pop w-full p-6 h-fit"
+        class="bg-base-200 rounded-lg pop w-full p-6 h-fit w-ful lg:max-w-[50%]"
         use:outsideClickHandler
       >
         <div class="mb-6 w-full">
@@ -244,14 +248,23 @@
             </div>
 
             {#if challDetails!.files.length > 0}
-              <div>
+              <div class="flex flex-col gap-2">
+                <div class="flex flex-row gap-1 items-center">
+                  <Icon
+                    icon="material-symbols:attach-file-rounded"
+                    class="text-xl"
+                  ></Icon>
+                  <div class="text-xl font-bold">Files</div>
+                </div>
                 <ul class="flex flex-row gap-4">
                   {#each challDetails!.files as file}
                     <li>
-                      <!-- TODO: this won't work for S3/external -->
                       <a
-                        href="{API_BASE_URL}/{file.url}"
+                        href={file.url.startsWith("http")
+                          ? file.url
+                          : `${API_BASE_URL}/{file.url}`}
                         class="link text-primary font-semibold"
+                        title={`${file.filename} - ${formatFileSize(file.size)} (${file.hash})`}
                         >{file.filename}</a
                       >
                     </li>
@@ -332,7 +345,7 @@
       </div>
       {#if scoreModalVisible}
         <div
-          class="bg-base-200 rounded-lg pop w-full md:w-[32rem] p-6 px-3 h-full"
+          class="bg-base-200 rounded-lg pop w-full md:max-w-80 p-6 px-3"
           bind:this={scoreModalRef}
         >
           <h2 class="text-center text-xl font-semibold">Solves</h2>

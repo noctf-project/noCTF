@@ -161,7 +161,8 @@
         >
           <div class="flex items-center justify-between mb-3">
             <h2
-              class="text-xl font-bold text-primary group-hover:underline decoration-2 underline-offset-2"
+              class="text-xl font-bold text-primary group-hover:underline decoration-2 underline-offset-2 truncate"
+              title={team.name}
             >
               {team.name}
             </h2>

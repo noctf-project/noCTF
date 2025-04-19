@@ -9,7 +9,6 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
     .addColumn("name", "varchar(64)", (col) => col.notNull().unique())
-    .addColumn("is_visible", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("is_joinable", "boolean", (col) =>
       col.notNull().defaultTo(false),
     )

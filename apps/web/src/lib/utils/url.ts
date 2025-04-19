@@ -13,7 +13,6 @@ export function performRedirect(redir: string) {
     if (redir.startsWith("api/")) {
       redir = API_BASE_URL + redir.substring(3);
     }
-    console.log("redir", redir);
     try {
       const url = new URL(redir);
       if (validateRedirect(url)) {

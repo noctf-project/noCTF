@@ -24,6 +24,7 @@ import { LocalFileProvider } from "@noctf/server-core/services/file/local";
 import { FILE_LOCAL_PATH, TOKEN_SECRET } from "./config.ts";
 import { RateLimitHook } from "./hooks/rate_limit.ts";
 import { NodeMailerProvider } from "@noctf/server-core/services/email/nodemailer";
+import { S3FileProvider } from "@noctf/server-core/services/file/s3";
 
 export default async function (fastify: FastifyInstance) {
   fastify.addHook("preHandler", AuthnHook);
@@ -32,6 +33,7 @@ export default async function (fastify: FastifyInstance) {
 
   const { configService, emailService, fileService } = fastify.container.cradle;
   fileService.register(new LocalFileProvider(FILE_LOCAL_PATH, TOKEN_SECRET));
+  fileService.register(new S3FileProvider());
 
   emailService.register(new NodeMailerProvider({ configService }));
 

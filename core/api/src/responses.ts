@@ -15,6 +15,7 @@ import {
   Solve,
   Submission,
   Division,
+  TeamTag,
 } from "./datatypes.ts";
 import { AuthTokenType, RegisterTokenData } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
@@ -109,6 +110,13 @@ export const ListTeamsResponse = Type.Object({
   }),
 });
 export type ListTeamsResponse = Static<typeof ListTeamsResponse>;
+
+export const ListTeamTagsResponse = Type.Object({
+  data: Type.Object({
+    tags: Type.Array(Type.Omit(TeamTag, ["created_at"])),
+  }),
+});
+export type ListTeamTagsResponse = Static<typeof ListTeamTagsResponse>;
 
 export const QueryTeamNamesResponse = Type.Object({
   data: Type.Array(

@@ -5,11 +5,12 @@ import {
 import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
 import { PasswordProvider } from "./password_provider.ts";
 import type { FastifyInstance } from "fastify";
-import { UserFlag } from "@noctf/server-core/types/enums";
+import { UserRole } from "@noctf/server-core/types/enums";
 import { TokenProvider } from "./token_provider.ts";
 import { UserNotFoundError } from "./error.ts";
 import { EMAIL_VERIFICATION_TEMPLATE } from "./const.ts";
 import { SetupConfig } from "@noctf/api/config";
+import { BadRequestError } from "@noctf/server-core/errors";
 
 export default async function (fastify: FastifyInstance) {
   const { identityService, configService, cacheService, emailService } =
@@ -52,14 +53,14 @@ export default async function (fastify: FastifyInstance) {
             provider_id: email,
           },
         ],
-        roles: validate_email ? [UserFlag.VALID_EMAIL] : [],
+        roles: validate_email ? [UserRole.VALID_EMAIL] : [],
       });
       if (validate_email) {
         if (!request.body.verify) {
-          return reply.code(400).send({
-            error: "EmailVerificationRequired",
-            message: "Email Verification Required",
-          });
+          throw new BadRequestError(
+            "EmailVerificationRequired",
+            "Email Verification Required",
+          );
         }
         const { root_url, name: ctf_name } = (
           await configService.get<SetupConfig>(SetupConfig.$id!)
