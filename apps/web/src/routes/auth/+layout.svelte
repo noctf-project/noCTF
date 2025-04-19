@@ -5,6 +5,7 @@
 <script lang="ts">
   import Icon from "@iconify/svelte";
   import loginState from "./auth.svelte";
+  import { goto } from "$app/navigation";
 
   let { children } = $props();
 </script>
