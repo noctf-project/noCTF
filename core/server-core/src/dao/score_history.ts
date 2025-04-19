@@ -21,7 +21,7 @@ export class ScoreHistoryDAO {
         .slice(i, i + ADD_CHUNK_SIZE)
         .map(({ team_id, updated_at, score }) => ({
           team_id,
-          updated_at: updated_at || sql<Date>`CURRENT_TIMESTAMP`,
+          updated_at: updated_at || sql<Date>`CURRENT_TIMESTAMP::timestamp(1)`,
           score,
         }));
       await this.db

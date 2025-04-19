@@ -46,7 +46,6 @@ function ComputeScoresForChallenge(
   { metadata, expr }: ChallengeMetadataWithExpr,
   teams: Map<number, MinimalTeamInfo>,
   solves: RawSolve[],
-  logger?: Logger,
 ): ChallengeSolvesResult {
   const {
     score: { params, bonus },
@@ -65,11 +64,6 @@ function ComputeScoresForChallenge(
       valid.filter(({ value }) => value === null).length,
     );
   } catch (err) {
-    if (logger)
-      logger.warn(
-        `Failed to calculate scores for challenge ${metadata.id}`,
-        err,
-      );
     return {
       value: null,
       solves: [],
@@ -118,7 +112,6 @@ function ComputeScoreStreamForChallenge(
   { metadata, expr }: ChallengeMetadataWithExpr,
   teams: Map<number, MinimalTeamInfo>,
   solves: RawSolve[],
-  logger?: Logger,
 ) {
   const {
     score: { params, bonus },
@@ -138,11 +131,6 @@ function ComputeScoreStreamForChallenge(
       true,
     );
   } catch (err) {
-    if (logger)
-      logger.warn(
-        `Failed to calculate scores for challenge ${metadata.id}`,
-        err,
-      );
     return [];
   }
   const stream: { team_id: number; delta: number; updated_at: Date }[] = [];
@@ -181,14 +169,13 @@ export function ComputeFullGraph(
   challenges: ChallengeMetadataWithExpr[],
   solvesByChallenge: Record<number, RawSolve[]>,
   awards: Award[],
-  logger?: Logger,
+  sampleRateMs = 1000,
 ): HistoryDataPoint[] {
   const stream = challenges.flatMap((x) =>
     ComputeScoreStreamForChallenge(
       x,
       teams,
       solvesByChallenge[x.metadata.id] || [],
-      logger,
     ),
   );
   for (const { team_id, value, created_at } of awards) {
@@ -207,18 +194,18 @@ export function ComputeFullGraph(
   });
   const scores = new Map<number, number>();
   const points: HistoryDataPoint[] = [];
+  let lastUpdated: number | undefined;
   for (const { team_id, delta, updated_at } of stream) {
     const score = (scores.get(team_id) || 0) + delta;
     scores.set(team_id, score);
     const last = points[points.length - 1];
-    if (
-      last &&
-      last.team_id === team_id &&
-      last.updated_at.getTime() === updated_at.getTime()
-    ) {
+    const sampled =
+      Math.floor(updated_at.getTime() / sampleRateMs) * sampleRateMs;
+    if (last && last.team_id === team_id && lastUpdated === sampled) {
       last.score = score;
     } else {
-      points.push({ score, team_id, updated_at });
+      points.push({ score, team_id, updated_at: new Date(sampled) });
+      lastUpdated = sampled;
     }
   }
   return points;
@@ -229,7 +216,6 @@ export function ComputeScoreboard(
   challenges: ChallengeMetadataWithExpr[],
   solvesByChallenge: Record<number, RawSolve[]>,
   awards: Award[],
-  logger?: Logger,
 ): {
   scoreboard: ScoreboardEntry[];
   challenges: Map<number, ComputedChallengeScoreData>;
@@ -258,7 +244,6 @@ export function ComputeScoreboard(
       x,
       teams,
       solvesByChallenge[x.metadata.id] || [],
-      logger,
     );
     return [x.metadata.id, result] as [number, ChallengeSolvesResult];
   });

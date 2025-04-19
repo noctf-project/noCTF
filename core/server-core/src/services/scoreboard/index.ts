@@ -273,7 +273,6 @@ export class ScoreboardService {
       challenges,
       solvesByChallenge,
       awardList,
-      this.logger,
     );
 
     await this.dataLoader.saveIndexed(
