@@ -102,7 +102,11 @@ export class ScoreboardHistory {
       toFetch.keys().map((t) => [t, []]),
     );
     const client = await this.redisClientFactory.getClient();
+    let lastTeamId: number | undefined;
+    let lastUpdated = 0;
+    let lastScore = 0;
     try {
+      // We are assuming that this is sorted by team and then updated_at
       (await this.scoreHistoryDAO.getByTeams(toFetch.keys().toArray())).forEach(
         ({ team_id, score, updated_at }) => {
           let team = fetched.get(team_id);
@@ -110,7 +114,14 @@ export class ScoreboardHistory {
           if (!team) {
             throw new Error("team missing from fetched");
           }
-          team.push([updated_at.getTime(), score]);
+          if (lastTeamId !== team_id) {
+            lastTeamId = team_id;
+            lastUpdated = 0;
+            lastScore = 0;
+          }
+          team.push([updated_at.getTime() - lastUpdated, score - lastScore]);
+          lastUpdated = updated_at.getTime();
+          lastScore = score;
         },
       );
       toFetch.forEach(({ resolve }, t) => resolve(fetched.get(t)!));
