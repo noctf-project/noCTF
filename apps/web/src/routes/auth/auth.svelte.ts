@@ -4,7 +4,6 @@ import authState from "$lib/state/auth.svelte";
 import { toasts } from "$lib/stores/toast";
 import { performRedirect } from "$lib/utils/url";
 
-
 class LoginState {
   email: string = $state("");
   username: string = $state("");

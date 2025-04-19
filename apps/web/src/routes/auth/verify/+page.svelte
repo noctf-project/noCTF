@@ -51,10 +51,16 @@
   </div>
 
   <div class="flex flex-col gap-3">
-    <button class="btn btn-primary pop hover:pop w-full" onclick={handleVerifyRequired}>
+    <button
+      class="btn btn-primary pop hover:pop w-full"
+      onclick={handleVerifyRequired}
+    >
       Verify My Email
     </button>
-    <button class="btn btn-outline pop hover:pop w-full" onclick={() => goto("/auth")}>
+    <button
+      class="btn btn-outline pop hover:pop w-full"
+      onclick={() => goto("/auth")}
+    >
       Use a different email
     </button>
   </div>
@@ -75,7 +81,10 @@
       If you don't see the email, check your spam folder.
     </p>
 
-    <button class="btn btn-outline pop hover:pop w-full" onclick={() => goto("/auth")}>
+    <button
+      class="btn btn-outline pop hover:pop w-full"
+      onclick={() => goto("/auth")}
+    >
       Use a different email
     </button>
   </div>

@@ -6,9 +6,10 @@
 
   let isLoading = $state(false);
 
+  // TODO: get supported OAuth providers from the API
   const oAuthProviders = [
-    { name: "Google", icon: "mdi:google" },
-    { name: "GitHub", icon: "mdi:github" },
+    // { name: "Google", icon: "mdi:google" },
+    // { name: "GitHub", icon: "mdi:github" },
   ];
 
   // TODO: Remove this once forgot password is implemented and extracted
@@ -133,19 +134,21 @@
     </button>
   </form>
 
-  <div class="divider text-sm text-gray-500 my-6">OR</div>
+  {#if oAuthProviders.length}
+    <div class="divider text-sm text-gray-500 my-6">OR</div>
 
-  <div class="flex flex-col gap-3">
-    {#each oAuthProviders as provider}
-      <button
-        class="btn btn-outline w-full"
-        onclick={() => handleSocialLogin(provider.name.toLowerCase())}
-      >
-        <Icon icon={provider.icon} class="w-5 h-5 mr-2" />
-        Continue with {provider.name}
-      </button>
-    {/each}
-  </div>
+    <div class="flex flex-col gap-3">
+      {#each oAuthProviders as provider}
+        <button
+          class="btn btn-outline w-full"
+          onclick={() => handleSocialLogin(provider.name.toLowerCase())}
+        >
+          <Icon icon={provider.icon} class="w-5 h-5 mr-2" />
+          Continue with {provider.name}
+        </button>
+      {/each}
+    </div>
+  {/if}
 {/if}
 
 {#if currentStage === "forgot-password-request"}
