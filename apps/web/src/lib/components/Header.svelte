@@ -85,7 +85,7 @@
 
   <div class="navbar-end">
     {#if !authState.isAuthenticated && !page.url.pathname.startsWith("/auth")}
-      <a href="/auth" class="btn btn-primary px-6 sm:px-8">Login</a>
+      <a href="/auth" class="btn btn-primary px-6 sm:px-8 pop hover:pop">Login</a>
     {:else if authState.isAuthenticated}
       <div class="dropdown dropdown-end">
         <div
