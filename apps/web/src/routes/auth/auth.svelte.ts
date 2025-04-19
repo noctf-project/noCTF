@@ -137,8 +137,6 @@ class LoginState {
     // TODO: We can have multiple identities?
     if (response?.data?.data?.identity[0]?.provider_id) {
       const email = response.data.data.identity[0].provider_id;
-      console.log("Token verified, email:", email);
-      // Set the email in the shared state
       this.email = email;
       this.registrationToken = token;
     }
