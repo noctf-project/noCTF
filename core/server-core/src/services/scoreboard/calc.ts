@@ -114,6 +114,116 @@ function ComputeScoresForChallenge(
   };
 }
 
+function ComputeScoreStreamForChallenge(
+  { metadata, expr }: ChallengeMetadataWithExpr,
+  teams: Map<number, MinimalTeamInfo>,
+  solves: RawSolve[],
+  logger?: Logger,
+) {
+  const {
+    score: { params, bonus },
+  } = metadata.private_metadata as ChallengePrivateMetadataBase;
+
+  const [valid] = partition(
+    solves,
+    ({ team_id, hidden }) =>
+      !(teams.get(team_id)?.flags.includes("hidden") || hidden),
+  );
+  let base: [number, number][];
+  try {
+    base = EvaluateScoringExpression(
+      expr,
+      params,
+      valid.filter(({ value }) => value === null).length,
+      true,
+    );
+  } catch (err) {
+    if (logger)
+      logger.warn(
+        `Failed to calculate scores for challenge ${metadata.id}`,
+        err,
+      );
+    return [];
+  }
+  const stream: { team_id: number; delta: number; updated_at: Date }[] = [];
+  let bonusIdx = 0;
+  let baseIdx = 0;
+  let baseCount = 1;
+  const dyn = new Set<number>();
+  valid.forEach(({ team_id, created_at, value }) => {
+    const b = value !== null ? undefined : bonus?.[bonusIdx++];
+    if (baseCount >= base[baseIdx][0]) {
+      baseCount = 1;
+      baseIdx += 1;
+      dyn.forEach((team_id) =>
+        stream.push({
+          team_id,
+          delta: base[baseIdx][1] - base[baseIdx - 1][1],
+          updated_at: created_at,
+        }),
+      );
+    } else {
+      baseCount++;
+    }
+    dyn.add(team_id);
+    stream.push({
+      team_id,
+      delta:
+        value !== null ? value : base[baseIdx][1] + ((b && Math.round(b)) || 0),
+      updated_at: created_at,
+    });
+  });
+  return stream;
+}
+
+export function ComputeFullGraph(
+  teams: Map<number, MinimalTeamInfo>,
+  challenges: ChallengeMetadataWithExpr[],
+  solvesByChallenge: Record<number, RawSolve[]>,
+  awards: Award[],
+  logger?: Logger,
+): HistoryDataPoint[] {
+  const stream = challenges.flatMap((x) =>
+    ComputeScoreStreamForChallenge(
+      x,
+      teams,
+      solvesByChallenge[x.metadata.id] || [],
+      logger,
+    ),
+  );
+  for (const { team_id, value, created_at } of awards) {
+    const hidden = teams.get(team_id)?.flags.includes("hidden");
+    if (hidden) continue;
+    stream.push({
+      team_id,
+      delta: value,
+      updated_at: created_at,
+    });
+  }
+  stream.sort((a, b) => {
+    const t = a.team_id - b.team_id;
+    if (t !== 0) return t;
+    return a.updated_at.getTime() - b.updated_at.getTime();
+  });
+  const scores = new Map<number, number>();
+  const points: HistoryDataPoint[] = [];
+  for (const { team_id, delta, updated_at } of stream) {
+    const score = (scores.get(team_id) || 0) + delta;
+    scores.set(team_id, score);
+    const last = points[points.length - 1];
+    if (
+      last &&
+      last.team_id === team_id &&
+      last.updated_at.getTime() === updated_at.getTime()
+    ) {
+      last.score = score;
+    } else {
+      points.push({ score, team_id, updated_at });
+    }
+  }
+  return points;
+}
+
 export function ComputeScoreboard(
   teams: Map<number, MinimalTeamInfo>,
   challenges: ChallengeMetadataWithExpr[],

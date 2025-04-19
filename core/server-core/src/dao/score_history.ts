@@ -7,26 +7,33 @@ export type HistoryDataPoint = Pick<
   "team_id" | "score" | "updated_at"
 >;
 
+// Postgres supports 65535 parameters
+// since we are pushing 3 params per request roughly 20k requests will fit in a chunk
+const ADD_CHUNK_SIZE = 20000;
+
 export class ScoreHistoryDAO {
   constructor(private readonly db: DBType) {}
 
-  async add(entries: { team_id: number; score: number }[]) {
+  async add(entries: { team_id: number; updated_at?: Date; score: number }[]) {
     if (!entries.length) return;
-    await this.db
-      .insertInto("score_history")
-      .values(
-        entries.map(({ team_id, score }) => ({
+    for (let i = 0; i < entries.length; i += ADD_CHUNK_SIZE) {
+      const values = entries
+        .slice(i, i + ADD_CHUNK_SIZE)
+        .map(({ team_id, updated_at, score }) => ({
           team_id,
-          updated_at: sql`CURRENT_TIMESTAMP`,
+          updated_at: updated_at || sql<Date>`CURRENT_TIMESTAMP`,
           score,
-        })),
-      )
-      .onConflict((o) =>
-        o.columns(["team_id", "updated_at"]).doUpdateSet({
-          score: (eb) => eb.ref("excluded.score"),
-        }),
-      )
-      .execute();
+        }));
+      await this.db
+        .insertInto("score_history")
+        .values(values)
+        .onConflict((o) =>
+          o.columns(["team_id", "updated_at"]).doUpdateSet({
+            score: (eb) => eb.ref("excluded.score"),
+          }),
+        )
+        .execute();
+    }
   }
 
   async flushAll() {

@@ -1,8 +1,12 @@
 import type { ScoreboardEntry } from "@noctf/api/datatypes";
 import type { ServiceCradle } from "../../index.ts";
 import { DivisionDAO } from "../../dao/division.ts";
-import { ChallengeMetadataWithExpr, ComputeScoreboard } from "./calc.ts";
-import { ScoreHistoryDAO } from "../../dao/score_history.ts";
+import {
+  ChallengeMetadataWithExpr,
+  ComputeFullGraph,
+  ComputeScoreboard,
+} from "./calc.ts";
+import { HistoryDataPoint } from "../../dao/score_history.ts";
 import { SetupConfig } from "@noctf/api/config";
 import { AwardDAO } from "../../dao/award.ts";
 import { ScoreboardDataLoader } from "./loader.ts";
@@ -34,7 +38,6 @@ export class ScoreboardService {
   private readonly dataLoader;
 
   private readonly awardDAO;
-  private readonly scoreHistoryDAO;
   private readonly submissionDAO;
   private readonly teamDAO;
   private readonly divisionDAO;
@@ -61,7 +64,6 @@ export class ScoreboardService {
     });
 
     this.awardDAO = new AwardDAO(databaseClient.get());
-    this.scoreHistoryDAO = new ScoreHistoryDAO(databaseClient.get());
     this.submissionDAO = new SubmissionDAO(databaseClient.get());
     this.teamDAO = new TeamDAO(databaseClient.get());
     this.divisionDAO = new DivisionDAO(databaseClient.get());
@@ -90,59 +92,54 @@ export class ScoreboardService {
 
   async computeAndSaveScoreboards(timestamp?: Date) {
     this.logger.info({ event_timestamp: timestamp }, "Computing scoreboard");
-    const challenges: ChallengeMetadataWithExpr[] = await Promise.all(
-      (
-        await this.challengeService.list({
-          hidden: false,
-          visible_at: new Date(),
-        })
-      ).map(async (metadata) => ({
-        expr: await this.scoreService.getExpr(
-          metadata.private_metadata.score.strategy,
-        ),
-        metadata,
-      })),
-    );
+    const { challenges, teams, divisions } =
+      await this.fetchScoreboardCalculationParams(timestamp);
+    if (!divisions.length || !teams.size) return;
 
-    const divisions = (
-      await Promise.all(
-        (await this.divisionDAO.list()).map(async (d) => {
-          const pointer = await this.dataLoader.getLatestPointer(d.id, false);
-          if (!timestamp || !pointer || pointer < timestamp.getTime()) {
-            this.logger.info(
-              { division_id: d.id, timestamp },
-              "Queuing division for recalculation",
-            );
-            return d;
-          }
-          this.logger.info(
-            { division_id: d.id, pointer },
-            "Skipping recalculation for division",
-          );
-          await this.dataLoader.touch(pointer, d.id);
-          return null;
-        }),
-      )
-    ).filter((v): v is Exclude<typeof v, null> => !!v);
-    if (!divisions.length) {
-      return;
-    }
-
-    const teams = await this.teamDAO.listForScoreboard();
-    await this.dataLoader.saveTeamTags(teams);
-    const teamMap = new Map<number, MinimalTeamInfo[]>(
-      divisions.map(({ id }) => [id, []]),
+    await this.dataLoader.saveTeamTags(
+      teams
+        .values()
+        .flatMap((v) => v)
+        .toArray(),
     );
-    teams.forEach((t) => teamMap.get(t.division_id)?.push(t));
 
     for (const { id } of divisions) {
       await this.commitDivisionScoreboard(
-        teamMap.get(id) || [],
+        teams.get(id) || [],
         challenges,
         id,
         timestamp,
       );
     }
+  }
+
+  async computeFullGraph() {
+    const { challenges, teams, divisions } =
+      await this.fetchScoreboardCalculationParams();
+
+    const points: HistoryDataPoint[] = [];
+    for (const { id } of divisions) {
+      const [solveList, awardList] = await Promise.all([
+        this.submissionDAO.getSolvesForCalculation(id),
+        this.awardDAO.getAllAwards(id),
+      ]);
+      const solvesByChallenge = Object.groupBy(
+        solveList || [],
+        ({ challenge_id }) => challenge_id,
+      ) as Record<number, RawSolve[]>;
+      points.push(
+        ...ComputeFullGraph(
+          new Map(teams.get(id)?.map((x) => [x.id, x])),
+          challenges,
+          solvesByChallenge,
+          awardList,
+        ),
+      );
+    }
+    await this.history.replaceAll(
+      points,
+      divisions.map(({ id }) => id),
+    );
   }
 
   async getTopScoreHistory(division: number, count: number, tags?: number[]) {
@@ -194,6 +191,61 @@ export class ScoreboardService {
       end = bisectRight(graph, endTime, ([v]) => v);
     }
     return graph.slice(start, end);
+  }
+
+  private async fetchScoreboardCalculationParams(timestamp?: Date) {
+    const divisions = (
+      await Promise.all(
+        (await this.divisionDAO.list()).map(async (d) => {
+          const pointer = await this.dataLoader.getLatestPointer(d.id, false);
+          if (!timestamp || !pointer || pointer < timestamp.getTime()) {
+            this.logger.info(
+              { division_id: d.id, timestamp },
+              "Queuing division for recalculation",
+            );
+            return d;
+          }
+          this.logger.info(
+            { division_id: d.id, pointer },
+            "Skipping recalculation for division",
+          );
+          await this.dataLoader.touch(pointer, d.id);
+          return null;
+        }),
+      )
+    ).filter((v): v is Exclude<typeof v, null> => !!v);
+    if (!divisions.length) {
+      return {
+        teams: new Map<number, MinimalTeamInfo[]>(),
+        divisions: [],
+        challenges: [],
+      };
+    }
+
+    const challenges: ChallengeMetadataWithExpr[] = await Promise.all(
+      (
+        await this.challengeService.list({
+          hidden: false,
+          visible_at: new Date(),
+        })
+      ).map(async (metadata) => ({
+        expr: await this.scoreService.getExpr(
+          metadata.private_metadata.score.strategy,
+        ),
+        metadata,
+      })),
+    );
+
+    const teams = await this.teamDAO.listForScoreboard();
+    const teamMap = new Map<number, MinimalTeamInfo[]>(
+      divisions.map(({ id }) => [id, []]),
+    );
+    teams.forEach((t) => teamMap.get(t.division_id)?.push(t));
+    return {
+      teams: teamMap,
+      divisions,
+      challenges,
+    };
   }
 
   private async commitDivisionScoreboard(

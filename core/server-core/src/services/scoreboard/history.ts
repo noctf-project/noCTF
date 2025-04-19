@@ -14,12 +14,14 @@ type Props = Pick<ServiceCradle, "databaseClient" | "redisClientFactory">;
 
 type DataPoint = [number, number];
 export class ScoreboardHistory {
+  private readonly databaseClient;
   private readonly redisClientFactory;
   private readonly scoreHistoryDAO;
 
   private readonly teamColeascer = new Coleascer<DataPoint[]>();
 
   constructor({ databaseClient, redisClientFactory }: Props) {
+    this.databaseClient = databaseClient;
     this.redisClientFactory = redisClientFactory;
     this.scoreHistoryDAO = new ScoreHistoryDAO(databaseClient.get());
   }
@@ -28,13 +30,26 @@ export class ScoreboardHistory {
     const minimal = GetMinimalScoreboard(scoreboard);
     const last = await this.getLastData(division);
     const diff = GetChangedTeamScores(last, minimal);
-    await this.scoreHistoryDAO.add(diff);
+    await this.scoreHistoryDAO.add(diff.map(({ updated_at, ...rest }) => rest));
     const encoded = await Compress(encode(minimal));
     const multi = (await this.redisClientFactory.getClient()).multi();
     multi.set(`${CACHE_NAMESPACE}:calc:${division}`, encoded as Buffer, {
       EX: 600,
     });
     multi.del(CACHE_DATA_HASH_KEY);
+    await multi.exec();
+  }
+
+  async replaceAll(data: HistoryDataPoint[], divisions: number[]) {
+    await this.databaseClient.transaction(async (tx) => {
+      const dao = new ScoreHistoryDAO(tx);
+      await dao.flushAll();
+      await dao.add(data);
+    });
+    const client = await this.redisClientFactory.getClient();
+    const multi = client.multi();
+    multi.del(CACHE_DATA_HASH_KEY);
+    divisions.forEach((d) => multi.del(`${CACHE_NAMESPACE}:calc:${d}`));
     await multi.exec();
   }
 

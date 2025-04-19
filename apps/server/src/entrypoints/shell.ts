@@ -3,3 +3,4 @@ import { server } from "../index.ts";
 
 const { context } = start();
 context.server = server;
+server.ready(async () => {});
