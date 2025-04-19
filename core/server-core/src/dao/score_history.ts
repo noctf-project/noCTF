@@ -1,5 +1,11 @@
 import { sql } from "kysely";
 import { DBType } from "../clients/database.ts";
+import { ScoreboardEntry } from "@noctf/api/datatypes";
+
+export type HistoryDataPoint = Pick<
+  ScoreboardEntry,
+  "team_id" | "score" | "updated_at"
+>;
 
 export class ScoreHistoryDAO {
   constructor(private readonly db: DBType) {}
@@ -31,6 +37,20 @@ export class ScoreHistoryDAO {
     await this.db
       .deleteFrom("score_history")
       .where("team_id", "=", teamId)
+      .execute();
+  }
+
+  async listMostRecentByDivision(
+    division: number,
+  ): Promise<HistoryDataPoint[]> {
+    return this.db
+      .selectFrom("score_history as s")
+      .select(["s.score", "s.team_id", "s.updated_at"])
+      .distinctOn("s.team_id")
+      .innerJoin("team as t", "s.team_id", "t.id")
+      .where("t.division_id", "=", division)
+      .orderBy("s.team_id", "desc")
+      .orderBy("s.updated_at", "desc")
       .execute();
   }
 

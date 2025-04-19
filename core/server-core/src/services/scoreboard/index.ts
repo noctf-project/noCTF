@@ -1,13 +1,7 @@
 import type { ScoreboardEntry } from "@noctf/api/datatypes";
 import type { ServiceCradle } from "../../index.ts";
 import { DivisionDAO } from "../../dao/division.ts";
-import {
-  ChallengeMetadataWithExpr,
-  ComputeScoreboard,
-  GetChangedTeamScores,
-  GetMinimalScoreboard,
-  MinimalScoreboardEntry,
-} from "./calc.ts";
+import { ChallengeMetadataWithExpr, ComputeScoreboard } from "./calc.ts";
 import { ScoreHistoryDAO } from "../../dao/score_history.ts";
 import { SetupConfig } from "@noctf/api/config";
 import { AwardDAO } from "../../dao/award.ts";
@@ -15,6 +9,8 @@ import { ScoreboardDataLoader } from "./loader.ts";
 import { MinimalTeamInfo, TeamDAO } from "../../dao/team.ts";
 import { RawSolve, SubmissionDAO } from "../../dao/submission.ts";
 import { MaxDate } from "../../util/date.ts";
+import { ScoreboardHistory } from "./history.ts";
+import { bisectLeft, bisectRight } from "../../util/arrays.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -27,14 +23,6 @@ type Props = Pick<
   | "logger"
 >;
 
-type UpdatedContainer<T> = {
-  data: T;
-  updated_at: Date;
-};
-
-export const CACHE_SCORE_HISTORY_NAMESPACE = "core:svc:score_history";
-const CACHE_SCORE_NAMESPACE = "core:svc:score";
-
 export class ScoreboardService {
   private readonly logger;
   private readonly cacheService;
@@ -42,7 +30,9 @@ export class ScoreboardService {
   private readonly configService;
   private readonly scoreService;
 
-  private readonly scoreboardDataLoader;
+  private readonly history;
+  private readonly dataLoader;
+
   private readonly awardDAO;
   private readonly scoreHistoryDAO;
   private readonly submissionDAO;
@@ -64,10 +54,12 @@ export class ScoreboardService {
     this.configService = configService;
     this.scoreService = scoreService;
 
-    this.scoreboardDataLoader = new ScoreboardDataLoader(
+    this.dataLoader = new ScoreboardDataLoader(redisClientFactory);
+    this.history = new ScoreboardHistory({
       redisClientFactory,
-      CACHE_SCORE_NAMESPACE,
-    );
+      databaseClient,
+    });
+
     this.awardDAO = new AwardDAO(databaseClient.get());
     this.scoreHistoryDAO = new ScoreHistoryDAO(databaseClient.get());
     this.submissionDAO = new SubmissionDAO(databaseClient.get());
@@ -81,29 +73,19 @@ export class ScoreboardService {
     end: number,
     tags?: number[],
   ) {
-    return this.scoreboardDataLoader.getScoreboard(
-      0,
-      division_id,
-      start,
-      end,
-      tags,
-    );
+    return this.dataLoader.getScoreboard(0, division_id, start, end, tags);
   }
 
   async getTeam(division_id: number, team_id: number) {
-    return await this.scoreboardDataLoader.getTeam(0, division_id, team_id);
+    return await this.dataLoader.getTeam(0, division_id, team_id);
   }
 
   async getChallengesSummary(division_id: number) {
-    return await this.scoreboardDataLoader.getChallengeSummary(0, division_id);
+    return await this.dataLoader.getChallengeSummary(0, division_id);
   }
 
   async getChallengeSolves(division_id: number, challenge_id: number) {
-    return this.scoreboardDataLoader.getChallengeSolves(
-      0,
-      division_id,
-      challenge_id,
-    );
+    return this.dataLoader.getChallengeSolves(0, division_id, challenge_id);
   }
 
   async computeAndSaveScoreboards(timestamp?: Date) {
@@ -125,10 +107,7 @@ export class ScoreboardService {
     const divisions = (
       await Promise.all(
         (await this.divisionDAO.list()).map(async (d) => {
-          const pointer = await this.scoreboardDataLoader.getLatestPointer(
-            d.id,
-            false,
-          );
+          const pointer = await this.dataLoader.getLatestPointer(d.id, false);
           if (!timestamp || !pointer || pointer < timestamp.getTime()) {
             this.logger.info(
               { division_id: d.id, timestamp },
@@ -140,7 +119,7 @@ export class ScoreboardService {
             { division_id: d.id, pointer },
             "Skipping recalculation for division",
           );
-          await this.scoreboardDataLoader.touch(pointer, d.id);
+          await this.dataLoader.touch(pointer, d.id);
           return null;
         }),
       )
@@ -150,7 +129,7 @@ export class ScoreboardService {
     }
 
     const teams = await this.teamDAO.listForScoreboard();
-    await this.scoreboardDataLoader.saveTeamTags(teams);
+    await this.dataLoader.saveTeamTags(teams);
     const teamMap = new Map<number, MinimalTeamInfo[]>(
       divisions.map(({ id }) => [id, []]),
     );
@@ -167,66 +146,54 @@ export class ScoreboardService {
   }
 
   async getTopScoreHistory(division: number, count: number, tags?: number[]) {
-    const sTags = [...new Set(tags)].sort();
-    return this.cacheService.load(
-      CACHE_SCORE_HISTORY_NAMESPACE,
-      `${division}:${count}:${sTags.join()}`,
-      async () => {
-        const {
-          value: { start_time_s, end_time_s },
-        } = await this.configService.get<SetupConfig>(SetupConfig.$id!);
-        const [_count, ranks] = await this.scoreboardDataLoader.getRanks(
-          0,
-          division,
-          0,
-          count - 1,
-          tags,
-        );
-        const partitions = ranks.map((team_id) => ({
-          team_id,
-          graph: [] as [number, number][],
-        }));
-        const data = await this.scoreHistoryDAO.getByTeams(
-          ranks,
-          start_time_s ? new Date(start_time_s * 1000) : undefined,
-          end_time_s ? new Date(end_time_s * 1000) : undefined,
-        );
-
-        let position: [number, number] | null = null;
-        for (const entry of data) {
-          if (!position || (position && position[0] !== entry.team_id)) {
-            position = [entry.team_id, ranks.indexOf(entry.team_id)];
-          }
-          partitions[position[1]].graph.push([
-            entry.updated_at.getTime(),
-            entry.score,
-          ]);
-        }
-        return partitions;
-      },
+    const {
+      value: { start_time_s, end_time_s },
+    } = await this.configService.get<SetupConfig>(SetupConfig.$id!);
+    const start = start_time_s !== undefined ? start_time_s * 1000 : undefined;
+    const end = end_time_s !== undefined ? end_time_s * 1000 : undefined;
+    const [_count, ranks] = await this.dataLoader.getRanks(
+      0,
+      division,
+      0,
+      count - 1,
+      tags,
     );
+    const data = await this.history.getHistoryForTeams(ranks);
+    const partitions: { team_id: number; graph: [number, number][] }[] = [];
+    ranks.forEach((team_id) => {
+      const graph = data.get(team_id) || [];
+      partitions.push({
+        team_id,
+        graph: this.filterGraph(graph, start, end),
+      });
+    });
+    return partitions;
   }
 
   async getTeamScoreHistory(id: number) {
-    return this.cacheService.load(
-      CACHE_SCORE_HISTORY_NAMESPACE,
-      id.toString(),
-      async () => {
-        const {
-          value: { start_time_s, end_time_s },
-        } = await this.configService.get<SetupConfig>(SetupConfig.$id!);
-        return (
-          await this.scoreHistoryDAO.getByTeams(
-            [id],
-            start_time_s ? new Date(start_time_s * 1000) : undefined,
-            end_time_s ? new Date(end_time_s * 1000) : undefined,
-          )
-        ).map(
-          ({ updated_at, score }) =>
-            [updated_at.getTime(), score] as [number, number],
-        );
-      },
-    );
+    const {
+      value: { start_time_s, end_time_s },
+    } = await this.configService.get<SetupConfig>(SetupConfig.$id!);
+    const start = start_time_s !== undefined ? start_time_s * 1000 : undefined;
+    const end = end_time_s !== undefined ? end_time_s * 1000 : undefined;
+    const data = await this.history.getHistoryForTeams([id]);
+    return this.filterGraph(data.get(id) || [], start, end);
+  }
+
+  private filterGraph(
+    graph: [number, number][],
+    startTime?: number,
+    endTime?: number,
+  ) {
+    let start = 0;
+    let end = graph.length;
+    if (startTime !== undefined) {
+      start = bisectLeft(graph, startTime, ([v]) => v);
+    }
+    if (endTime !== undefined) {
+      end = bisectRight(graph, endTime, ([v]) => v);
+    }
+    return graph.slice(start, end);
   }
 
   private async commitDivisionScoreboard(
@@ -257,45 +224,13 @@ export class ScoreboardService {
       this.logger,
     );
 
-    await this.scoreboardDataLoader.saveIndexed(
+    await this.dataLoader.saveIndexed(
       MaxDate(timestamp || new Date(0), last_event).getTime(),
       id,
       scoreboard,
       challengeScores,
       true,
     );
-
-    // we want a separate cache value for graphing in case the calculation crashed
-    // halfway through
-    const { data: lastScoreboard } =
-      (await this.cacheService.get<UpdatedContainer<MinimalScoreboardEntry[]>>(
-        CACHE_SCORE_NAMESPACE,
-        `d:${id}:calc_graph`,
-      )) || {};
-
-    let minimal = GetMinimalScoreboard(scoreboard);
-    let diff = minimal;
-    if (lastScoreboard) {
-      diff = GetChangedTeamScores(lastScoreboard, scoreboard);
-    }
-    await this.scoreHistoryDAO.add(diff);
-    const diffTeams = new Set(diff.map(({ team_id }) => team_id));
-    await Promise.all(
-      diffTeams
-        .values()
-        .map((t) =>
-          this.cacheService.del(CACHE_SCORE_HISTORY_NAMESPACE, t.toString()),
-        ),
-    );
-
-    await this.cacheService.put<UpdatedContainer<MinimalScoreboardEntry[]>>(
-      CACHE_SCORE_NAMESPACE,
-      `d:${id}:calc_graph`,
-      {
-        data: minimal,
-        updated_at: new Date(),
-      },
-      300,
-    );
+    await this.history.saveIteration(id, scoreboard);
   }
 }

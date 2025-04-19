@@ -12,6 +12,7 @@ import { Logger } from "../../types/primitives.ts";
 import { MaxDate } from "../../util/date.ts";
 import { MinimalTeamInfo } from "../../dao/team.ts";
 import { RawSolve } from "../../dao/submission.ts";
+import { HistoryDataPoint } from "../../dao/score_history.ts";
 
 export type ChallengeMetadataWithExpr = {
   expr: Expression;
@@ -65,11 +66,12 @@ function ComputeScoresForChallenge(
     let last_event = new Date(0);
     let bonusIdx = 0;
     const rv: Solve[] = valid.map(
-      ({ team_id, created_at, updated_at, value }) => {
+      ({ team_id, user_id, created_at, updated_at, value }) => {
         last_event = MaxDate(last_event, updated_at);
         const b = value !== null ? undefined : bonus?.[bonusIdx++];
         return {
           team_id,
+          user_id,
           challenge_id: metadata.id,
           bonus: b,
           hidden: false,
@@ -78,17 +80,20 @@ function ComputeScoresForChallenge(
         };
       },
     );
-    const rh: Solve[] = hidden.map(({ team_id, created_at, updated_at }) => {
-      last_event = MaxDate(last_event, updated_at);
+    const rh: Solve[] = hidden.map(
+      ({ team_id, user_id, created_at, updated_at }) => {
+        last_event = MaxDate(last_event, updated_at);
 
-      return {
-        team_id,
-        challenge_id: metadata.id,
-        hidden: true,
-        value: base,
-        created_at,
-      };
-    });
+        return {
+          team_id,
+          user_id,
+          challenge_id: metadata.id,
+          hidden: true,
+          value: base,
+          created_at,
+        };
+      },
+    );
     return {
       value: base,
       solves: rv.concat(rh),
@@ -221,21 +226,19 @@ export function ComputeScoreboard(
 
 export const GetMinimalScoreboard = (
   scoreboard: ScoreboardEntry[],
-): MinimalScoreboardEntry[] =>
+): HistoryDataPoint[] =>
   scoreboard.map((s) => ({
     score: s.score,
     updated_at: s.updated_at,
     team_id: s.team_id,
-    last_solve: s.last_solve,
-    hidden: s.hidden,
   }));
 
 export const GetChangedTeamScores = (
-  s1: MinimalScoreboardEntry[],
-  s2: MinimalScoreboardEntry[],
+  s1: HistoryDataPoint[],
+  s2: HistoryDataPoint[],
 ) => {
-  const map: Map<number, MinimalScoreboardEntry> = new Map();
-  const output: MinimalScoreboardEntry[] = [];
+  const map: Map<number, HistoryDataPoint> = new Map();
+  const output: HistoryDataPoint[] = [];
   for (const entry of s1) {
     map.set(entry.team_id, entry);
   }
@@ -249,7 +252,6 @@ export const GetChangedTeamScores = (
   for (const [_v, v] of map) {
     output.push({
       ...v,
-      last_solve: new Date(0),
       updated_at: new Date(0),
       score: 0,
     });

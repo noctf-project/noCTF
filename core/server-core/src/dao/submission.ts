@@ -7,15 +7,17 @@ import { SubmissionStatus } from "@noctf/api/enums";
 import { PostgresErrorCode, TryPGConstraintError } from "../util/pgerror.ts";
 import { ConflictError } from "../errors.ts";
 
-export type RawSolve = {
-  id: number;
-  team_id: number;
-  challenge_id: number;
-  hidden: boolean;
-  created_at: Date;
-  updated_at: Date;
-  value: number | null;
-};
+export type RawSolve = Pick<
+  Submission,
+  | "id"
+  | "user_id"
+  | "team_id"
+  | "challenge_id"
+  | "hidden"
+  | "created_at"
+  | "updated_at"
+  | "value"
+>;
 
 export class SubmissionDAO {
   constructor(private readonly db: DBType) {}
@@ -174,6 +176,7 @@ export class SubmissionDAO {
       .select([
         "s.id as id",
         "s.team_id as team_id",
+        "s.user_id as user_id",
         "s.challenge_id as challenge_id",
         "s.hidden as hidden",
         "s.created_at as created_at",
