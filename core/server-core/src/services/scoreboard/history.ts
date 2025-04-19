@@ -5,15 +5,19 @@ import { decode, encode } from "cbor-x";
 import { Compress, Decompress } from "../../util/message_compression.ts";
 import { ServiceCradle } from "../../index.ts";
 import { ScoreboardDataLoader } from "./loader.ts";
+import { Coleascer } from "../../util/coleascer.ts";
 
 const CACHE_NAMESPACE = "core:svc:score:history";
 const CACHE_DATA_HASH_KEY = `${CACHE_NAMESPACE}:data`;
 
 type Props = Pick<ServiceCradle, "databaseClient" | "redisClientFactory">;
 
+type DataPoint = [number, number];
 export class ScoreboardHistory {
   private readonly redisClientFactory;
   private readonly scoreHistoryDAO;
+
+  private readonly teamColeascer = new Coleascer<DataPoint[]>();
 
   constructor({ databaseClient, redisClientFactory }: Props) {
     this.redisClientFactory = redisClientFactory;
@@ -34,9 +38,7 @@ export class ScoreboardHistory {
     await multi.exec();
   }
 
-  async getHistoryForTeams(
-    teams: number[],
-  ): Promise<Map<number, [number, number][]>> {
+  async getHistoryForTeams(teams: number[]): Promise<Map<number, DataPoint[]>> {
     if (!teams.length) return new Map();
     const client = await this.redisClientFactory.getClient();
     const data = await client.hmGet(
@@ -44,41 +46,77 @@ export class ScoreboardHistory {
       CACHE_DATA_HASH_KEY,
       teams.map((t) => t.toString()),
     );
-    const out = new Map<number, [number, number][]>();
+    const out = new Map<number, DataPoint[]>();
+    const inProgress = new Map<number, Promise<DataPoint[]>>();
     const missing = teams.filter((t, i) => {
+      if (data[i]) {
+        out.set(t, decode(data[i]));
+        return false;
+      }
+      const promise = this.teamColeascer.get(t);
+      if (promise) {
+        inProgress.set(t, promise);
+        return false;
+      }
       if (!data[i]) return true;
-      out.set(t, decode(data[i]));
-      return false;
     });
-    const fetched = new Map<number, [number, number][]>();
-    (await this.scoreHistoryDAO.getByTeams(missing)).forEach(
-      ({ team_id, score, updated_at }) => {
-        let team = fetched.get(team_id);
-        if (!team) {
-          team = [];
-          fetched.set(team_id, team);
-        }
-        team.push([updated_at.getTime(), score]);
-      },
+    const toFetch = new Map<number, PromiseWithResolvers<DataPoint[]>>(
+      missing.map((t) => {
+        const result: [number, PromiseWithResolvers<DataPoint[]>] = [
+          t,
+          Promise.withResolvers(),
+        ];
+        this.teamColeascer.put(t, result[1].promise);
+        return result;
+      }),
     );
-
-    if (fetched.size) {
-      const multi = client.multi();
-      client.hSet(
-        CACHE_DATA_HASH_KEY,
-        fetched
-          .entries()
-          .map(
-            ([team, series]) =>
-              [team.toString(), encode(series)] as [string, Buffer],
-          )
-          .toArray(),
-      );
-      multi.expire(CACHE_DATA_HASH_KEY, 600);
-      await multi.exec();
+    if (toFetch.size) {
+      const fetched = await this.fetchFromDatabase(toFetch);
       fetched.forEach((v, k) => out.set(k, v));
     }
+    for (const [team, promise] of inProgress) {
+      out.set(team, await promise.catch(() => [])); // we want to return at least sth
+    }
     return out;
+  }
+
+  private async fetchFromDatabase(
+    toFetch: Map<number, PromiseWithResolvers<DataPoint[]>>,
+  ) {
+    const fetched = new Map<number, DataPoint[]>(
+      toFetch.keys().map((t) => [t, []]),
+    );
+    const client = await this.redisClientFactory.getClient();
+    try {
+      (await this.scoreHistoryDAO.getByTeams(toFetch.keys().toArray())).forEach(
+        ({ team_id, score, updated_at }) => {
+          let team = fetched.get(team_id);
+          // this shouldn't happen
+          if (!team) {
+            throw new Error("team missing from fetched");
+          }
+          team.push([updated_at.getTime(), score]);
+        },
+      );
+      toFetch.forEach(({ resolve }, t) => resolve(fetched.get(t)!));
+    } catch (e) {
+      toFetch.forEach(({ reject }) => reject(e));
+      throw e;
+    }
+    const multi = client.multi();
+    client.hSet(
+      CACHE_DATA_HASH_KEY,
+      fetched
+        .entries()
+        .map(
+          ([team, series]) =>
+            [team.toString(), encode(series)] as [string, Buffer],
+        )
+        .toArray(),
+    );
+    multi.expire(CACHE_DATA_HASH_KEY, 600);
+    await multi.exec();
+    return fetched;
   }
 
   private async getLastData(division: number): Promise<HistoryDataPoint[]> {

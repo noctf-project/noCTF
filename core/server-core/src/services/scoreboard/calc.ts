@@ -57,48 +57,13 @@ function ComputeScoresForChallenge(
     ({ team_id, hidden }) =>
       !(teams.get(team_id)?.flags.includes("hidden") || hidden),
   );
+  let base: number;
   try {
-    const base = EvaluateScoringExpression(
+    base = EvaluateScoringExpression(
       expr,
       params,
       valid.filter(({ value }) => value === null).length,
     );
-    let last_event = new Date(0);
-    let bonusIdx = 0;
-    const rv: Solve[] = valid.map(
-      ({ team_id, user_id, created_at, updated_at, value }) => {
-        last_event = MaxDate(last_event, updated_at);
-        const b = value !== null ? undefined : bonus?.[bonusIdx++];
-        return {
-          team_id,
-          user_id,
-          challenge_id: metadata.id,
-          bonus: b,
-          hidden: false,
-          value: value !== null ? value : base + ((b && Math.round(b)) || 0),
-          created_at,
-        };
-      },
-    );
-    const rh: Solve[] = hidden.map(
-      ({ team_id, user_id, created_at, updated_at }) => {
-        last_event = MaxDate(last_event, updated_at);
-
-        return {
-          team_id,
-          user_id,
-          challenge_id: metadata.id,
-          hidden: true,
-          value: base,
-          created_at,
-        };
-      },
-    );
-    return {
-      value: base,
-      solves: rv.concat(rh),
-      last_event: MaxDate(last_event, metadata.updated_at),
-    };
   } catch (err) {
     if (logger)
       logger.warn(
@@ -111,6 +76,42 @@ function ComputeScoresForChallenge(
       last_event: new Date(0),
     };
   }
+
+  let last_event = new Date(0);
+  let bonusIdx = 0;
+  const rv: Solve[] = valid.map(
+    ({ team_id, user_id, created_at, updated_at, value }) => {
+      last_event = MaxDate(last_event, updated_at);
+      const b = value !== null ? undefined : bonus?.[bonusIdx++];
+      return {
+        team_id,
+        user_id,
+        challenge_id: metadata.id,
+        bonus: b,
+        hidden: false,
+        value: value !== null ? value : base + ((b && Math.round(b)) || 0),
+        created_at,
+      };
+    },
+  );
+  const rh: Solve[] = hidden.map(
+    ({ team_id, user_id, created_at, updated_at }) => {
+      last_event = MaxDate(last_event, updated_at);
+      return {
+        team_id,
+        user_id,
+        challenge_id: metadata.id,
+        hidden: true,
+        value: base,
+        created_at,
+      };
+    },
+  );
+  return {
+    value: base,
+    solves: rv.concat(rh),
+    last_event: MaxDate(last_event, metadata.updated_at),
+  };
 }
 
 export function ComputeScoreboard(
