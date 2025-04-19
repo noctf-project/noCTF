@@ -47,12 +47,10 @@ ret[2] = redis.call('HMGET', teams_key, unpack(teams))
 return ret`;
 
 const SCOREBOARD_EXPIRE_TIME = 300;
+const CACHE_NAMESPACE = "core:svc:score:data";
 
 export class ScoreboardDataLoader {
-  constructor(
-    private readonly factory: RedisClientFactory,
-    private readonly namespace: string,
-  ) {}
+  constructor(private readonly factory: RedisClientFactory) {}
 
   private readonly latestPointerCache = new LocalCache<
     number,
@@ -87,7 +85,7 @@ export class ScoreboardDataLoader {
     const client = await this.factory.getClient();
     const multi = client.multi();
     for (const [id, teams] of tags) {
-      const key = `${this.namespace}:tt:${id}`;
+      const key = `${CACHE_NAMESPACE}:tt:${id}`;
       multi.del(key);
       multi.sAdd(
         key,
@@ -368,7 +366,7 @@ export class ScoreboardDataLoader {
   }
 
   private getDivisionString(division: number) {
-    return `${this.namespace}:d:${division}`;
+    return `${CACHE_NAMESPACE}:d:${division}`;
   }
 
   private getCacheKeys(version: number, division: number) {
@@ -392,7 +390,7 @@ export class ScoreboardDataLoader {
       [
         taggedKey,
         rankKey,
-        ...sortedTags.map((id) => `${this.namespace}:tt:${id}`),
+        ...sortedTags.map((id) => `${CACHE_NAMESPACE}:tt:${id}`),
       ],
       [],
     );

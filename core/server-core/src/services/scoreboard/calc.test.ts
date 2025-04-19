@@ -1,9 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  ComputeScoreboard,
-  GetChangedTeamScores,
-  MinimalScoreboardEntry,
-} from "./calc.ts";
+import { ComputeScoreboard, GetChangedTeamScores } from "./calc.ts";
 import {
   ChallengeMetadata,
   ChallengePrivateMetadataBase,
@@ -13,6 +9,7 @@ import { mockDeep } from "vitest-mock-extended";
 import { Expression } from "expr-eval";
 import { Timestamp } from "@noctf/schema";
 import { EvaluateScoringExpression } from "../score.ts";
+import { HistoryDataPoint } from "../../dao/score_history.ts";
 
 vi.mock(import("../score.ts"));
 
@@ -122,68 +119,54 @@ describe(GetChangedTeamScores, () => {
   });
 
   it("diff cares if team score is added or removed", () => {
-    const s1: MinimalScoreboardEntry[] = [
+    const s1: HistoryDataPoint[] = [
       {
         team_id: 1,
         score: 1,
-        last_solve: new Date(0),
         updated_at: new Date(0),
-        hidden: false,
       },
     ];
-    const s2: MinimalScoreboardEntry[] = [
+    const s2: HistoryDataPoint[] = [
       {
         team_id: 2,
         score: 2,
-        last_solve: new Date(0),
         updated_at: new Date(0),
-        hidden: false,
       },
     ];
     expect(GetChangedTeamScores(s1, s2)).toEqual([
       {
         team_id: 2,
         score: 2,
-        last_solve: new Date(0),
         updated_at: new Date(0),
-        hidden: false,
       },
       {
         team_id: 1,
         score: 0,
-        last_solve: new Date(0),
         updated_at: new Date(0),
-        hidden: false,
       },
     ]);
   });
 
   it("diff cares if team score is changed", () => {
-    const s1: MinimalScoreboardEntry[] = [
+    const s1: HistoryDataPoint[] = [
       {
         team_id: 1,
         score: 1,
-        last_solve: new Date(0),
         updated_at: new Date(0),
-        hidden: false,
       },
     ];
-    const s2: MinimalScoreboardEntry[] = [
+    const s2: HistoryDataPoint[] = [
       {
         team_id: 1,
         score: 10,
-        last_solve: new Date(1),
         updated_at: new Date(1),
-        hidden: false,
       },
     ];
     expect(GetChangedTeamScores(s1, s2)).toEqual([
       {
         team_id: 1,
         score: 10,
-        last_solve: new Date(1),
         updated_at: new Date(1),
-        hidden: false,
       },
     ]);
   });
