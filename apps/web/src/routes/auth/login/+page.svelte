@@ -7,7 +7,6 @@
   let isLoading = $state(false);
   let passwordVisible = $state(false);
 
-  loginState.currentStage = "login";
   if (!loginState.email) {
     goto("/auth");
   }
@@ -76,7 +75,7 @@
     <button
       type="button"
       class="text-sm link link-hover self-end"
-      onclick={() => (loginState.currentStage = "forgot-password-request")}
+      onclick={() => goto("/auth/forgot-password")}
     >
       Forgot password?
     </button>

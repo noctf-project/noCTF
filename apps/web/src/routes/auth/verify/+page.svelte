@@ -4,10 +4,10 @@
   import { goto } from "$app/navigation";
   import { header } from "../+layout.svelte";
   import { onMount } from "svelte";
-
+  import { toasts } from "$lib/stores/toast";
   let isLoading = $state(false);
 
-  loginState.currentStage = "verification-required";
+  let verificationSent = $state(false);
 
   onMount(() => {
     if (!loginState.email) {
@@ -20,19 +20,23 @@
     try {
       isLoading = true;
       await loginState.verifyEmail();
+      verificationSent = true;
+    } catch (e) {
+      console.error("Error during email verification:", e);
+      toasts.error("An error occurred while verifying your email.");
     } finally {
       isLoading = false;
     }
   }
 </script>
 
-{#if loginState.currentStage === "verification-required"}
+{#if !verificationSent}
   {@render header("Verify your email", "Send a verification link")}
-{:else if loginState.currentStage === "verification-sent"}
+{:else}
   {@render header("Check your email", "We've sent a verifcation link")}
 {/if}
 
-{#if loginState.currentStage === "verification-required"}
+{#if !verificationSent}
   <div class="pb-4 flex flex-col items-center">
     <div class="rounded-full flex items-center justify-center pb-4">
       <Icon icon="material-symbols:mail-outline" class="text-4xl" />
@@ -50,13 +54,13 @@
     <button class="btn btn-primary w-full" onclick={handleVerifyRequired}>
       Verify My Email
     </button>
-    <button class="btn btn-outline w-full" onclick={loginState.goBack}>
+    <button class="btn btn-outline w-full" onclick={() => goto("/auth")}>
       Use a different email
     </button>
   </div>
 {/if}
 
-{#if loginState.currentStage === "verification-sent"}
+{#if verificationSent}
   <div class="pb-4 flex flex-col items-center">
     <div class="rounded-full flex items-center justify-center pb-4">
       <Icon icon="material-symbols:mail-outline" class="text-4xl" />
@@ -71,7 +75,7 @@
       If you don't see the email, check your spam folder.
     </p>
 
-    <button class="btn btn-outline w-full" onclick={loginState.goBack}>
+    <button class="btn btn-outline w-full" onclick={() => goto("/auth")}>
       Use a different email
     </button>
   </div>

@@ -1,18 +1,19 @@
 <script lang="ts">
-  import api, { SESSION_TOKEN_KEY } from "$lib/api/index.svelte";
   import { toasts } from "$lib/stores/toast";
-  import { performRedirect } from "$lib/utils/url";
   import Icon from "@iconify/svelte";
   import { goto } from "$app/navigation";
   import loginState from "./auth.svelte";
 
   let isLoading = $state(false);
-  loginState.currentStage = "email";
 
   const oAuthProviders = [
     { name: "Google", icon: "mdi:google" },
     { name: "GitHub", icon: "mdi:github" },
   ];
+
+  // TODO: Remove this once forgot password is implemented and extracted
+  // to a separate route
+  let currentStage = $state("email");
 
   async function handleEmailCheck() {
     if (!loginState.email) return;
@@ -59,14 +60,14 @@
       //   return;
       // }
 
-      loginState.currentStage = "forgot-password-sent";
+      currentStage = "forgot-password-sent";
       toasts.success("Password reset instructions sent (if account exists).");
     } catch (error) {
       console.error("Password reset submission error:", error);
       toasts.error("An unexpected error occurred. Please try again later.");
     } finally {
       // isLoading will be set false by stage change if successful, or explicitly on error above
-      if (loginState.currentStage !== "forgot-password-sent") {
+      if (currentStage !== "forgot-password-sent") {
         isLoading = false;
       }
     }
@@ -75,7 +76,7 @@
   function handleSubmit(e: Event) {
     e.preventDefault();
 
-    switch (loginState.currentStage) {
+    switch (currentStage) {
       case "email":
         handleEmailCheck();
         break;
@@ -89,19 +90,19 @@
 </script>
 
 <div class="text-center mb-6">
-  {#if loginState.currentStage === "email"}
+  {#if currentStage === "email"}
     <h2 class="text-2xl font-bold">Welcome</h2>
     <p class="text-gray-600">Sign in or create an account</p>
-  {:else if loginState.currentStage === "forgot-password-request"}
+  {:else if currentStage === "forgot-password-request"}
     <h2 class="text-2xl font-bold">Reset Password</h2>
     <p class="text-gray-600">Enter your email to receive reset instructions</p>
-  {:else if loginState.currentStage === "forgot-password-sent"}
+  {:else if currentStage === "forgot-password-sent"}
     <h2 class="text-2xl font-bold">Check your email</h2>
     <p class="text-gray-600">Password reset instructions sent</p>
   {/if}
 </div>
 
-{#if loginState.currentStage === "email"}
+{#if currentStage === "email"}
   <form onsubmit={handleSubmit}>
     <div class="form-control">
       <label for="email" class="label">
@@ -147,7 +148,7 @@
   </div>
 {/if}
 
-{#if loginState.currentStage === "forgot-password-request"}
+{#if currentStage === "forgot-password-request"}
   <form onsubmit={handleSubmit}>
     <div class="form-control">
       <label for="email-locked-reg" class="label">
@@ -164,7 +165,7 @@
         <button
           type="button"
           class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-          onclick={loginState.goBack}
+          onclick={() => goto("/auth")}
           title="Change email"
         >
           <Icon icon="material-symbols:edit" class="w-5 h-5" />
@@ -187,7 +188,7 @@
     <button
       type="button"
       class="btn btn-ghost w-full mt-3"
-      onclick={() => (loginState.currentStage = "login")}
+      onclick={() => (currentStage = "login")}
       disabled={isLoading}
     >
       Back to Login
@@ -195,7 +196,7 @@
   </form>
 {/if}
 
-{#if loginState.currentStage === "forgot-password-sent"}
+{#if currentStage === "forgot-password-sent"}
   <div class="pb-4 flex flex-col items-center">
     <div class="rounded-full flex items-center justify-center mb-4">
       <Icon icon="material-symbols:mail-outline" class="text-4xl" />
@@ -213,7 +214,7 @@
 
     <button
       class="btn btn-outline w-full"
-      onclick={() => (loginState.currentStage = "email")}
+      onclick={() => (currentStage = "email")}
     >
       Back to Start
     </button>

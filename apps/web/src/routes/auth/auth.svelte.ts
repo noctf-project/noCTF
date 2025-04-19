@@ -4,14 +4,6 @@ import authState from "$lib/state/auth.svelte";
 import { toasts } from "$lib/stores/toast";
 import { performRedirect } from "$lib/utils/url";
 
-type FlowStage =
-  | "email"
-  | "login"
-  | "register"
-  | "verification-required"
-  | "verification-sent"
-  | "forgot-password-request"
-  | "forgot-password-sent";
 
 class LoginState {
   email: string = $state("");
@@ -25,8 +17,6 @@ class LoginState {
   clientId = this.urlParams.get("client_id");
   redirectParam = this.urlParams.get("redirect_to");
 
-  currentStage: FlowStage = $state("email");
-
   async checkEmail() {
     const checkEmailRes = await api.POST("/auth/email/init", {
       body: { email: this.email },
@@ -34,7 +24,6 @@ class LoginState {
 
     if (checkEmailRes.error) {
       if (checkEmailRes.error.error === "EmailVerificationRequired") {
-        this.currentStage = "verification-required";
         goto("/auth/verify");
         return;
       }
@@ -48,12 +37,10 @@ class LoginState {
     // Handle different responses based on if email exists
     if (checkEmailRes.data?.data?.token) {
       this.registrationToken = checkEmailRes.data.data.token;
-      this.currentStage = "register";
       goto("/auth/register");
     } else if (checkEmailRes.error) {
       toasts.error("Unexpected response from server");
     } else {
-      this.currentStage = "login";
       goto("/auth/login");
     }
   }
@@ -69,11 +56,8 @@ class LoginState {
       );
       return;
     }
-    this.currentStage = "verification-sent";
   }
 
-  // login tries to log in the user with the provided email and password
-  // and returns true if successful, false otherwise.
   async login() {
     const loginRes = await api.POST("/auth/email/finish", {
       body: {
@@ -92,7 +76,7 @@ class LoginState {
     }
     if (loginRes.data?.data?.type === "session") {
       localStorage.setItem(SESSION_TOKEN_KEY, loginRes.data.data.token);
-      authState.fetch();
+      authState.refresh();
       this.successRedirect();
     } else {
       toasts.error("Login failed");
@@ -121,28 +105,12 @@ class LoginState {
     if (registerRes.data?.data?.type === "session") {
       toasts.success("Account created successfully!");
       localStorage.setItem(SESSION_TOKEN_KEY, registerRes.data.data.token);
-      authState.fetch();
+      authState.refresh();
       this.successRedirect("/team");
       return true;
     } else {
       toasts.error("Registration failed");
     }
-  }
-
-  goBack() {
-    // Generally goes back to email stage, except from password reset flow
-    if (
-      loginState.currentStage === "login" ||
-      loginState.currentStage === "register" ||
-      loginState.currentStage === "verification-sent" ||
-      loginState.currentStage === "verification-required"
-    ) {
-      loginState.currentStage = "email";
-      // Reset sensitive fields when going back
-      loginState.password = "";
-      goto("/auth");
-    }
-    // Specific back buttons are used for forgot password flow stages
   }
 
   successRedirect(target = "/") {
@@ -159,13 +127,10 @@ class LoginState {
     });
 
     if (response.error) {
-      // Handle API error (invalid token, expired, etc.)
       console.error("Token verification failed:", response.error);
       const errorMessage =
         response.error?.message || "Invalid or expired registration link.";
       toasts.error(errorMessage);
-      // Redirect back to the login page on failure
-      this.currentStage = "email";
       goto("/auth");
       return;
     }

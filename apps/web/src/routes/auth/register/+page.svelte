@@ -1,21 +1,14 @@
 <script lang="ts">
-  import api, { SESSION_TOKEN_KEY, wrapLoadable } from "$lib/api/index.svelte";
   import Icon from "@iconify/svelte";
   import loginState from "../auth.svelte";
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import { toasts } from "$lib/stores/toast";
-  import { error } from "@sveltejs/kit";
   import { emailLocked, header } from "../+layout.svelte";
 
   let passwordVisible = $state(false);
   let isLoading = $state(true);
   loginState.password = "";
-
-  let urlParams = new URLSearchParams(window.location.search);
-  let clientId = urlParams.get("client_id");
-  let redirectParam = urlParams.get("redirect_to");
-  let token = urlParams.get("token");
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
@@ -32,7 +25,7 @@
 
   // Check for the token in the URL for validation
   onMount(async () => {
-    // Cannot use existing loginState.urlParams as it does not update
+    // Cannot use existing loginState.urlParams as it does not update across routes
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get("token");
     console.log(token);
@@ -42,10 +35,8 @@
       try {
         await loginState.verifyToken(token);
       } catch (e) {
-        // Handle network or other errors
         console.error("Error during token verification:", e);
         toasts.error("An error occurred while verifying the token.");
-        loginState.currentStage = "email"; // Redirect to email entry step
         goto("/auth");
       } finally {
         isLoading = false;
@@ -56,7 +47,6 @@
     } else {
       // No token, but email IS in state (user came from email entry step)
       // and email verification is not turned on
-      loginState.currentStage = "register"; // Ensure stage is correct
       isLoading = false; // No token check needed, ready to show form
     }
   });
