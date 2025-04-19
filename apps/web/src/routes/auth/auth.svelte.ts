@@ -92,7 +92,7 @@ class LoginState {
     }
     if (loginRes.data?.data?.type === "session") {
       localStorage.setItem(SESSION_TOKEN_KEY, loginRes.data.data.token);
-      authState.fetchState();
+      authState.fetch();
       this.successRedirect();
     } else {
       toasts.error("Login failed");
@@ -121,8 +121,8 @@ class LoginState {
     if (registerRes.data?.data?.type === "session") {
       toasts.success("Account created successfully!");
       localStorage.setItem(SESSION_TOKEN_KEY, registerRes.data.data.token);
-      authState.fetchState();
-      this.successRedirect();
+      authState.fetch();
+      this.successRedirect("/team");
       return true;
     } else {
       toasts.error("Registration failed");
@@ -145,11 +145,11 @@ class LoginState {
     // Specific back buttons are used for forgot password flow stages
   }
 
-  successRedirect() {
+  successRedirect(target = "/") {
     if (this.redirectParam) {
       performRedirect(this.redirectParam);
     } else {
-      goto("/");
+      window.location.href = target;
     }
   }
 

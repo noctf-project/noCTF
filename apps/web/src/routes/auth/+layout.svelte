@@ -4,18 +4,9 @@
 
 <script lang="ts">
   import Icon from "@iconify/svelte";
-
   import loginState from "./auth.svelte";
-  import authState from "$lib/state/auth.svelte";
-  import { goto } from "$app/navigation";
 
   let { children } = $props();
-  $effect(() => {
-    // Only attempt redirect *after* the initial state fetch has completed
-    if (authState.isInitialised && authState.isAuthenticated) {
-      goto("/", { replaceState: true });
-    }
-  });
 </script>
 
 {#snippet header(heading: string, subHeading: string)}
