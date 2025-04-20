@@ -21,7 +21,7 @@ export class UserDAO {
   async get(id: number): Promise<User | undefined> {
     return await this.db
       .selectFrom("user")
-      .select(["id", "name", "bio", "roles", "created_at"])
+      .select(["id", "name", "bio", "roles", "flags", "created_at"])
       .where("id", "=", id)
       .executeTakeFirst();
   }
@@ -33,27 +33,27 @@ export class UserDAO {
     return await this.db
       .selectFrom("user as u")
       .innerJoin("user_identity as ui", "ui.user_id", "u.id")
-
       .select(["u.name as name", "ui.provider_id as provider_id"])
       .where("u.id", "=", id)
       .where("ui.provider", "=", provider)
       .executeTakeFirst();
   }
 
-  async getRoles(id: number): Promise<string[]> {
+  async getFlagsAndRoles(id: number): Promise<{ roles: string[], flags: string[] } | undefined> {
     const result = await this.db
       .selectFrom("user")
-      .select(["roles"])
+      .select(["roles", "flags"])
       .where("id", "=", id)
       .executeTakeFirst();
-    return result?.roles || [];
+    return result;
   }
 
   async create({
     name,
     bio,
     roles,
-  }: Pick<Insertable<DB["user"]>, "name" | "bio" | "roles">) {
+    flags,
+  }: Pick<Insertable<DB["user"]>, "name" | "bio" | "roles" | "flags">) {
     try {
       const { id } = await this.db
         .insertInto("user")
@@ -61,6 +61,7 @@ export class UserDAO {
           name,
           bio,
           roles,
+          flags,
         })
         .returning("id")
         .executeTakeFirstOrThrow();

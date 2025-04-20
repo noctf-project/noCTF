@@ -65,10 +65,12 @@ export class UserService {
       name,
       identities,
       roles,
+      flags,
     }: {
       name: string;
       identities: AssociateIdentity[];
       roles?: string[];
+      flags?: string[];
     },
     actor?: AuditLogActor,
   ) {
@@ -86,7 +88,7 @@ export class UserService {
     const id = await this.databaseClient.transaction(async (tx) => {
       const userDAO = new UserDAO(tx);
       const identityDAO = new UserIdentityDAO(tx);
-      const id = await userDAO.create({ name, roles });
+      const id = await userDAO.create({ name, roles, flags });
       for (const identity of identities) {
         await identityDAO.associate({ ...identity, user_id: id });
       }

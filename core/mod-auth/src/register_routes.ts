@@ -62,7 +62,7 @@ export default async function (fastify: FastifyInstance) {
       const id = await lockService.withLease(
         `token:register:${TokenProvider.hash(token)}`,
         async () => {
-          const roles = data.roles;
+          const { flags, roles } = data;
           let identity = data.identity as AssociateIdentity[];
           if (
             identity.length === 1 &&
@@ -105,6 +105,7 @@ export default async function (fastify: FastifyInstance) {
                   ],
             ),
             roles,
+            flags,
           });
 
           await identityService.revokeToken(token);

@@ -62,6 +62,7 @@ export const User = Type.Object({
   id: Type.Number(),
   name: Type.String({ maxLength: 64 }),
   bio: Type.String({ maxLength: 256 }),
+  flags: Type.Array(Type.String()),
   roles: Type.Array(Type.String()),
   created_at: TypeDate,
 });

@@ -11,6 +11,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .addColumn("name", "varchar(64)", (col) => col.notNull().unique())
     .addColumn("bio", "text", (col) => col.notNull().defaultTo(""))
+    .addColumn("flags", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .addColumn("roles", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
