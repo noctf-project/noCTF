@@ -119,11 +119,17 @@ export class ScoreboardService {
         this.submissionDAO.getSolvesForCalculation(id),
         this.awardDAO.getAllAwards(id),
       ]);
-      const solvesByChallenge = Object.groupBy(
-        solveList || [],
-        ({ challenge_id }) => challenge_id,
-      ) as Record<number, RawSolve[]>;
-      points = points.concat(ComputeFullGraph(
+      const solvesByChallenge = new Map<number, RawSolve[]>();
+      solveList.forEach((x) => {
+        let solves = solvesByChallenge.get(x.challenge_id);
+        if (!solves) {
+          solves = [];
+          solvesByChallenge.set(x.challenge_id, solves);
+        }
+        solves.push(x);
+      });
+      points = points.concat(
+        ComputeFullGraph(
           new Map(teams.get(id)?.map((x) => [x.id, x])),
           challenges,
           solvesByChallenge,
@@ -254,10 +260,15 @@ export class ScoreboardService {
       this.awardDAO.getAllAwards(id),
     ]);
 
-    const solvesByChallenge = Object.groupBy(
-      solveList || [],
-      ({ challenge_id }) => challenge_id,
-    ) as Record<number, RawSolve[]>;
+    const solvesByChallenge = new Map<number, RawSolve[]>();
+    solveList.forEach((x) => {
+      let solves = solvesByChallenge.get(x.challenge_id);
+      if (!solves) {
+        solves = [];
+        solvesByChallenge.set(x.challenge_id, solves);
+      }
+      solves.push(x);
+    });
 
     const {
       last_event,

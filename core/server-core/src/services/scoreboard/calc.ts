@@ -8,7 +8,6 @@ import {
 import { Expression } from "expr-eval";
 import { partition } from "../../util/object.ts";
 import { EvaluateScoringExpression } from "../score.ts";
-import { Logger } from "../../types/primitives.ts";
 import { MaxDate } from "../../util/date.ts";
 import { MinimalTeamInfo } from "../../dao/team.ts";
 import { RawSolve } from "../../dao/submission.ts";
@@ -140,7 +139,7 @@ function ComputeScoreStreamForChallenge(
   const dyn = new Set<number>();
   valid.forEach(({ team_id, created_at, value }) => {
     const b = value !== null ? undefined : bonus?.[bonusIdx++];
-    if (baseCount >= base[baseIdx][0]) {
+    if (baseCount >= base[baseIdx][0] && baseIdx < base.length - 1) {
       baseCount = 1;
       baseIdx += 1;
       dyn.forEach((team_id) =>
@@ -167,7 +166,7 @@ function ComputeScoreStreamForChallenge(
 export function ComputeFullGraph(
   teams: Map<number, MinimalTeamInfo>,
   challenges: ChallengeMetadataWithExpr[],
-  solvesByChallenge: Record<number, RawSolve[]>,
+  solvesByChallenge: Map<number, RawSolve[]>,
   awards: Award[],
   sampleRateMs = 1000,
 ): HistoryDataPoint[] {
@@ -175,7 +174,7 @@ export function ComputeFullGraph(
     ComputeScoreStreamForChallenge(
       x,
       teams,
-      solvesByChallenge[x.metadata.id] || [],
+      solvesByChallenge.get(x.metadata.id) || [],
     ),
   );
   for (const { team_id, value, created_at } of awards) {
@@ -214,7 +213,7 @@ export function ComputeFullGraph(
 export function ComputeScoreboard(
   teams: Map<number, MinimalTeamInfo>,
   challenges: ChallengeMetadataWithExpr[],
-  solvesByChallenge: Record<number, RawSolve[]>,
+  solvesByChallenge: Map<number, RawSolve[]>,
   awards: Award[],
 ): {
   scoreboard: ScoreboardEntry[];
@@ -243,7 +242,7 @@ export function ComputeScoreboard(
     const result = ComputeScoresForChallenge(
       x,
       teams,
-      solvesByChallenge[x.metadata.id] || [],
+      solvesByChallenge.get(x.metadata.id) || [],
     );
     return [x.metadata.id, result] as [number, ChallengeSolvesResult];
   });

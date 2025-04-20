@@ -52,14 +52,13 @@
       let y = 0;
       return {
         label: team.name,
-        data: team.data
-          .map(([timestamp, score]) => {
-            x = x + timestamp;
-            y = y + score;
-            return ({
-              x,
-              y,
-            })
+        data: team.data.map(([timestamp, score]) => {
+          x = x + timestamp;
+          y = y + score;
+          return {
+            x,
+            y,
+          };
         }),
         borderColor: lineColours[index % lineColours.length],
         backgroundColor: lineColours[index % lineColours.length],

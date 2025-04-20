@@ -23,7 +23,7 @@ describe(CacheService, () => {
   const redisClient =
     mockDeep<Awaited<ReturnType<RedisClientFactory["getClient"]>>>();
 
-  const coleascer = mockDeep<Coleascer>();
+  const coleascer = mockDeep<Coleascer<unknown>>();
   beforeEach(() => {
     vi.mocked(Coleascer).mockReturnValue(coleascer);
     redisClientFactory.getClient.mockResolvedValue(redisClient);
