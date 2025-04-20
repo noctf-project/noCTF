@@ -11,7 +11,7 @@
     "generate:swagger": "ENABLE_SWAGGER=1 tsx --env-file=../../.env src/generate_swagger.ts dist/swagger.json",
     "dev:www": "ENABLE_SWAGGER=1 tsx watch --env-file=../../.env src/entrypoints/www | pino-pretty",
     "dev:worker": "tsx watch --env-file=../../.env src/entrypoints/worker | pino-pretty",
-    "dev:shell": "tsx -i --env-file=../../.env src/shell.ts"
+    "dev:shell": "tsx -i --env-file=../../.env src/entrypoints/shell.ts"
   },
   "keywords": [],
   "author": "",

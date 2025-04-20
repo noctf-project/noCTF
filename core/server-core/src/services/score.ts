@@ -44,13 +44,13 @@ export function EvaluateScoringExpression(
   params: Record<string, number>,
   n: number,
   all: true,
-): number[];
+): [number, number][];
 export function EvaluateScoringExpression(
   expr: Expression,
   params: Record<string, number>,
   n: number,
   all?: boolean,
-): number | number[] {
+): number | [number, number][] {
   if (!all) {
     return Math.round(
       expr.evaluate({
@@ -59,14 +59,21 @@ export function EvaluateScoringExpression(
       }),
     );
   }
-  return [...Array(n + 1).keys()].map((n) =>
-    Math.round(
+  const results: [number, number][] = [];
+  for (let i = 0; i <= n; i++) {
+    const result = Math.round(
       expr.evaluate({
         ...params,
-        ctx: { n },
+        ctx: { n: i },
       }),
-    ),
-  );
+    );
+    if (!results.length || results[results.length - 1][1] !== result) {
+      results.push([1, result]);
+    } else {
+      results[results.length - 1][0]++;
+    }
+  }
+  return results;
 }
 
 export class ScoreService {
