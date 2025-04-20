@@ -43,7 +43,9 @@ export class PolicyService {
   }
 
   async getPoliciesForUser(userId: number) {
-    const roleSet = await this.userRolesCache.load(userId, () => this.fetchRolesForUser(userId));
+    const roleSet = await this.userRolesCache.load(userId, () =>
+      this.fetchRolesForUser(userId),
+    );
     const policies = await this.policyGetter.get();
     const result = policies.filter(({ match_roles, omit_roles }) => {
       const omit = omit_roles.find((r) => roleSet.has(r)) !== undefined;

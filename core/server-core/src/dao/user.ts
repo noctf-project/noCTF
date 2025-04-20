@@ -39,7 +39,9 @@ export class UserDAO {
       .executeTakeFirst();
   }
 
-  async getFlagsAndRoles(id: number): Promise<{ roles: string[], flags: string[] } | undefined> {
+  async getFlagsAndRoles(
+    id: number,
+  ): Promise<{ roles: string[]; flags: string[] } | undefined> {
     const result = await this.db
       .selectFrom("user")
       .select(["roles", "flags"])

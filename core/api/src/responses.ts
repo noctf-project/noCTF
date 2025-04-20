@@ -16,6 +16,7 @@ import {
   Submission,
   Division,
   TeamTag,
+  PublicUser,
 } from "./datatypes.ts";
 import { AuthTokenType, RegisterTokenData } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
@@ -130,7 +131,7 @@ export type QueryTeamNamesResponse = Static<typeof QueryTeamNamesResponse>;
 
 export const MeUserResponse = Type.Object({
   data: Type.Composite([
-    User,
+    Type.Omit(User, ["flags"]),
     Type.Object({
       team_id: Type.Union([Type.Number(), Type.Null()]),
       team_name: Type.Union([Type.String(), Type.Null()]),

@@ -68,6 +68,9 @@ export const User = Type.Object({
 });
 export type User = Static<typeof User>;
 
+export const PublicUser = Type.Omit(User, ["flags", "roles"]);
+export type PublicUser = Static<typeof PublicUser>;
+
 export const UserIdentity = Type.Object({
   user_id: Type.Number(),
   provider: Type.String(),
