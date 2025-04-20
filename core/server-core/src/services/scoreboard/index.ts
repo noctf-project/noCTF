@@ -18,7 +18,6 @@ import { bisectLeft, bisectRight } from "../../util/arrays.ts";
 
 type Props = Pick<
   ServiceCradle,
-  | "cacheService"
   | "configService"
   | "challengeService"
   | "scoreService"
@@ -29,7 +28,6 @@ type Props = Pick<
 
 export class ScoreboardService {
   private readonly logger;
-  private readonly cacheService;
   private readonly challengeService;
   private readonly configService;
   private readonly scoreService;
@@ -43,7 +41,6 @@ export class ScoreboardService {
   private readonly divisionDAO;
 
   constructor({
-    cacheService,
     configService,
     challengeService,
     databaseClient,
@@ -52,7 +49,6 @@ export class ScoreboardService {
     logger,
   }: Props) {
     this.logger = logger;
-    this.cacheService = cacheService;
     this.challengeService = challengeService;
     this.configService = configService;
     this.scoreService = scoreService;
@@ -117,7 +113,7 @@ export class ScoreboardService {
     const { challenges, teams, divisions } =
       await this.fetchScoreboardCalculationParams();
 
-    const points: HistoryDataPoint[] = [];
+    let points: HistoryDataPoint[] = [];
     for (const { id } of divisions) {
       const [solveList, awardList] = await Promise.all([
         this.submissionDAO.getSolvesForCalculation(id),
@@ -127,8 +123,7 @@ export class ScoreboardService {
         solveList || [],
         ({ challenge_id }) => challenge_id,
       ) as Record<number, RawSolve[]>;
-      points.push(
-        ...ComputeFullGraph(
+      points = points.concat(ComputeFullGraph(
           new Map(teams.get(id)?.map((x) => [x.id, x])),
           challenges,
           solvesByChallenge,
