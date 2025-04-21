@@ -150,9 +150,6 @@ export class TeamService {
     return this.teamDAO.getCount(params);
   }
 
-  async queryNames(ids: number[], includeHidden?: boolean) {
-    return this.teamDAO.queryNames(ids, includeHidden);
-  }
   async delete(id: number, { actor, message }: AuditParams = {}) {
     await this.teamDAO.delete(id);
     await this.auditLogService.log({

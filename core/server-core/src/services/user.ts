@@ -1,4 +1,4 @@
-import { BadRequestError, ConflictError } from "../errors.ts";
+import { BadRequestError, ConflictError, NotFoundError } from "../errors.ts";
 import type { ServiceCradle } from "../index.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
@@ -27,7 +27,28 @@ export class UserService {
   }
 
   async get(id: number) {
-    return this.userDAO.get(id);
+    const result = this.userDAO.get(id);
+    if (!result) throw new NotFoundError("User not found");
+    return result;
+  }
+
+  async listSummary(
+    params?: {
+      flags?: string[];
+      ids?: number[];
+      name_prefix?: string;
+    },
+    limit?: { limit?: number; offset?: number },
+  ) {
+    return this.userDAO.listSummary(params, limit);
+  }
+
+  async getCount(params?: {
+    flags?: string[];
+    division_id?: number;
+    ids?: number[];
+  }) {
+    return this.userDAO.getCount(params);
   }
 
   async update(

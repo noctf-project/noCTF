@@ -213,11 +213,25 @@ export const SolveChallengeRequest = Type.Object(
 );
 export type SolveChallengeRequest = Static<typeof SolveChallengeRequest>;
 
-export const QueryTeamsRequest = Type.Object({
-  division_id: Type.Optional(Type.Integer()),
-  page: Type.Optional(Type.Integer({ minimum: 1 })),
-  page_size: Type.Optional(Type.Integer()),
-  name_prefix: Type.Optional(Type.String({ maxLength: 64 })),
-  ids: Type.Optional(Type.Array(Type.Integer(), { maxItems: 50 })),
-});
+export const QueryTeamsRequest = Type.Object(
+  {
+    division_id: Type.Optional(Type.Integer()),
+    page: Type.Optional(Type.Integer({ minimum: 1 })),
+    page_size: Type.Optional(Type.Integer()),
+    name_prefix: Type.Optional(Type.String({ maxLength: 64 })),
+    ids: Type.Optional(Type.Array(Type.Integer(), { maxItems: 50 })),
+  },
+  { additionalProperties: false },
+);
 export type QueryTeamsRequest = Static<typeof QueryTeamsRequest>;
+
+export const QueryUsersRequest = Type.Object(
+  {
+    page: Type.Optional(Type.Integer({ minimum: 1 })),
+    page_size: Type.Optional(Type.Integer()),
+    name_prefix: Type.Optional(Type.String({ maxLength: 64 })),
+    ids: Type.Optional(Type.Array(Type.Integer(), { maxItems: 50 })),
+  },
+  { additionalProperties: false },
+);
+export type QueryUsersRequest = Static<typeof QueryUsersRequest>;
