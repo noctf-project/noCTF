@@ -72,9 +72,12 @@ export class UserService {
       flags,
       roles,
     });
-    const changed = [name && "name", bio && "bio", flags && "flags", roles && "roles"].filter(
-      (x) => x,
-    );
+    const changed = [
+      name && "name",
+      bio && "bio",
+      flags && "flags",
+      roles && "roles",
+    ].filter((x) => x);
 
     await this.auditLogService.log({
       operation: "user.update",

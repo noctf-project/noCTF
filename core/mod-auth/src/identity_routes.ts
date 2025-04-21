@@ -35,12 +35,14 @@ export default async function (fastify: FastifyInstance) {
       if (request.user.id !== data.user_id) {
         throw new ForbiddenError("Invalid token");
       }
-      await identityService.associateIdentities(data.identity.map((i) => ({
-        user_id: request.user.id,
-        ...i
-      })));
+      await identityService.associateIdentities(
+        data.identity.map((i) => ({
+          user_id: request.user.id,
+          ...i,
+        })),
+      );
       await tokenProvider.invalidate("associate", token);
       return { data: true as true }; // wtf ts
     },
   );
-};
+}

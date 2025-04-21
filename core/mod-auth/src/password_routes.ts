@@ -3,10 +3,7 @@ import {
   FinishAuthEmailRequest,
   InitAuthEmailRequest,
 } from "@noctf/api/requests";
-import {
-  FinishAuthResponse,
-  BaseResponse,
-} from "@noctf/api/responses";
+import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
 import { PasswordProvider } from "./password_provider.ts";
 import type { FastifyInstance } from "fastify";
 import { UserFlag } from "@noctf/server-core/types/enums";
@@ -132,7 +129,7 @@ export default async function (fastify: FastifyInstance) {
     Body: ChangeAuthEmailRequest;
     Reply: BaseResponse;
   }>(
-    "/auth/email/change/init",
+    "/auth/email/change",
     {
       schema: {
         security: [{ bearer: [] }],
@@ -147,7 +144,7 @@ export default async function (fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (request) => {
       const { validate_email, enable_register_password } =
         await passwordProvider.getConfig();
       const { provider_id: oldEmail } =
@@ -178,7 +175,7 @@ export default async function (fastify: FastifyInstance) {
               provider_id: newEmail,
             },
           ],
-          user_id: request.user?.id
+          user_id: request.user?.id,
         });
         const { root_url, name: ctf_name } = (
           await configService.get<SetupConfig>(SetupConfig.$id!)
@@ -203,8 +200,8 @@ export default async function (fastify: FastifyInstance) {
         {
           user_id: request.user.id,
           provider: "email",
-          provider_id: newEmail
-        }
+          provider_id: newEmail,
+        },
       ]);
       return {};
     },

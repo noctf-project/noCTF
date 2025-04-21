@@ -45,7 +45,7 @@
     try {
       isUpdatingEmail = true;
 
-      const initResponse = await api.POST("/auth/email/change/init", {
+      const initResponse = await api.POST("/auth/email/change", {
         body: {
           email: accountForm.email,
           password: accountForm.password,
@@ -105,7 +105,7 @@
 
   async function resendVerificationEmail() {
     try {
-      await api.POST("/auth/email/change/init", {
+      await api.POST("/auth/email/change", {
         body: {
           email: accountForm.email,
           password: accountForm.password,
