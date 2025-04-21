@@ -30,9 +30,23 @@ export const RegisterTokenData = Type.Object({
     Type.Object({
       provider: Type.String(),
       provider_id: Type.String(),
+      secret_data: Type.Optional(Type.String())
     }),
   ),
   flags: Type.Optional(Type.Array(Type.String())),
   roles: Type.Optional(Type.Array(Type.String())),
 });
 export type RegisterTokenData = Static<typeof RegisterTokenData>;
+
+export const AssociateTokenData = Type.Object({
+  identity: Type.Array(
+    Type.Object({
+      provider: Type.String(),
+      provider_id: Type.String(),
+      secret_data: Type.Optional(Type.String())
+    }),
+  ),
+  user_id: Type.Number(),
+});
+export type AssociateTokenData = Static<typeof AssociateTokenData>;
+

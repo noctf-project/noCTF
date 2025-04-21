@@ -1,4 +1,4 @@
-import { RegisterTokenData } from "@noctf/api/token";
+import { AssociateTokenData, RegisterTokenData } from "@noctf/api/token";
 import { ServiceCradle } from "@noctf/server-core";
 import { ForbiddenError } from "@noctf/server-core/errors";
 import { createHash, randomUUID } from "node:crypto";
@@ -11,15 +11,13 @@ export type StateTokenData = {
 
 type TokenDataMap = {
   register: RegisterTokenData;
-  associate: RegisterTokenData;
-  change: RegisterTokenData;
+  associate: AssociateTokenData;
   state: StateTokenData;
 };
 
 const TOKEN_EXPIRY_SECONDS: Record<keyof TokenDataMap, number> = {
   register: 3600,
   associate: 3600,
-  change: 3600,
   state: 600,
 };
 

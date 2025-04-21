@@ -58,14 +58,16 @@
         );
       }
 
-      if (initResponse.data.data?.token) {
-        await finishEmailChange(initResponse.data.data.token);
-      } else {
+      if (initResponse.data.message) {
         accountForm.newEmailSent = true;
         emailVerified = false;
         toasts.success(
           "Verification email has been sent to your new email address.",
         );
+      } else {
+        await refreshUserIdentities();
+        accountForm.email = getCurrentEmail();
+        toasts.success("Email updated successfully!");
       }
     } catch (error) {
       console.error("Failed to update email:", error);
@@ -77,7 +79,7 @@
 
   async function finishEmailChange(token: string) {
     try {
-      const finishResponse = await api.POST("/auth/email/change/finish", {
+      const finishResponse = await api.POST("/auth/associate", {
         body: {
           token: token,
         },
@@ -127,7 +129,7 @@
 
   function getCurrentEmail() {
     if (!userIdentities.loading && !userIdentities.error && userIdentities.r) {
-      const emailIdentity = userIdentities.r.data.data.find(
+      const emailIdentity = userIdentities.r.data?.data.find(
         (identity) => identity.provider === "email",
       );
       return emailIdentity?.provider_id || "";

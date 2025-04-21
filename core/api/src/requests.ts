@@ -59,16 +59,13 @@ export const ChangeAuthEmailRequest = Type.Object(
 );
 export type ChangeAuthEmailRequest = Static<typeof ChangeAuthEmailRequest>;
 
-export const ChangeFinishAuthEmailRequest = Type.Object(
+export const AssociateRequest = Type.Object(
   {
     token: Type.String(),
-    captcha: CaptchaValidationString,
   },
   { additionalProperties: false },
 );
-export type ChangeFinishAuthEmailRequest = Static<
-  typeof ChangeFinishAuthEmailRequest
->;
+export type AssociateRequest = Static<typeof AssociateRequest>;
 
 export const RegisterAuthRequest = Type.Object(
   {

@@ -146,7 +146,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
     const data = await this.tokenProvider.lookup("state", state);
     const method = await this.configProvider.getMethod(data.name);
     const provider_id = await this.getExternalId(method, code, redirect_uri);
-    await this.identityService.associateIdentity({
+    await this.identityService.associateIdentities({
       user_id,
       provider: `${this.id()}:${data.name}`,
       provider_id,

@@ -56,10 +56,12 @@ export class UserService {
     {
       name,
       bio,
+      flags,
       roles,
     }: {
       name?: string;
       bio?: string;
+      flags?: string[];
       roles?: string[];
     },
     actor?: AuditLogActor,
@@ -67,9 +69,10 @@ export class UserService {
     await this.userDAO.update(id, {
       name,
       bio,
+      flags,
       roles,
     });
-    const changed = [name && "name", bio && "bio", roles && "roles"].filter(
+    const changed = [name && "name", bio && "bio", flags && "flags", roles && "roles"].filter(
       (x) => x,
     );
 

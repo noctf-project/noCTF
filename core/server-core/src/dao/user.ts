@@ -110,7 +110,7 @@ export class UserDAO {
 
   async update(
     id: number,
-    v: Pick<Updateable<DB["user"]>, "name" | "bio" | "roles">,
+    v: Pick<Updateable<DB["user"]>, "name" | "bio" | "flags" | "roles">,
   ) {
     const { numUpdatedRows } = await this.db
       .updateTable("user")

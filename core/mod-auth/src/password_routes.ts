@@ -1,13 +1,11 @@
 import {
   ChangeAuthEmailRequest,
-  ChangeFinishAuthEmailRequest,
   FinishAuthEmailRequest,
   InitAuthEmailRequest,
 } from "@noctf/api/requests";
 import {
   FinishAuthResponse,
   BaseResponse,
-  SuccessResponse,
 } from "@noctf/api/responses";
 import { PasswordProvider } from "./password_provider.ts";
 import type { FastifyInstance } from "fastify";
@@ -21,7 +19,6 @@ import {
   BadRequestError,
   ConflictError,
 } from "@noctf/server-core/errors";
-import { AssociateIdentity } from "@noctf/server-core/services/identity";
 
 export default async function (fastify: FastifyInstance) {
   const { identityService, configService, cacheService, emailService } =
@@ -133,7 +130,7 @@ export default async function (fastify: FastifyInstance) {
 
   fastify.post<{
     Body: ChangeAuthEmailRequest;
-    Reply: FinishAuthResponse | BaseResponse;
+    Reply: BaseResponse;
   }>(
     "/auth/email/change/init",
     {
@@ -146,8 +143,7 @@ export default async function (fastify: FastifyInstance) {
         },
         body: ChangeAuthEmailRequest,
         response: {
-          201: FinishAuthResponse,
-          default: BaseResponse,
+          200: BaseResponse,
         },
       },
     },
@@ -174,15 +170,16 @@ export default async function (fastify: FastifyInstance) {
           throw e;
       }
 
-      const token = await tokenProvider.create("change", {
-        identity: [
-          {
-            provider: "email",
-            provider_id: newEmail,
-          },
-        ],
-      });
       if (validate_email) {
+        const token = await tokenProvider.create("associate", {
+          identity: [
+            {
+              provider: "email",
+              provider_id: newEmail,
+            },
+          ],
+          user_id: request.user?.id
+        });
         const { root_url, name: ctf_name } = (
           await configService.get<SetupConfig>(SetupConfig.$id!)
         ).value;
@@ -201,53 +198,15 @@ export default async function (fastify: FastifyInstance) {
         };
       }
 
-      return reply.code(201).send({
-        data: {
-          type: "change",
-          token: token,
-        },
-      });
-    },
-  );
-
-  fastify.post<{
-    Body: ChangeFinishAuthEmailRequest;
-    Reply: SuccessResponse;
-  }>(
-    "/auth/email/change/finish",
-    {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["auth"],
-        auth: {
-          require: true,
-          policy: ["user.self.update"],
-        },
-        body: ChangeFinishAuthEmailRequest,
-        response: {
-          200: SuccessResponse,
-        },
-      },
-    },
-    async (request) => {
-      const { token } = request.body;
-      const data = await tokenProvider.lookup("change", token);
-      const oldIdentity = await identityService.getProviderForUser(
-        request.user.id,
-        "email",
-      );
-      const tokenEmail = data.identity.filter(
-        ({ provider }) => provider === "email",
-      )[0]?.provider_id;
-      if (!tokenEmail) {
-        throw new BadRequestError("EmailChangeError", "An email is required");
-      }
-      const identity: AssociateIdentity = {
-        ...oldIdentity,
-        provider_id: tokenEmail,
-      };
-      await identityService.associateIdentity(identity);
-      return { data: true };
+      // TODO: figure out how to consider valid_email user flag, we probably want to remove
+      await identityService.associateIdentities([
+        {
+          user_id: request.user.id,
+          provider: "email",
+          provider_id: newEmail
+        }
+      ]);
+      return {};
     },
   );
 }
