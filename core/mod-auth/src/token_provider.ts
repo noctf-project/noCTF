@@ -12,12 +12,14 @@ export type StateTokenData = {
 type TokenDataMap = {
   register: RegisterTokenData;
   associate: RegisterTokenData;
+  change: RegisterTokenData;
   state: StateTokenData;
 };
 
 const TOKEN_EXPIRY_SECONDS: Record<keyof TokenDataMap, number> = {
   register: 3600,
   associate: 3600,
+  change: 3600,
   state: 600,
 };
 

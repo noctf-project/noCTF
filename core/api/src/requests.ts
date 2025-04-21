@@ -50,6 +50,26 @@ export const FinishAuthEmailRequest = Type.Object(
 );
 export type FinishAuthEmailRequest = Static<typeof FinishAuthEmailRequest>;
 
+export const ChangeAuthEmailRequest = Type.Object(
+  {
+    email: Type.String({ format: "email" }),
+    password: Type.String(),
+  },
+  { additionalProperties: false },
+);
+export type ChangeAuthEmailRequest = Static<typeof ChangeAuthEmailRequest>;
+
+export const ChangeFinishAuthEmailRequest = Type.Object(
+  {
+    token: Type.String(),
+    captcha: CaptchaValidationString,
+  },
+  { additionalProperties: false },
+);
+export type ChangeFinishAuthEmailRequest = Static<
+  typeof ChangeFinishAuthEmailRequest
+>;
+
 export const RegisterAuthRequest = Type.Object(
   {
     token: Type.String(),
