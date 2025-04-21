@@ -1,12 +1,18 @@
 import type { ServiceCradle } from "@noctf/server-core";
 import type { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
-import { MeUserResponse } from "@noctf/api/responses";
+import { ListUsersResponse, MeUserResponse } from "@noctf/api/responses";
 import { NotFoundError } from "@noctf/server-core/errors";
+import { Policy } from "@noctf/server-core/util/policy";
+import { QueryUsersRequest } from "@noctf/api/requests";
+
+export const PAGE_SIZE = 60;
 
 export async function routes(fastify: FastifyInstance) {
-  const { userService, teamService } = fastify.container
+  const { userService, teamService, policyService } = fastify.container
     .cradle as ServiceCradle;
+
+  const adminPolicy: Policy = ["admin.user.get"];
 
   fastify.get<{ Reply: MeUserResponse }>(
     "/user/me",
@@ -16,7 +22,7 @@ export async function routes(fastify: FastifyInstance) {
         tags: ["user"],
         auth: {
           require: true,
-          policy: ["OR", "user.get", "user.self"],
+          policy: ["user.self"],
         },
         response: {
           200: MeUserResponse,
@@ -36,6 +42,50 @@ export async function routes(fastify: FastifyInstance) {
           team_id: membership?.team_id || null,
           team_name: teamDetails?.name || null,
         },
+      };
+    },
+  );
+
+  fastify.post<{ Reply: ListUsersResponse; Body: QueryUsersRequest }>(
+    "/users/query",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["user"],
+        auth: {
+          require: true,
+          policy: ["user.get"],
+        },
+        body: QueryUsersRequest,
+        response: {
+          200: ListUsersResponse,
+        },
+      },
+    },
+    async (request) => {
+      const admin = await policyService.evaluate(request.user?.id, adminPolicy);
+
+      const page = request.body.page || 1;
+      const page_size =
+        (admin
+          ? request.body.page_size
+          : Math.min(PAGE_SIZE, request.body.page_size)) || PAGE_SIZE;
+
+      const query = {
+        flags: ["!hidden"],
+        name_prefix: request.body.name_prefix,
+        ids: request.body.ids,
+      };
+      const [entries, total] = await Promise.all([
+        userService.listSummary(query, {
+          limit: page_size,
+          offset: (page - 1) * page_size,
+        }),
+        !(query.ids && query.ids.length) ? userService.getCount(query) : 0,
+      ]);
+
+      return {
+        data: { entries, page_size, total: total || entries.length },
       };
     },
   );

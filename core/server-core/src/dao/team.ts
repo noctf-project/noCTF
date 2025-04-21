@@ -106,9 +106,9 @@ export class TeamDAO {
 
   async listSummary(
     params?: Parameters<TeamDAO["listQuery"]>[0],
-    limit?: { limit?: number; offset?: number },
+    limit?: Parameters<TeamDAO["listQuery"]>[1],
   ): Promise<TeamSummary[]> {
-    let query = this.listQuery(params)
+    let query = this.listQuery(params, limit)
       .select([
         "team.id",
         "team.name",
@@ -125,12 +125,6 @@ export class TeamDAO {
         ).as("members"),
       ])
       .orderBy("id");
-    if (limit?.limit) {
-      query = query.limit(limit.limit);
-    }
-    if (limit?.offset) {
-      query = query.offset(limit.offset);
-    }
     return query.execute() as Promise<TeamSummary[]>;
   }
 
@@ -301,12 +295,15 @@ export class TeamDAO {
       .execute();
   }
 
-  private listQuery(params?: {
-    flags?: string[];
-    ids?: number[];
-    name_prefix?: string;
-    division_id?: number;
-  }) {
+  private listQuery(
+    params?: {
+      flags?: string[];
+      ids?: number[];
+      name_prefix?: string;
+      division_id?: number;
+    },
+    limit?: { limit?: number; offset?: number },
+  ) {
     let query = this.db.selectFrom("team");
     if (params?.flags) {
       const [no, yes] = partition(params.flags, (f) => f.startsWith("!"));
@@ -328,6 +325,13 @@ export class TeamDAO {
     }
     if (params?.ids && params?.ids.length) {
       query = query.where("id", "in", params.ids);
+    }
+
+    if (limit?.limit) {
+      query = query.limit(limit.limit);
+    }
+    if (limit?.offset) {
+      query = query.offset(limit.offset);
     }
     return query;
   }

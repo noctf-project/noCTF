@@ -81,9 +81,9 @@ export class PolicyService {
     if (isBlocked) {
       roleSet.add(UserRole.BLOCKED);
     } else if (
-      (data.flags.includes(UserFlag.VALID_EMAIL) ||
-        !(await this.configService.get<AuthConfig>(AuthConfig.$id!)).value
-          .validate_email)
+      data.flags.includes(UserFlag.VALID_EMAIL) ||
+      !(await this.configService.get<AuthConfig>(AuthConfig.$id!)).value
+        .validate_email
     ) {
       roleSet.add(UserRole.ACTIVE);
     }
