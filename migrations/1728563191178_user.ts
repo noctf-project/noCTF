@@ -71,7 +71,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
-    .addColumn("name", "varchar(64)", (col) => col.unique())
+    .addColumn("name", "varchar(64)", (col) => col.notNull().unique())
     .addColumn("description", "text", (col) => col.notNull().defaultTo(""))
     .addColumn("permissions", sql`varchar[]`, (col) =>
       col.notNull().defaultTo("{}"),

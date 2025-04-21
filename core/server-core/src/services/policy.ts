@@ -37,9 +37,7 @@ export class PolicyService {
   }
 
   async getPoliciesForUser(userId: number) {
-    const roleSet = await this.userRolesCache.load(userId, () =>
-      this.fetchRolesForUser(userId),
-    );
+    const roleSet = await this.getRolesForUser(userId);
     const policies = await this.policyGetter.get();
     const result = policies.filter(({ match_roles, omit_roles }) => {
       const omit = omit_roles.find((r) => roleSet.has(r)) !== undefined;
@@ -71,13 +69,18 @@ export class PolicyService {
     return false;
   }
 
+  async getRolesForUser(id: number) {
+    return await this.userRolesCache.load(id, () => this.fetchRolesForUser(id));
+  }
+
   private async fetchRolesForUser(id: number): Promise<Set<string>> {
     const data = await this.userDAO.getFlagsAndRoles(id);
     if (!data) return new Set();
     const roleSet = new Set(data.roles);
     const isBlocked = data.flags.includes(UserFlag.BLOCKED);
-    if (
-      !isBlocked &&
+    if (isBlocked) {
+      roleSet.add(UserRole.BLOCKED);
+    } else if (
       (data.flags.includes(UserFlag.VALID_EMAIL) ||
         !(await this.configService.get<AuthConfig>(AuthConfig.$id!)).value
           .validate_email)
