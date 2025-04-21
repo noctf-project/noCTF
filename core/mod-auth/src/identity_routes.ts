@@ -41,6 +41,7 @@ export default async function (fastify: FastifyInstance) {
           ...i,
         })),
       );
+      // TODO: commit flags and roles in tx
       await tokenProvider.invalidate("associate", token);
       return { data: true as true }; // wtf ts
     },
