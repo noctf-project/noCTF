@@ -1,7 +1,6 @@
 <script lang="ts">
   import { toasts } from "$lib/stores/toast";
-  import { onMount } from "svelte";
-  import authState from "$lib/state/auth.svelte";
+  import api, { wrapLoadable } from "$lib/api/index.svelte";
 
   let profileForm = $state({
     name: "",
@@ -9,13 +8,34 @@
   });
 
   let isUpdatingProfile = $state(false);
+  let userProfile = $state(wrapLoadable(fetchUserProfile()));
+
+  async function fetchUserProfile() {
+    const response = await api.GET("/user/me", {});
+    if (!response.data) {
+      toasts.error("Failed to fetch user profile: " + response.error?.message);
+      return;
+    }
+    return response.data;
+  }
 
   async function updateProfile() {
     try {
       isUpdatingProfile = true;
-      await new Promise((resolve) => setTimeout(resolve, 800));
 
-      console.log("Profile updated:", profileForm);
+      const response = await api.PUT("/user/me", {
+        body: {
+          name: profileForm.name,
+          bio: profileForm.bio,
+        },
+      });
+
+      if (!response.data) {
+        throw new Error(response.error?.message || "Unknown error occurred");
+      }
+
+      userProfile = wrapLoadable(fetchUserProfile());
+
       toasts.success("Profile updated successfully!");
     } catch (error) {
       console.error("Failed to update profile:", error);
@@ -25,10 +45,10 @@
     }
   }
 
-  onMount(() => {
-    if (authState.user) {
-      profileForm.name = authState.user.name;
-      profileForm.bio = authState.user.bio;
+  $effect(() => {
+    if (!userProfile.loading && !userProfile.error && userProfile.r) {
+      profileForm.name = userProfile.r.data.name;
+      profileForm.bio = userProfile.r.data.bio;
     }
   });
 </script>
@@ -43,36 +63,47 @@
     <label class="label" for="username">
       <span class="label-text">Username</span>
     </label>
-    <input
-      id="username"
-      type="text"
-      bind:value={profileForm.name}
-      placeholder="Your username"
-      class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
-    />
+    {#if userProfile.loading || userProfile.error}
+      <div class="skeleton h-12 w-full"></div>
+    {:else}
+      <input
+        id="username"
+        type="text"
+        bind:value={profileForm.name}
+        placeholder="Your username"
+        class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+      />
+    {/if}
   </div>
 
   <div class="form-control w-full">
     <label class="label" for="bio">
       <span class="label-text">Bio</span>
     </label>
-    <textarea
-      id="bio"
-      bind:value={profileForm.bio}
-      placeholder="Tell us about yourself"
-      class="input input-bordered h-32 w-full focus:outline-none focus:ring-0 focus:ring-offset-0 pt-2"
-    ></textarea>
+    {#if userProfile.loading || userProfile.error}
+      <div class="skeleton h-32 w-full"></div>
+    {:else}
+      <textarea
+        id="bio"
+        bind:value={profileForm.bio}
+        placeholder="Tell us about yourself"
+        class="input input-bordered h-32 w-full focus:outline-none focus:ring-0 focus:ring-offset-0 pt-2"
+      ></textarea>
+    {/if}
   </div>
 
   <div class="flex justify-end">
     <button
       class="btn btn-primary pop hover:pop"
       onclick={updateProfile}
-      disabled={isUpdatingProfile}
+      disabled={isUpdatingProfile || userProfile.loading || userProfile.error}
     >
       {#if isUpdatingProfile}
         <span class="loading loading-spinner loading-sm"></span>
         Saving...
+      {:else if userProfile.loading}
+        <span class="loading loading-spinner loading-sm"></span>
+        Loading...
       {:else}
         Save Changes
       {/if}

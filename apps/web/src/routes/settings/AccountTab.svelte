@@ -64,23 +64,18 @@
     <div class="alert alert-warning">
       <Icon icon="material-symbols:warning" class="text-lg" />
       <span
-        >Your email address is not verified. Please check your inbox
-        for a verification link.</span
+        >Your email address is not verified. Please check your inbox for a
+        verification link.</span
       >
     </div>
   {/if}
 
-  <form
-    onsubmit={updateEmail}
-    class="form-control w-full flex flex-col gap-4"
-  >
+  <form onsubmit={updateEmail} class="form-control w-full flex flex-col gap-4">
     <div>
       <label class="label" for="email">
         <span class="label-text">Email Address</span>
         {#if emailVerified}
-          <span
-            class="label-text-alt text-success flex items-center gap-1"
-          >
+          <span class="label-text-alt text-success flex items-center gap-1">
             <Icon icon="material-symbols:check-circle" />
             Verified
           </span>
@@ -117,10 +112,7 @@
           Resend Verification Email
         </button>
 
-        <button
-          class="btn btn-ghost pop hover:pop"
-          onclick={cancelEmailChange}
-        >
+        <button class="btn btn-ghost pop hover:pop" onclick={cancelEmailChange}>
           <Icon icon="material-symbols:cancel" class="mr-2" />
           Cancel Email Change
         </button>
