@@ -34,8 +34,6 @@
         throw new Error(response.error?.message || "Unknown error occurred");
       }
 
-      userProfile = wrapLoadable(fetchUserProfile());
-
       toasts.success("Profile updated successfully!");
     } catch (error) {
       console.error("Failed to update profile:", error);
