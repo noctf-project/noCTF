@@ -37,9 +37,9 @@ export class UserService {
       bio,
       roles,
     }: {
-      name: string;
-      bio: string;
-      roles: string[];
+      name?: string;
+      bio?: string;
+      roles?: string[];
     },
     actor?: AuditLogActor,
   ) {

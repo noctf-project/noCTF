@@ -5,8 +5,15 @@ import {
   Challenge,
   Team,
   TypeDate,
+  User,
 } from "./datatypes.ts";
 import { SubmissionStatus } from "./enums.ts";
+
+export const UpdateUserRequest = Type.Composite(
+  [Type.Pick(User, ["name", "bio"])],
+  { additionalProperties: false },
+);
+export type UpdateUserRequest = Static<typeof UpdateUserRequest>;
 
 export const InitAuthOauthRequest = Type.Object(
   {

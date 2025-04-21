@@ -4,6 +4,7 @@ import type { DB } from "@noctf/schema";
 import { ConflictError, NotFoundError } from "../errors.ts";
 import type { DBType } from "../clients/database.ts";
 import type { User } from "@noctf/api/datatypes";
+import { FilterUndefined } from "../util/filter.ts";
 
 export class UserDAO {
   constructor(private readonly db: DBType) {}
@@ -78,19 +79,11 @@ export class UserDAO {
 
   async update(
     id: number,
-    {
-      name,
-      bio,
-      roles,
-    }: Pick<Updateable<DB["user"]>, "name" | "bio" | "roles">,
+    v: Pick<Updateable<DB["user"]>, "name" | "bio" | "roles">,
   ) {
     const { numUpdatedRows } = await this.db
       .updateTable("user")
-      .set({
-        name,
-        bio,
-        roles,
-      })
+      .set(FilterUndefined(v))
       .where("id", "=", id)
       .executeTakeFirst();
     if (!numUpdatedRows) {
