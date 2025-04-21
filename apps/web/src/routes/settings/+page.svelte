@@ -1,59 +1,110 @@
 <script lang="ts">
-  import Icon from "@iconify/svelte";
+  import { toasts } from "$lib/stores/toast";
+  import api, { wrapLoadable } from "$lib/api/index.svelte";
 
-  import ProfileTab from "./ProfileTab.svelte";
-  import AccountTab from "./AccountTab.svelte";
-  import SecurityTab from "./SecurityTab.svelte";
-  import PreferencesTab from "./PreferencesTab.svelte";
+  let profileForm = $state({
+    name: "",
+    bio: "",
+  });
 
-  type TabType = "profile" | "account" | "security" | "preferences";
+  let isUpdatingProfile = $state(false);
+  let userProfile = $state(wrapLoadable(fetchUserProfile()));
 
-  let activeTab = $state<TabType>("profile");
+  async function fetchUserProfile() {
+    const response = await api.GET("/user/me", {});
+    if (!response.data) {
+      toasts.error("Failed to fetch user profile: " + response.error?.message);
+      return;
+    }
+    return response.data;
+  }
+
+  async function updateProfile() {
+    try {
+      isUpdatingProfile = true;
+
+      const response = await api.PUT("/user/me", {
+        body: {
+          name: profileForm.name,
+          bio: profileForm.bio,
+        },
+      });
+
+      if (!response.data) {
+        throw new Error(response.error?.message || "Unknown error occurred");
+      }
+
+      toasts.success("Profile updated successfully!");
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      toasts.error("Failed to update profile. Please try again.");
+    } finally {
+      isUpdatingProfile = false;
+    }
+  }
+
+  $effect(() => {
+    if (!userProfile.loading && !userProfile.error && userProfile.r) {
+      profileForm.name = userProfile.r.data.name;
+      profileForm.bio = userProfile.r.data.bio;
+    }
+  });
 </script>
 
-{#snippet tab(id: TabType, title: string, icon: string)}
-  <button
-    tabindex="0"
-    role="tab"
-    class="rounded-lg text-left flex flex-row p-2 align-center {activeTab === id
-      ? 'bg-primary text-primary-content'
-      : ''} transition-all duration-200"
-    onclick={() => (activeTab = id)}
-  >
-    <Icon {icon} class="text-2xl" />
-    <div class="hidden sm:block ml-2">{title}</div>
-  </button>
-{/snippet}
+<div class="space-y-6">
+  <h2 class="text-2xl font-bold">Profile</h2>
+  <p class="text-base-content/70">
+    Your profile information that will be displayed to other users
+  </p>
 
-<div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pb-8">
-  <h1 class="text-4xl font-bold mb-8">Settings</h1>
+  <div class="form-control w-full">
+    <label class="label" for="username">
+      <span class="label-text">Username</span>
+    </label>
+    {#if userProfile.loading || userProfile.error}
+      <div class="skeleton h-12 w-full"></div>
+    {:else}
+      <input
+        id="username"
+        type="text"
+        bind:value={profileForm.name}
+        placeholder="Your username"
+        class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+      />
+    {/if}
+  </div>
 
-  <div class="flex flex-row gap-4">
-    <div
-      class="flex flex-col tabs-boxed bg-base-100 p-1 h-fit pop align w-14 sm:w-48"
+  <div class="form-control w-full">
+    <label class="label" for="bio">
+      <span class="label-text">Bio</span>
+    </label>
+    {#if userProfile.loading || userProfile.error}
+      <div class="skeleton h-32 w-full"></div>
+    {:else}
+      <textarea
+        id="bio"
+        bind:value={profileForm.bio}
+        placeholder="Tell us about yourself"
+        class="input input-bordered h-32 w-full focus:outline-none focus:ring-0 focus:ring-offset-0 pt-2"
+      ></textarea>
+    {/if}
+  </div>
+
+  <div class="flex justify-end">
+    <button
+      class="btn btn-primary pop hover:pop"
+      onclick={updateProfile}
+      disabled={isUpdatingProfile || userProfile.loading || userProfile.error}
     >
-      {@render tab("profile", "Profile", "material-symbols:account-circle")}
-      {@render tab("account", "Account", "material-symbols:person-book")}
-      {@render tab("security", "Security", "material-symbols:lock")}
-      {@render tab(
-        "preferences",
-        "Preferences",
-        "material-symbols:palette-outline",
-      )}
-    </div>
-
-    <div class="card bg-base-100 pop rounded-lg w-full">
-      <div class="card-body">
-        {#if activeTab === "profile"}
-          <ProfileTab />
-        {:else if activeTab === "account"}
-          <AccountTab />
-        {:else if activeTab === "security"}
-          <SecurityTab />
-        {:else if activeTab === "preferences"}
-          <PreferencesTab />
-        {/if}
-      </div>
-    </div>
+      {#if isUpdatingProfile}
+        <span class="loading loading-spinner loading-sm"></span>
+        Saving...
+      {:else if userProfile.loading}
+        <span class="loading loading-spinner loading-sm"></span>
+        Loading...
+      {:else}
+        Save Changes
+      {/if}
+    </button>
   </div>
 </div>
