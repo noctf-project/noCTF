@@ -11,6 +11,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .addColumn("name", "varchar(64)", (col) => col.notNull().unique())
     .addColumn("bio", "text", (col) => col.notNull().defaultTo(""))
+    .addColumn("flags", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .addColumn("roles", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
@@ -70,7 +71,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
-    .addColumn("name", "varchar(64)", (col) => col.unique())
+    .addColumn("name", "varchar(64)", (col) => col.notNull().unique())
     .addColumn("description", "text", (col) => col.notNull().defaultTo(""))
     .addColumn("permissions", sql`varchar[]`, (col) =>
       col.notNull().defaultTo("{}"),
@@ -110,7 +111,7 @@ export async function up(db: Kysely<any>): Promise<void> {
         name: "user_basic",
         description: "Subset of permissions for unverified users",
         permissions: ["user.self"],
-        omit_roles: ["active", "blocked"],
+        omit_roles: ["active"],
         is_enabled: true,
       },
       {

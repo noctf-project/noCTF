@@ -62,10 +62,26 @@ export const User = Type.Object({
   id: Type.Number(),
   name: Type.String({ maxLength: 64 }),
   bio: Type.String({ maxLength: 256 }),
+  flags: Type.Array(Type.String()),
   roles: Type.Array(Type.String()),
   created_at: TypeDate,
 });
 export type User = Static<typeof User>;
+
+export const PolicyDocument = Type.Object({
+  id: Type.Integer(),
+  name: Type.String({ maxLength: 64 }),
+  description: Type.String({ maxLength: 512 }),
+  match_roles: Type.Array(Type.String({ maxLength: 64 })),
+  omit_roles: Type.Array(Type.String({ maxLength: 64 })),
+  permissions: Type.Array(Type.String({ maxLength: 128 })),
+  public: Type.Boolean(),
+  is_enabled: Type.Boolean(),
+});
+export type PolicyDocument = Static<typeof PolicyDocument>;
+
+export const PublicUser = Type.Omit(User, ["flags", "roles"]);
+export type PublicUser = Static<typeof PublicUser>;
 
 export const UserIdentity = Type.Object({
   user_id: Type.Number(),

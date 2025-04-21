@@ -1,9 +1,12 @@
+import { PolicyDocument } from "@noctf/api/datatypes";
 import { DBType } from "../clients/database.ts";
 
 export class PolicyDAO {
   constructor(private readonly db: DBType) {}
 
-  async listPolicies(params: { is_enabled?: boolean } = {}) {
+  async listPolicies(
+    params: { is_enabled?: boolean } = {},
+  ): Promise<PolicyDocument[]> {
     let query = this.db
       .selectFrom("policy")
       .select([
