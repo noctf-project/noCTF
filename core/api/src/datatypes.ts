@@ -68,6 +68,14 @@ export const User = Type.Object({
 });
 export type User = Static<typeof User>;
 
+export const UserSummary = Type.Composite([
+  User,
+  Type.Object({
+    team_id: Type.Union([Type.Null(), Type.Integer()]),
+  }),
+]);
+export type UserSummary = Static<typeof UserSummary>;
+
 export const PolicyDocument = Type.Object({
   id: Type.Integer(),
   name: Type.String({ maxLength: 64 }),
@@ -79,9 +87,6 @@ export const PolicyDocument = Type.Object({
   is_enabled: Type.Boolean(),
 });
 export type PolicyDocument = Static<typeof PolicyDocument>;
-
-export const PublicUser = Type.Omit(User, ["flags", "roles"]);
-export type PublicUser = Static<typeof PublicUser>;
 
 export const UserIdentity = Type.Object({
   user_id: Type.Number(),

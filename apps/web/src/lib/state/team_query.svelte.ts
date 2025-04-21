@@ -8,7 +8,7 @@ const MAXIMUM_QUERIES = 60;
 export type Team = PathResponse<
   "/teams/query",
   "post"
->["data"]["teams"][number];
+>["data"]["entries"][number];
 
 export class TeamQueryService {
   private queue: Set<number> = new Set();
@@ -60,13 +60,13 @@ export class TeamQueryService {
         },
       });
 
-      if (error) throw new Error(error);
+      if (error) throw new Error(error.message);
 
-      data.data.teams.forEach((team) => {
+      data.data.entries.forEach((team) => {
         this.cache.set(team.id, team);
       });
 
-      return { teams: data.data.teams, total: data.data.total };
+      return { teams: data.data.entries, total: data.data.total };
     } catch (e) {
       console.error("Error querying teams:", e);
       throw e;
@@ -89,7 +89,7 @@ export class TeamQueryService {
       });
       if (error) throw new Error(error?.message || JSON.stringify(error));
       if (data) {
-        data.data.teams.forEach((t) => {
+        data.data.entries.forEach((t) => {
           this.cache.set(t.id, t);
           ids.delete(t.id);
         });
