@@ -68,10 +68,17 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      await userService.update(request.user.id, request.body, {
-        type: ActorType.USER,
-        id: request.user.id,
-      });
+      await userService.update(
+        request.user.id,
+        {
+          name: request.body.name,
+          bio: request.body.bio,
+        },
+        {
+          type: ActorType.USER,
+          id: request.user.id,
+        },
+      );
       return {
         data: true,
       };
