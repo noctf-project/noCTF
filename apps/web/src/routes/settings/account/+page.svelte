@@ -15,11 +15,11 @@
   });
 
   let isUpdatingEmail = $state(false);
-  let userIdentities = wrapLoadable(api.GET("/auth/identities"));
+  let userIdentities = wrapLoadable(api.GET("/user/me/identities"));
 
   async function refreshUserIdentities() {
     try {
-      const r = await api.GET("/auth/identities", {});
+      const r = await api.GET("/user/me/identities", {});
       userIdentities.r = r;
       accountForm.email = getCurrentEmail();
     } catch (error) {

@@ -4,6 +4,7 @@ import "@noctf/server-core/types/fastify";
 import { ActorType } from "@noctf/server-core/types/enums";
 import { QueryUsersRequest, UpdateUserRequest } from "@noctf/api/requests";
 import {
+  ListUserIdentitiesResponse,
   ListUsersResponse,
   MeUserResponse,
   SuccessResponse,
@@ -14,8 +15,8 @@ import { Policy } from "@noctf/server-core/util/policy";
 export const PAGE_SIZE = 60;
 
 export async function routes(fastify: FastifyInstance) {
-  const { userService, teamService, policyService } = fastify.container
-    .cradle as ServiceCradle;
+  const { userService, teamService, policyService, identityService } = fastify
+    .container.cradle as ServiceCradle;
 
   const adminPolicy: Policy = ["admin.user.get"];
 
@@ -47,6 +48,33 @@ export async function routes(fastify: FastifyInstance) {
           team_id: membership?.team_id || null,
           team_name: teamDetails?.name || null,
         },
+      };
+    },
+  );
+
+  fastify.get<{
+    Reply: ListUserIdentitiesResponse;
+  }>(
+    "/user/me/identities",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["auth"],
+        auth: {
+          require: true,
+          policy: ["user.self.get"],
+        },
+        response: {
+          200: ListUserIdentitiesResponse,
+        },
+      },
+    },
+    async (request) => {
+      const identities = await identityService.listProvidersForUser(
+        request.user.id,
+      );
+      return {
+        data: identities,
       };
     },
   );
