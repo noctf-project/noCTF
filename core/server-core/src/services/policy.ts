@@ -12,12 +12,6 @@ type Props = Pick<ServiceCradle, "databaseClient" | "logger" | "configService">;
 
 export const CACHE_NAMESPACE = "core:svc:policy";
 
-export enum StaticRole {
-  PUBLIC = "public",
-  USER = "user",
-  ADMIN = "admin",
-}
-
 const POLICY_EXPIRATION = 5000;
 export class PolicyService {
   private readonly logger;
@@ -62,6 +56,21 @@ export class PolicyService {
     return policies.filter(({ public: isPublic }) => isPublic);
   }
 
+  async evaluate(userId: number, policy: Policy) {
+    const policies = await (userId
+      ? this.getPoliciesForUser(userId)
+      : this.getPoliciesForPublic());
+    for (const { permissions, name } of policies) {
+      const result = Evaluate(policy, permissions);
+      this.logger.debug(
+        { policy_name: name, result },
+        "Policy evaluation result",
+      );
+      if (result) return true;
+    }
+    return false;
+  }
+
   private async fetchRolesForUser(id: number): Promise<Set<string>> {
     const data = await this.userDAO.getFlagsAndRoles(id);
     if (!data) return new Set();
@@ -76,20 +85,5 @@ export class PolicyService {
       roleSet.add(UserRole.ACTIVE);
     }
     return roleSet;
-  }
-
-  async evaluate(userId: number, policy: Policy) {
-    const policies = await (userId
-      ? this.getPoliciesForUser(userId)
-      : this.getPoliciesForPublic());
-    for (const { permissions, name } of policies) {
-      const result = Evaluate(policy, permissions);
-      this.logger.debug(
-        { policy_name: name, result },
-        "Policy evaluation result",
-      );
-      if (result) return true;
-    }
-    return false;
   }
 }
