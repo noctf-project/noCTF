@@ -66,7 +66,6 @@ export const FinishAuthResponse = Type.Object({
     type: Type.Union([
       AuthTokenType,
       Type.Literal("register"),
-      Type.Literal("change"),
       Type.Literal("associate"),
     ]),
     token: Type.String(),
