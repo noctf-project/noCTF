@@ -1,4 +1,5 @@
 import {
+  ChangeAuthEmailRequest,
   FinishAuthEmailRequest,
   InitAuthEmailRequest,
 } from "@noctf/api/requests";
@@ -8,9 +9,13 @@ import type { FastifyInstance } from "fastify";
 import { UserFlag } from "@noctf/server-core/types/enums";
 import { TokenProvider } from "./token_provider.ts";
 import { UserNotFoundError } from "./error.ts";
-import { EMAIL_VERIFICATION_TEMPLATE } from "./const.ts";
+import { EMAIL_CHANGE_TEMPLATE, EMAIL_VERIFICATION_TEMPLATE } from "./const.ts";
 import { SetupConfig } from "@noctf/api/config";
-import { BadRequestError } from "@noctf/server-core/errors";
+import {
+  AuthenticationError,
+  BadRequestError,
+  ConflictError,
+} from "@noctf/server-core/errors";
 
 export default async function (fastify: FastifyInstance) {
   const { identityService, configService, cacheService, emailService } =
@@ -117,6 +122,88 @@ export default async function (fastify: FastifyInstance) {
           token: sessionToken,
         },
       };
+    },
+  );
+
+  fastify.post<{
+    Body: ChangeAuthEmailRequest;
+    Reply: BaseResponse;
+  }>(
+    "/auth/email/change",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["auth"],
+        auth: {
+          require: true,
+          policy: ["user.self.update"],
+        },
+        body: ChangeAuthEmailRequest,
+        response: {
+          200: BaseResponse,
+        },
+      },
+    },
+    async (request) => {
+      const { validate_email, enable_register_password } =
+        await passwordProvider.getConfig();
+      const { provider_id: oldEmail } =
+        await identityService.getProviderForUser(request.user.id, "email");
+      const newEmail = request.body.email.toLowerCase();
+      const password = request.body.password;
+      try {
+        await passwordProvider.authenticate(oldEmail, password);
+      } catch (e) {
+        if (e instanceof AuthenticationError) {
+          throw new AuthenticationError("Incorrect password");
+        }
+      }
+
+      try {
+        await passwordProvider.authPreCheck(newEmail);
+        throw new ConflictError("A user already exists with this email");
+      } catch (e) {
+        if (!(e instanceof UserNotFoundError) || !enable_register_password)
+          throw e;
+      }
+
+      if (validate_email) {
+        const token = await tokenProvider.create("associate", {
+          identity: [
+            {
+              provider: "email",
+              provider_id: newEmail,
+            },
+          ],
+          user_id: request.user?.id,
+        });
+        const { root_url, name: ctf_name } = (
+          await configService.get<SetupConfig>(SetupConfig.$id!)
+        ).value;
+        await emailService.sendEmail({
+          to: [{ address: newEmail, name: "" }],
+          subject: "Verify Your Email",
+          text: EMAIL_CHANGE_TEMPLATE({
+            root_url,
+            ctf_name,
+            token,
+          }),
+        });
+        return {
+          message:
+            "Please check your new email for a link to confirm your email update",
+        };
+      }
+
+      // TODO: figure out how to consider valid_email user flag, we probably want to remove
+      await identityService.associateIdentities([
+        {
+          user_id: request.user.id,
+          provider: "email",
+          provider_id: newEmail,
+        },
+      ]);
+      return {};
     },
   );
 }

@@ -9,7 +9,6 @@ import {
   PublicChallengeSummary,
   Team,
   ScoringStrategy,
-  User,
   ScoreboardEntry,
   TeamSummary,
   Solve,
@@ -17,6 +16,7 @@ import {
   Division,
   TeamTag,
   UserSummary,
+  UserIdentity,
 } from "./datatypes.ts";
 import { AuthTokenType, RegisterTokenData } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
@@ -48,6 +48,13 @@ export const ListAuthMethodsResponse = Type.Object({
   data: Type.Array(AuthMethod),
 });
 export type ListAuthMethodsResponse = Static<typeof ListAuthMethodsResponse>;
+
+export const ListUserIdentitiesResponse = Type.Object({
+  data: Type.Array(Type.Pick(UserIdentity, ["provider", "provider_id"])),
+});
+export type ListUserIdentitiesResponse = Static<
+  typeof ListUserIdentitiesResponse
+>;
 
 export const InitAuthOauthResponse = Type.Object({
   data: Type.String(),

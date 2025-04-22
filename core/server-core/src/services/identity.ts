@@ -20,6 +20,7 @@ export type AssociateIdentity = Omit<UserIdentity, "created_at">;
 const CACHE_NAMESPACE = "core:svc:identity";
 
 export class IdentityService {
+  private readonly databaseClient;
   private readonly tokenService;
   private readonly cacheService;
   private readonly dao;
@@ -27,6 +28,7 @@ export class IdentityService {
   private providers: Map<string, IdentityProvider> = new Map();
 
   constructor({ databaseClient, tokenService, cacheService }: Props) {
+    this.databaseClient = databaseClient;
     this.tokenService = tokenService;
     this.cacheService = cacheService;
     this.dao = new UserIdentityDAO(databaseClient.get());
@@ -81,8 +83,13 @@ export class IdentityService {
     return this.tokenService.revoke(token, audience);
   }
 
-  async associateIdentity(data: AssociateIdentity) {
-    return this.dao.associate(data);
+  async associateIdentities(data: AssociateIdentity[]) {
+    return this.databaseClient.transaction(async (tx) => {
+      const dao = new UserIdentityDAO(tx);
+      for (const d of data) {
+        await dao.associate(d);
+      }
+    });
   }
 
   async removeIdentity(user_id: number, provider: string) {

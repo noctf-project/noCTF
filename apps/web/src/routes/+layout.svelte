@@ -4,9 +4,18 @@
   import Header from "$lib/components/Header.svelte";
   import ThemeSwitcher from "$lib/components/ThemeSwitcher.svelte";
   import Toast from "$lib/components/Toast.svelte";
+  import { onMount } from "svelte";
   import "../app.css";
 
   let { children } = $props();
+
+  onMount(() => {
+    const storedTheme = localStorage.getItem("theme");
+    document.documentElement.setAttribute(
+      "data-theme",
+      storedTheme || "system",
+    );
+  });
 </script>
 
 <div class="flex flex-col min-h-screen h-auto">
@@ -19,7 +28,7 @@
     {@render children()}
   </div>
 
-  <div class="fixed left-6 bottom-1">
+  <div class="fixed left-6 bottom-4">
     <ThemeSwitcher />
   </div>
   <Toast />

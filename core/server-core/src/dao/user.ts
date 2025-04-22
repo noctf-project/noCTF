@@ -3,6 +3,7 @@ import pg from "pg";
 import type { DB } from "@noctf/schema";
 import { ConflictError, NotFoundError } from "../errors.ts";
 import type { DBType } from "../clients/database.ts";
+import { FilterUndefined } from "../util/filter.ts";
 import type { UserSummary, User } from "@noctf/api/datatypes";
 import { partition } from "../util/object.ts";
 
@@ -55,7 +56,7 @@ export class UserDAO {
     params?: Parameters<UserDAO["listQuery"]>[0],
     limit?: Parameters<UserDAO["listQuery"]>[1],
   ): Promise<UserSummary[]> {
-    let query = this.listQuery(params, limit)
+    const query = this.listQuery(params, limit)
       .leftJoin("team_member as tm", "user.id", "tm.user_id")
       .select([
         "user.id",
@@ -109,19 +110,11 @@ export class UserDAO {
 
   async update(
     id: number,
-    {
-      name,
-      bio,
-      roles,
-    }: Pick<Updateable<DB["user"]>, "name" | "bio" | "roles">,
+    v: Pick<Updateable<DB["user"]>, "name" | "bio" | "flags" | "roles">,
   ) {
     const { numUpdatedRows } = await this.db
       .updateTable("user")
-      .set({
-        name,
-        bio,
-        roles,
-      })
+      .set(FilterUndefined(v))
       .where("id", "=", id)
       .executeTakeFirst();
     if (!numUpdatedRows) {

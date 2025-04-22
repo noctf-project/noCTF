@@ -14,7 +14,7 @@
     e.preventDefault();
     try {
       isLoading = true;
-      if (await loginState.register()) goto("/");
+      await loginState.register();
     } catch (error) {
       toasts.error("An error occurred during registration");
       console.error(error);

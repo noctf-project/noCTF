@@ -5,8 +5,14 @@ import {
   Challenge,
   Team,
   TypeDate,
+  User,
 } from "./datatypes.ts";
 import { SubmissionStatus } from "./enums.ts";
+
+export const UpdateUserRequest = Type.Pick(User, ["name", "bio"], {
+  additionalProperties: false,
+});
+export type UpdateUserRequest = Static<typeof UpdateUserRequest>;
 
 export const InitAuthOauthRequest = Type.Object(
   {
@@ -43,6 +49,23 @@ export const FinishAuthEmailRequest = Type.Object(
   { additionalProperties: false },
 );
 export type FinishAuthEmailRequest = Static<typeof FinishAuthEmailRequest>;
+
+export const ChangeAuthEmailRequest = Type.Object(
+  {
+    email: Type.String({ format: "email" }),
+    password: Type.String(),
+  },
+  { additionalProperties: false },
+);
+export type ChangeAuthEmailRequest = Static<typeof ChangeAuthEmailRequest>;
+
+export const AssociateRequest = Type.Object(
+  {
+    token: Type.String(),
+  },
+  { additionalProperties: false },
+);
+export type AssociateRequest = Static<typeof AssociateRequest>;
 
 export const RegisterAuthRequest = Type.Object(
   {
