@@ -12,6 +12,7 @@
 
 .markdown-body {
   @apply prose;
+  max-width: 95%;
 }
 
 .carta-font-code {

@@ -182,7 +182,7 @@
         class="bg-base-200 rounded-lg pop w-full p-6 h-fit w-ful lg:max-w-[50%]"
         use:outsideClickHandler
       >
-        <div class="mb-6 w-full">
+        <div class="mb-2 w-full">
           <div class="flex flex-row justify-between mb-4">
             <h2 class="text-2xl font-bold">{challData?.title}</h2>
             <div class="flex flex-row gap-2">
@@ -251,7 +251,7 @@
             </div>
 
             {#if challDetails!.files.length > 0}
-              <div class="flex flex-col gap-2">
+              <div class="flex flex-col gap-2 mb-6">
                 <div class="flex flex-row gap-1 items-center">
                   <Icon
                     icon="material-symbols:attach-file-rounded"
@@ -259,7 +259,7 @@
                   ></Icon>
                   <div class="text-xl font-bold">Files</div>
                 </div>
-                <ul class="flex flex-row gap-4">
+                <ul class="flex flex-row flex-wrap gap-x-4 gap-y-2">
                   {#each challDetails!.files as file}
                     <li>
                       <a
@@ -351,7 +351,7 @@
       </div>
       {#if scoreModalVisible}
         <div
-          class="bg-base-200 rounded-lg pop w-full md:max-w-80 p-6 px-3"
+          class="bg-base-200 rounded-lg pop w-full md:max-w-80 p-6 px-3 max-h-[46vh] overflow-hidden"
           bind:this={scoreModalRef}
         >
           <h2 class="text-center text-xl font-semibold">Solves</h2>
@@ -367,7 +367,7 @@
               No solves yet, be the first!
             </div>
           {:else}
-            <div class="overflow-x-hidden overflow-y-auto max-h-[46vh]">
+            <div class="overflow-x-hidden overflow-y-auto h-full">
               <table class="table table-fixed table-bordered">
                 <thead class="h-4">
                   <tr>
@@ -389,16 +389,17 @@
                         {/if}
                       </td>
                       <td class="font-medium text-primary max-w-0">
-                        <a
-                          href="/teams/{teamId}"
-                          class="block truncate hover:text-primary-focus"
-                        >
-                          {#await TeamNamesService.get(teamId)}
-                            loading...
-                          {:then team}
+                        {#await TeamNamesService.get(teamId)}
+                          <div class="skeleton w-full h-4"></div>
+                        {:then team}
+                          <a
+                            href="/teams/{teamId}"
+                            title={team?.name}
+                            class="block truncate hover:text-primary-focus"
+                          >
                             {team?.name}
-                          {/await}
-                        </a>
+                          </a>
+                        {/await}
                       </td>
                       <td
                         class="text-neutral-400 whitespace-nowrap tooltip tooltip-left"
