@@ -265,7 +265,7 @@
                       <a
                         href={file.url.startsWith("http")
                           ? file.url
-                          : `${API_BASE_URL}/{file.url}`}
+                          : `${API_BASE_URL}/${file.url}`}
                         class="link text-primary font-semibold"
                         title={`${file.filename} - ${formatFileSize(file.size)} (${file.hash})`}
                         >{file.filename}</a
