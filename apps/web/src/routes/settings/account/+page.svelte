@@ -5,15 +5,17 @@
   import { onMount } from "svelte";
   import { replaceState } from "$app/navigation";
 
-  let emailVerified = $state(true);
   let isProcessingToken = $state(false);
+  let resendCooldown = $state(0);
+  let cooldownInterval: ReturnType<typeof setInterval> | undefined =
+    $state(undefined);
 
   let accountForm = $state({
     email: "",
     password: "",
-    newEmailSent: false,
   });
 
+  let newEmailSent = $state(false);
   let isUpdatingEmail = $state(false);
   let userIdentities = wrapLoadable(api.GET("/user/me/identities"));
 
@@ -21,6 +23,8 @@
     try {
       const r = await api.GET("/user/me/identities", {});
       userIdentities.r = r;
+      userIdentities.loading = false;
+      userIdentities.error = undefined;
       accountForm.email = getCurrentEmail();
     } catch (error) {
       console.error("Failed to fetch user identities:", error);
@@ -59,8 +63,8 @@
       }
 
       if (initResponse.data.message) {
-        accountForm.newEmailSent = true;
-        emailVerified = false;
+        newEmailSent = true;
+        startCooldown();
         toasts.success(
           "Verification email has been sent to your new email address.",
         );
@@ -92,8 +96,7 @@
       }
 
       accountForm.password = "";
-      accountForm.newEmailSent = false;
-      emailVerified = true;
+      newEmailSent = false;
       await refreshUserIdentities();
       accountForm.email = getCurrentEmail();
       toasts.success("Email updated successfully!");
@@ -113,18 +116,26 @@
       });
 
       toasts.success("Verification email sent. Please check your inbox.");
+      startCooldown();
     } catch (error) {
       console.error("Failed to resend verification email:", error);
       toasts.error("Failed to resend verification email: " + error);
     }
   }
 
-  function cancelEmailChange() {
-    accountForm.email = getCurrentEmail();
-    accountForm.password = "";
-    accountForm.newEmailSent = false;
-    emailVerified = true;
-    toasts.info("Email change cancelled.");
+  function startCooldown() {
+    resendCooldown = 120;
+    if (cooldownInterval) {
+      clearInterval(cooldownInterval);
+    }
+
+    cooldownInterval = setInterval(() => {
+      resendCooldown = resendCooldown - 1;
+      if (resendCooldown <= 0) {
+        clearInterval(cooldownInterval);
+        cooldownInterval = undefined;
+      }
+    }, 1000);
   }
 
   function getCurrentEmail() {
@@ -137,60 +148,43 @@
     return "";
   }
 
-  onMount(async () => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
+  onMount(() => {
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get("token");
 
-    if (token) {
-      try {
-        isProcessingToken = true;
-        await finishEmailChange(token);
+      if (token) {
+        try {
+          isProcessingToken = true;
+          await finishEmailChange(token);
 
-        const url = new URL(window.location.href);
-        url.searchParams.delete("token");
-        replaceState(url.toString(), {});
-      } catch (error) {
-        console.error("Failed to process token:", error);
-        toasts.error("Failed to process email verification token: " + error);
-      } finally {
-        isProcessingToken = false;
+          const url = new URL(window.location.href);
+          url.searchParams.delete("token");
+          replaceState(url.toString(), {});
+        } catch (error) {
+          console.error("Failed to process token:", error);
+          toasts.error("Failed to process email verification token: " + error);
+        } finally {
+          isProcessingToken = false;
+        }
+      } else {
+        await refreshUserIdentities();
       }
-    } else {
-      await refreshUserIdentities();
-    }
+    })();
+
+    return () => {
+      if (cooldownInterval) {
+        clearInterval(cooldownInterval);
+      }
+    };
   });
 </script>
 
 <div class="space-y-6">
   <h2 class="text-2xl font-bold">Account</h2>
 
-  {#if isProcessingToken}
-    <div class="alert">
-      <span class="loading loading-spinner loading-sm"></span>
-      <span>Processing email verification...</span>
-    </div>
-  {:else if !emailVerified}
-    <div class="alert alert-warning">
-      <Icon icon="material-symbols:warning" class="text-lg" />
-      <span
-        >Your email address is not verified. Please check your inbox for a
-        verification link.</span
-      >
-    </div>
-  {/if}
-
   <form onsubmit={updateEmail} class="form-control w-full flex flex-col gap-4">
     <div>
-      <label class="label" for="email">
-        <span class="label-text">Email Address</span>
-        {#if emailVerified && !userIdentities.loading && !userIdentities.error}
-          <span class="label-text-alt text-success flex items-center gap-1">
-            <Icon icon="material-symbols:check-circle" />
-            Verified
-          </span>
-        {/if}
-      </label>
-
       {#if userIdentities.loading}
         <div class="skeleton h-12 w-full"></div>
       {:else if userIdentities.error}
@@ -206,14 +200,14 @@
           bind:value={accountForm.email}
           placeholder="Your email address"
           class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
-          disabled={accountForm.newEmailSent || isProcessingToken}
+          disabled={newEmailSent || isProcessingToken}
           required
           autocomplete="email"
         />
       {/if}
     </div>
 
-    {#if !accountForm.newEmailSent}
+    {#if !newEmailSent}
       <div class="form-control w-full">
         <label class="label" for="password">
           <span class="label-text">Password</span>
@@ -232,35 +226,30 @@
       </div>
     {/if}
 
-    {#if accountForm.newEmailSent}
+    {#if newEmailSent}
       <div class="alert alert-info">
         <Icon icon="material-symbols:info" class="text-lg" />
         <span>
           A verification email has been sent to <strong
             >{accountForm.email}</strong
-          >. Please check your inbox and click the verification link.
+          >. Please check your inbox and click the verification link. Your email
+          will not be updated until you confirm it.
         </span>
       </div>
 
       <div class="flex flex-wrap gap-4 mt-4">
         <button
-          class="btn btn-outline pop hover:pop"
+          class="btn btn-primary pop hover:pop"
           type="button"
           onclick={resendVerificationEmail}
-          disabled={isProcessingToken}
+          disabled={isProcessingToken || resendCooldown > 0}
         >
-          <Icon icon="material-symbols:mail" class="mr-2" />
-          Resend Verification Email
-        </button>
-
-        <button
-          class="btn btn-ghost pop hover:pop"
-          type="button"
-          onclick={cancelEmailChange}
-          disabled={isProcessingToken}
-        >
-          <Icon icon="material-symbols:cancel" class="mr-2" />
-          Cancel Email Change
+          <Icon icon="material-symbols:mail" class="text-xl" />
+          {#if resendCooldown > 0}
+            Resend in {resendCooldown}s
+          {:else}
+            Resend Verification Email
+          {/if}
         </button>
       </div>
     {:else}
