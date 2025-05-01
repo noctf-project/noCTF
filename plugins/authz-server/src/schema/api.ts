@@ -9,6 +9,11 @@ export const AuthorizeQuery = Type.Object({
 });
 export type AuthorizeQuery = Static<typeof AuthorizeQuery>;
 
+export const AuthorizeResponse = Type.Object({
+  url: Type.String(),
+});
+export type AuthorizeResponse = Static<typeof AuthorizeResponse>;
+
 export const TokenRequest = Type.Object({
   grant_type: Type.String(),
   code: Type.String(),

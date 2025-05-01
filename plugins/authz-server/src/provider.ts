@@ -60,10 +60,17 @@ export class OAuthProvider {
     if ((await this.getClient(clientId))?.client_secret !== clientSecret) {
       return false;
     }
-    return !!(await this.cacheService.get<AuthorizationCodeContext>(
+    const context = await this.cacheService.get<AuthorizationCodeContext>(
       CACHE_NAMESPACE,
       `code:${code}`,
-    ));
+    );
+    if (!context) {
+      return false;
+    }
+    if (context.clientId !== clientId) {
+      return false;
+    }
+    return true;
   }
 
   async exchangeAuthorizationCodeForToken(code: string) {

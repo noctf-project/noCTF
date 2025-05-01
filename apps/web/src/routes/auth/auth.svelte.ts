@@ -2,7 +2,6 @@ import { goto } from "$app/navigation";
 import api, { SESSION_TOKEN_KEY } from "$lib/api/index.svelte";
 import authState from "$lib/state/auth.svelte";
 import { toasts } from "$lib/stores/toast";
-import { performRedirect } from "$lib/utils/url";
 
 class LoginState {
   email: string = $state("");
@@ -11,10 +10,12 @@ class LoginState {
   rememberMe: boolean = $state(false);
   registrationToken: string = $state("");
 
-  // URL params
+  // OAuth params
   urlParams = new URLSearchParams(window.location.search);
   clientId = this.urlParams.get("client_id");
-  redirectParam = this.urlParams.get("redirect_to");
+  redirectUri = this.urlParams.get("redirect_uri");
+  scope = this.urlParams.get("scope");
+  state = this.urlParams.get("state");
 
   async checkEmail() {
     const checkEmailRes = await api.POST("/auth/email/init", {
@@ -76,7 +77,7 @@ class LoginState {
     if (loginRes.data?.data?.type === "session") {
       localStorage.setItem(SESSION_TOKEN_KEY, loginRes.data.data.token);
       authState.refresh();
-      this.successRedirect();
+      this.finishAuth();
     } else {
       toasts.error("Login failed");
     }
@@ -105,16 +106,31 @@ class LoginState {
       toasts.success("Account created successfully!");
       localStorage.setItem(SESSION_TOKEN_KEY, registerRes.data.data.token);
       authState.refresh();
-      this.successRedirect("/team");
+      this.finishAuth("/team");
       return true;
     } else {
       toasts.error("Registration failed");
     }
   }
 
-  successRedirect(target = "/") {
-    if (this.redirectParam) {
-      performRedirect(this.redirectParam);
+  async finishAuth(target = "/") {
+    // handle OAuth flow when query params are present
+    if (this.clientId && this.redirectUri && this.scope && this.state) {
+      const r = await api.GET("/auth/oauth/authorize", {
+        params: {
+          query: {
+            client_id: this.clientId,
+            redirect_uri: this.redirectUri,
+            scope: this.scope,
+            state: this.state,
+          },
+        },
+      });
+      if (r.data?.url) {
+        window.location.replace(r.data?.url);
+      } else {
+        window.location.href = "/";
+      }
     } else {
       window.location.href = target;
     }

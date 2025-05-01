@@ -1,5 +1,6 @@
 import api, { SESSION_TOKEN_KEY } from "$lib/api/index.svelte";
 import { toasts } from "$lib/stores/toast";
+import loginState from "../../routes/auth/auth.svelte";
 
 interface User {
   id: number;
@@ -27,7 +28,7 @@ class AuthState {
       if (!this.isAuthenticated && ["/team", "/settings"].includes(path)) {
         window.location.href = "/auth";
       } else if (this.isAuthenticated && path === "/auth") {
-        window.location.href = "/";
+        loginState.finishAuth("/");
       } else if (!this.isAdmin && path.startsWith("/admin")) {
         if (this.isAuthenticated) {
           window.location.href = "/";
