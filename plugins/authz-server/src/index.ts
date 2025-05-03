@@ -2,7 +2,12 @@ import type { ServiceCradle } from "@noctf/server-core";
 import type { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
 import { OAuthProvider } from "./provider.ts";
-import { AuthorizeQuery, TokenRequest, TokenResponse } from "./schema/api.ts";
+import {
+  AuthorizeQuery,
+  AuthorizeResponse,
+  TokenRequest,
+  TokenResponse,
+} from "./schema/api.ts";
 import { BaseResponse } from "@noctf/api/responses";
 import fastifyFormbody from "@fastify/formbody";
 import { AuthzServerConfig } from "./schema/config.ts";
@@ -31,6 +36,7 @@ export async function initServer(fastify: FastifyInstance) {
         security: [{ bearer: [] }],
         querystring: AuthorizeQuery,
         response: {
+          200: AuthorizeResponse,
           302: {},
           400: BaseResponse,
         },
@@ -44,7 +50,9 @@ export async function initServer(fastify: FastifyInstance) {
         const url = new URL(WEB_URL);
         url.pathname = "/auth";
         url.searchParams.set("client_id", client_id);
-        url.searchParams.set("redirect_to", "api" + request.url);
+        url.searchParams.set("redirect_uri", redirect_uri);
+        url.searchParams.set("scope", scope);
+        url.searchParams.set("state", state);
         return reply.redirect(url.toString());
       }
 
@@ -57,7 +65,7 @@ export async function initServer(fastify: FastifyInstance) {
       url.searchParams.set("state", state);
       url.searchParams.set("code", code);
 
-      return reply.redirect(url.toString());
+      return { url };
     },
   );
 

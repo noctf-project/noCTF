@@ -7,7 +7,6 @@ export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 const client = createClient<paths>({
   baseUrl: API_BASE_URL,
-  credentials: "include",
 });
 
 const authMiddleware: Middleware = {
