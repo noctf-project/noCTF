@@ -82,7 +82,7 @@
 
       const response = await api.POST("/teams", {
         body: {
-          name: teamName,
+          name: teamName.trim(),
           division_id: defaultDivisionId,
         },
       });

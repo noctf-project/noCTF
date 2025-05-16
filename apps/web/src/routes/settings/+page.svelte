@@ -21,11 +21,16 @@
 
   async function updateProfile() {
     try {
+      if (!profileForm.name.trim()) {
+        toasts.error("Please enter a username");
+        return;
+      }
+
       isUpdatingProfile = true;
 
       const response = await api.PUT("/user/me", {
         body: {
-          name: profileForm.name,
+          name: profileForm.name.trim(),
           bio: profileForm.bio,
         },
       });

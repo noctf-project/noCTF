@@ -66,6 +66,10 @@ export class UserService {
     },
     actor?: AuditLogActor,
   ) {
+    if (name && (await this.userDAO.checkNameExists(name))) {
+      throw new ConflictError("A user already exists with this name");
+    }
+
     await this.userDAO.update(id, {
       name,
       bio,
