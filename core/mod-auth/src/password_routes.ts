@@ -15,6 +15,7 @@ import {
   AuthenticationError,
   BadRequestError,
   ConflictError,
+  NotFoundError,
 } from "@noctf/server-core/errors";
 
 export default async function (fastify: FastifyInstance) {
@@ -48,8 +49,10 @@ export default async function (fastify: FastifyInstance) {
         await passwordProvider.authPreCheck(email);
         return {};
       } catch (e) {
-        if (!(e instanceof UserNotFoundError) || !enable_register_password)
-          throw e;
+        if (!(e instanceof UserNotFoundError)) throw e;
+      }
+      if (!enable_register_password) {
+        throw new NotFoundError("The requested auth provider cannot be found");
       }
       const token = await tokenProvider.create("register", {
         identity: [
@@ -110,7 +113,12 @@ export default async function (fastify: FastifyInstance) {
       },
     },
     async (request) => {
+      const { enable_login_password } = await passwordProvider.getConfig();
+      if (!enable_login_password) {
+        throw new NotFoundError("The requested auth provider cannot be found");
+      }
       const email = request.body.email.toLowerCase();
+      await passwordProvider.authPreCheck(email);
       const password = request.body.password;
       const token = await passwordProvider.authenticate(email, password);
 
@@ -147,6 +155,9 @@ export default async function (fastify: FastifyInstance) {
     async (request) => {
       const { validate_email, enable_register_password } =
         await passwordProvider.getConfig();
+      if (!enable_register_password) {
+        throw new NotFoundError("The requested auth provider cannot be found");
+      }
       const { provider_id: oldEmail } =
         await identityService.getProviderForUser(request.user.id, "email");
       const newEmail = request.body.email.toLowerCase();
@@ -163,8 +174,7 @@ export default async function (fastify: FastifyInstance) {
         await passwordProvider.authPreCheck(newEmail);
         throw new ConflictError("A user already exists with this email");
       } catch (e) {
-        if (!(e instanceof UserNotFoundError) || !enable_register_password)
-          throw e;
+        if (!(e instanceof UserNotFoundError)) throw e;
       }
 
       if (validate_email) {
