@@ -37,7 +37,10 @@
       toasts.success("Profile updated successfully!");
     } catch (error) {
       console.error("Failed to update profile:", error);
-      toasts.error("Failed to update profile. Please try again.");
+      const message = error?.toString()?.includes("must match pattern")
+        ? "Name contains invalid characters"
+        : error;
+      toasts.error("Failed to update profile: " + message);
     } finally {
       isUpdatingProfile = false;
     }

@@ -9,9 +9,24 @@ import {
 } from "./datatypes.ts";
 import { SubmissionStatus } from "./enums.ts";
 
-export const UpdateUserRequest = Type.Pick(User, ["name", "bio"], {
-  additionalProperties: false,
-});
+const NoInvalidWhitespace =
+  "^[^\\t\\n\\r\\f\\v\\u00A0\\u1680\\u2000\\u2001\\u2002\\u2003\\u2004\\u2005\\u2006\\u2007\\u2008\\u2009\\u200A\\u200B\\u200C\\u200D\\u200E\\u200F\\u2028\\u2029\\u202F\\u205F\\u2060\\u3000\\uFEFF]+$";
+
+export const UpdateUserRequest = Type.Composite(
+  [
+    Type.Pick(User, ["bio"]),
+    Type.Object({
+      name: Type.String({
+        minLength: 1,
+        maxLength: 64,
+        pattern: NoInvalidWhitespace,
+      }),
+    }),
+  ],
+  {
+    additionalProperties: false,
+  },
+);
 export type UpdateUserRequest = Static<typeof UpdateUserRequest>;
 
 export const InitAuthOauthRequest = Type.Object(
@@ -70,7 +85,11 @@ export type AssociateRequest = Static<typeof AssociateRequest>;
 export const RegisterAuthRequest = Type.Object(
   {
     token: Type.String(),
-    name: Type.String({ maxLength: 64 }),
+    name: Type.String({
+      minLength: 1,
+      maxLength: 64,
+      pattern: NoInvalidWhitespace,
+    }),
     email: Type.Optional(Type.String({ format: "email" })),
     password: Type.Optional(Type.String({ minLength: 8, maxLength: 256 })),
     captcha: CaptchaValidationString,
@@ -168,7 +187,14 @@ export type AdminCreateSubmissionRequest = Static<
 
 export const CreateTeamRequest = Type.Composite(
   [
-    Type.Pick(Team, ["name", "division_id"]),
+    Type.Pick(Team, ["division_id"]),
+    Type.Object({
+      name: Type.String({
+        minLength: 1,
+        maxLength: 64,
+        pattern: NoInvalidWhitespace,
+      }),
+    }),
     Type.Object({
       captcha: CaptchaValidationString,
     }),

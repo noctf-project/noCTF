@@ -95,8 +95,11 @@ class LoginState {
     });
 
     if (registerRes.error) {
+      const message = registerRes.error.message?.includes("must match pattern")
+        ? "Name contains invalid characters"
+        : registerRes.error.message;
       toasts.error(
-        registerRes.error.message ||
+        message ||
           "An error occured during registration. Please try again later.",
       );
       console.error(registerRes.error);
