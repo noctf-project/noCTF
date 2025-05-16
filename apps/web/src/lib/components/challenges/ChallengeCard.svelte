@@ -36,7 +36,7 @@
     <div class="flex flex-row items-center gap-3">
       {#if data.difficulty}
         <div
-          class={`badge badge-sm rounded-xl text-xs font-black border-base-content shadow-solid ${difficultyToBgColour(data.difficulty as Difficulty)}`}
+          class={`badge badge-sm rounded-xl text-xs text-base-500 font-black pop ${difficultyToBgColour(data.difficulty as Difficulty)}`}
         >
           {data.difficulty}
         </div>
