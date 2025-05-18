@@ -84,10 +84,15 @@ class LoginState {
   }
 
   async register() {
+    if (!this.username.trim()) {
+      toasts.error("Please enter a username");
+      return;
+    }
+
     const registerRes = await api.POST("/auth/register/finish", {
       body: {
         token: this.registrationToken,
-        name: this.username,
+        name: this.username.trim(),
         email: this.email, // this email doesn't actually matter since the backend should use the token to get the email
         password: this.password,
         captcha: "", // Assuming captcha is handled elsewhere or not needed here
@@ -95,8 +100,11 @@ class LoginState {
     });
 
     if (registerRes.error) {
+      const message = registerRes.error.message?.includes("must match pattern")
+        ? "Name contains invalid characters"
+        : registerRes.error.message;
       toasts.error(
-        registerRes.error.message ||
+        message ||
           "An error occured during registration. Please try again later.",
       );
       console.error(registerRes.error);

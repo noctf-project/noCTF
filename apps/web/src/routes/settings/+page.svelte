@@ -21,11 +21,16 @@
 
   async function updateProfile() {
     try {
+      if (!profileForm.name.trim()) {
+        toasts.error("Please enter a username");
+        return;
+      }
+
       isUpdatingProfile = true;
 
       const response = await api.PUT("/user/me", {
         body: {
-          name: profileForm.name,
+          name: profileForm.name.trim(),
           bio: profileForm.bio,
         },
       });
@@ -37,7 +42,10 @@
       toasts.success("Profile updated successfully!");
     } catch (error) {
       console.error("Failed to update profile:", error);
-      toasts.error("Failed to update profile. Please try again.");
+      const message = error?.toString()?.includes("must match pattern")
+        ? "Name contains invalid characters"
+        : error;
+      toasts.error("Failed to update profile: " + message);
     } finally {
       isUpdatingProfile = false;
     }
