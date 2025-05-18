@@ -78,6 +78,10 @@ export class ScoreboardService {
     return await this.dataLoader.getTeam(0, division_id, team_id);
   }
 
+  async getTeamRank(division_id: number, team_id: number, tags?: number[]) {
+    return await this.dataLoader.getTeamRank(0, division_id, team_id, tags);
+  }
+
   async getChallengesSummary(division_id: number) {
     return await this.dataLoader.getChallengeSummary(0, division_id);
   }

@@ -69,6 +69,7 @@ export class ScoreboardDataLoader {
     Record<number, ChallengeSummary>
   >();
   private readonly getTeamCoalescer = new Coleascer<ScoreboardEntry | null>();
+  private readonly getTeamRankCoalescer = new Coleascer<number | null>();
 
   async saveTeamTags(teams: MinimalTeamInfo[]) {
     const tags = new Map<number, number[]>();
@@ -235,6 +236,41 @@ export class ScoreboardDataLoader {
           team.toString(),
         );
         return compressed ? decode(await Decompress(compressed)) : null;
+      },
+    );
+  }
+
+  async getTeamRank(
+    pointer: number,
+    division_id: number,
+    team: number,
+    tags?: number[],
+  ): Promise<number | null> {
+    const version = pointer || (await this.getLatestPointer(division_id));
+    if (!version) return null;
+    const sTags = [...new Set(tags)].sort();
+    const keys = this.getCacheKeys(version, division_id);
+    return this.getTeamRankCoalescer.get(
+      `${version}:${division_id}:${team}:rank:${sTags.join()}`,
+      async () => {
+        const client = await this.factory.getClient();
+        const set = sTags.length
+          ? `${keys.ranktag}:${sTags.join(",")}`
+          : keys.rank;
+        let result = await client.zRank(
+          client.commandOptions({ returnBuffers: true }),
+          set,
+          team.toString(),
+        );
+        if (result == null && !sTags.length) return null;
+        await this.createTaggedRankTable(set, keys.rank, sTags);
+        result = await client.zRank(
+          client.commandOptions({ returnBuffers: true }),
+          set,
+          team.toString(),
+        );
+        if (result == null) return null;
+        return result + 1; // zRank will give 0-indexed
       },
     );
   }
