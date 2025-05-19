@@ -221,7 +221,7 @@
           <div class="flex flex-row items-center gap-3 w-full">
             {#if challData?.difficulty}
               <div
-                class={`badge badge-sm rounded-xl text-xs font-black pop ${difficultyToBgColour(challData?.difficulty as Difficulty)}`}
+                class={`badge badge-sm text-base-500 rounded-xl text-xs font-black pop ${difficultyToBgColour(challData?.difficulty as Difficulty)}`}
               >
                 {challData?.difficulty}
               </div>
