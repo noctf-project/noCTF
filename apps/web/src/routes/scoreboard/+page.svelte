@@ -113,6 +113,9 @@
           api.GET("/scoreboard/teams/{id}", {
             params: {
               path: { id: authState.user.team_id },
+              query: {
+                tags: selectedTags.length > 0 ? selectedTags : undefined,
+              },
             },
           }),
         )

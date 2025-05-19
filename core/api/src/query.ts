@@ -13,8 +13,8 @@ export const ScoreboardQuery = Type.Object({
 });
 export type ScoreboardQuery = Static<typeof ScoreboardQuery>;
 
-export const ScoreboardTopQuery = Type.Pick(ScoreboardQuery, ["tags"]);
-export type ScoreboardTopQuery = Static<typeof ScoreboardTopQuery>;
+export const ScoreboardTagsQuery = Type.Pick(ScoreboardQuery, ["tags"]);
+export type ScoreboardTagsQuery = Static<typeof ScoreboardTagsQuery>;
 
 export const GetFileQuery = Type.Object(
   {

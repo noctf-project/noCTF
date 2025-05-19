@@ -8,7 +8,7 @@ import {
 } from "@noctf/api/responses";
 import { IdParams } from "@noctf/api/params";
 import { NotFoundError } from "@noctf/server-core/errors";
-import { ScoreboardQuery, ScoreboardTopQuery } from "@noctf/api/query";
+import { ScoreboardQuery, ScoreboardTagsQuery } from "@noctf/api/query";
 import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
 
@@ -72,7 +72,7 @@ export async function routes(fastify: FastifyInstance) {
 
   fastify.get<{
     Reply: ScoreboardGraphsResponse;
-    Querystring: ScoreboardTopQuery;
+    Querystring: ScoreboardTagsQuery;
     Params: IdParams;
   }>(
     "/scoreboard/divisions/:id/top",
@@ -83,7 +83,7 @@ export async function routes(fastify: FastifyInstance) {
         auth: {
           policy: ["scoreboard.get"],
         },
-        querystring: ScoreboardTopQuery,
+        querystring: ScoreboardTagsQuery,
         params: IdParams,
         response: {
           200: ScoreboardGraphsResponse,
@@ -103,12 +103,17 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{ Params: IdParams; Reply: ScoreboardTeamResponse }>(
+  fastify.get<{
+    Params: IdParams;
+    Querystring: ScoreboardTagsQuery;
+    Reply: ScoreboardTeamResponse;
+  }>(
     "/scoreboard/teams/:id",
     {
       schema: {
         security: [{ bearer: [] }],
         tags: ["scoreboard"],
+        querystring: ScoreboardTagsQuery,
         params: IdParams,
         response: {
           200: ScoreboardTeamResponse,
@@ -127,6 +132,17 @@ export async function routes(fastify: FastifyInstance) {
         throw new NotFoundError("Team not found");
       }
       const entry = await scoreboardService.getTeam(team.division_id, team.id);
+      if (request.query.tags) {
+        const rank = await scoreboardService.getTeamRank(
+          team.division_id,
+          team.id,
+          request.query.tags,
+        );
+        if (rank == null) {
+          throw new NotFoundError("Team not found");
+        }
+        entry.rank = rank;
+      }
       const graph = await scoreboardService.getTeamScoreHistory(
         request.params.id,
       );
