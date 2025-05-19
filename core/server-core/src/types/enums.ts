@@ -1,9 +1,13 @@
-export enum UserRole {
+export enum UserFlag {
   VALID_EMAIL = "valid_email",
+  BLOCKED = "blocked",
+  HIDDEN = "hidden",
+}
+
+export enum UserRole {
   ADMIN = "admin",
   ACTIVE = "active",
   BLOCKED = "blocked",
-  HIDDEN = "hidden",
 }
 
 export enum TeamFlag {

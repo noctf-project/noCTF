@@ -1,5 +1,5 @@
 import type { DB } from "@noctf/schema";
-import type { Insertable } from "kysely";
+import { sql, type Insertable } from "kysely";
 import { DBType } from "../clients/database.ts";
 import { AdminQuerySubmissionsRequest } from "@noctf/api/requests";
 import { LimitOffset, Submission } from "@noctf/api/datatypes";
@@ -7,21 +7,27 @@ import { SubmissionStatus } from "@noctf/api/enums";
 import { PostgresErrorCode, TryPGConstraintError } from "../util/pgerror.ts";
 import { ConflictError } from "../errors.ts";
 
-export type RawSolve = {
-  id: number;
-  team_id: number;
-  challenge_id: number;
-  hidden: boolean;
-  created_at: Date;
-  updated_at: Date;
-  value: number | null;
-};
+export type RawSolve = Pick<
+  Submission,
+  | "id"
+  | "user_id"
+  | "team_id"
+  | "challenge_id"
+  | "hidden"
+  | "created_at"
+  | "updated_at"
+  | "value"
+>;
 
 export class SubmissionDAO {
   constructor(private readonly db: DBType) {}
 
   async create(v: Insertable<DB["submission"]>) {
-    await this.db.insertInto("submission").values(v).executeTakeFirst();
+    return await this.db
+      .insertInto("submission")
+      .values(v)
+      .returning((eb) => ["id", "updated_at"])
+      .executeTakeFirstOrThrow();
   }
 
   async getCurrentMetadata(challenge_id: number, team_id: number) {
@@ -46,8 +52,16 @@ export class SubmissionDAO {
     let query = this.db
       .updateTable("submission")
       .where("id", "in", ids)
-      .set("updated_at", new Date())
-      .returning("id");
+      .set("updated_at", sql`CURRENT_TIMESTAMP`)
+      .returning((eb) => [
+        "id",
+        "user_id",
+        "team_id",
+        "challenge_id",
+        "hidden",
+        "updated_at",
+        "status",
+      ]);
     if (typeof params.comments === "string") {
       query = query.set("comments", params.comments);
     }
@@ -61,7 +75,7 @@ export class SubmissionDAO {
       query = query.set("status", params.status);
     }
     try {
-      return (await query.execute()).map(({ id }) => id);
+      return query.execute();
     } catch (e) {
       const pgerror = TryPGConstraintError(e, {
         [PostgresErrorCode.Duplicate]: {
@@ -162,6 +176,7 @@ export class SubmissionDAO {
       .select([
         "s.id as id",
         "s.team_id as team_id",
+        "s.user_id as user_id",
         "s.challenge_id as challenge_id",
         "s.hidden as hidden",
         "s.created_at as created_at",

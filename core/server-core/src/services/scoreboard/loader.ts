@@ -11,7 +11,6 @@ import { Coleascer } from "../../util/coleascer.ts";
 import { RunInParallelWithLimit } from "../../util/semaphore.ts";
 import { MinimalTeamInfo } from "../../dao/team.ts";
 import { LocalCache } from "../../util/local_cache.ts";
-import { DatabaseClient } from "../../clients/database.ts";
 
 const SCRIPT_PREPARE_RANK = `
 local dest_key = KEYS[1]
@@ -47,11 +46,11 @@ ret[1] = redis.call('ZCARD', ranks_key)
 ret[2] = redis.call('HMGET', teams_key, unpack(teams))
 return ret`;
 
+const SCOREBOARD_EXPIRE_TIME = 300;
+const CACHE_NAMESPACE = "core:svc:score:data";
+
 export class ScoreboardDataLoader {
-  constructor(
-    private readonly factory: RedisClientFactory,
-    private readonly namespace: string,
-  ) {}
+  constructor(private readonly factory: RedisClientFactory) {}
 
   private readonly latestPointerCache = new LocalCache<
     number,
@@ -86,13 +85,13 @@ export class ScoreboardDataLoader {
     const client = await this.factory.getClient();
     const multi = client.multi();
     for (const [id, teams] of tags) {
-      const key = `${this.namespace}:tt:${id}`;
+      const key = `${CACHE_NAMESPACE}:tt:${id}`;
       multi.del(key);
       multi.sAdd(
         key,
         teams.map((id) => id.toString()),
       );
-      multi.expire(key, 300);
+      multi.expire(key, SCOREBOARD_EXPIRE_TIME);
     }
     await multi.exec();
   }
@@ -305,16 +304,27 @@ export class ScoreboardDataLoader {
     if (csolves.length) multi.hSet(keys.csolves, csolves);
     multi.set(keys.csummary, (await Compress(encode(csummary))) as Buffer);
     for (const key of saved) {
-      multi.expire(key, 300);
+      multi.expire(key, SCOREBOARD_EXPIRE_TIME);
     }
     await multi.exec();
     const out = { division_id, version };
-
     if (latest) this.saveLatestPointer(out);
     return out;
   }
 
-  async getLatestPointer(division_id: number) {
+  async touch(pointer: number, division_id: number) {
+    const version = pointer || (await this.getLatestPointer(division_id));
+    if (!version) return [];
+    const keys = this.getCacheKeys(version, division_id);
+    const multi = (await this.factory.getClient()).multi();
+    for (const key of Object.values(keys)) {
+      multi.expire(key, SCOREBOARD_EXPIRE_TIME);
+    }
+    await multi.exec();
+  }
+
+  async getLatestPointer(division_id: number, cached = true) {
+    if (!cached) this.latestPointerCache.delete(division_id);
     return (
       await this.latestPointerCache.load(division_id, async () => {
         const client = await this.factory.getClient();
@@ -351,12 +361,12 @@ export class ScoreboardDataLoader {
     await client.set(
       `${this.getDivisionString(data.division_id)}:latest`,
       JSON.stringify(data),
-      { EX: 300 },
+      { EX: SCOREBOARD_EXPIRE_TIME },
     );
   }
 
   private getDivisionString(division: number) {
-    return `${this.namespace}:d:${division}`;
+    return `${CACHE_NAMESPACE}:d:${division}`;
   }
 
   private getCacheKeys(version: number, division: number) {
@@ -380,7 +390,7 @@ export class ScoreboardDataLoader {
       [
         taggedKey,
         rankKey,
-        ...sortedTags.map((id) => `${this.namespace}:tt:${id}`),
+        ...sortedTags.map((id) => `${CACHE_NAMESPACE}:tt:${id}`),
       ],
       [],
     );

@@ -1,4 +1,4 @@
-import { BadRequestError, ConflictError } from "../errors.ts";
+import { BadRequestError, ConflictError, NotFoundError } from "../errors.ts";
 import type { ServiceCradle } from "../index.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
@@ -27,7 +27,28 @@ export class UserService {
   }
 
   async get(id: number) {
-    return this.userDAO.get(id);
+    const result = this.userDAO.get(id);
+    if (!result) throw new NotFoundError("User not found");
+    return result;
+  }
+
+  async listSummary(
+    params?: {
+      flags?: string[];
+      ids?: number[];
+      name_prefix?: string;
+    },
+    limit?: { limit?: number; offset?: number },
+  ) {
+    return this.userDAO.listSummary(params, limit);
+  }
+
+  async getCount(params?: {
+    flags?: string[];
+    division_id?: number;
+    ids?: number[];
+  }) {
+    return this.userDAO.getCount(params);
   }
 
   async update(
@@ -35,22 +56,32 @@ export class UserService {
     {
       name,
       bio,
+      flags,
       roles,
     }: {
-      name: string;
-      bio: string;
-      roles: string[];
+      name?: string;
+      bio?: string;
+      flags?: string[];
+      roles?: string[];
     },
     actor?: AuditLogActor,
   ) {
+    if (name && (await this.userDAO.checkNameExists(name))) {
+      throw new ConflictError("A user already exists with this name");
+    }
+
     await this.userDAO.update(id, {
       name,
       bio,
+      flags,
       roles,
     });
-    const changed = [name && "name", bio && "bio", roles && "roles"].filter(
-      (x) => x,
-    );
+    const changed = [
+      name && "name",
+      bio && "bio",
+      flags && "flags",
+      roles && "roles",
+    ].filter((x) => x);
 
     await this.auditLogService.log({
       operation: "user.update",
@@ -65,10 +96,12 @@ export class UserService {
       name,
       identities,
       roles,
+      flags,
     }: {
       name: string;
       identities: AssociateIdentity[];
       roles?: string[];
+      flags?: string[];
     },
     actor?: AuditLogActor,
   ) {
@@ -86,7 +119,7 @@ export class UserService {
     const id = await this.databaseClient.transaction(async (tx) => {
       const userDAO = new UserDAO(tx);
       const identityDAO = new UserIdentityDAO(tx);
-      const id = await userDAO.create({ name, roles });
+      const id = await userDAO.create({ name, roles, flags });
       for (const identity of identities) {
         await identityDAO.associate({ ...identity, user_id: id });
       }

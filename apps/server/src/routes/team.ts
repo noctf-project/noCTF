@@ -26,7 +26,7 @@ import { IdParams } from "@noctf/api/params";
 import { Policy } from "@noctf/server-core/util/policy";
 import SingleValueCache from "@noctf/server-core/util/single_value_cache";
 
-export const TEAM_PAGE_SIZE = 60;
+export const PAGE_SIZE = 60;
 
 export async function routes(fastify: FastifyInstance) {
   const adminPolicy: Policy = ["admin.team.get"];
@@ -285,14 +285,14 @@ export async function routes(fastify: FastifyInstance) {
       const page_size =
         (admin
           ? request.body.page_size
-          : Math.min(TEAM_PAGE_SIZE, request.body.page_size)) || TEAM_PAGE_SIZE;
+          : Math.min(PAGE_SIZE, request.body.page_size)) || PAGE_SIZE;
       const query = {
         flags: ["!hidden"],
         division_id: request.body.division_id,
         name_prefix: request.body.name_prefix,
         ids: request.body.ids,
       };
-      const [teams, total] = await Promise.all([
+      const [entries, total] = await Promise.all([
         teamService.listSummary(query, {
           limit: page_size,
           offset: (page - 1) * page_size,
@@ -301,7 +301,7 @@ export async function routes(fastify: FastifyInstance) {
       ]);
 
       return {
-        data: { teams, page_size, total: total || teams.length },
+        data: { entries, page_size, total: total || entries.length },
       };
     },
   );

@@ -9,13 +9,14 @@ import {
   PublicChallengeSummary,
   Team,
   ScoringStrategy,
-  User,
   ScoreboardEntry,
   TeamSummary,
   Solve,
   Submission,
   Division,
   TeamTag,
+  UserSummary,
+  UserIdentity,
 } from "./datatypes.ts";
 import { AuthTokenType, RegisterTokenData } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
@@ -47,6 +48,13 @@ export const ListAuthMethodsResponse = Type.Object({
   data: Type.Array(AuthMethod),
 });
 export type ListAuthMethodsResponse = Static<typeof ListAuthMethodsResponse>;
+
+export const ListUserIdentitiesResponse = Type.Object({
+  data: Type.Array(Type.Pick(UserIdentity, ["provider", "provider_id"])),
+});
+export type ListUserIdentitiesResponse = Static<
+  typeof ListUserIdentitiesResponse
+>;
 
 export const InitAuthOauthResponse = Type.Object({
   data: Type.String(),
@@ -104,7 +112,7 @@ export type GetTeamResponse = Static<typeof GetTeamResponse>;
 
 export const ListTeamsResponse = Type.Object({
   data: Type.Object({
-    teams: Type.Array(Type.Omit(TeamSummary, ["flags"])),
+    entries: Type.Array(Type.Omit(TeamSummary, ["flags"])),
     page_size: Type.Integer(),
     total: Type.Integer(),
   }),
@@ -118,21 +126,20 @@ export const ListTeamTagsResponse = Type.Object({
 });
 export type ListTeamTagsResponse = Static<typeof ListTeamTagsResponse>;
 
-export const QueryTeamNamesResponse = Type.Object({
-  data: Type.Array(
-    Type.Object({
-      id: Type.Number(),
-      name: Type.String(),
-    }),
-  ),
+export const ListUsersResponse = Type.Object({
+  data: Type.Object({
+    entries: Type.Array(Type.Omit(UserSummary, ["flags", "roles"])),
+    page_size: Type.Integer(),
+    total: Type.Integer(),
+  }),
 });
-export type QueryTeamNamesResponse = Static<typeof QueryTeamNamesResponse>;
+export type ListUsersResponse = Static<typeof ListUsersResponse>;
 
 export const MeUserResponse = Type.Object({
   data: Type.Composite([
-    User,
+    Type.Omit(UserSummary, ["flags"]),
+    // TODO: deprecate this, we can get from /team
     Type.Object({
-      team_id: Type.Union([Type.Number(), Type.Null()]),
       team_name: Type.Union([Type.String(), Type.Null()]),
     }),
   ]),

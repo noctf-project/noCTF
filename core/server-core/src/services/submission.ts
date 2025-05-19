@@ -6,15 +6,21 @@ import {
 import { ServiceCradle } from "../index.ts";
 import { SubmissionDAO } from "../dao/submission.ts";
 import { AuditParams } from "../types/audit_log.ts";
+import { SubmissionUpdateEvent } from "@noctf/api/events";
 
-type Props = Pick<ServiceCradle, "auditLogService" | "databaseClient">;
+type Props = Pick<
+  ServiceCradle,
+  "auditLogService" | "databaseClient" | "eventBusService"
+>;
 export class SubmissionService {
   private readonly dao;
 
   private readonly auditLogService;
+  private readonly eventBusService;
 
-  constructor({ databaseClient, auditLogService }: Props) {
+  constructor({ databaseClient, auditLogService, eventBusService }: Props) {
     this.auditLogService = auditLogService;
+    this.eventBusService = eventBusService;
     this.dao = new SubmissionDAO(databaseClient.get());
   }
 
@@ -28,10 +34,29 @@ export class SubmissionService {
     if (updates.length > 0)
       await this.auditLogService.log({
         operation: "submission.update",
-        entities: updates.map((id) => `submission:${id}`),
+        entities: updates.map(({ id }) => `submission:${id}`),
         actor: audit?.actor,
         data: audit?.message,
       });
-    return updates;
+    for (const {
+      id,
+      status,
+      user_id,
+      team_id,
+      hidden,
+      challenge_id,
+      updated_at,
+    } of updates) {
+      await this.eventBusService.publish(SubmissionUpdateEvent, {
+        id,
+        user_id: user_id || undefined,
+        team_id,
+        challenge_id,
+        status,
+        updated_at,
+        hidden,
+      });
+    }
+    return updates.map(({ id }) => id);
   }
 }

@@ -1,5 +1,6 @@
 import api, { SESSION_TOKEN_KEY } from "$lib/api/index.svelte";
 import { toasts } from "$lib/stores/toast";
+import loginState from "../../routes/auth/auth.svelte";
 
 interface User {
   id: number;
@@ -13,6 +14,7 @@ interface User {
 const USER_DATA_KEY = "noctf-user";
 class AuthState {
   user?: User = $state();
+  isInitialised: boolean = $state(false);
   isLoading: boolean = $state(true);
   isAuthenticated: boolean = $derived(!!this.user?.id);
   isAdmin: boolean = $derived(!!this.user?.roles?.includes("admin"));
@@ -23,10 +25,10 @@ class AuthState {
       // this could be done cleaner, but there are only a few protected pages
       // so this should be fine for now
       const path = window.location.pathname;
-      if (!this.isAuthenticated && path === "/team") {
+      if (!this.isAuthenticated && ["/team", "/settings"].includes(path)) {
         window.location.href = "/auth";
       } else if (this.isAuthenticated && path === "/auth") {
-        window.location.href = "/";
+        loginState.finishAuth("/");
       } else if (!this.isAdmin && path.startsWith("/admin")) {
         if (this.isAuthenticated) {
           window.location.href = "/";

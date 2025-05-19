@@ -82,7 +82,7 @@
 
       const response = await api.POST("/teams", {
         body: {
-          name: teamName,
+          name: teamName.trim(),
           division_id: defaultDivisionId,
         },
       });
@@ -100,7 +100,10 @@
           pageState = "success";
         }, 300);
       } else if (response.error) {
-        toasts.error(response.error.message || "Failed to create team");
+        const message = response.error.message?.includes("must match pattern")
+          ? "Name contains invalid characters"
+          : response.error.message;
+        toasts.error(message || "Failed to create team");
       }
     } catch (e) {
       console.error("Failed to create team:", e);

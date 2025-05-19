@@ -48,14 +48,18 @@
 
   function prepareChartData() {
     const datasets = teamsData.map((team, index) => {
+      let x = 0;
+      let y = 0;
       return {
         label: team.name,
-        data: team.data
-          .filter((v) => v[0] != 0)
-          .map(([timestamp, score]) => ({
-            x: timestamp,
-            y: score,
-          })),
+        data: team.data.map(([timestamp, score]) => {
+          x = x + timestamp;
+          y = y + score;
+          return {
+            x,
+            y,
+          };
+        }),
         borderColor: lineColours[index % lineColours.length],
         backgroundColor: lineColours[index % lineColours.length],
         tension: 0,
@@ -427,6 +431,6 @@
   });
 </script>
 
-<div class="card bg-base-100 pop w-full p-6 {extraClasses}">
+<div class="card rounded-lg bg-base-100 pop w-full p-6 {extraClasses}">
   <canvas bind:this={chartContainer}></canvas>
 </div>

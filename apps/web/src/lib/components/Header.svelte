@@ -5,7 +5,7 @@
 
   const isActive = (path: string) => {
     return page.url.pathname === path
-      ? "rounded-md bg-primary text-primary-content font-bold px-3 py-2"
+      ? "rounded-md bg-primary hover:bg-primary text-primary-content font-bold px-3 py-2"
       : "px-3 py-2";
   };
 </script>
@@ -84,8 +84,10 @@
   </div>
 
   <div class="navbar-end">
-    {#if !authState.isAuthenticated && page.url.pathname !== "/auth"}
-      <a href="/auth" class="btn btn-primary px-6 sm:px-8">Login</a>
+    {#if !authState.isAuthenticated && !page.url.pathname.startsWith("/auth")}
+      <a href="/auth" class="btn btn-primary px-6 sm:px-8 pop hover:pop"
+        >Login</a
+      >
     {:else if authState.isAuthenticated}
       <div class="dropdown dropdown-end">
         <div
@@ -117,7 +119,7 @@
           <Icon icon="mdi:chevron-down" class="hidden sm:block ml-1" />
         </div>
         <ul
-          class="menu menu-sm dropdown-content mt-3 z-[10] p-1 px-2 pop bg-base-100 rounded-box w-52 gap-1"
+          class="menu menu-sm dropdown-content mt-3 z-[10] p-1 px-2 pop bg-base-100 rounded-box w-52 gap-0"
         >
           <li class="flex flex-col sm:hidden pointer-events-none w-full gap-0">
             <div class="w-full font-semibold truncate">
@@ -131,7 +133,10 @@
           </li>
           <div class="sm:hidden divider py-0 mt-1 mb-0"></div>
           <li class="py-1">
-            <a href="/profile" class={isActive("/profile")}>Profile</a>
+            <a href="/team" class={isActive("/team")}>Team</a>
+          </li>
+          <li class="py-1">
+            <a href="/settings" class={isActive("/settings")}>Settings</a>
           </li>
           <li>
             <button

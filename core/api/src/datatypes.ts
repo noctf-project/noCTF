@@ -27,15 +27,6 @@ export type EmailAddress = Static<typeof EmailAddress>;
 export const EmailAddressOrUserId = Type.Union([EmailAddress, Type.Integer()]);
 export type EmailAddressOrUserId = Static<typeof EmailAddressOrUserId>;
 
-export const EmailMessage = Type.Object({
-  to: Type.Optional(Type.Array(EmailAddressOrUserId)),
-  cc: Type.Optional(Type.Array(EmailAddressOrUserId)),
-  bcc: Type.Optional(Type.Array(EmailAddressOrUserId)),
-  subject: Type.String(),
-  text: Type.String(),
-});
-export type EmailMessage = Static<typeof EmailMessage>;
-
 export const AuthMethod = Type.Object({
   provider: Type.String(),
   name: Type.Optional(Type.String()),
@@ -71,10 +62,31 @@ export const User = Type.Object({
   id: Type.Number(),
   name: Type.String({ maxLength: 64 }),
   bio: Type.String({ maxLength: 256 }),
+  flags: Type.Array(Type.String()),
   roles: Type.Array(Type.String()),
   created_at: TypeDate,
 });
 export type User = Static<typeof User>;
+
+export const UserSummary = Type.Composite([
+  User,
+  Type.Object({
+    team_id: Type.Union([Type.Null(), Type.Integer()]),
+  }),
+]);
+export type UserSummary = Static<typeof UserSummary>;
+
+export const PolicyDocument = Type.Object({
+  id: Type.Integer(),
+  name: Type.String({ maxLength: 64 }),
+  description: Type.String({ maxLength: 512 }),
+  match_roles: Type.Array(Type.String({ maxLength: 64 })),
+  omit_roles: Type.Array(Type.String({ maxLength: 64 })),
+  permissions: Type.Array(Type.String({ maxLength: 128 })),
+  public: Type.Boolean(),
+  is_enabled: Type.Boolean(),
+});
+export type PolicyDocument = Static<typeof PolicyDocument>;
 
 export const UserIdentity = Type.Object({
   user_id: Type.Number(),
@@ -240,11 +252,12 @@ export type ScoringStrategy = Static<typeof ScoringStrategy>;
 
 export const Solve = Type.Object(
   {
-    team_id: Type.Number(),
-    challenge_id: Type.Number(),
+    team_id: Type.Integer(),
+    user_id: Type.Union([Type.Integer(), Type.Null()]),
+    challenge_id: Type.Integer(),
     hidden: Type.Boolean(),
-    bonus: Type.Optional(Type.Number()),
-    value: Type.Number(),
+    bonus: Type.Optional(Type.Integer()),
+    value: Type.Integer(),
     created_at: TypeDate,
   },
   { additionalProperties: false },

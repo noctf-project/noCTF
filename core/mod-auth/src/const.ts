@@ -17,3 +17,11 @@ Someone tried to register for {{ ctf_name }} using your email address.
 If it was you, please click the following link to continue with creating your account:
 {{ root_url }}/auth/register?token={{ token }}
 `);
+
+export const EMAIL_CHANGE_TEMPLATE = Handlebars.compile(`Hello,
+
+An email change request was made for {{ ctf_name }} using your email address.
+
+If it was you, please click the following link to confirm your email address change:
+{{ root_url }}/settings/account?token={{ token }}
+`);

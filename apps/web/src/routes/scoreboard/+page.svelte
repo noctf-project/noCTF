@@ -288,7 +288,7 @@
 
 {#snippet scoreboardControls()}
   <div
-    class="card pop bg-base-100 shadow-lg mb-2 z-20 {detailedView &&
+    class="card pop bg-base-100 rounded-lg mb-2 z-20 {detailedView &&
       'flex mx-auto w-fit z-20'} h-fit"
   >
     <div class="card-body p-4">
@@ -376,7 +376,7 @@
 {/snippet}
 
 {#snippet topGraph()}
-  <div class="mx-auto mt-8 2xl:w-2/3 w-full mb-8">
+  <div class="mx-auto mt-8 min-w-[98%] lg:min-w-[66rem] max-w-[66rem] mb-8">
     {#if top10TeamsChartsData}
       {#await top10TeamsChartsData then data}
         <Graph {data} extraClasses="h-[33rem]" />

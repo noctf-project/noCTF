@@ -4,11 +4,15 @@ import { Stopwatch } from "../util/stopwatch.ts";
 import { Delay } from "../util/time.ts";
 import { BaseWorker } from "./types.ts";
 
-type Props = {
+type Props<T = unknown> = {
   name: string;
   logger: Logger;
   lockService: LockService;
-  handler: () => Promise<void>;
+  handler: (signal: AbortSignal, trigger?: T) => Promise<void>;
+  triggerHook?: (
+    signal: AbortSignal,
+    onTrigger: (trigger: T) => void,
+  ) => Promise<void>;
   intervalSeconds: number;
   lockTimeoutSeconds?: number;
 };
@@ -22,6 +26,7 @@ export class SingletonWorker implements BaseWorker {
   private readonly lockTimeoutSeconds;
   private readonly intervalSeconds;
   private readonly name;
+  private readonly triggerHook;
   private readonly handler;
 
   private abort: AbortController;
@@ -32,6 +37,7 @@ export class SingletonWorker implements BaseWorker {
     lockTimeoutSeconds,
     intervalSeconds,
     name,
+    triggerHook,
     handler,
   }: Props) {
     this.lockService = lockService;
@@ -39,6 +45,7 @@ export class SingletonWorker implements BaseWorker {
     this.lockTimeoutSeconds = lockTimeoutSeconds || 30;
     this.intervalSeconds = intervalSeconds;
     this.name = name;
+    this.triggerHook = triggerHook;
     this.handler = handler;
   }
 
@@ -52,7 +59,7 @@ export class SingletonWorker implements BaseWorker {
         await this.lockService.withLease(
           `${KEY_PREFIX}:${this.name}`,
           async () => {
-            await this.handler();
+            await this.handler(this.abort.signal);
             await Delay(
               Math.max(
                 MIN_DELAY,
