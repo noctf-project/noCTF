@@ -118,10 +118,7 @@
       security reasons.
     </p>
 
-    <button
-      class="btn btn-outline w-full"
-      onclick={() => (currentStage = "email")}
-    >
+    <button class="btn btn-outline w-full" onclick={() => goto("/auth")}>
       Back to Start
     </button>
   </div>
