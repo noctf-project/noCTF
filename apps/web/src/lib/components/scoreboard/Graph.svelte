@@ -63,8 +63,8 @@
         borderColor: lineColours[index % lineColours.length],
         backgroundColor: lineColours[index % lineColours.length],
         tension: 0,
-        pointRadius: 0,
-        pointHoverRadius: 0,
+        pointRadius: team.data.length === 1 ? 4 : 0,
+        pointHoverRadius: team.data.length === 1 ? 4 : 0,
       };
     });
 
