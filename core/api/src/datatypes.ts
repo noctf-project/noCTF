@@ -48,7 +48,7 @@ export const Team = Type.Object({
   name: Type.String({ maxLength: 64 }),
   bio: Type.String({ maxLength: 256 }),
   country: Type.Union([
-    Type.String({ minLength: 3, maxLength: 3 }),
+    Type.String({ minLength: 2, maxLength: 2 }),
     Type.Null(),
   ]),
   join_code: Type.Union([Type.String({ maxLength: 64 }), Type.Null()]),

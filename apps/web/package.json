@@ -36,6 +36,7 @@
     "chartjs-adapter-date-fns": "^3.0.0",
     "date-fns": "^4.1.0",
     "expr-eval": "catalog:",
+    "i18n-iso-countries": "^7.14.0",
     "lru-cache": "^11.0.2",
     "openapi-fetch": "^0.13.4"
   }

@@ -8,7 +8,7 @@
   import { getCategoriesFromTags } from "$lib/utils/challenges";
   import { getRelativeTime } from "$lib/utils/time";
   import Pagination from "$lib/components/Pagination.svelte";
-  import { countryCodeToFlag } from "$lib/utils/country_flags";
+  import { countryCodeToFlag } from "$lib/utils/country";
   import authState from "$lib/state/auth.svelte";
 
   type ScoreboardEntry = {

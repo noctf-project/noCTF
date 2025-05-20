@@ -2,7 +2,7 @@
   import Icon from "@iconify/svelte";
   import { onMount, untrack } from "svelte";
   import { toasts } from "$lib/stores/toast";
-  import { countryCodeToFlag } from "$lib/utils/country_flags";
+  import { countryCodeToFlag } from "$lib/utils/country";
   import Pagination from "$lib/components/Pagination.svelte";
   import TeamQueryService, { type Team } from "$lib/state/team_query.svelte";
 
