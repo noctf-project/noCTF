@@ -31,7 +31,6 @@ export default async function (fastify: FastifyInstance) {
     async (request) => {
       const { token } = request.body;
       const data = await tokenProvider.lookup("associate", token);
-      console.log(data);
       if (request.user.id !== data.user_id) {
         throw new ForbiddenError("Invalid token");
       }

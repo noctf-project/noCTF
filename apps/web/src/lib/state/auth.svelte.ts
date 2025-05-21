@@ -25,7 +25,10 @@ class AuthState {
       // this could be done cleaner, but there are only a few protected pages
       // so this should be fine for now
       const path = window.location.pathname;
-      if (!this.isAuthenticated && ["/team", "/settings"].includes(path)) {
+      if (
+        !this.isAuthenticated &&
+        ["/team", "/settings", "/team/edit"].includes(path)
+      ) {
         window.location.href = "/auth";
       } else if (this.isAuthenticated && path === "/auth") {
         loginState.finishAuth("/");

@@ -93,12 +93,14 @@ export class TeamService {
     {
       name,
       bio,
+      country,
       join_code,
       division_id,
       flags,
     }: {
       name?: string;
       bio?: string;
+      country?: string;
       flags?: string[];
       division_id?: number;
       join_code?: "refresh" | "remove";
@@ -115,6 +117,7 @@ export class TeamService {
     await this.teamDAO.update(id, {
       name,
       bio,
+      country,
       join_code: j,
       division_id,
       flags,

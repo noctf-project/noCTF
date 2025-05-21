@@ -15,6 +15,7 @@
   import { getRelativeTime } from "$lib/utils/time";
   import type { Difficulty } from "$lib/constants/difficulties";
   import Graph from "$lib/components/scoreboard/Graph.svelte";
+  import authState from "$lib/state/auth.svelte";
 
   export interface Props {
     teamId: number;
@@ -47,6 +48,13 @@
   let { teamId }: Props = $props();
   let teamLoader = wrapLoadable(TeamQueryService.get(teamId));
   let team = $derived(teamLoader.r);
+  let showEditButton = $derived(
+    team &&
+      team.id === authState.user?.team_id &&
+      team.members.some(
+        (m) => m.user_id === authState.user?.id && m.role === "owner",
+      ),
+  );
   let scoreboardLoader = wrapLoadable(
     api.GET("/scoreboard/teams/{id}", {
       params: {
@@ -65,7 +73,7 @@
   const teamTags = $derived(teamTagsLoader.r?.data?.data?.tags || []);
 
   let scoreboardData = $derived(scoreboardLoader.r?.data?.data);
-  const challenges: ChallengeEntry[] = $derived(
+  const challenges: ChallengeEntry[] | undefined = $derived(
     challengesLoader.r?.data?.data.challenges
       .map((c) => ({
         id: c.id,
@@ -74,7 +82,7 @@
         categories: getCategoriesFromTags(c.tags),
         difficulty: getDifficultyFromTags(c.tags) as Difficulty,
       }))
-      .sort((a, b) => a.points - b.points) || [],
+      .sort((a, b) => a.points - b.points) || undefined,
   );
 
   let membersLoading = $derived(
@@ -277,12 +285,7 @@
               {solve.value}
             </td>
             <td class="border border-base-300 py-2 px-3 text-center">
-              <a
-                href={`/users/${solve.solver.id}`}
-                class="bg-base-300/30 hover:bg-base-300/50 p-0.5 px-2 rounded-md font-medium"
-              >
-                {solve.solver.name}
-              </a>
+              {solve.solver.name}
             </td>
             <td
               class="border border-base-300 py-2 px-3 text-center text-sm"
@@ -316,15 +319,29 @@
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex flex-col gap-4">
       <div class="flex flex-col gap-4 items-center">
-        <div
-          class="flex flex-row items-center gap-4 bg-base-300/80 p-2 px-6 rounded-xl"
-        >
-          {#if team.country}
-            <div class="text-3xl" title={countryCodeToName(team.country)}>
-              {countryCodeToFlag(team.country)}
-            </div>
+        <div class="flex flex-col sm:flex-row gap-4 items-center">
+          <div class="w-32"></div>
+          <div
+            class="flex flex-row items-center gap-4 bg-base-300/80 p-2 px-6 rounded-xl"
+          >
+            {#if team.country}
+              <div class="text-3xl" title={countryCodeToName(team.country)}>
+                {countryCodeToFlag(team.country)}
+              </div>
+            {/if}
+            <span class="text-4xl font-bold">{team.name}</span>
+          </div>
+          {#if showEditButton}
+            <a
+              href="/team/edit"
+              class="btn btn-sm btn-primary pop hover:pop w-32"
+            >
+              <Icon icon="material-symbols:edit-outline" class="text-lg" />
+              Edit Team
+            </a>
+          {:else}
+            <div class="w-32"></div>
           {/if}
-          <span class="text-4xl font-bold">{team.name}</span>
         </div>
         {#if scoreboardData && teamTags}
           <div class="flex flex-row gap-2">
