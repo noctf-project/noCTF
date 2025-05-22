@@ -14,7 +14,6 @@ import {
   UpdateTeamRequest,
 } from "@noctf/api/requests";
 import {
-  GetTeamResponse,
   ListDivisionsResponse,
   ListTeamsResponse,
   ListTeamTagsResponse,
@@ -22,7 +21,6 @@ import {
   SuccessResponse,
 } from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
-import { IdParams } from "@noctf/api/params";
 import { Policy } from "@noctf/server-core/util/policy";
 import SingleValueCache from "@noctf/server-core/util/single_value_cache";
 
@@ -302,38 +300,6 @@ export async function routes(fastify: FastifyInstance) {
 
       return {
         data: { entries, page_size, total: total || entries.length },
-      };
-    },
-  );
-
-  /***
-   * This method is deprecated
-   * @deprecated
-   */
-  fastify.get<{ Params: IdParams; Reply: GetTeamResponse }>(
-    "/teams/:id",
-    {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["team"],
-        params: IdParams,
-        response: {
-          200: GetTeamResponse,
-        },
-        auth: {
-          policy: ["team.get"],
-        },
-      },
-    },
-    async (request, reply) => {
-      const team = await teamService.get(request.params.id);
-      if (!team || team.flags.includes("hidden")) {
-        throw new NotFoundError("Team not found");
-      }
-
-      reply.header("cache-control", "private, max-age=900");
-      return {
-        data: { ...team, members: [] }, // TODO: members
       };
     },
   );
