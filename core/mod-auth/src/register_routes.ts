@@ -108,14 +108,14 @@ export default async function (fastify: FastifyInstance) {
             flags,
           });
 
-          await identityService.revokeToken(token);
+          await tokenProvider.invalidate("register", token);
           return id;
         },
       );
 
       const sessionToken = identityService.generateToken({
-        aud: "session",
         sub: id,
+        sid: 1, // TODO: this should use a create session function
       });
       return {
         data: {

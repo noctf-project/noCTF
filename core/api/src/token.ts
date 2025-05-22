@@ -7,22 +7,13 @@ export const AuthTokenType = Type.Enum({
 });
 export type AuthTokenType = Static<typeof AuthTokenType>;
 
-export const AuthSessionToken = Type.Object({
-  aud: Type.Literal("session"),
-  jti: Type.Optional(Type.String()),
+export const AuthToken = Type.Object({
+  sid: Type.Integer(),
   sub: Type.Integer(),
+  exp: Type.Integer(),
+  app: Type.Optional(Type.Integer()),
+  scopes: Type.Optional(Type.Array(Type.String())),
 });
-export type AuthSessionToken = Static<typeof AuthSessionToken>;
-
-export const AuthScopedToken = Type.Object({
-  aud: Type.Literal("scoped"),
-  jti: Type.Optional(Type.String()),
-  sub: Type.Integer(),
-  scopes: Type.Array(Type.String()),
-});
-export type AuthScopedToken = Static<typeof AuthScopedToken>;
-
-export const AuthToken = Type.Union([AuthSessionToken, AuthScopedToken]);
 export type AuthToken = Static<typeof AuthToken>;
 
 export const RegisterTokenData = Type.Object({

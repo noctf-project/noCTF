@@ -4,7 +4,6 @@ import type { IdentityService } from "./services/identity.ts";
 import type { DatabaseClient } from "./clients/database.ts";
 import type { RedisClientFactory } from "./clients/redis.ts";
 import type { ConfigService } from "./services/config.ts";
-import type { TokenService } from "./services/token.ts";
 import type { UserService } from "./services/user.ts";
 import type { CacheService } from "./services/cache.ts";
 import type { TeamService } from "./services/team.ts";
@@ -34,7 +33,6 @@ export type ServiceCradle = {
   emailService: EmailService;
   eventBusService: EventBusService;
   fileService: FileService;
-  tokenService: TokenService;
   configService: ConfigService;
   identityService: IdentityService;
   policyService: PolicyService;
