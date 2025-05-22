@@ -18,3 +18,5 @@ export const countryCodeToFlag = (countryCode: string) => {
 export const countryCodeToName = (countryCode: string) => {
   return countries.getName(countryCode, "en");
 };
+
+export const AllCountries = countries.getNames("en", { select: "official" });

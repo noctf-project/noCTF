@@ -13,7 +13,7 @@
   import { onMount } from "svelte";
   import { toasts } from "$lib/stores/toast";
 
-  let apiChallenges = wrapLoadable(api.GET("/challenges"));
+  let apiChallenges = $state(wrapLoadable(api.GET("/challenges")));
   let challDetailsMap: { [id in number]: ChallDetails } = {};
 
   const refreshChallenges = async () => {
