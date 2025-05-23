@@ -55,7 +55,7 @@ export class PasswordProvider implements IdentityProvider {
     return null;
   }
 
-  async authenticate(email: string, password: string): Promise<AuthToken> {
+  async authenticate(email: string, password: string): Promise<number> {
     const identity = await this.identityService.getIdentityForProvider(
       this.id(),
       email,
@@ -69,10 +69,7 @@ export class PasswordProvider implements IdentityProvider {
       throw new AuthenticationError("Incorrect email or password");
     }
 
-    return {
-      aud: "session",
-      sub: identity.user_id,
-    };
+    return identity.user_id;
   }
 
   async getConfig() {

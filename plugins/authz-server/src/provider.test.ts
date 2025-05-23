@@ -181,7 +181,7 @@ describe("OAuthProvider", () => {
 
       mockCacheService.get.mockResolvedValue(mockContext);
       mockCacheService.del.mockResolvedValue(undefined);
-      mockIdentityService.generateToken.mockReturnValue(mockToken);
+      mockIdentityService.createSession.mockResolvedValue(mockToken);
 
       const token =
         await oauthProvider.exchangeAuthorizationCodeForToken("test-code");
@@ -191,10 +191,9 @@ describe("OAuthProvider", () => {
         "plugin:authz_server",
         "code:test-code",
       );
-      expect(mockIdentityService.generateToken).toHaveBeenCalledWith({
-        aud: "scoped",
-        jti: "test-code",
-        sub: 1,
+      expect(mockIdentityService.createSession).toHaveBeenCalledWith({
+        user_id: 1,
+        app_id: 1,
         scopes: ["read"],
       });
     });
@@ -207,7 +206,7 @@ describe("OAuthProvider", () => {
 
       expect(token).toBeUndefined();
       expect(mockCacheService.del).not.toHaveBeenCalled();
-      expect(mockIdentityService.generateToken).not.toHaveBeenCalled();
+      expect(mockIdentityService.createSession).not.toHaveBeenCalled();
     });
   });
 });
