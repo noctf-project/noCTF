@@ -120,9 +120,9 @@ export default async function (fastify: FastifyInstance) {
       const email = request.body.email.toLowerCase();
       await passwordProvider.authPreCheck(email);
       const password = request.body.password;
-      const token = await passwordProvider.authenticate(email, password);
+      const user_id = await passwordProvider.authenticate(email, password);
 
-      const sessionToken = identityService.generateToken(token);
+      const sessionToken = await identityService.createSession({ user_id });
 
       return {
         data: {

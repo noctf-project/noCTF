@@ -29,46 +29,57 @@ export async function up(db: Kysely<any>): Promise<void> {
     .execute();
 
   await schema
+    .createTable("app")
+    .addColumn("id", "integer", (col) =>
+      col.primaryKey().generatedByDefaultAsIdentity(),
+    )
+    .addColumn("name", "varchar(64)", (col) => col.notNull())
+    .addColumn("client_id", "varchar(128)", (col) => col.notNull().unique())
+    .addColumn("client_secret", "varchar(255)", (col) => col.notNull())
+    .addColumn("redirect_uris", sql`varchar[]`, (col) =>
+      col.notNull().defaultTo("{}"),
+    )
+    .addColumn("scopes", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
+    .addColumn("enabled", "boolean", (col) => col.notNull().defaultTo(false))
+    .execute();
+
+  await schema
     .createTable("session")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
-    .addColumn("hash", "bytea", (col) => col.notNull().unique())
+    .addColumn("refresh_token_hash", "bytea", (col) => col.unique())
     .addColumn("user_id", "integer", (col) =>
       col.notNull().references("user.id").onDelete("cascade"),
     )
-    .addColumn("type", "varchar(32)", (col) => col.notNull())
-    .addColumn("data", "jsonb", (col) => col.notNull().defaultTo("{}"))
+    .addColumn("scopes", sql`varchar[]`)
     .addColumn("ip", "varchar(64)")
-    .addColumn("client", "varchar(64)")
+    .addColumn("app_id", "integer", (col) => col.references("app.id"))
+    .addColumn("revoked_at", "timestamptz")
     .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
     .addColumn("refreshed_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
-    .addColumn("expires_at", "timestamptz", (col) => col.notNull())
+    .addColumn("expires_at", "timestamptz")
     .execute();
   await schema
-    .createIndex("session_idx_user_id_type")
+    .createIndex("session_idx_user_id_app_id_revoked_at")
     .on("session")
-    .columns(["user_id", "type"])
-    .execute();
-  await schema
-    .createIndex("session_idx_user_id_client")
-    .on("session")
-    .columns(["user_id", "client"])
+    .columns(["user_id", "app_id", "revoked_at"])
     .execute();
   await schema
     .createIndex("session_idx_expires_at")
     .on("session")
-    .expression(sql`expires_at DESC`)
+    .columns(["expires_at"])
     .execute();
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
   await schema.dropTable("session").execute();
+  await schema.dropTable("app").execute();
   await schema.dropTable("file").execute();
   await schema.dropTable("lock").execute();
 }

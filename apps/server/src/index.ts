@@ -5,7 +5,6 @@ import { IdentityService } from "@noctf/server-core/services/identity";
 import { ConfigService } from "@noctf/server-core/services/config";
 import { DatabaseClient } from "@noctf/server-core/clients/database";
 import { UserService } from "@noctf/server-core/services/user";
-import { TokenService } from "@noctf/server-core/services/token";
 import { ApplicationError } from "@noctf/server-core/errors";
 import { TeamService } from "@noctf/server-core/services/team";
 import { CacheService } from "@noctf/server-core/services/cache";
@@ -93,16 +92,15 @@ server.register(async () => {
     emailService: asClass(EmailService).singleton(),
     eventBusService: asClass(EventBusService).singleton(),
     fileService: asClass(FileService).singleton(),
-    tokenService: asFunction(
-      ({ cacheService, logger }) =>
-        new TokenService({
-          cacheService: cacheService,
-          logger,
+    configService: asClass(ConfigService).singleton(),
+    identityService: asFunction(
+      ({ databaseClient, cacheService }) =>
+        new IdentityService({
+          databaseClient,
+          cacheService,
           secret: TOKEN_SECRET,
         }),
     ).singleton(),
-    configService: asClass(ConfigService).singleton(),
-    identityService: asClass(IdentityService).singleton(),
     policyService: asClass(PolicyService).singleton(),
     rateLimitService: asClass(RateLimitService).singleton(),
     teamService: asClass(TeamService).singleton(),

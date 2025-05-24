@@ -23,7 +23,7 @@
     "expr-eval": "catalog:",
     "fastify": "catalog:",
     "handlebars": "^4.7.8",
-    "jsonwebtoken": "^9.0.2",
+    "jose": "^6.0.11",
     "kysely": "catalog:",
     "mime-types": "^2.1.35",
     "minio": "^8.0.5",
@@ -34,7 +34,6 @@
     "redis": "^4.7.0"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.7",
     "@types/mime-types": "^2.1.4",
     "@types/nodemailer": "^6.4.17",
     "@vitest/coverage-v8": "catalog:",

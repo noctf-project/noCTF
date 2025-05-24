@@ -83,11 +83,10 @@ export class OAuthProvider {
       return undefined;
     }
     await this.cacheService.del(CACHE_NAMESPACE, `code:${code}`);
-    const token = this.identityService.generateToken({
-      aud: "scoped",
-      jti: code,
-      sub: authorizationCodeContext.userId,
-      scopes: [authorizationCodeContext.scope],
+    const token = await this.identityService.createSession({
+      user_id: authorizationCodeContext.userId,
+      app_id: 1, // TODO
+      scopes: authorizationCodeContext.scope.split(","),
     });
     return token;
   }

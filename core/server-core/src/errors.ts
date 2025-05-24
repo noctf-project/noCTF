@@ -36,6 +36,8 @@ export class TokenValidationError extends ApplicationError {
   }
 }
 
+export class TokenInvalidatedError extends TokenValidationError {}
+
 export class AuthenticationError extends ApplicationError {
   constructor(message?: string, options?: ErrorOptions) {
     super(

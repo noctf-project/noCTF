@@ -130,9 +130,8 @@ export class OAuthIdentityProvider implements IdentityProvider {
     }
     return {
       type: "session",
-      token: this.identityService.generateToken({
-        aud: "session",
-        sub: identity.user_id,
+      token: await this.identityService.createSession({
+        user_id: identity.user_id,
       }),
     };
   }
@@ -146,12 +145,14 @@ export class OAuthIdentityProvider implements IdentityProvider {
     const data = await this.tokenProvider.lookup("state", state);
     const method = await this.configProvider.getMethod(data.name);
     const provider_id = await this.getExternalId(method, code, redirect_uri);
-    await this.identityService.associateIdentities({
-      user_id,
-      provider: `${this.id()}:${data.name}`,
-      provider_id,
-      secret_data: null,
-    });
+    await this.identityService.associateIdentities([
+      {
+        user_id,
+        provider: `${this.id()}:${data.name}`,
+        provider_id,
+        secret_data: null,
+      },
+    ]);
   }
 
   async generateAuthoriseUrl(name: string) {

@@ -1,5 +1,5 @@
 import type { FastifyRequest } from "fastify";
-import type { AuthScopedToken, AuthSessionToken } from "@noctf/api/token";
+import type { AuthToken } from "@noctf/api/token";
 import {
   AuthenticationError,
   TokenValidationError,
@@ -22,20 +22,15 @@ export const AuthnHook = async (request: FastifyRequest) => {
   }
 
   const { identityService, teamService } = request.server.container.cradle;
-  let tokenData: AuthSessionToken | AuthScopedToken;
+  let tokenData: AuthToken;
   try {
-    tokenData = await identityService.validateToken(
-      token,
-      ["scoped", "session"],
-      { localVerifyRevocation: true },
-    );
+    tokenData = await identityService.validateToken(token);
 
+    const id = +tokenData.sub;
     request.user = {
-      id: tokenData.sub,
+      id,
       token,
-      membership: CreateThenable(() =>
-        teamService.getMembershipForUser(tokenData.sub),
-      ),
+      membership: CreateThenable(() => teamService.getMembershipForUser(id)),
     };
   } catch (e) {
     if (!require && e instanceof TokenValidationError) {
@@ -44,11 +39,11 @@ export const AuthnHook = async (request: FastifyRequest) => {
     throw e;
   }
 
-  if (!scopes || !scopes.size || tokenData.aud === "session") {
+  if (!scopes || !scopes.size || !tokenData.scopes) {
     return;
   }
-  const { scopes: tScopes } = tokenData as AuthScopedToken;
-  if (!tScopes.some((s) => scopes.has(s))) {
+
+  if (!tokenData.scopes.some((s) => scopes.has(s))) {
     throw new AuthenticationError(
       `scoped token is not authorised to access this endpoint`,
     );
