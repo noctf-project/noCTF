@@ -90,7 +90,6 @@ export class IdentityService {
         audience: AUDIENCE,
         contentEncryptionAlgorithms: ["A128CBC-HS256"],
       });
-      console.log(data);
 
       const checkRevoke = () =>
         this.cacheService
