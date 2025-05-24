@@ -41,6 +41,7 @@ export class TeamDAO {
     flags,
   }: Insertable<DB["team"]>): Promise<Team> {
     try {
+      // TODO: tag ids on creation
       const { id, created_at } = await this.db
         .insertInto("team")
         .values({
@@ -60,6 +61,7 @@ export class TeamDAO {
         bio: bio || "",
         country: country || null,
         join_code: join_code || null,
+        tag_ids: [], // TODO
         division_id,
         flags: flags || [],
         created_at,
@@ -95,6 +97,14 @@ export class TeamDAO {
         "division_id",
         "flags",
         "created_at",
+        sql<number[]>`
+          COALESCE(
+            (SELECT json_agg(ttm.tag_id) 
+            FROM team_tag_member ttm 
+            WHERE ttm.team_id = team.id),
+            '[]'::json
+          )
+        `.as("tag_ids"),
       ])
       .where("id", "=", id)
       .executeTakeFirst();
@@ -108,7 +118,7 @@ export class TeamDAO {
     params?: Parameters<TeamDAO["listQuery"]>[0],
     limit?: Parameters<TeamDAO["listQuery"]>[1],
   ): Promise<TeamSummary[]> {
-    let query = this.listQuery(params, limit)
+    const query = this.listQuery(params, limit)
       .select([
         "team.id",
         "team.name",
@@ -123,6 +133,14 @@ export class TeamDAO {
             .select(["tm.user_id as user_id", "tm.role as role"])
             .whereRef("tm.team_id", "=", sql`team.id`),
         ).as("members"),
+        sql<number[]>`
+          COALESCE(
+            (SELECT json_agg(ttm.tag_id) 
+            FROM team_tag_member ttm 
+            WHERE ttm.team_id = team.id),
+            '[]'::json
+          )
+        `.as("tag_ids"),
       ])
       .orderBy("id");
     return query.execute() as Promise<TeamSummary[]>;
