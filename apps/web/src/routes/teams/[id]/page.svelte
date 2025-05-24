@@ -72,7 +72,22 @@
 
   const teamTags = $derived(teamTagsLoader.r?.data?.data?.tags || []);
 
-  let scoreboardData = $derived(scoreboardLoader.r?.data?.data);
+  let scoreboardData = $derived.by(() => {
+    if (scoreboardLoader.loading || !team) return undefined;
+    const data = scoreboardLoader.r?.data?.data;
+    return (
+      data || {
+        team_id: team?.id,
+        tag_ids: team?.tag_ids,
+        score: undefined,
+        rank: undefined,
+        last_solve: undefined,
+        solves: [],
+        awards: [],
+        graph: undefined,
+      }
+    );
+  });
   const challenges: ChallengeEntry[] | undefined = $derived(
     challengesLoader.r?.data?.data.challenges
       .map((c) => ({
@@ -343,9 +358,9 @@
             <div class="w-32"></div>
           {/if}
         </div>
-        {#if scoreboardData && teamTags}
+        {#if team && teamTags}
           <div class="flex flex-row gap-2">
-            {#each scoreboardData.tag_ids as tag_id}
+            {#each team.tag_ids as tag_id}
               {@const tag = teamTags.find((t) => t.id === tag_id)}
               {#if tag}
                 <div class="p-1 px-4 pop bg-secondary/40 rounded-lg">
@@ -358,7 +373,7 @@
         <div class="flex flex-col gap-4">
           {#if scoreboardLoader.loading && !scoreboardData}
             <div class="skeleton h-4 w-1/2"></div>
-          {:else if scoreboardData}
+          {:else if scoreboardData?.rank && scoreboardData?.score}
             <div
               class="text-3xl font-black pop bg-primary text-primary-content p-1 px-4 rounded-xl"
             >
@@ -397,7 +412,7 @@
               {@render emptySolves()}
             {/if}
 
-            {#if scoreboardData}
+            {#if scoreboardData?.graph}
               <Graph data={[{ name: team.name, data: scoreboardData.graph }]} />
             {/if}
           {/if}

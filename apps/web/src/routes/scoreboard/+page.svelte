@@ -13,9 +13,9 @@
 
   type ScoreboardEntry = {
     team_id: number;
-    rank: number;
+    rank?: number;
     score: number;
-    last_solve: Date;
+    last_solve?: Date;
     solves: {
       value: number;
       bonus?: number;
@@ -123,6 +123,20 @@
   );
 
   const myTeamEntry = $derived.by(() => {
+    if (
+      !apiMyTeam?.r?.data?.data &&
+      authState.user?.team_id &&
+      !isMyTeamInCurrentPage
+    )
+      return {
+        team_id: authState.user.team_id,
+        rank: undefined,
+        score: 0,
+        last_solve: undefined,
+        solves: [],
+        awards: [],
+      };
+
     if (!apiMyTeam?.r?.data?.data) return null;
 
     const teamData = apiMyTeam.r.data.data;
@@ -147,7 +161,7 @@
       return apiTeams;
     }
 
-    return myTeamEntry.rank < apiTeams[0]!.rank
+    return myTeamEntry.rank && myTeamEntry.rank < apiTeams[0]!.rank
       ? [myTeamEntry, ...apiTeams]
       : [...apiTeams, myTeamEntry];
   });
@@ -236,8 +250,10 @@
   </div>
 {/snippet}
 
-{#snippet rankDisplay(rank: number)}
-  {#if rank <= 3}
+{#snippet rankDisplay(rank?: number)}
+  {#if rank === undefined}
+    <span class="font-mono">-</span>
+  {:else if rank <= 3}
     <span class="text-xl">{["🥇", "🥈", "🥉"][rank - 1]}</span>
   {:else}
     <span class="font-mono">{rank}</span>
@@ -440,7 +456,7 @@
             </td>
             <td
               class="border border-base-300 py-2 px-3 text-center"
-              title={entry.last_solve.toLocaleString()}
+              title={entry?.last_solve ? entry.last_solve.toLocaleString() : ""}
             >
               {entry.last_solve?.getTime()
                 ? getRelativeTime(entry.last_solve)
@@ -662,7 +678,9 @@
                     </td>
                     <td
                       class="border border-base-300 py-2 px-3 text-center text-sm min-w-32 max-w-32"
-                      title={entry.last_solve.toLocaleString()}
+                      title={entry?.last_solve
+                        ? entry.last_solve.toLocaleString()
+                        : ""}
                     >
                       {entry.last_solve?.getTime()
                         ? getRelativeTime(entry.last_solve)

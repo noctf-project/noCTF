@@ -132,6 +132,9 @@ export async function routes(fastify: FastifyInstance) {
         throw new NotFoundError("Team not found");
       }
       const entry = await scoreboardService.getTeam(team.division_id, team.id);
+      if (!entry) {
+        throw new NotFoundError("Team not found");
+      }
       if (request.query.tags) {
         const rank = await scoreboardService.getTeamRank(
           team.division_id,
@@ -146,9 +149,6 @@ export async function routes(fastify: FastifyInstance) {
       const graph = await scoreboardService.getTeamScoreHistory(
         request.params.id,
       );
-      if (!entry) {
-        throw new NotFoundError("Team not found");
-      }
       const solves = entry.solves.filter(({ hidden }) => !hidden);
       return {
         data: {
