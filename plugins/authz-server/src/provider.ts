@@ -83,11 +83,11 @@ export class OAuthProvider {
       return undefined;
     }
     await this.cacheService.del(CACHE_NAMESPACE, `code:${code}`);
-    const token = await this.identityService.createSession({
+    // TODO: add app_id. The app_id is required to exist in the DB
+    const { access_token } = await this.identityService.createSession({
       user_id: authorizationCodeContext.userId,
-      app_id: 1, // TODO
       scopes: authorizationCodeContext.scope.split(","),
-    });
-    return token;
+    }, true);
+    return access_token;
   }
 }

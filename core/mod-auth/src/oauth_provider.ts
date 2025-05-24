@@ -130,9 +130,11 @@ export class OAuthIdentityProvider implements IdentityProvider {
     }
     return {
       type: "session",
-      token: await this.identityService.createSession({
-        user_id: identity.user_id,
-      }),
+      token: (
+        await this.identityService.createSession({
+          user_id: identity.user_id,
+        })
+      ).access_token,
     };
   }
 

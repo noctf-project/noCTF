@@ -181,7 +181,10 @@ describe("OAuthProvider", () => {
 
       mockCacheService.get.mockResolvedValue(mockContext);
       mockCacheService.del.mockResolvedValue(undefined);
-      mockIdentityService.createSession.mockResolvedValue(mockToken);
+      mockIdentityService.createSession.mockResolvedValue({
+        access_token: mockToken,
+        refresh_token: "s"
+      });
 
       const token =
         await oauthProvider.exchangeAuthorizationCodeForToken("test-code");
@@ -193,9 +196,8 @@ describe("OAuthProvider", () => {
       );
       expect(mockIdentityService.createSession).toHaveBeenCalledWith({
         user_id: 1,
-        app_id: 1,
         scopes: ["read"],
-      });
+      }, true);
     });
 
     it("should return undefined for invalid code", async () => {
