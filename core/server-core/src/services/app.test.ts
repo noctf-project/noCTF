@@ -114,6 +114,7 @@ describe(AppService, () => {
       identityService.createSession.mockResolvedValue({
         access_token: mockToken,
         refresh_token: "s",
+        expires_in: 3600
       });
 
       const result = await service.exchangeAuthorizationCodeForToken(
