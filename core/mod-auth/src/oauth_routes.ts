@@ -97,7 +97,7 @@ export default async function (fastify: FastifyInstance) {
     "/auth/oauth/authorize",
     {
       schema: {
-        tags: ["authz_server"],
+        tags: ["auth"],
         security: [{ bearer: [] }],
         querystring: OAuthAuthorizeQuery,
         response: {
@@ -139,7 +139,7 @@ export default async function (fastify: FastifyInstance) {
     "/auth/oauth/token",
     {
       schema: {
-        tags: ["authz_server"],
+        tags: ["auth"],
         security: [{ bearer: [] }],
         body: OAuthTokenRequest,
         response: { 200: OAuthTokenResponse, 400: BaseResponse },
@@ -173,7 +173,7 @@ export default async function (fastify: FastifyInstance) {
         reply.send(result);
       } catch (e) {
         if (e instanceof BadRequestError) {
-          reply.send({ error: "invlaid_request" });
+          reply.send({ error: "invalid_request" });
           return;
         }
         throw e;
