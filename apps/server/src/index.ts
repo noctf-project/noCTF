@@ -46,6 +46,7 @@ import { CompileDomainMatcher } from "./util/domain.ts";
 import { EmailService } from "@noctf/server-core/services/email/index";
 import { TSchema } from "@sinclair/typebox";
 import { BaseResponse } from "@noctf/api/responses";
+import { AppService } from "@noctf/server-core/services/app";
 
 export const server = fastify({
   logger: {
@@ -87,6 +88,7 @@ server.register(async () => {
         new MetricsClient(logger, METRICS_PATH, METRICS_FILE_NAME_FORMAT),
     ).singleton(),
     cacheService: asClass(CacheService).singleton(),
+    appService: asClass(AppService).singleton(),
     auditLogService: asClass(AuditLogService).singleton(),
     challengeService: asClass(ChallengeService).singleton(),
     emailService: asClass(EmailService).singleton(),

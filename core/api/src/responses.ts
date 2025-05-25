@@ -311,3 +311,15 @@ export const GetSiteConfigResponse = Type.Object({
   data: SetupConfig,
 });
 export type GetSiteConfigResponse = Static<typeof GetSiteConfigResponse>;
+
+export const OAuthAuthorizeResponse = Type.Object({
+  url: Type.String(),
+});
+export type OAuthAuthorizeResponse = Static<typeof OAuthAuthorizeResponse>;
+
+export const OAuthTokenResponse = Type.Object({
+  access_token: Type.String(),
+  refresh_token: Type.Optional(Type.String()),
+  expires_in: Type.Number(),
+});
+export type OAuthTokenResponse = Static<typeof OAuthTokenResponse>;

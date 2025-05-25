@@ -24,3 +24,11 @@ export const GetFileQuery = Type.Object(
   { additionalProperties: false },
 );
 export type GetFileQuery = Static<typeof GetFileQuery>;
+
+export const OAuthAuthorizeQuery = Type.Object({
+  client_id: Type.String(),
+  redirect_uri: Type.String(),
+  scope: Type.String(),
+  state: Type.String(),
+});
+export type OAuthAuthorizeQuery = Static<typeof OAuthAuthorizeQuery>;

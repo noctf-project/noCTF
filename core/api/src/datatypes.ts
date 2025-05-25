@@ -363,3 +363,16 @@ export const ScoreboardVersionData = Type.Object({
   division_id: Type.Number(),
 });
 export type ScoreboardVersionData = Static<typeof ScoreboardVersionData>;
+
+export const App = Type.Object({
+  id: Type.Integer(),
+  name: Type.String({ minLength: 1, maxLength: 64 }),
+  client_id: Type.String({ minLength: 1, maxLength: 128 }),
+  client_secret: Type.String({ minLength: 1, maxLength: 255 }),
+  redirect_uris: Type.Array(Type.String()),
+  scopes: Type.Array(Type.String({ minLength: 1, maxLength: 64 })),
+  enabled: Type.Boolean(),
+  created_at: TypeDate,
+  updated_at: TypeDate,
+});
+export type App = Static<typeof App>;

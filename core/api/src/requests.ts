@@ -285,3 +285,10 @@ export const QueryUsersRequest = Type.Object(
   { additionalProperties: false },
 );
 export type QueryUsersRequest = Static<typeof QueryUsersRequest>;
+
+export const OAuthTokenRequest = Type.Object({
+  grant_type: Type.String(),
+  code: Type.String(),
+  redirect_uri: Type.String(),
+});
+export type OAuthTokenRequest = Static<typeof OAuthTokenRequest>;

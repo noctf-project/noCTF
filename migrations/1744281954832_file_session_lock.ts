@@ -41,6 +41,12 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .addColumn("scopes", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .addColumn("enabled", "boolean", (col) => col.notNull().defaultTo(false))
+    .addColumn("created_at", "timestamptz", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
+    .addColumn("updated_at", "timestamptz", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
     .execute();
 
   await schema

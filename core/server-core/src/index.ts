@@ -20,6 +20,7 @@ import type { ScoreboardService } from "./services/scoreboard/index.ts";
 import type { SubmissionService } from "./services/submission.ts";
 import type { RateLimitService } from "./services/rate_limit.ts";
 import type { EmailService } from "./services/email/index.ts";
+import { AppService } from "./services/app.ts";
 
 export type ServiceCradle = {
   logger: Logger;
@@ -27,6 +28,7 @@ export type ServiceCradle = {
   databaseClient: DatabaseClient;
   metricsClient: MetricsClient;
   redisClientFactory: RedisClientFactory;
+  appService: AppService;
   auditLogService: AuditLogService;
   cacheService: CacheService;
   challengeService: ChallengeService;
