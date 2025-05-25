@@ -45,9 +45,9 @@ export async function initServer(fastify: FastifyInstance) {
     },
     async (request) => {
       try {
-        await identityService.revokeToken(request.user.token, "session");
+        await identityService.revokeToken(request.user.token);
       } catch (e) {
-        logger.debug("failed to revoke session token", e);
+        logger.warn("failed to revoke session token", e);
       }
       return {};
     },

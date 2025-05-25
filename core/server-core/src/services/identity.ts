@@ -1,5 +1,5 @@
 import type { AuthMethod, UserIdentity } from "@noctf/api/datatypes";
-import type { AuthToken, AuthTokenType } from "@noctf/api/token";
+import type { AuthToken } from "@noctf/api/token";
 import { createHash } from "node:crypto";
 
 import { TokenInvalidatedError, TokenValidationError } from "../errors.ts";
@@ -8,6 +8,8 @@ import { UserIdentityDAO } from "../dao/user_identity.ts";
 import { LocalCache } from "../util/local_cache.ts";
 import { EncryptJWT, jwtDecrypt } from "jose";
 import { JOSEError, JWTExpired } from "jose/errors";
+import { SessionDAO } from "../dao/session.ts";
+import { nanoid } from "nanoid";
 
 type Props = Pick<ServiceCradle, "databaseClient" | "cacheService"> & {
   secret: string;
@@ -27,7 +29,8 @@ export class IdentityService {
   private readonly databaseClient;
   private readonly cacheService;
   private readonly secret;
-  private readonly dao;
+  private readonly identityDAO;
+  private readonly sessionDAO;
 
   private readonly revocationCache = new LocalCache<string, boolean>({
     max: 10000,
@@ -40,7 +43,8 @@ export class IdentityService {
     this.databaseClient = databaseClient;
     this.cacheService = cacheService;
     this.secret = createHash("sha256").update(secret).digest();
-    this.dao = new UserIdentityDAO(databaseClient.get());
+    this.identityDAO = new UserIdentityDAO(databaseClient.get());
+    this.sessionDAO = new SessionDAO(databaseClient.get());
   }
 
   register(provider: IdentityProvider) {
@@ -57,27 +61,85 @@ export class IdentityService {
     return (await Promise.all(promises)).flatMap((v) => v);
   }
 
-  async createSession({
-    app_id,
-    user_id,
-    scopes,
-  }: {
-    app_id?: number;
-    user_id: number;
-    scopes?: string[];
-  }) {
-    return this.generateToken({
-      sub: user_id.toString(),
-      app: app_id?.toString(),
+  async createSession(
+    {
+      app_id,
+      user_id,
       scopes,
-      sid: "1", // TODO
+    }: {
+      app_id?: number;
+      user_id: number;
+      scopes?: string[];
+    },
+    generateRefreshToken = false,
+  ) {
+    const refreshToken = generateRefreshToken ? nanoid() : null;
+    const expires_at = app_id
+      ? null
+      : new Date(Date.now() + 7 * 24 * 3600 * 1000); // 7 days for session tokens
+    const sid = await this.sessionDAO.createSession({
+      user_id,
+      app_id,
+      scopes,
+      expires_at,
+      refresh_token_hash: refreshToken
+        ? createHash("sha256").update(refreshToken).digest()
+        : null,
     });
+    return {
+      access_token: await this.generateToken(
+        {
+          sub: user_id.toString(),
+          app: app_id?.toString(),
+          scopes,
+          sid: sid.toString(),
+        },
+        app_id ? 3600 : 7 * 24 * 3600, // TODO: shorten this to 1 hour for all token types
+      ),
+      refresh_token: refreshToken,
+    };
   }
 
-  private async generateToken(result: Omit<AuthToken, "exp">): Promise<string> {
+  async refreshSession(app_id: number | null, token: string) {
+    const oldHash = createHash("sha256").update(token).digest();
+    const refreshToken = nanoid();
+    const newHash = createHash("sha256").update(refreshToken).digest();
+    const {
+      id: sid,
+      user_id,
+      expires_at,
+      revoked_at,
+      scopes,
+    } = await this.sessionDAO.refreshSession(app_id, oldHash, newHash);
+    let tokenExpires = new Date(Date.now() + 7 * 24 * 3600);
+    if (expires_at && expires_at < tokenExpires) tokenExpires = expires_at;
+    if (revoked_at && revoked_at < tokenExpires) tokenExpires = revoked_at;
+
+    return {
+      access_token: await this.generateToken(
+        {
+          sub: user_id.toString(),
+          app: app_id?.toString(),
+          scopes: scopes || undefined,
+          sid: sid.toString(),
+        },
+        tokenExpires,
+      ),
+      refresh_token: refreshToken,
+    };
+  }
+
+  private async generateToken(
+    result: Omit<AuthToken, "exp">,
+    expires: number | Date = 3600,
+  ): Promise<string> {
     return await new EncryptJWT(result)
       .setAudience(AUDIENCE)
-      .setExpirationTime("7d") // TODO: shorten this
+      .setExpirationTime(
+        expires instanceof Date
+          ? expires
+          : Math.floor(Date.now() / 1000) + expires,
+      )
       .setProtectedHeader({ alg: "dir", enc: "A128CBC-HS256" })
       .setIssuer("noctf")
       .setIssuedAt()
@@ -90,7 +152,6 @@ export class IdentityService {
         audience: AUDIENCE,
         contentEncryptionAlgorithms: ["A128CBC-HS256"],
       });
-
       const checkRevoke = () =>
         this.cacheService
           .getTtl(REVOKE_NS, data.payload.sid)
@@ -123,31 +184,34 @@ export class IdentityService {
   }
 
   async revokeToken(token: string) {
-    let sid: string | undefined;
-    let exp: number | undefined;
+    let sid: number | undefined;
+    let exp = Math.floor(Date.now() / 1000) + 7 * 24 * 3600;
     try {
       const payload = await this.validateToken(token);
-      sid = payload.sid;
+      sid = +payload.sid;
       exp = payload.exp;
     } catch (e) {
       if (e instanceof TokenInvalidatedError) {
         throw e;
       }
     }
+    // assume it's a refresh token
     if (!sid) {
-      // TODO: assume it's a refresh token and lookup the sid in DB
-      sid = "100";
+      const { id, expires_at } = await this.sessionDAO.getByRefreshToken(
+        createHash("sha256").update(token).digest(),
+      );
+      sid = id;
+      if (expires_at && expires_at.getTime() < exp) exp = expires_at.getTime();
     }
-    // This shouldn't happen
-    if (!exp) {
-      exp = Math.floor(Date.now() / 1000) + 24 * 7 * 3600;
-    }
-    this.cacheService.put(
-      REVOKE_NS,
-      sid,
-      1,
-      exp - Math.floor(Date.now() / 1000),
-    );
+    await Promise.all([
+      this.sessionDAO.revokeSession(sid),
+      this.cacheService.put(
+        REVOKE_NS,
+        sid.toString(),
+        1,
+        exp - Math.floor(Date.now() / 1000),
+      ),
+    ]);
   }
 
   async associateIdentities(data: AssociateIdentity[]) {
@@ -160,21 +224,21 @@ export class IdentityService {
   }
 
   async removeIdentity(user_id: number, provider: string) {
-    return this.dao.disAssociate({
+    return this.identityDAO.disAssociate({
       user_id,
       provider,
     });
   }
 
   async listProvidersForUser(id: number) {
-    return this.dao.listProvidersForUser(id);
+    return this.identityDAO.listProvidersForUser(id);
   }
 
   async getProviderForUser(user_id: number, provider: string) {
     return this.cacheService.load(
       CACHE_NAMESPACE,
       `pvd_uid:${user_id}:${provider}`,
-      async () => await this.dao.getIdentityForUser(user_id, provider),
+      async () => await this.identityDAO.getIdentityForUser(user_id, provider),
     );
   }
 
@@ -183,7 +247,7 @@ export class IdentityService {
       CACHE_NAMESPACE,
       `uid_pvd:${provider}:${provider_id}`,
       async () =>
-        await this.dao.getIdentityForProvider({
+        await this.identityDAO.getIdentityForProvider({
           provider,
           provider_id,
         }),
