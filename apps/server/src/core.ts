@@ -15,7 +15,6 @@ import { routes as site } from "./routes/site.ts";
 import { initServer as auth } from "@noctf/mod-auth";
 import { initServer as captcha } from "@noctf/mod-captcha";
 import { initServer as tickets } from "@noctf/mod-tickets";
-import { initServer as oauthRp } from "@noctf/mod-oauthrp";
 
 import type { FastifyInstance } from "fastify";
 import { AuthnHook } from "./hooks/authn.ts";
@@ -54,5 +53,4 @@ export default async function (fastify: FastifyInstance) {
   fastify.register(auth);
   fastify.register(captcha);
   fastify.register(tickets);
-  fastify.register(oauthRp);
 }

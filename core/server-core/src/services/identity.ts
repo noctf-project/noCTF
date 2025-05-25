@@ -87,7 +87,7 @@ export class IdentityService {
         ? createHash("sha256").update(refreshToken).digest()
         : null,
     });
-    
+
     // TODO: shorten this to 1 hour for all token types
     const expires_in = app_id ? 3600 : 7 * 24 * 3600;
     return {
@@ -98,10 +98,10 @@ export class IdentityService {
           scopes,
           sid: sid.toString(),
         },
-        expires_in 
+        expires_in,
       ),
       refresh_token: refreshToken,
-      expires_in
+      expires_in,
     };
   }
 
