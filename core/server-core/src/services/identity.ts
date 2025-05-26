@@ -238,12 +238,16 @@ export class IdentityService {
   }
 
   async associateIdentities(data: AssociateIdentity[]) {
-    return this.databaseClient.transaction(async (tx) => {
+    await this.databaseClient.transaction(async (tx) => {
       const dao = new UserIdentityDAO(tx);
       for (const d of data) {
         await dao.associate(d);
       }
     });
+    await this.cacheService.del(
+      CACHE_NAMESPACE,
+      data.map((x) => `pvd_uid:${x.user_id}:${x.provider}`),
+    );
   }
 
   async removeIdentity(user_id: number, provider: string) {

@@ -130,8 +130,8 @@ export default async function (fastify: FastifyInstance) {
         throw new NotFoundError("The requested auth provider cannot be found");
       }
       const email = request.body.email.toLowerCase();
-      const identity = await this.identityService.getIdentityForProvider(
-        this.id(),
+      const identity = await identityService.getIdentityForProvider(
+        "email",
         email,
       );
       if (!identity) {
@@ -168,7 +168,7 @@ export default async function (fastify: FastifyInstance) {
         description: "Reset password",
         body: ApplyResetAuthEmailRequest,
         response: {
-          default: FinishAuthResponse,
+          200: FinishAuthResponse,
         },
       },
     },
@@ -194,15 +194,17 @@ export default async function (fastify: FastifyInstance) {
             },
           ]);
           await identityService.revokeUserSessions(identity.user_id);
+          await tokenProvider.invalidate("reset_password", token);
+          return identity.user_id;
         },
       );
-      const sessionToken = await this.identityService.createSession({
+      const sessionToken = await identityService.createSession({
         user_id: id,
       });
       return {
         data: {
           type: "session",
-          token: sessionToken,
+          token: sessionToken.access_token,
         },
       };
     },

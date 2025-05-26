@@ -27,3 +27,18 @@ export const ResetPasswordTokenData = Type.Object({
   created_at: TypeDate,
 });
 export type ResetPasswordTokenData = Static<typeof ResetPasswordTokenData>;
+
+export const RegisterAuthTokenRequest = Type.Object(
+  {
+    token: Type.String(),
+  },
+  { additionalProperties: false },
+);
+export type RegisterAuthTokenRequest = Static<typeof RegisterAuthTokenRequest>;
+
+export const RegisterAuthTokenResponse = Type.Object({
+  data: Type.Omit(RegisterTokenData, ["type"]),
+});
+export type RegisterAuthTokenResponse = Static<
+  typeof RegisterAuthTokenResponse
+>;

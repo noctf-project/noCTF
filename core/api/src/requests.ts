@@ -120,14 +120,6 @@ export const RegisterAuthRequest = Type.Object(
 );
 export type RegisterAuthRequest = Static<typeof RegisterAuthRequest>;
 
-export const RegisterAuthTokenRequest = Type.Object(
-  {
-    token: Type.String(),
-  },
-  { additionalProperties: false },
-);
-export type RegisterAuthTokenRequest = Static<typeof RegisterAuthTokenRequest>;
-
 export const UpdateConfigValueRequest = Type.Object(
   {
     value: Type.Any(),
