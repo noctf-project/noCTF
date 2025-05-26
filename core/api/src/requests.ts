@@ -58,6 +58,27 @@ export const InitAuthEmailRequest = Type.Object(
 );
 export type InitAuthEmailRequest = Static<typeof InitAuthEmailRequest>;
 
+export const CreateResetAuthEmailRequest = Type.Object(
+  {
+    email: Type.String({ format: "email" }),
+  },
+  { additionalProperties: false },
+);
+export type CreateResetAuthEmailRequest = Static<
+  typeof CreateResetAuthEmailRequest
+>;
+
+export const ApplyResetAuthEmailRequest = Type.Object(
+  {
+    token: Type.String(),
+    password: Type.String({ minLength: 8, maxLength: 256 }),
+  },
+  { additionalProperties: false },
+);
+export type ApplyResetAuthEmailRequest = Static<
+  typeof ApplyResetAuthEmailRequest
+>;
+
 export const FinishAuthEmailRequest = Type.Object(
   {
     email: Type.String({ format: "email" }),
@@ -94,7 +115,6 @@ export const RegisterAuthRequest = Type.Object(
     }),
     email: Type.Optional(Type.String({ format: "email" })),
     password: Type.Optional(Type.String({ minLength: 8, maxLength: 256 })),
-    captcha: CaptchaValidationString,
   },
   { additionalProperties: false },
 );

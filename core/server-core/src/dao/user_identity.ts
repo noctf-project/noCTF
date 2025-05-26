@@ -2,6 +2,21 @@ import pg from "pg";
 import { ConflictError } from "../errors.ts";
 import type { DBType } from "../clients/database.ts";
 import type { UserIdentity } from "@noctf/api/datatypes";
+import { sql } from "kysely";
+import {
+  PostgresErrorCode,
+  PostgresErrorConfig,
+  TryPGConstraintError,
+} from "../util/pgerror.ts";
+
+const ASSOCIATE_ERROR_CONFIG: PostgresErrorConfig = {
+  [PostgresErrorCode.Duplicate]: {
+    default: (e) =>
+      new ConflictError("Provider ID is associated to another account", {
+        cause: e,
+      }),
+  },
+};
 
 export class UserIdentityDAO {
   constructor(private readonly db: DBType) {}
@@ -21,15 +36,14 @@ export class UserIdentityDAO {
             provider,
             provider_id,
             secret_data,
+            updated_at: sql`CURRENT_TIMESTAMP`,
           }),
         )
         .execute();
     } catch (e) {
-      if (e instanceof pg.DatabaseError && e.constraint) {
-        throw new ConflictError(
-          `A provider with type ${provider} already exists`,
-        );
-      }
+      const pgerror = TryPGConstraintError(e, ASSOCIATE_ERROR_CONFIG);
+      if (pgerror) throw pgerror;
+      throw e;
     }
   }
 
@@ -78,6 +92,7 @@ export class UserIdentityDAO {
         "provider_id",
         "secret_data",
         "created_at",
+        "updated_at",
       ]);
   }
 }

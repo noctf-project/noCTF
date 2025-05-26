@@ -25,3 +25,11 @@ An email change request was made for {{ ctf_name }} using your email address.
 If it was you, please click the following link to confirm your email address change:
 {{ root_url }}/settings/account?token={{ token }}
 `);
+
+export const EMAIL_RESET_PASSWORD_TEMPLATE = Handlebars.compile(`Hello,
+
+  Someone tried to reset your password for {{ ctf_name }} using your email address.
+  
+  If it was you, please click the following link to continue with creating your account:
+  {{ root_url }}/auth/reset?token={{ token }}
+  `);

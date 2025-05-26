@@ -22,6 +22,8 @@ export interface IdentityProvider {
 
 export type AssociateIdentity = Omit<UserIdentity, "created_at">;
 
+const ONE_WEEK_IN_SECONDS = 7 * 24 * 3600;
+
 const CACHE_NAMESPACE = "core:svc:identity";
 const AUDIENCE = "noctf:auth";
 const REVOKE_NS = "core:identity:session:rev";
@@ -77,7 +79,7 @@ export class IdentityService {
     const refreshToken = generateRefreshToken ? nanoid() : undefined;
     const expires_at = app_id
       ? null
-      : new Date(Date.now() + 7 * 24 * 3600 * 1000); // 7 days for session tokens
+      : new Date(Date.now() + ONE_WEEK_IN_SECONDS * 1000); // 7 days for session tokens
     const sid = await this.sessionDAO.createSession({
       user_id,
       app_id,
@@ -89,7 +91,7 @@ export class IdentityService {
     });
 
     // TODO: shorten this to 1 hour for all token types
-    const expires_in = app_id ? 3600 : 7 * 24 * 3600;
+    const expires_in = app_id ? 3600 : ONE_WEEK_IN_SECONDS;
     return {
       access_token: await this.generateToken(
         {
@@ -116,7 +118,7 @@ export class IdentityService {
       revoked_at,
       scopes,
     } = await this.sessionDAO.refreshSession(app_id, oldHash, newHash);
-    let tokenExpires = new Date(Date.now() + 7 * 24 * 3600);
+    let tokenExpires = new Date(Date.now() + ONE_WEEK_IN_SECONDS);
     if (expires_at && expires_at < tokenExpires) tokenExpires = expires_at;
     if (revoked_at && revoked_at < tokenExpires) tokenExpires = revoked_at;
 
@@ -190,7 +192,7 @@ export class IdentityService {
 
   async revokeToken(token: string) {
     let sid: number | undefined;
-    let exp = Math.floor(Date.now() / 1000) + 7 * 24 * 3600;
+    let exp = Math.floor(Date.now() / 1000) + ONE_WEEK_IN_SECONDS;
     try {
       const payload = await this.validateToken(token);
       sid = +payload.sid;
@@ -217,6 +219,22 @@ export class IdentityService {
         exp - Math.floor(Date.now() / 1000),
       ),
     ]);
+  }
+
+  async revokeUserSessions(user_id: number, app_id?: number) {
+    const sessions = await this.sessionDAO.revokeUserSessions(user_id, app_id);
+    await Promise.all(
+      sessions.map(async ({ id, expires_at }) => {
+        return this.cacheService.put(
+          REVOKE_NS,
+          id.toString(),
+          1,
+          expires_at
+            ? Math.floor(expires_at.getTime() - Date.now())
+            : ONE_WEEK_IN_SECONDS,
+        );
+      }),
+    );
   }
 
   async associateIdentities(data: AssociateIdentity[]) {

@@ -1,7 +1,8 @@
-import { AssociateTokenData, RegisterTokenData } from "@noctf/api/token";
+import { AssociateTokenData, RegisterTokenData } from "./token_data.ts";
 import { ServiceCradle } from "@noctf/server-core";
 import { ForbiddenError } from "@noctf/server-core/errors";
 import { createHash, randomUUID } from "node:crypto";
+import { ResetPasswordTokenData } from "./token_data.ts";
 
 type Props = Pick<ServiceCradle, "cacheService">;
 
@@ -11,12 +12,14 @@ export type StateTokenData = {
 
 type TokenDataMap = {
   register: RegisterTokenData;
+  reset_password: ResetPasswordTokenData;
   associate: AssociateTokenData;
   state: StateTokenData;
 };
 
 const TOKEN_EXPIRY_SECONDS: Record<keyof TokenDataMap, number> = {
   register: 3600,
+  reset_password: 3600,
   associate: 3600,
   state: 600,
 };

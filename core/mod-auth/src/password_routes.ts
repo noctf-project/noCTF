@@ -2,6 +2,8 @@ import {
   ChangeAuthEmailRequest,
   FinishAuthEmailRequest,
   InitAuthEmailRequest,
+  CreateResetAuthEmailRequest,
+  ApplyResetAuthEmailRequest,
 } from "@noctf/api/requests";
 import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
 import { PasswordProvider } from "./password_provider.ts";
@@ -9,18 +11,29 @@ import type { FastifyInstance } from "fastify";
 import { UserFlag } from "@noctf/server-core/types/enums";
 import { TokenProvider } from "./token_provider.ts";
 import { UserNotFoundError } from "./error.ts";
-import { EMAIL_CHANGE_TEMPLATE, EMAIL_VERIFICATION_TEMPLATE } from "./const.ts";
+import {
+  EMAIL_CHANGE_TEMPLATE,
+  EMAIL_VERIFICATION_TEMPLATE,
+  EMAIL_RESET_PASSWORD_TEMPLATE,
+} from "./const.ts";
 import { SetupConfig } from "@noctf/api/config";
 import {
   AuthenticationError,
   BadRequestError,
   ConflictError,
+  ForbiddenError,
   NotFoundError,
 } from "@noctf/server-core/errors";
+import { Generate } from "./hash_util.ts";
 
 export default async function (fastify: FastifyInstance) {
-  const { identityService, configService, cacheService, emailService } =
-    fastify.container.cradle;
+  const {
+    identityService,
+    configService,
+    cacheService,
+    emailService,
+    lockService,
+  } = fastify.container.cradle;
   const passwordProvider = new PasswordProvider(fastify.container.cradle);
   const tokenProvider = new TokenProvider({ cacheService });
 
@@ -93,6 +106,105 @@ export default async function (fastify: FastifyInstance) {
           token: token,
         },
       });
+    },
+  );
+
+  fastify.post<{
+    Body: CreateResetAuthEmailRequest;
+    Reply: BaseResponse;
+  }>(
+    "/auth/email/reset",
+    {
+      schema: {
+        tags: ["auth"],
+        description: "Reset password",
+        body: CreateResetAuthEmailRequest,
+        response: {
+          default: BaseResponse,
+        },
+      },
+    },
+    async (request) => {
+      const { enable_login_password } = await passwordProvider.getConfig();
+      if (!enable_login_password) {
+        throw new NotFoundError("The requested auth provider cannot be found");
+      }
+      const email = request.body.email.toLowerCase();
+      const identity = await this.identityService.getIdentityForProvider(
+        this.id(),
+        email,
+      );
+      if (!identity) {
+        throw new UserNotFoundError();
+      }
+      const token = await tokenProvider.create("reset_password", {
+        user_id: identity.user_id,
+        created_at: new Date(),
+      });
+      const { root_url, name: ctf_name } = (
+        await configService.get<SetupConfig>(SetupConfig.$id!)
+      ).value;
+      await emailService.sendEmail({
+        to: [{ address: email, name: "" }],
+        subject: "Reset your password",
+        text: EMAIL_RESET_PASSWORD_TEMPLATE({
+          root_url,
+          ctf_name,
+          token,
+        }),
+      });
+      return {};
+    },
+  );
+
+  fastify.put<{
+    Body: ApplyResetAuthEmailRequest;
+    Reply: FinishAuthResponse;
+  }>(
+    "/auth/email/reset",
+    {
+      schema: {
+        tags: ["auth"],
+        description: "Reset password",
+        body: ApplyResetAuthEmailRequest,
+        response: {
+          default: FinishAuthResponse,
+        },
+      },
+    },
+    async (request) => {
+      const { token, password } = request.body;
+      const data = await tokenProvider.lookup("reset_password", token);
+      const id = await lockService.withLease(
+        `token:reset_password:${TokenProvider.hash(token)}`,
+        async () => {
+          const identity = await identityService.getProviderForUser(
+            data.user_id,
+            "email",
+          );
+          if (identity.updated_at > data.created_at) {
+            throw new ForbiddenError("Invalid token", {
+              cause: new Error("Password reset after token created"),
+            });
+          }
+          await identityService.associateIdentities([
+            {
+              ...identity,
+              secret_data: await Generate(password),
+            },
+          ]);
+          await identityService.revokeUserSessions(identity.user_id);
+        },
+      );
+      const sessionToken = await this.identityService.createSession({
+        user_id: id,
+      });
+      return {
+        data: {
+          type: "session",
+          token: sessionToken,
+        },
+      };
     },
   );
 
