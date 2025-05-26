@@ -10,6 +10,7 @@ import { EncryptJWT, jwtDecrypt } from "jose";
 import { JOSEError, JWTExpired } from "jose/errors";
 import { SessionDAO } from "../dao/session.ts";
 import { nanoid } from "nanoid";
+import { OAuthTokenResponse } from "@noctf/api/responses";
 
 type Props = Pick<ServiceCradle, "databaseClient" | "cacheService"> & {
   secret: string;
@@ -72,8 +73,8 @@ export class IdentityService {
       scopes?: string[];
     },
     generateRefreshToken = false,
-  ) {
-    const refreshToken = generateRefreshToken ? nanoid() : null;
+  ): Promise<OAuthTokenResponse> {
+    const refreshToken = generateRefreshToken ? nanoid() : undefined;
     const expires_at = app_id
       ? null
       : new Date(Date.now() + 7 * 24 * 3600 * 1000); // 7 days for session tokens
@@ -86,6 +87,9 @@ export class IdentityService {
         ? createHash("sha256").update(refreshToken).digest()
         : null,
     });
+
+    // TODO: shorten this to 1 hour for all token types
+    const expires_in = app_id ? 3600 : 7 * 24 * 3600;
     return {
       access_token: await this.generateToken(
         {
@@ -94,9 +98,10 @@ export class IdentityService {
           scopes,
           sid: sid.toString(),
         },
-        app_id ? 3600 : 7 * 24 * 3600, // TODO: shorten this to 1 hour for all token types
+        expires_in,
       ),
       refresh_token: refreshToken,
+      expires_in,
     };
   }
 

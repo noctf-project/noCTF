@@ -27,7 +27,6 @@
     "@noctf/mod-captcha": "workspace:*",
     "@noctf/mod-tickets": "workspace:*",
     "@noctf/server-core": "workspace:*",
-    "@noctf/authz-server": "workspace:*",
     "@sinclair/typebox": "catalog:",
     "awilix": "catalog:",
     "fastify": "catalog:",

@@ -12,5 +12,5 @@
     "skipLibCheck": true,
     "noImplicitAny": true,
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "../server-core/src/services/oauth_rp_provider.test.ts"]
 }

@@ -155,9 +155,6 @@ importers:
       '@noctf/api':
         specifier: workspace:*
         version: link:../../core/api
-      '@noctf/authz-server':
-        specifier: workspace:*
-        version: link:../../plugins/authz-server
       '@noctf/mod-auth':
         specifier: workspace:*
         version: link:../../core/mod-auth
@@ -305,6 +302,9 @@ importers:
 
   core/mod-auth:
     dependencies:
+      '@fastify/formbody':
+        specifier: 'catalog:'
+        version: 8.0.2
       '@noctf/api':
         specifier: workspace:*
         version: link:../api
@@ -487,43 +487,6 @@ importers:
       '@types/nodemailer':
         specifier: ^6.4.17
         version: 6.4.17
-      '@vitest/coverage-v8':
-        specifier: 'catalog:'
-        version: 2.1.8(vitest@2.1.8(@types/node@22.10.2))
-      typescript:
-        specifier: 'catalog:'
-        version: 5.7.2
-      vitest:
-        specifier: 'catalog:'
-        version: 2.1.8(@types/node@22.10.2)
-      vitest-mock-extended:
-        specifier: 'catalog:'
-        version: 2.0.2(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2))
-
-  plugins/authz-server:
-    dependencies:
-      '@fastify/formbody':
-        specifier: 'catalog:'
-        version: 8.0.2
-      '@noctf/api':
-        specifier: workspace:*
-        version: link:../../core/api
-      '@noctf/schema':
-        specifier: workspace:*
-        version: link:../../core/schema
-      '@noctf/server-core':
-        specifier: workspace:*
-        version: link:../../core/server-core
-      '@sinclair/typebox':
-        specifier: 'catalog:'
-        version: 0.34.13
-      fastify:
-        specifier: 'catalog:'
-        version: 5.2.0
-      nanoid:
-        specifier: 'catalog:'
-        version: 5.0.9
-    devDependencies:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 2.1.8(vitest@2.1.8(@types/node@22.10.2))

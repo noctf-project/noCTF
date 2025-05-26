@@ -16,6 +16,7 @@
     "@noctf/server-core": "workspace:*",
     "@sinclair/typebox": "catalog:",
     "fastify": "catalog:",
+    "@fastify/formbody": "catalog:",
     "ky": "catalog:",
     "kysely": "catalog:",
     "handlebars": "catalog:"
