@@ -20,6 +20,7 @@ import { TokenProvider } from "./token_provider.ts";
 import { BadRequestError, NotFoundError } from "@noctf/server-core/errors";
 import { OAuthAuthorizeQuery } from "@noctf/api/query";
 import { SetupConfig } from "@noctf/api/config";
+import fastifyFormbody from "@fastify/formbody";
 
 export default async function (fastify: FastifyInstance) {
   const {
@@ -40,6 +41,7 @@ export default async function (fastify: FastifyInstance) {
     new TokenProvider({ cacheService }),
   );
   identityService.register(provider);
+  fastify.register(fastifyFormbody);
 
   fastify.post<{
     Body: InitAuthOauthRequest;
@@ -173,8 +175,7 @@ export default async function (fastify: FastifyInstance) {
         reply.send(result);
       } catch (e) {
         if (e instanceof BadRequestError) {
-          reply.send({ error: "invalid_request" });
-          return;
+          return reply.code(400).send({ error: "invalid_request" });
         }
         throw e;
       }
