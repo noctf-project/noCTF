@@ -72,14 +72,21 @@ export class SessionDAO {
   }
 
   async revokeUserSessions(user_id: number, app_id: number | null = null) {
-    await this.db
+    return await this.db
       .updateTable("session")
       .set({
         revoked_at: new Date(),
       })
       .where("user_id", "=", user_id)
       .where("app_id", app_id === null ? "is" : "=", app_id)
+      .where((eb) =>
+        eb.or([
+          eb("expires_at", "is", null),
+          eb("expires_at", ">", sql<Date>`CURRENT_TIMESTAMP`),
+        ]),
+      )
       .where("revoked_at", "is", null)
+      .returning(["id", "expires_at"])
       .execute();
   }
 }

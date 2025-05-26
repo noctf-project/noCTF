@@ -18,7 +18,7 @@ import {
   UserSummary,
   UserIdentity,
 } from "./datatypes.ts";
-import { AuthTokenType, RegisterTokenData } from "./token.ts";
+import { AuthTokenType } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
 import { SetupConfig } from "./config.ts";
 
@@ -72,13 +72,6 @@ export const FinishAuthResponse = Type.Object({
   }),
 });
 export type FinishAuthResponse = Static<typeof FinishAuthResponse>;
-
-export const RegisterAuthTokenResponse = Type.Object({
-  data: Type.Omit(RegisterTokenData, ["type"]),
-});
-export type RegisterAuthTokenResponse = Static<
-  typeof RegisterAuthTokenResponse
->;
 
 export const AdminGetConfigValueResponse = Type.Object({
   data: Type.Object({

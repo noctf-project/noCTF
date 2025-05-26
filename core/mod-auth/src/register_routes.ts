@@ -1,17 +1,14 @@
-import {
-  RegisterAuthRequest,
-  RegisterAuthTokenRequest,
-} from "@noctf/api/requests";
-import {
-  BaseResponse,
-  FinishAuthResponse,
-  RegisterAuthTokenResponse,
-} from "@noctf/api/responses";
+import { RegisterAuthRequest } from "@noctf/api/requests";
+import { BaseResponse, FinishAuthResponse } from "@noctf/api/responses";
 import { BadRequestError } from "@noctf/server-core/errors";
 import type { FastifyInstance } from "fastify";
 import { Generate } from "./hash_util.ts";
 import type { AssociateIdentity } from "@noctf/server-core/services/identity";
 import { TokenProvider } from "./token_provider.ts";
+import {
+  RegisterAuthTokenRequest,
+  RegisterAuthTokenResponse,
+} from "./api_schema.ts";
 
 export default async function (fastify: FastifyInstance) {
   const { identityService, userService, lockService, cacheService } =
@@ -112,13 +109,13 @@ export default async function (fastify: FastifyInstance) {
           return id;
         },
       );
-      const sessionToken = await this.identityService.createSession({
+      const sessionToken = await identityService.createSession({
         user_id: id,
       });
       return {
         data: {
           type: "session",
-          token: sessionToken,
+          token: sessionToken.access_token,
         },
       };
     },

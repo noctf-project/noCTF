@@ -4,8 +4,7 @@ import type {
   IdentityProvider,
   IdentityService,
 } from "@noctf/server-core/services/identity";
-import { NotFoundError, AuthenticationError } from "@noctf/server-core/errors";
-import type { AuthToken } from "@noctf/api/token";
+import { AuthenticationError } from "@noctf/server-core/errors";
 import { Validate } from "./hash_util.ts";
 import type { ServiceCradle } from "@noctf/server-core";
 import { AuthConfig } from "@noctf/api/config";
@@ -52,7 +51,6 @@ export class PasswordProvider implements IdentityProvider {
         "Password sign-in has not been configured for this user.",
       );
     }
-    return null;
   }
 
   async authenticate(email: string, password: string): Promise<number> {
