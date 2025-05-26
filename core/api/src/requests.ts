@@ -16,11 +16,13 @@ export const UpdateUserRequest = Type.Composite(
   [
     Type.Pick(User, ["bio"]),
     Type.Object({
-      name: Type.String({
-        minLength: 1,
-        maxLength: 64,
-        pattern: NoInvalidWhitespace,
-      }),
+      name: Type.Optional(
+        Type.String({
+          minLength: 1,
+          maxLength: 64,
+          pattern: NoInvalidWhitespace,
+        }),
+      ),
     }),
   ],
   {
