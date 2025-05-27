@@ -127,6 +127,7 @@ export async function routes(fastify: FastifyInstance) {
         {
           name: request.body.name,
           division_id: request.body.division_id,
+          tag_ids: request.body.tag_ids,
           generate_join_code: true,
         },
         {
