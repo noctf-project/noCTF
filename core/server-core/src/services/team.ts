@@ -62,6 +62,7 @@ export class TeamService {
         throw new NotFoundError("Tag not found");
       }
     }
+    return tag_ids;
   }
 
   async listDivisions() {
@@ -89,7 +90,7 @@ export class TeamService {
     },
     { actor, message }: AuditParams = {},
   ) {
-    await this.validateTags();
+    tag_ids = await this.validateTags(tag_ids);
 
     const join_code = generate_join_code ? nanoid() : null;
     const team = await this.teamDAO.create({
@@ -132,7 +133,7 @@ export class TeamService {
     },
     { actor, message }: AuditParams = {},
   ) {
-    await this.validateTags(tag_ids);
+    tag_ids = await this.validateTags(tag_ids);
 
     let j: string | null | undefined;
     if (join_code === "refresh") {
