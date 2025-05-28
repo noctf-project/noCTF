@@ -93,15 +93,20 @@ export class TeamService {
     tag_ids = await this.validateTags(tag_ids);
 
     const join_code = generate_join_code ? nanoid() : null;
-    const team = await this.teamDAO.create({
-      name,
-      join_code,
-      division_id,
-      flags: flags || [],
+    const team = await this.databaseClient.transaction(async (tx) => {
+      const teamDAO = new TeamDAO(tx);
+      const teamTagDAO = new TeamTagDAO(tx);
+      const team = await teamDAO.create({
+        name,
+        join_code,
+        division_id,
+        flags: flags || [],
+      });
+      if (tag_ids && tag_ids.length) {
+        await teamTagDAO.assign(team.id, tag_ids);
+      }
+      return team;
     });
-    if (tag_ids && tag_ids.length) {
-      await this.teamTagDAO.assign(team.id, tag_ids);
-    }
 
     await this.auditLogService.log({
       operation: "team.create",
