@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { toasts } from "$lib/stores/toast";
   import Icon from "@iconify/svelte";
+  import api from "$lib/api/index.svelte";
   import { header } from "../+layout.svelte";
   import loginState from "../auth.svelte";
 
@@ -14,29 +15,25 @@
       return;
     }
     try {
-      // TODO: Implement password reset request
-      //   isLoading = true;
-      // Replace with your actual API endpoint for initiating password reset
-      // const resetReq = await api.POST("/auth/password/reset/init", {
-      //   body: { email },
-      // });
+      isLoading = true;
+      const resetReq = await api.POST("/auth/email/reset", {
+        body: { email: loginState.email },
+      });
 
-      // if (resetReq.error) {
-      //   console.error("Password reset request error:", resetReq.error);
-      //   toasts.error(
-      //     "Failed to request password reset. Please try again later.",
-      //   );
-      //   isLoading = false;
-      //   return;
-      // }
+      if (resetReq.error) {
+        console.error("Password reset request error:", resetReq.error);
+        toasts.error(
+          "Failed to request password reset. Please try again later.",
+        );
+        isLoading = false;
+        return;
+      }
 
       currentStage = "forgot-password-sent";
-      toasts.success("Password reset instructions sent");
     } catch (error) {
       console.error("Password reset submission error:", error);
       toasts.error("An unexpected error occurred. Please try again later.");
     } finally {
-      // isLoading will be set false by stage change if successful, or explicitly on error above
       if (currentStage !== "forgot-password-sent") {
         isLoading = false;
       }
@@ -79,7 +76,7 @@
     </div>
 
     <button
-      class="btn btn-primary w-full mt-6 shadow-solid"
+      class="btn btn-primary w-full mt-6 pop hover:pop"
       type="submit"
       disabled={isLoading || !loginState.email}
     >
@@ -88,15 +85,6 @@
       {:else}
         Send Reset Link
       {/if}
-    </button>
-
-    <button
-      type="button"
-      class="btn btn-ghost w-full mt-3"
-      onclick={() => goto("/auth/login")}
-      disabled={isLoading}
-    >
-      Back to Login
     </button>
   </form>
 {/if}
@@ -109,17 +97,12 @@
     </div>
 
     <p class="text-center mb-4">
-      If an account exists for <strong>{loginState.email}</strong>, you will
-      receive an email with instructions on how to reset your password shortly.
+      An email has been sent to <strong>{loginState.email}</strong> with instructions
+      on how to reset your password.
     </p>
 
-    <p class="text-sm text-gray-500 mb-6">
-      Please check your inbox (and spam folder). The link will expire for
-      security reasons.
+    <p class="text-sm text-center text-gray-500 mb-6">
+      Please check your inbox and spam folder.
     </p>
-
-    <button class="btn btn-outline w-full" onclick={() => goto("/auth")}>
-      Back to Start
-    </button>
   </div>
 {/if}

@@ -4,6 +4,7 @@
   import Icon from "@iconify/svelte";
   import { header } from "../+layout.svelte";
   import { page } from "$app/state";
+  import api from "$lib/api/index.svelte";
 
   let isLoading = $state(false);
   let password = $state("");
@@ -11,12 +12,11 @@
   let resetToken = page.url.searchParams.get("token");
   let currentStage = $state("reset-form");
 
-  // TODO: Implement password strength validation
   function validatePasswordStrength(password: string) {
-    // if (password.length < 8) {
-    // toasts.error("Password must be at least 8 characters long");
-    // return false;
-    // }
+    if (password.length < 8) {
+      toasts.error("Password must be at least 8 characters long");
+      return false;
+    }
     return true;
   }
 
@@ -43,17 +43,16 @@
 
     try {
       isLoading = true;
-      // TODO: Implement password reset API call
-      // const response = await api.POST("/auth/password/reset/confirm", {
-      //   body: {
-      //     token: resetToken,
-      //     password: password,
-      //   },
-      // });
+      const response = await api.PUT("/auth/email/reset", {
+        body: {
+          token: resetToken,
+          password: password,
+        },
+      });
 
-      // if (response.error) {
-      //   throw new Error(response.error);
-      // }
+      if (response.error) {
+        throw new Error(response.error.toString());
+      }
 
       toasts.success("Password has been reset successfully");
       currentStage = "success";
@@ -76,7 +75,7 @@
     "Invalid Reset Link",
     "This password reset link is invalid or has expired",
   )}
-  <div class="pb-4 flex flex-col items-center">
+  <div class="pb-4 flex flex-col items-center -mt-4">
     <div class="rounded-full flex items-center justify-center mb-4">
       <Icon icon="material-symbols:error-outline" class="text-4xl text-error" />
     </div>
@@ -84,19 +83,18 @@
       Please request a new password reset link from the login page.
     </p>
     <button
-      class="btn btn-primary w-full"
-      onclick={() => goto("/auth/forgot-password")}
+      class="btn btn-primary w-full pop hover:pop"
+      onclick={() => goto("/auth/login")}
     >
-      Request New Reset Link
+      Return to Login
     </button>
   </div>
-  <!-- Password reset success -->
 {:else if currentStage === "success"}
   {@render header(
     "Password Updated",
     "Your password has been successfully reset",
   )}
-  <div class="pb-4 flex flex-col items-center">
+  <div class="pb-4 flex flex-col items-center -mt-4">
     <div class="rounded-full flex items-center justify-center mb-4">
       <Icon
         icon="material-symbols:check-circle-outline"
@@ -107,8 +105,11 @@
       Your password has been successfully updated. You can now log in with your
       new password.
     </p>
-    <button class="btn btn-primary w-full" onclick={() => goto("/auth/login")}>
-      Back to Login
+    <button
+      class="btn btn-primary w-full pop hover:pop"
+      onclick={() => goto("/auth/login")}
+    >
+      Continue to Login
     </button>
   </div>
 {:else}
@@ -144,7 +145,7 @@
     </div>
 
     <button
-      class="btn btn-primary w-full mt-6 shadow-solid"
+      class="btn btn-primary w-full mt-6 pop hover:pop"
       type="submit"
       disabled={isLoading || !password || !confirmPassword}
     >
@@ -153,15 +154,6 @@
       {:else}
         Reset Password
       {/if}
-    </button>
-
-    <button
-      type="button"
-      class="btn btn-ghost w-full mt-3"
-      onclick={() => goto("/auth/login")}
-      disabled={isLoading}
-    >
-      Back to Login
     </button>
   </form>
 {/if}

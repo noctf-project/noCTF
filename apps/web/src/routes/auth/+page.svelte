@@ -1,7 +1,6 @@
 <script lang="ts">
   import { toasts } from "$lib/stores/toast";
   import Icon from "@iconify/svelte";
-  import { goto } from "$app/navigation";
   import loginState from "./auth.svelte";
   import { header } from "./+layout.svelte";
 
@@ -52,7 +51,6 @@
       <span class="label-text">Email</span>
     </label>
     <input
-      autofocus
       id="email"
       type="email"
       placeholder="email@example.com"

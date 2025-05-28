@@ -1,8 +1,11 @@
-import { AssociateTokenData, RegisterTokenData } from "./token_data.ts";
+import {
+  AssociateTokenData,
+  RegisterTokenData,
+  ResetPasswordTokenData,
+} from "./api_schema.ts";
 import { ServiceCradle } from "@noctf/server-core";
 import { ForbiddenError } from "@noctf/server-core/errors";
 import { createHash, randomUUID } from "node:crypto";
-import { ResetPasswordTokenData } from "./token_data.ts";
 
 type Props = Pick<ServiceCradle, "cacheService">;
 
