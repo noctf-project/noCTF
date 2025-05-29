@@ -24,7 +24,6 @@ export type AssociateIdentity = Omit<UserIdentity, "created_at">;
 
 const ONE_WEEK_IN_SECONDS = 7 * 24 * 3600;
 
-const CACHE_NAMESPACE = "core:svc:identity";
 const AUDIENCE = "noctf:auth";
 const REVOKE_NS = "core:identity:session:rev";
 
@@ -244,10 +243,6 @@ export class IdentityService {
         await dao.associate(d);
       }
     });
-    await this.cacheService.del(
-      CACHE_NAMESPACE,
-      data.map((x) => `pvd_uid:${x.user_id}:${x.provider}`),
-    );
   }
 
   async removeIdentity(user_id: number, provider: string) {
@@ -262,22 +257,13 @@ export class IdentityService {
   }
 
   async getProviderForUser(user_id: number, provider: string) {
-    return this.cacheService.load(
-      CACHE_NAMESPACE,
-      `pvd_uid:${user_id}:${provider}`,
-      async () => await this.identityDAO.getIdentityForUser(user_id, provider),
-    );
+    return this.identityDAO.getIdentityForUser(user_id, provider);
   }
 
   async getIdentityForProvider(provider: string, provider_id: string) {
-    return this.cacheService.load(
-      CACHE_NAMESPACE,
-      `uid_pvd:${provider}:${provider_id}`,
-      async () =>
-        await this.identityDAO.getIdentityForProvider({
-          provider,
-          provider_id,
-        }),
-    );
+    return this.identityDAO.getIdentityForProvider({
+      provider,
+      provider_id,
+    });
   }
 }

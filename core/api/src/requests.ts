@@ -90,8 +90,9 @@ export type FinishAuthEmailRequest = Static<typeof FinishAuthEmailRequest>;
 
 export const ChangeAuthEmailRequest = Type.Object(
   {
-    email: Type.String({ format: "email" }),
+    email: Type.Optional(Type.String({ format: "email" })),
     password: Type.String(),
+    newPassword: Type.Optional(Type.String({ minLength: 8, maxLength: 256 })),
   },
   { additionalProperties: false },
 );

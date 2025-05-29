@@ -25,6 +25,7 @@ import {
   NotFoundError,
 } from "@noctf/server-core/errors";
 import { Generate } from "./hash_util.ts";
+import { Type } from "@sinclair/typebox";
 
 export default async function (fastify: FastifyInstance) {
   const {
@@ -249,7 +250,7 @@ export default async function (fastify: FastifyInstance) {
 
   fastify.post<{
     Body: ChangeAuthEmailRequest;
-    Reply: BaseResponse;
+    Reply: FinishAuthResponse | BaseResponse;
   }>(
     "/auth/email/change",
     {
@@ -262,7 +263,7 @@ export default async function (fastify: FastifyInstance) {
         },
         body: ChangeAuthEmailRequest,
         response: {
-          200: BaseResponse,
+          200: Type.Composite([BaseResponse, FinishAuthResponse]),
         },
       },
     },
@@ -272,61 +273,87 @@ export default async function (fastify: FastifyInstance) {
       if (!enable_register_password) {
         throw new NotFoundError("The requested auth provider cannot be found");
       }
-      const { provider_id: oldEmail } =
-        await identityService.getProviderForUser(request.user.id, "email");
-      const newEmail = request.body.email.toLowerCase();
+      const identity = await identityService.getProviderForUser(
+        request.user.id,
+        "email",
+      );
       const password = request.body.password;
       try {
-        await passwordProvider.authenticate(oldEmail, password);
+        await passwordProvider.authenticate(identity.provider_id, password);
       } catch (e) {
         if (e instanceof AuthenticationError) {
           throw new AuthenticationError("Incorrect password");
         }
       }
 
-      try {
-        await passwordProvider.authPreCheck(newEmail);
-        throw new ConflictError("A user already exists with this email");
-      } catch (e) {
-        if (!(e instanceof UserNotFoundError)) throw e;
-      }
+      const newEmail = request.body.email?.toLowerCase();
+      if (newEmail) {
+        try {
+          await passwordProvider.authPreCheck(newEmail);
+          throw new ConflictError("A user already exists with this email");
+        } catch (e) {
+          if (!(e instanceof UserNotFoundError)) throw e;
+        }
 
-      if (validate_email) {
-        const token = await tokenProvider.create("associate", {
-          identity: [
+        if (validate_email) {
+          const token = await tokenProvider.create("associate", {
+            identity: [
+              {
+                provider: "email",
+                provider_id: newEmail,
+              },
+            ],
+            user_id: request.user?.id,
+          });
+          const { root_url, name: ctf_name } = (
+            await configService.get<SetupConfig>(SetupConfig.$id!)
+          ).value;
+          await emailService.sendEmail({
+            to: [{ address: newEmail, name: "" }],
+            subject: "Verify Your Email",
+            text: EMAIL_CHANGE_TEMPLATE({
+              root_url,
+              ctf_name,
+              token,
+            }),
+          });
+          return {
+            message:
+              "Please check your new email for a link to confirm your email update",
+          };
+        } else {
+          // TODO: figure out how to consider valid_email user flag, we probably want to remove
+          await identityService.associateIdentities([
             {
+              user_id: request.user.id,
               provider: "email",
               provider_id: newEmail,
             },
-          ],
-          user_id: request.user?.id,
-        });
-        const { root_url, name: ctf_name } = (
-          await configService.get<SetupConfig>(SetupConfig.$id!)
-        ).value;
-        await emailService.sendEmail({
-          to: [{ address: newEmail, name: "" }],
-          subject: "Verify Your Email",
-          text: EMAIL_CHANGE_TEMPLATE({
-            root_url,
-            ctf_name,
-            token,
-          }),
+          ]);
+          return {};
+        }
+      }
+
+      const newPassword = request.body.newPassword;
+      if (newPassword) {
+        await identityService.associateIdentities([
+          {
+            ...identity,
+            secret_data: await Generate(newPassword),
+          },
+        ]);
+        await identityService.revokeUserSessions(identity.user_id);
+        const sessionToken = await identityService.createSession({
+          user_id: request.user.id,
         });
         return {
-          message:
-            "Please check your new email for a link to confirm your email update",
+          data: {
+            type: "session",
+            token: sessionToken.access_token,
+          },
         };
       }
 
-      // TODO: figure out how to consider valid_email user flag, we probably want to remove
-      await identityService.associateIdentities([
-        {
-          user_id: request.user.id,
-          provider: "email",
-          provider_id: newEmail,
-        },
-      ]);
       return {};
     },
   );

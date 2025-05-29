@@ -27,7 +27,7 @@ class AuthState {
       const path = window.location.pathname;
       if (
         !this.isAuthenticated &&
-        ["/team", "/settings", "/team/edit"].includes(path)
+        (["/team", "/team/edit"].includes(path) || path.startsWith("/settings"))
       ) {
         window.location.href = "/auth";
       } else if (this.isAuthenticated && path === "/auth") {

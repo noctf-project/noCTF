@@ -1,4 +1,5 @@
 <script lang="ts">
+  import api, { SESSION_TOKEN_KEY } from "$lib/api/index.svelte";
   import { toasts } from "$lib/stores/toast";
 
   let securityForm = $state({
@@ -32,20 +33,28 @@
 
     try {
       isUpdatingPassword = true;
-      await new Promise((resolve) => setTimeout(resolve, 800));
 
-      console.log("Password updated");
+      const response = await api.POST("/auth/email/change", {
+        body: {
+          password: securityForm.currentPassword,
+          newPassword: securityForm.newPassword,
+        },
+      });
+
+      if (!response.data) {
+        throw new Error(response.error?.message || "Failed to change password");
+      }
+
+      if (response.data) {
+        localStorage.setItem(SESSION_TOKEN_KEY, response.data.data.token);
+        toasts.success("Password updated successfully!");
+      }
 
       securityForm.currentPassword = "";
       securityForm.newPassword = "";
       securityForm.confirmPassword = "";
-
-      toasts.success("Password updated successfully!");
     } catch (error) {
-      console.error("Failed to update password:", error);
-      toasts.error(
-        "Failed to update password. Current password may be incorrect.",
-      );
+      toasts.error("Failed to update password: " + error?.toString());
     } finally {
       isUpdatingPassword = false;
     }
