@@ -18,6 +18,7 @@ type Props = Pick<
 
 export class TeamService {
   private readonly auditLogService;
+  private readonly databaseClient;
   private readonly configService;
 
   private readonly divisionDAO;
@@ -32,6 +33,7 @@ export class TeamService {
   });
 
   constructor({ configService, databaseClient, auditLogService }: Props) {
+    this.databaseClient = databaseClient;
     this.auditLogService = auditLogService;
     this.configService = configService;
     this.divisionDAO = new DivisionDAO(databaseClient.get());
@@ -48,6 +50,21 @@ export class TeamService {
     return this.teamTagDAO.list();
   }
 
+  private async validateTags(tag_ids?: number[]) {
+    if (tag_ids && tag_ids.length) {
+      tag_ids = Array.from(new Set(tag_ids));
+      const teamTags = await this.teamTagDAO.list();
+      if (
+        tag_ids.some(
+          (tag_id) => !teamTags.find(({ id }) => tag_id === id)?.is_joinable,
+        )
+      ) {
+        throw new NotFoundError("Tag not found");
+      }
+    }
+    return tag_ids;
+  }
+
   async listDivisions() {
     return this.divisionDAO.list();
   }
@@ -60,23 +77,35 @@ export class TeamService {
     {
       name,
       division_id,
+      tag_ids,
       flags,
       generate_join_code,
     }: {
       name: string;
       division_id: number;
       flags?: string[];
+      tag_ids?: number[];
       generate_join_code?: boolean;
       audit?: AuditParams;
     },
     { actor, message }: AuditParams = {},
   ) {
+    tag_ids = await this.validateTags(tag_ids);
+
     const join_code = generate_join_code ? nanoid() : null;
-    const team = await this.teamDAO.create({
-      name,
-      join_code,
-      division_id,
-      flags: flags || [],
+    const team = await this.databaseClient.transaction(async (tx) => {
+      const teamDAO = new TeamDAO(tx);
+      const teamTagDAO = new TeamTagDAO(tx);
+      const team = await teamDAO.create({
+        name,
+        join_code,
+        division_id,
+        flags: flags || [],
+      });
+      if (tag_ids && tag_ids.length) {
+        await teamTagDAO.assign(team.id, tag_ids);
+      }
+      return team;
     });
 
     await this.auditLogService.log({
@@ -85,7 +114,7 @@ export class TeamService {
       data: message,
       entities: [`${ActorType.TEAM}:${team.id}`],
     });
-    return team;
+    return { ...team, tag_ids };
   }
 
   async update(
@@ -96,6 +125,7 @@ export class TeamService {
       country,
       join_code,
       division_id,
+      tag_ids,
       flags,
     }: {
       name?: string;
@@ -103,10 +133,13 @@ export class TeamService {
       country?: string;
       flags?: string[];
       division_id?: number;
+      tag_ids?: number[];
       join_code?: "refresh" | "remove";
     },
     { actor, message }: AuditParams = {},
   ) {
+    tag_ids = await this.validateTags(tag_ids);
+
     let j: string | null | undefined;
     if (join_code === "refresh") {
       j = nanoid();
@@ -114,14 +147,25 @@ export class TeamService {
       j = null;
     }
 
-    await this.teamDAO.update(id, {
-      name,
-      bio,
-      country,
-      join_code: j,
-      division_id,
-      flags,
+    await this.databaseClient.transaction(async (tx) => {
+      const teamDAO = new TeamDAO(tx);
+      const teamTagDAO = new TeamTagDAO(tx);
+
+      await teamDAO.update(id, {
+        name,
+        bio,
+        country,
+        join_code: j,
+        division_id,
+        flags,
+      });
+
+      if (tag_ids) {
+        await teamTagDAO.unassignAll(id);
+        await teamTagDAO.assign(id, tag_ids);
+      }
     });
+
     await this.auditLogService.log({
       operation: "team.update",
       actor,

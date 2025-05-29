@@ -201,7 +201,7 @@ export type AdminCreateSubmissionRequest = Static<
 
 export const CreateTeamRequest = Type.Composite(
   [
-    Type.Pick(Team, ["division_id"]),
+    Type.Pick(Team, ["division_id", "tag_ids"]),
     Type.Object({
       name: Type.String({
         minLength: 1,
@@ -235,7 +235,7 @@ export enum UpdateTeamJoinCodeAction {
 
 export const UpdateTeamRequest = Type.Composite(
   [
-    Type.Pick(Team, ["bio", "country"]),
+    Type.Pick(Team, ["bio", "country", "tag_ids"]),
     Type.Object({
       name: Type.String({
         minLength: 1,

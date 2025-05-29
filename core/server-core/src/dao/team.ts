@@ -39,9 +39,8 @@ export class TeamDAO {
     join_code,
     division_id,
     flags,
-  }: Insertable<DB["team"]>): Promise<Team> {
+  }: Insertable<DB["team"]>): Promise<Omit<Team, "tag_ids">> {
     try {
-      // TODO: tag ids on creation
       const { id, created_at } = await this.db
         .insertInto("team")
         .values({
@@ -61,7 +60,6 @@ export class TeamDAO {
         bio: bio || "",
         country: country || null,
         join_code: join_code || null,
-        tag_ids: [], // TODO
         division_id,
         flags: flags || [],
         created_at,
@@ -202,11 +200,17 @@ export class TeamDAO {
   }
 
   async update(id: number, v: Updateable<DB["team"]>) {
-    await this.db
-      .updateTable("team")
-      .set(FilterUndefined(v))
-      .where("id", "=", id)
-      .executeTakeFirstOrThrow();
+    try {
+      await this.db
+        .updateTable("team")
+        .set(FilterUndefined(v))
+        .where("id", "=", id)
+        .executeTakeFirstOrThrow();
+    } catch (e) {
+      const pgerror = TryPGConstraintError(e, CREATE_ERROR_CONFIG);
+      if (pgerror) throw pgerror;
+      throw e;
+    }
   }
 
   async delete(id: number) {

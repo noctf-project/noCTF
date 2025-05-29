@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from "@iconify/svelte";
-  import api from "$lib/api/index.svelte";
+  import api, { wrapLoadable } from "$lib/api/index.svelte";
   import authState from "$lib/state/auth.svelte";
   import { toasts } from "$lib/stores/toast";
   import { copyToClipboard } from "$lib/utils/clipboard";
@@ -9,6 +9,7 @@
   let teamName = $state("");
   let isJoining = $state(false);
   let isCreating = $state(false);
+  let selectedTagIds = $state<number[]>([]);
 
   let pageState = $state<"form" | "success" | "joined" | "loading">("loading");
   let createdTeam = $state<{
@@ -22,9 +23,28 @@
     name: string;
   } | null>(null);
 
+  type TeamTag = {
+    id: number;
+    name: string;
+    is_joinable: boolean;
+  };
+
+  const apiTeamTags = wrapLoadable(api.GET("/team_tags"));
+  const teamTags: TeamTag[] = $derived(
+    apiTeamTags.r?.data?.data?.tags.filter((t) => t.is_joinable) || [],
+  );
+
   $effect(() => {
     setTimeout(() => (pageState = "form"), 250);
   });
+
+  function toggleTagSelection(tagId: number) {
+    if (selectedTagIds.includes(tagId)) {
+      selectedTagIds = selectedTagIds.filter((id) => id !== tagId);
+    } else {
+      selectedTagIds = [...selectedTagIds, tagId];
+    }
+  }
 
   async function handleJoinTeam() {
     if (!teamCode.trim()) {
@@ -84,6 +104,7 @@
         body: {
           name: teamName.trim(),
           division_id: defaultDivisionId,
+          tag_ids: selectedTagIds,
         },
       });
 
@@ -94,7 +115,9 @@
           name: team.name,
           join_code: team.join_code || "",
         };
+
         toasts.success(`Team "${team.name}" created successfully!`);
+
         setTimeout(() => {
           authState.refresh();
           pageState = "success";
@@ -130,7 +153,9 @@
       <p class="text-center">Loading...</p>
     </div>
   {:else if pageState === "form"}
-    <div class="flex sm:flex-row flex-col gap-6 mt-16 w-full justify-center">
+    <div
+      class="flex sm:flex-row flex-col gap-6 mt-16 w-full justify-center items-center"
+    >
       <div class="card pop bg-base-100 h-80 w-full xl:w-3/12">
         <div class="card-body items-center text-center">
           <Icon icon="mdi:account-group" class="text-4xl text-primary mb-1" />
@@ -165,9 +190,9 @@
         </div>
       </div>
 
-      <div class="divider sm:divider-horizontal sm:h-80 sm:mx-2">OR</div>
+      <div class="divider sm:divider-horizontal sm:mx-2">OR</div>
 
-      <div class="card pop bg-base-100 h-80 w-full xl:w-3/12">
+      <div class="card pop bg-base-100 h-auto w-full xl:w-3/12">
         <div class="card-body items-center">
           <Icon icon="mdi:plus-circle" class="text-4xl text-primary mb-1" />
           <h1 class="card-title">Create Team</h1>
@@ -184,7 +209,56 @@
               class="w-full input input-bordered focus:outline-none focus:ring-0 focus:ring-offset-0"
             />
           </div>
-          <div class="card-actions mt-2 w-full">
+
+          {#if !apiTeamTags.loading && teamTags.length > 0}
+            <div class="form-control w-full mt-4">
+              <label class="label" for="tags">
+                <span class="label-text">Team tags</span>
+              </label>
+              <div
+                class="flex flex-wrap gap-2 p-3 bg-base-200 rounded-lg min-h-[60px]"
+              >
+                {#if apiTeamTags.loading}
+                  {#each Array(3) as _}
+                    <div class="skeleton h-8 w-20"></div>
+                  {/each}
+                {:else if teamTags.length === 0}
+                  <div class="text-sm opacity-70 w-full text-center">
+                    No tags available
+                  </div>
+                {:else}
+                  {#each teamTags as tag}
+                    {@const isSelected = selectedTagIds.includes(tag.id)}
+                    <label class="cursor-pointer">
+                      <input
+                        type="checkbox"
+                        class="sr-only"
+                        checked={isSelected}
+                        onchange={() => toggleTagSelection(tag.id)}
+                      />
+                      <div
+                        class={`btn btn-sm ${isSelected ? "btn-primary" : "btn-outline bg-base-100"} pop hover:pop`}
+                      >
+                        {#if isSelected}
+                          <Icon icon="material-symbols:check" class="text-sm" />
+                        {/if}
+                        {tag.name}
+                      </div>
+                    </label>
+                  {/each}
+                {/if}
+              </div>
+              <div class="text-xs opacity-70 mt-1 h-2">
+                {#if selectedTagIds.length > 0}
+                  {selectedTagIds.length} tag{selectedTagIds.length !== 1
+                    ? "s"
+                    : ""} selected
+                {/if}
+              </div>
+            </div>
+          {/if}
+
+          <div class="card-actions mt-4 w-full">
             <button
               class="btn btn-primary w-full pop hover:pop"
               onclick={handleCreateTeam}

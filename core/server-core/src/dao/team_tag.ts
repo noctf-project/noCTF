@@ -44,4 +44,25 @@ export class TeamTagDAO {
       throw e;
     }
   }
+
+  async assign(team_id: number, tag_ids: number[]) {
+    if (!tag_ids.length) return;
+    await this.db
+      .insertInto("team_tag_member")
+      .values(
+        tag_ids.map((tag_id) => ({
+          team_id,
+          tag_id,
+        })),
+      )
+      .onConflict((b) => b.doNothing())
+      .executeTakeFirst();
+  }
+
+  async unassignAll(team_id: number) {
+    await this.db
+      .deleteFrom("team_tag_member")
+      .where("team_id", "=", team_id)
+      .execute();
+  }
 }
