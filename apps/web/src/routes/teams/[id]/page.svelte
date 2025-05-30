@@ -89,15 +89,17 @@
     );
   });
   const challenges: ChallengeEntry[] | undefined = $derived(
-    challengesLoader.r?.data?.data.challenges
-      .map((c) => ({
-        id: c.id,
-        title: c.title,
-        points: c.value || 0,
-        categories: getCategoriesFromTags(c.tags),
-        difficulty: getDifficultyFromTags(c.tags) as Difficulty,
-      }))
-      .sort((a, b) => a.points - b.points) || undefined,
+    challengesLoader.loading
+      ? undefined
+      : challengesLoader.r?.data?.data.challenges
+          .map((c) => ({
+            id: c.id,
+            title: c.title,
+            points: c.value || 0,
+            categories: getCategoriesFromTags(c.tags),
+            difficulty: getDifficultyFromTags(c.tags) as Difficulty,
+          }))
+          .sort((a, b) => a.points - b.points) || [],
   );
 
   let membersLoading = $derived(
