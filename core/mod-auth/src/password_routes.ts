@@ -284,6 +284,7 @@ export default async function (fastify: FastifyInstance) {
         if (e instanceof AuthenticationError) {
           throw new AuthenticationError("Incorrect password");
         }
+        throw e;
       }
 
       const newEmail = request.body.email?.toLowerCase();
