@@ -8,7 +8,7 @@
   };
 </script>
 
-<div class="navbar bg-base-200 py-8 px-12">
+<div class="navbar py-8 px-12">
   <div class="navbar-start">
     <!-- Mobile menu -->
     <div class="dropdown">

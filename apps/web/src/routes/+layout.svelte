@@ -20,9 +20,8 @@
 </script>
 
 <svelte:head>
-  <title>{configState.siteConfig?.name || "noCTF"}</title> 
+  <title>{configState.siteConfig?.name || "noCTF"}</title>
 </svelte:head>
-
 
 <div class="flex flex-col min-h-screen h-auto">
   {#if page.url.pathname.startsWith("/admin")}
@@ -30,7 +29,7 @@
   {:else}
     <Header />
   {/if}
-  <div class="flex-1 w-full h-auto bg-base-200">
+  <div class="flex-1 w-full h-auto">
     {@render children()}
   </div>
 
@@ -38,7 +37,7 @@
     <ThemeSwitcher />
   </div>
   <Toast />
-  <footer class="bg-base-200 text-center pb-4 text-xs">
+  <footer class="text-center pb-4 text-xs">
     Powered by <a href="https://noctf.dev" class="text-primary">noCTF</a>
   </footer>
 </div>

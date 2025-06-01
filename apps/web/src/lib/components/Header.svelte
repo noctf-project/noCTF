@@ -11,9 +11,7 @@
   };
 </script>
 
-<div
-  class="navbar bg-base-200 py-4 lg:py-8 px-4 sm:px-6 lg:px-12 min-h-24 lg:min-h-32"
->
+<div class="navbar py-4 lg:py-8 px-4 sm:px-6 lg:px-12 min-h-24 lg:min-h-32">
   <div class="navbar-start">
     {#if authState.isAuthenticated}
       <div class="dropdown">
