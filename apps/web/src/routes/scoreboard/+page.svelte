@@ -606,7 +606,7 @@
         <div class="relative flex flex-col -mt-32">
           <div class="overflow-x-auto">
             <div
-              class="bg-base-200 w-[24rem] h-32 sticky left-0 top-32 z-20"
+              class="w-[24rem] h-32 sticky left-0 top-32 z-20"
             ></div>
             {@render challengeTitles()}
 
