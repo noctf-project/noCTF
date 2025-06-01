@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import authState from "$lib/state/auth.svelte";
+  import configState from "$lib/state/config.svelte";
   import Icon from "@iconify/svelte";
 
   const isActive = (path: string) => {
@@ -55,11 +56,15 @@
         </ul>
       </div>
     {/if}
-    <a href="/" class="text-xl font-bold hidden lg:block">noCTF</a>
+    <a href="/" class="text-xl font-bold hidden lg:block"
+      >{configState.siteConfig?.name || "noCTF"}</a
+    >
   </div>
 
   <div class="navbar-center lg:hidden">
-    <a href="/" class="text-xl font-bold">noCTF</a>
+    <a href="/" class="text-xl font-bold"
+      >{configState.siteConfig?.name || "noCTF"}</a
+    >
   </div>
 
   <div class="navbar-center hidden lg:block">

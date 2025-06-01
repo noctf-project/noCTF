@@ -6,6 +6,7 @@
   import Toast from "$lib/components/Toast.svelte";
   import { onMount } from "svelte";
   import "../app.css";
+  import configState from "$lib/state/config.svelte";
 
   let { children } = $props();
 
@@ -17,6 +18,11 @@
     );
   });
 </script>
+
+<svelte:head>
+  <title>{configState.siteConfig?.name || "noCTF"}</title> 
+</svelte:head>
+
 
 <div class="flex flex-col min-h-screen h-auto">
   {#if page.url.pathname.startsWith("/admin")}
@@ -33,6 +39,6 @@
   </div>
   <Toast />
   <footer class="bg-base-200 text-center pb-4 text-xs">
-    Powered by <a href="/TODO" class="text-primary">noCTF</a>
+    Powered by <a href="https://noctf.dev" class="text-primary">noCTF</a>
   </footer>
 </div>

@@ -4,6 +4,7 @@
   import authState from "$lib/state/auth.svelte";
   import { toasts } from "$lib/stores/toast";
   import { copyToClipboard } from "$lib/utils/clipboard";
+  import configState from "$lib/state/config.svelte";
 
   let teamCode = $state("");
   let teamName = $state("");
@@ -92,9 +93,8 @@
 
     try {
       isCreating = true;
-
-      const siteConfig = await api.GET("/site/config");
-      const defaultDivisionId = siteConfig.data?.data.default_division_id ?? 1;
+      const defaultDivisionId =
+        configState.siteConfig?.default_division_id ?? 1;
 
       if (!defaultDivisionId) {
         throw new Error("Could not determine default division");
