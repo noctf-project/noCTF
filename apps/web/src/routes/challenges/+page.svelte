@@ -143,12 +143,12 @@
   <div class="text-center text-4xl font-black pb-4">Challenges</div>
 
   {#if apiChallenges.loading}
-    <div class="flex flex-col items-center gap-4 mt-16 bg-base-200">
+    <div class="flex flex-col items-center gap-4 mt-16">
       <div class="loading loading-spinner loading-lg text-primary"></div>
       <p class="text-center">Loading challenges...</p>
     </div>
   {:else if apiChallenges.error || apiChallenges.r?.error}
-    <div class="flex flex-col items-center gap-4 mt-16 bg-base-200">
+    <div class="flex flex-col items-center gap-4 mt-16">
       <p class="text-center">
         {apiChallenges.r?.error?.message || "Unknown error occurred"}
       </p>
@@ -174,7 +174,7 @@
         />
       </div>
 
-      <div class="flex flex-wrap gap-6 h-fit rounded-lg bg-base-200">
+      <div class="flex flex-wrap gap-6 h-fit">
         {#if challenges !== undefined && Object.keys(challengesByCategory).length > 0}
           {#each Object.entries(challengesByCategory) as [category, categoryChallenges] (category)}
             <div class="flex flex-col gap-2">
