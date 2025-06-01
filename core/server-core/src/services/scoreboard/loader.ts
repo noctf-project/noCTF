@@ -326,16 +326,13 @@ export class ScoreboardDataLoader {
 
     const multi = client.multi();
     const saved: string[] = Object.values(keys);
-    if (scoreboard.length)
-      multi.zAdd(
-        keys.rank,
-        scoreboard
-          .filter((x) => !x.hidden)
-          .map(({ rank, team_id }) => ({
-            score: rank,
-            value: team_id.toString(),
-          })),
-      );
+    const visible = scoreboard
+      .filter((x) => !x.hidden)
+      .map(({ rank, team_id }) => ({
+        score: rank,
+        value: team_id.toString(),
+      }));
+    if (visible.length) multi.zAdd(keys.rank, visible);
     if (teams.length) multi.hSet(keys.team, teams);
     if (csolves.length) multi.hSet(keys.csolves, csolves);
     multi.set(keys.csummary, (await Compress(encode(csummary))) as Buffer);
