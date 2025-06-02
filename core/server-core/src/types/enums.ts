@@ -7,6 +7,7 @@ export enum UserFlag {
 export enum UserRole {
   ADMIN = "admin",
   ACTIVE = "active",
+  HAS_TEAM = "has_team",
   BLOCKED = "blocked",
 }
 
