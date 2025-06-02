@@ -8,6 +8,7 @@ interface User {
   bio: string;
   roles: string[];
   team_id: number | null;
+  division_id: number | null;
   team_name: string | null;
 }
 

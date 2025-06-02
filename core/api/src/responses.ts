@@ -124,6 +124,7 @@ export const MeUserResponse = Type.Object({
     // TODO: deprecate this, we can get from /team
     Type.Object({
       team_name: Type.Union([Type.String(), Type.Null()]),
+      division_id: Type.Union([Type.Integer(), Type.Null()]),
     }),
   ]),
 });

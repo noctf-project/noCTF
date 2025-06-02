@@ -209,9 +209,12 @@ export const CreateTeamRequest = Type.Composite(
         maxLength: 64,
         pattern: NoInvalidWhitespace,
       }),
-    }),
-    Type.Object({
-      captcha: CaptchaValidationString,
+      division_password: Type.Optional(
+        Type.String({
+          minLength: 1,
+          maxLength: 64,
+        }),
+      ),
     }),
   ],
   { additionalProperties: false },
