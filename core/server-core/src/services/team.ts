@@ -1,4 +1,4 @@
-import { NotFoundError } from "../errors.ts";
+import { ForbiddenError, NotFoundError } from "../errors.ts";
 import { TeamFlag } from "../types/enums.ts";
 import type { ServiceCradle } from "../index.ts";
 import { nanoid } from "nanoid";
@@ -71,6 +71,23 @@ export class TeamService {
 
   async getDivision(id: number) {
     return this.divisionDAO.get(id);
+  }
+
+  async validateJoinDivision(id: number, password?: string) {
+    const division = await this.divisionDAO.get(id);
+    if (!division) {
+      throw new NotFoundError("Division not found");
+    }
+    if (!division.is_joinable) {
+      throw new ForbiddenError("Division is currently not joinable");
+    }
+    if (division.password && division.password !== password) {
+      throw new ForbiddenError(
+        password
+          ? "Incorrect division password"
+          : "Division requires a password",
+      );
+    }
   }
 
   async create(

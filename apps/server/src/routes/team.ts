@@ -33,7 +33,7 @@ export async function routes(fastify: FastifyInstance) {
 
   const divisionsGetter = new SingleValueCache(
     () => teamService.listDivisions(),
-    3000,
+    2000,
   );
   const tagsGetter = new SingleValueCache(() => teamService.listTags(), 3000);
 
@@ -123,6 +123,10 @@ export async function routes(fastify: FastifyInstance) {
         type: ActorType.USER,
         id: request.user.id,
       };
+      await teamService.validateJoinDivision(
+        request.body.division_id,
+        request.body.division_password,
+      );
       const team = await teamService.create(
         {
           name: request.body.name,

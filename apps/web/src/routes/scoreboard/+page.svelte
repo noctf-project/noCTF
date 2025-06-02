@@ -42,7 +42,6 @@
   };
 
   const TEAMS_PER_PAGE = 25;
-  const DIVISION = 1;
   let currentPage = $state(0);
   let detailedView = $state(false);
   let totalTeams = $state(0);
@@ -51,12 +50,12 @@
   const apiChallenges = wrapLoadable(api.GET("/challenges"));
 
   const apiTeamTags = wrapLoadable(api.GET("/team_tags"));
-
+  const division = $derived(authState.user?.division_id || 1);
   const apiScoreboard = $derived(
     wrapLoadable(
       api.GET("/scoreboard/divisions/{id}", {
         params: {
-          path: { id: DIVISION },
+          path: { id: division },
           query: {
             page: currentPage + 1,
             page_size: TEAMS_PER_PAGE,
@@ -201,7 +200,7 @@
     wrapLoadable(
       api.GET("/scoreboard/divisions/{id}/top", {
         params: {
-          path: { id: DIVISION },
+          path: { id: division },
           query: { tags: selectedTags.length > 0 ? selectedTags : undefined },
         },
       }),
@@ -605,9 +604,7 @@
 
         <div class="relative flex flex-col -mt-32">
           <div class="overflow-x-auto">
-            <div
-              class="w-[24rem] h-32 sticky left-0 top-32 z-20"
-            ></div>
+            <div class="w-[24rem] h-32 sticky left-0 top-32 z-20"></div>
             {@render challengeTitles()}
 
             <table

@@ -5,11 +5,16 @@
   import { toasts } from "$lib/stores/toast";
   import { copyToClipboard } from "$lib/utils/clipboard";
   import configState from "$lib/state/config.svelte";
+  import type { PathResponse } from "$lib/api/types";
+
+  type Division = PathResponse<"/divisions", "get">["data"][number];
 
   let teamCode = $state("");
   let teamName = $state("");
   let isJoining = $state(false);
   let isCreating = $state(false);
+  let division = $state<number | undefined>(undefined);
+  let divisionPassword = $state<string>("");
   let selectedTagIds = $state<number[]>([]);
 
   let pageState = $state<"form" | "success" | "joined" | "loading">("loading");
@@ -34,6 +39,14 @@
   const teamTags: TeamTag[] = $derived(
     apiTeamTags.r?.data?.data?.tags.filter((t) => t.is_joinable) || [],
   );
+
+  const apiDivisions = wrapLoadable(api.GET("/divisions"));
+  const divisions: Division[] = $derived(apiDivisions.r?.data?.data || []);
+  $effect(() => {
+    division =
+      configState.siteConfig?.default_division_id ||
+      divisions.filter((x) => x.is_joinable)[0]?.id;
+  });
 
   $effect(() => {
     setTimeout(() => (pageState = "form"), 250);
@@ -93,17 +106,17 @@
 
     try {
       isCreating = true;
-      const defaultDivisionId =
-        configState.siteConfig?.default_division_id ?? 1;
 
-      if (!defaultDivisionId) {
-        throw new Error("Could not determine default division");
+      if (!division) {
+        toasts.error("Please select a division");
+        return;
       }
 
       const response = await api.POST("/teams", {
         body: {
           name: teamName.trim(),
-          division_id: defaultDivisionId,
+          division_id: division,
+          division_password: divisionPassword || undefined,
           tag_ids: selectedTagIds,
         },
       });
@@ -208,6 +221,31 @@
               required
               class="w-full input input-bordered focus:outline-none focus:ring-0 focus:ring-offset-0"
             />
+
+            <label class="label" for="division">
+              <span class="label-text">Division</span>
+            </label>
+            <select bind:value={division} class="select select-bordered w-full">
+              {#each divisions as div}
+                <option value={div.id} disabled={!div.is_joinable}
+                  >{div.name}</option
+                >
+              {/each}
+            </select>
+
+            {#if divisions.find(({ id }) => id === division)?.is_password}
+              <label class="label" for="division-password">
+                <span class="label-text">Division Password</span>
+              </label>
+              <input
+                id="division-password"
+                bind:value={divisionPassword}
+                type="password"
+                placeholder="Password"
+                required
+                class="w-full input input-bordered focus:outline-none focus:ring-0 focus:ring-offset-0"
+              />
+            {/if}
           </div>
 
           {#if !apiTeamTags.loading && teamTags.length > 0}

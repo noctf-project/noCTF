@@ -46,6 +46,7 @@ export async function routes(fastify: FastifyInstance) {
         data: {
           ...user,
           team_id: membership?.team_id || null,
+          division_id: teamDetails?.division_id || null,
           team_name: teamDetails?.name || null,
         },
       };

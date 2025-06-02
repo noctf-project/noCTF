@@ -44,7 +44,7 @@ export const AuditLogEntry = Type.Object({
 export type AuditLogEntry = Static<typeof AuditLogEntry>;
 
 export const Team = Type.Object({
-  id: Type.Number(),
+  id: Type.Integer(),
   name: Type.String({ maxLength: 64 }),
   bio: Type.String({ maxLength: 256 }),
   country: Type.Union([
@@ -53,7 +53,7 @@ export const Team = Type.Object({
   ]),
   tag_ids: Type.Array(Type.Integer()),
   join_code: Type.Union([Type.String({ maxLength: 64 }), Type.Null()]),
-  division_id: Type.Number(),
+  division_id: Type.Integer(),
   flags: Type.Array(Type.String()),
   created_at: TypeDate,
 });
