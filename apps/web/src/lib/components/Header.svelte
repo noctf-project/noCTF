@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import authState from "$lib/state/auth.svelte";
+  import configState from "$lib/state/config.svelte";
   import Icon from "@iconify/svelte";
 
   const isActive = (path: string) => {
@@ -10,9 +11,7 @@
   };
 </script>
 
-<div
-  class="navbar bg-base-200 py-4 lg:py-8 px-4 sm:px-6 lg:px-12 min-h-24 lg:min-h-32"
->
+<div class="navbar py-4 lg:py-8 px-4 sm:px-6 lg:px-12 min-h-24 lg:min-h-32">
   <div class="navbar-start">
     {#if authState.isAuthenticated}
       <div class="dropdown">
@@ -55,11 +54,15 @@
         </ul>
       </div>
     {/if}
-    <a href="/" class="text-xl font-bold hidden lg:block">noCTF</a>
+    <a href="/" class="text-xl font-bold hidden lg:block"
+      >{configState.siteConfig?.name || "noCTF"}</a
+    >
   </div>
 
   <div class="navbar-center lg:hidden">
-    <a href="/" class="text-xl font-bold">noCTF</a>
+    <a href="/" class="text-xl font-bold"
+      >{configState.siteConfig?.name || "noCTF"}</a
+    >
   </div>
 
   <div class="navbar-center hidden lg:block">
