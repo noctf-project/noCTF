@@ -4,6 +4,12 @@ import { sql, type Kysely } from "kysely";
 export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
 
+  await sql`CREATE EXTENSION IF NOT EXISTS unaccent`.execute(db);
+  await sql`CREATE OR REPLACE FUNCTION immutable_unaccent(text) RETURNS text
+AS $$
+  SELECT public.unaccent('public.unaccent', $1);
+$$ LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT`.execute(db);
+
   await schema
     .createTable("config")
     .addColumn("namespace", "varchar", (col) => col.primaryKey())
@@ -44,4 +50,6 @@ export async function down(db: Kysely<any>): Promise<void> {
 
   await schema.dropTable("audit_log").execute();
   await schema.dropTable("config").execute();
+  await sql`DROP FUNCTION immutable_unaccent`.execute(db);
+  await sql`DROP EXTENSION unaccent`.execute(db);
 }
