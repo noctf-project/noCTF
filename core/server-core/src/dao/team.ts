@@ -9,6 +9,7 @@ import { partition } from "../util/object.ts";
 import { PostgresErrorCode, PostgresErrorConfig } from "../util/pgerror.ts";
 import { TryPGConstraintError } from "../util/pgerror.ts";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
+import { NormalizeName } from "../util/string.ts";
 
 const CREATE_ERROR_CONFIG: PostgresErrorConfig = {
   [PostgresErrorCode.Duplicate]: {
@@ -340,7 +341,11 @@ export class TeamDAO {
       }
     }
     if (params?.name_prefix) {
-      query = query.where("name", "^@", params.name_prefix.toLowerCase());
+      query = query.where(
+        sql`LOWER(immutable_unaccent(${sql.ref("name")}))`,
+        "^@",
+        NormalizeName(params.name_prefix),
+      );
     }
     if (params?.division_id) {
       query = query.where("division_id", "=", params.division_id);

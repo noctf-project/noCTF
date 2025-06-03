@@ -6,6 +6,7 @@ import type { DBType } from "../clients/database.ts";
 import { FilterUndefined } from "../util/filter.ts";
 import type { UserSummary, User } from "@noctf/api/datatypes";
 import { partition } from "../util/object.ts";
+import { NormalizeName } from "../util/string.ts";
 
 export class UserDAO {
   constructor(private readonly db: DBType) {}
@@ -144,7 +145,11 @@ export class UserDAO {
       }
     }
     if (params?.name_prefix) {
-      query = query.where("name", "^@", params.name_prefix.toLowerCase());
+      query = query.where(
+        sql`LOWER(immutable_unaccent(${sql.ref("name")}))`,
+        "^@",
+        NormalizeName(params.name_prefix),
+      );
     }
     if (params?.ids && params?.ids.length) {
       query = query.where("id", "in", params.ids);

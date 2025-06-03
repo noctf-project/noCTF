@@ -50,6 +50,12 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.defaultTo(sql`now()`).notNull(),
     )
     .execute();
+  await schema
+    .createIndex("team_uidx_name")
+    .on("team")
+    .unique()
+    .expression(sql`LOWER(immutable_unaccent(${sql.ref("name")}))`)
+    .execute();
 
   await schema
     .createType("team_member_role")

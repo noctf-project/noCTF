@@ -9,13 +9,19 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
-    .addColumn("name", "varchar(64)", (col) => col.notNull().unique())
+    .addColumn("name", "varchar(64)", (col) => col.notNull())
     .addColumn("bio", "text", (col) => col.notNull().defaultTo(""))
     .addColumn("flags", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .addColumn("roles", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
+    .execute();
+  await schema
+    .createIndex("user_uidx_name")
+    .on("user")
+    .unique()
+    .expression(sql`LOWER(immutable_unaccent(${sql.ref("name")}))`)
     .execute();
 
   await schema
