@@ -58,6 +58,7 @@
   let scoreModalVisible = $state(false);
   let scoreModalRef: HTMLElement | undefined = $state();
   let scoresLoading = $state(false);
+  let showHash = $state(false);
   let scoresData: ScoreEntry[] | undefined = $state(undefined);
 
   let knowsSolvesClick = localStorage.getItem("knowsSolvesClick") == "1";
@@ -258,6 +259,12 @@
                     class="text-xl"
                   ></Icon>
                   <div class="text-xl font-bold">Files</div>
+                  <button
+                    title="Show file hashes"
+                    onclick={() => (showHash = !showHash)}
+                    ><Icon icon="material-symbols:tag-rounded" class="text-xl"
+                    ></Icon>
+                  </button>
                 </div>
                 <ul class="flex flex-row flex-wrap gap-x-4 gap-y-2">
                   {#each challDetails!.files as file}
@@ -270,6 +277,9 @@
                         title={`${file.filename} - ${formatFileSize(file.size)} (${file.hash})`}
                         >{file.filename}</a
                       >
+                      {#if showHash}
+                        <pre>{file.hash}</pre>
+                      {/if}
                     </li>
                   {/each}
                 </ul>

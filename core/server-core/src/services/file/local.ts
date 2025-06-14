@@ -6,7 +6,7 @@ import {
 import { createReadStream, createWriteStream, mkdirSync } from "node:fs";
 import { readFile, stat, unlink, writeFile } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
-import { type BinaryLike, createHmac } from "node:crypto";
+import { type BinaryLike, createHmac, timingSafeEqual } from "node:crypto";
 import { join } from "node:path";
 import {
   BadRequestError,
@@ -119,7 +119,7 @@ export class LocalFileProviderInstance implements FileProviderInstance {
   checkSignature(ref: string, iat: number, signature: string) {
     const { sig: expected } = this.signURL(ref, iat);
     try {
-      if (!Buffer.from(signature, "base64url").equals(expected)) {
+      if (!timingSafeEqual(Buffer.from(signature, "base64url"), expected)) {
         throw new ForbiddenError("Invalid signature");
       }
     } catch (e) {
