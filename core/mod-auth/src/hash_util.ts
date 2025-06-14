@@ -75,7 +75,7 @@ export const Generate = async (password: string) => {
 
 export const Validate = async (password: string, digest: string) => {
   const parts = digest.split("$");
-  if (parts.length < 3 || !VALIDATORS[parts[1]]) {
+  if (parts.length < 3 || !Object.hasOwn(VALIDATORS, parts[1])) {
     throw new Error("Invalid digest format");
   }
   return VALIDATORS[parts[1]](password, parts.slice(2));
