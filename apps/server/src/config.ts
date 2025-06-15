@@ -11,9 +11,7 @@ export const NATS_URL = process.env.NATS_URL || "nats://localhost:4222";
 
 export const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 
-export const TOKEN_SECRET =
-  process.env.TOKEN_SECRET ||
-  "dont-use-this-in-prod-unless-you-want-to-get-hacked";
+export const TOKEN_SECRET = process.env.TOKEN_SECRET || "";
 
 export const ENABLE_COMPRESSION = ["1", "true"].includes(
   (process.env.ENABLE_COMPRESSION || "").toLowerCase(),
