@@ -52,6 +52,8 @@ export default async function (fastify: FastifyInstance) {
   identityService.register(provider);
   fastify.register(fastifyFormbody);
 
+  const apiURL = fastify.apiURL.replace(/\/*$/, "/");
+
   const signIdToken = async (clientId: string, userId: number) => {
     const membership = await teamService.getMembershipForUser(userId);
     const user = await userService.get(userId);
@@ -67,7 +69,7 @@ export default async function (fastify: FastifyInstance) {
       .setIssuedAt()
       .setExpirationTime("1h")
       .setJti(nanoid())
-      .setIssuer(fastify.apiURL)
+      .setIssuer(apiURL)
       .setAudience(clientId)
       .setSubject(userId.toString())
       .sign(key.secret);
@@ -76,9 +78,6 @@ export default async function (fastify: FastifyInstance) {
   fastify.get<{ Reply: OAuthConfigurationResponse }>(
     "/.well-known/openid-configuration",
     async () => {
-      const apiURL = fastify.apiURL.endsWith("/")
-        ? fastify.apiURL
-        : fastify.apiURL + "/";
       return {
         issuer: apiURL,
         authorization_endpoint: new URL(
@@ -88,7 +87,7 @@ export default async function (fastify: FastifyInstance) {
         token_endpoint: new URL("auth/oauth/token", apiURL).toString(),
         jwks_uri: new URL("auth/oauth/jwks", apiURL).toString(),
         response_types_supported: ["code", "id_token token"],
-        id_token_signing_alg_values_supported: ["Ed25519"],
+        id_token_signing_alg_values_supported: ["EdDSA"],
       };
     },
   );
