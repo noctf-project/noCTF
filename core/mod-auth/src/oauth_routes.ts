@@ -64,11 +64,12 @@ export default async function (fastify: FastifyInstance) {
     const key = await jwksStore.getSigningKey();
 
     return await new SignJWT({
-      "https://oidc.noctf.dev/team_id": membership?.team_id.toString(),
-      "https://oidc.noctf.dev/division_id": membership?.division_id.toString(),
-      nickname: user.name,
+      "noctf.dev/team_id": membership?.team_id.toString(),
+      "noctf.dev/division_id": membership?.division_id.toString(),
+      roles: user.roles,
+      name: user.name,
     })
-      .setProtectedHeader({ alg: "Ed25519", kid: key.pub.kid })
+      .setProtectedHeader({ alg: "EdDSA", kid: key.pub.kid })
       .setIssuedAt()
       .setExpirationTime("1h")
       .setJti(nanoid())
@@ -95,8 +96,8 @@ export default async function (fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{ Reply: JWK[] }>("/auth/oauth/jwks", async () => {
-    return await jwksStore.getPublicKeys();
+  fastify.get<{ Reply: { keys: JWK[] } }>("/auth/oauth/jwks", async () => {
+    return { keys: await jwksStore.getPublicKeys() };
   });
 
   fastify.post<{
@@ -182,10 +183,10 @@ export default async function (fastify: FastifyInstance) {
       const responseTypes = new Set(response_type.toLowerCase().split(" "));
       for (const t in responseTypes) {
         if (!VALID_RESPONSE_TYPES.has(t as ResponseType))
-          throw new BadRequestError(`Invalid response type ${t}`);
+          throw new BadRequestError("InvalidResponseType");
       }
       if (responseTypes.size === 0) {
-        throw new BadRequestError("No response types specified");
+        throw new BadRequestError("NoResponseType");
       }
       const scopes = new Set(scope.toLowerCase().split(" "));
 
@@ -208,11 +209,13 @@ export default async function (fastify: FastifyInstance) {
         return { url };
       }
 
+      let hasResponse = false;
       // Only return this if code is not specified (implicit)
       if (responseTypes.has(ResponseType.ID_TOKEN) && scopes.has("openid")) {
         url.searchParams.set("id_token", await signIdToken(client_id, userId));
+        hasResponse = true;
       }
-
+      if (!hasResponse) throw new BadRequestError("NoResponseType");
       return { url };
     },
   );

@@ -52,6 +52,7 @@ export class JWKSStore {
     };
     const pub = {
       kid,
+      kty: secret.kty,
       crv: secret.crv,
       x: secret.x,
       alg: secret.alg,
