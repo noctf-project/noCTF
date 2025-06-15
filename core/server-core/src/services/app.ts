@@ -3,6 +3,7 @@ import { AppDAO } from "../dao/app.ts";
 import { ServiceCradle } from "../index.ts";
 import { createHmac } from "node:crypto";
 import { BadRequestError } from "../errors.ts";
+import { App } from "@noctf/api/datatypes";
 
 type Props = Pick<
   ServiceCradle,
@@ -38,17 +39,13 @@ export class AppService {
   }
 
   async generateAuthorizationCode(
-    client_id: string,
+    app: App,
     redirect_uri: string,
     user_id: number,
     scopes: string[],
   ) {
-    const app = await this.appDAO.getByActiveClientID(client_id);
-    if (!app.redirect_uris.some((r) => r === redirect_uri)) {
-      throw new BadRequestError("invalid_redirect_uri");
-    }
     const code = nanoid();
-    const signed = AppService.signCode(client_id, app.client_secret, code);
+    const signed = AppService.signCode(app.client_id, app.client_secret, code);
     await this.cacheService.put<AuthorizationCodeContext>(
       CACHE_NAMESPACE,
       `code:${signed}`,
@@ -85,16 +82,28 @@ export class AppService {
         }
 
         await this.cacheService.del(CACHE_NAMESPACE, `code:${signed}`);
-        return await this.identityService.createSession(
-          {
-            user_id: context.user_id,
-            scopes: context.scopes.filter((x) => x !== "refresh_token"),
-            app_id: context.app_id,
-          },
-          context.scopes.some((x) => x === "refresh_token"),
-        );
+        return {
+          scopes: context.scopes,
+          user_id: context.user_id,
+          result: await this.identityService.createSession(
+            {
+              user_id: context.user_id,
+              scopes: context.scopes.filter((x) => x !== "refresh_token"),
+              app_id: context.app_id,
+            },
+            context.scopes.some((x) => x === "refresh_token"),
+          ),
+        };
       },
     );
+  }
+
+  async getValidatedAppWithClientID(client_id: string, redirect_uri: string) {
+    const app = await this.appDAO.getByActiveClientID(client_id);
+    if (!app.redirect_uris.some((r) => r === redirect_uri)) {
+      throw new BadRequestError("invalid_redirect_uri");
+    }
+    return app;
   }
 
   private static signCode(

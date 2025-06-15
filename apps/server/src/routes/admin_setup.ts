@@ -10,7 +10,7 @@ export async function routes(fastify: FastifyInstance) {
       initialized: false,
       active: false,
       name: "noCTF",
-      root_url: "http://localhost:8000",
+      root_url: "http://localhost:5173",
     },
     ({ initialized }) => {
       if (!initialized) {

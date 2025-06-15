@@ -313,7 +313,19 @@ export type OAuthAuthorizeResponse = Static<typeof OAuthAuthorizeResponse>;
 
 export const OAuthTokenResponse = Type.Object({
   access_token: Type.String(),
+  id_token: Type.Optional(Type.String()),
   refresh_token: Type.Optional(Type.String()),
   expires_in: Type.Number(),
 });
 export type OAuthTokenResponse = Static<typeof OAuthTokenResponse>;
+
+export const OAuthConfigurationResponse = Type.Object({
+  issuer: Type.String({ format: "uri" }),
+  authorization_endpoint: Type.String({ format: "uri" }),
+  token_endpoint: Type.String({ format: "uri" }),
+  response_types_supported: Type.Array(Type.String()),
+  id_token_signing_alg_values_supported: Type.Array(Type.String()),
+});
+export type OAuthConfigurationResponse = Static<
+  typeof OAuthConfigurationResponse
+>;

@@ -306,6 +306,7 @@ export type QueryUsersRequest = Static<typeof QueryUsersRequest>;
 
 export const OAuthTokenRequest = Type.Object({
   grant_type: Type.String(),
+  response_type: Type.Optional(Type.String()),
   code: Type.String(),
   redirect_uri: Type.String(),
 });

@@ -28,7 +28,8 @@ export type GetFileQuery = Static<typeof GetFileQuery>;
 export const OAuthAuthorizeQuery = Type.Object({
   client_id: Type.String(),
   redirect_uri: Type.String(),
-  scope: Type.String(),
+  scope: Type.String({ minLength: 1 }),
   state: Type.String(),
+  response_type: Type.String(),
 });
 export type OAuthAuthorizeQuery = Static<typeof OAuthAuthorizeQuery>;

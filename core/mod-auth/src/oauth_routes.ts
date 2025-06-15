@@ -9,6 +9,7 @@ import {
   BaseResponse,
   OAuthAuthorizeResponse,
   OAuthTokenResponse,
+  OAuthConfigurationResponse,
 } from "@noctf/api/responses";
 import { NoResultError } from "kysely";
 import {
@@ -21,6 +22,15 @@ import { BadRequestError, NotFoundError } from "@noctf/server-core/errors";
 import { OAuthAuthorizeQuery } from "@noctf/api/query";
 import { SetupConfig } from "@noctf/api/config";
 import fastifyFormbody from "@fastify/formbody";
+import { JWK, SignJWT } from "jose";
+import { nanoid } from "nanoid";
+import { JWKSStore } from "./oauth_jwks.ts";
+
+enum ResponseType {
+  CODE = "code",
+  ID_TOKEN = "id_token",
+}
+const VALID_RESPONSE_TYPES = new Set(Object.values(ResponseType));
 
 export default async function (fastify: FastifyInstance) {
   const {
@@ -29,6 +39,9 @@ export default async function (fastify: FastifyInstance) {
     appService,
     cacheService,
     databaseClient,
+    userService,
+    keyService,
+    teamService,
   } = fastify.container.cradle;
   const configProvider = new OAuthConfigProvider(
     configService,
@@ -40,8 +53,51 @@ export default async function (fastify: FastifyInstance) {
     identityService,
     new TokenProvider({ cacheService }),
   );
+  const jwksStore = new JWKSStore(keyService);
+
   identityService.register(provider);
   fastify.register(fastifyFormbody);
+
+  const signIdToken = async (clientId: string, userId: number) => {
+    const membership = await teamService.getMembershipForUser(userId);
+    const user = await userService.get(userId);
+    const key = await jwksStore.getSigningKey();
+
+    return await new SignJWT({
+      "https://oidc.noctf.dev/team_id": membership?.team_id.toString(),
+      "https://oidc.noctf.dev/division_id": membership?.division_id.toString(),
+      nickname: user.name,
+    })
+      .setProtectedHeader({ alg: "Ed25519", kid: key.pub.kid })
+      .setIssuedAt()
+      .setExpirationTime("1h")
+      .setJti(nanoid())
+      .setIssuer(fastify.apiURL)
+      .setAudience(clientId)
+      .setSubject(userId.toString())
+      .sign(key.secret);
+  };
+
+  fastify.get<{ Reply: OAuthConfigurationResponse }>(
+    "/.well-known/openid-configuration",
+    async () => {
+      const host = fastify.apiURL;
+      return {
+        issuer: host,
+        authorization_endpoint: new URL(
+          "/auth/oauth/authorize",
+          host,
+        ).toString(),
+        token_endpoint: new URL("/auth/oauth/token", host).toString(),
+        response_types_supported: ["code", "token"],
+        id_token_signing_alg_values_supported: ["Ed25519"],
+      };
+    },
+  );
+
+  fastify.get<{ Reply: JWK[] }>("/auth/oauth/jwks", async () => {
+    return await jwksStore.getPublicKeys();
+  });
 
   fastify.post<{
     Body: InitAuthOauthRequest;
@@ -109,7 +165,8 @@ export default async function (fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const { client_id, redirect_uri, scope, state } = request.query;
+      const { client_id, redirect_uri, scope, state, response_type } =
+        request.query;
       const userId = request.user?.id;
 
       if (!userId) {
@@ -122,16 +179,39 @@ export default async function (fastify: FastifyInstance) {
         url.searchParams.set("state", state);
         return reply.redirect(url.toString());
       }
+      const responseTypes = new Set(response_type.toLowerCase().split(" "));
+      for (const t in responseTypes) {
+        if (!VALID_RESPONSE_TYPES.has(t as ResponseType))
+          throw new BadRequestError(`Invalid response type ${t}`);
+      }
+      if (responseTypes.size === 0) {
+        throw new BadRequestError("No response types specified");
+      }
+      const scopes = new Set(scope.toLowerCase().split(" "));
 
-      const code = await appService.generateAuthorizationCode(
-        client_id,
-        redirect_uri,
-        userId,
-        scope.split(","),
-      );
       const url = new URL(redirect_uri);
       url.searchParams.set("state", state);
-      url.searchParams.set("code", code);
+      const app = await appService.getValidatedAppWithClientID(
+        client_id,
+        redirect_uri,
+      );
+      if (responseTypes.has(ResponseType.CODE)) {
+        url.searchParams.set(
+          "code",
+          await appService.generateAuthorizationCode(
+            app,
+            redirect_uri,
+            userId,
+            [...scopes],
+          ),
+        );
+        return { url };
+      }
+
+      // Only return this if code is not specified (implicit)
+      if (responseTypes.has(ResponseType.ID_TOKEN) && scopes.has("openid")) {
+        url.searchParams.set("id_token", await signIdToken(client_id, userId));
+      }
 
       return { url };
     },
@@ -165,13 +245,21 @@ export default async function (fastify: FastifyInstance) {
 
       const { code, redirect_uri } = request.body;
 
+      // TODO: refresh token
       try {
-        const result = await appService.exchangeAuthorizationCodeForToken(
-          clientId,
-          clientSecret,
-          redirect_uri,
-          code,
-        );
+        const { result, scopes, user_id } =
+          await appService.exchangeAuthorizationCodeForToken(
+            clientId,
+            clientSecret,
+            redirect_uri,
+            code,
+          );
+        if (scopes.includes("openid")) {
+          return reply.send({
+            ...result,
+            id_token: signIdToken(clientId, user_id),
+          });
+        }
         reply.send(result);
       } catch (e) {
         if (e instanceof BadRequestError) {

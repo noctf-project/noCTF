@@ -4,13 +4,16 @@ export const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",")
   : ["localhost"];
 export const LOG_LEVEL = process.env.LOG_LEVEL || "info";
+export const API_URL = process.env.API_URL || "http://localhost:8000";
 export const POSTGRES_URL =
   process.env.POSTGRES_URL || "postgres://localhost/noctf";
 export const NATS_URL = process.env.NATS_URL || "nats://localhost:4222";
 
 export const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 
-export const TOKEN_SECRET = process.env.TOKEN_SECRET || "keyboard-cat";
+export const TOKEN_SECRET =
+  process.env.TOKEN_SECRET ||
+  "dont-use-this-in-prod-unless-you-want-to-get-hacked";
 
 export const ENABLE_COMPRESSION = ["1", "true"].includes(
   (process.env.ENABLE_COMPRESSION || "").toLowerCase(),

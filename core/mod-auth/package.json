@@ -11,15 +11,17 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@fastify/formbody": "catalog:",
     "@noctf/api": "workspace:*",
     "@noctf/schema": "workspace:*",
     "@noctf/server-core": "workspace:*",
     "@sinclair/typebox": "catalog:",
     "fastify": "catalog:",
-    "@fastify/formbody": "catalog:",
+    "handlebars": "catalog:",
+    "jose": "^6.0.11",
     "ky": "catalog:",
     "kysely": "catalog:",
-    "handlebars": "catalog:"
+    "nanoid": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:",
