@@ -2,46 +2,22 @@ import type { KeyService } from "@noctf/server-core/services/key";
 import { CryptoKey, importJWK, JWK } from "jose";
 import { createHash } from "node:crypto";
 
-const EPOCH_SECONDS = 2 * 86400;
+const EPOCH_SECONDS = 86400;
 
 export class JWKSStore {
-  private readonly secret;
-  private keys: { pub: JWK; secret: CryptoKey }[];
-  private epoch: number;
+  private key: { pub: JWK; secret: CryptoKey };
 
-  constructor(private readonly keyService: KeyService) {
-    this.secret = this.keyService.deriveKey("auth:jwks");
-  }
+  constructor(private readonly keyService: KeyService) {}
 
-  async getSigningKey() {
-    return (await this.getKeys())[0];
-  }
-
-  async getPublicKeys() {
-    return (await this.getKeys()).map(({ pub }) => pub);
-  }
-
-  private async getKeys() {
-    const epoch =
-      Math.floor(Date.now() / (1000 * EPOCH_SECONDS)) * EPOCH_SECONDS;
-    if (epoch !== this.epoch) {
-      // regenerate to avoid races
-      this.keys = [
-        await this.generateKey(epoch),
-        await this.generateKey(epoch + EPOCH_SECONDS),
-      ];
-      this.epoch = epoch;
+  async getKey() {
+    if (!this.key) {
+      this.key = await this.generateKey();
     }
-    return this.keys;
+    return this.key;
   }
 
-  private async generateKey(epoch: number) {
-    const key = this.keyService.deriveEd25519Key(`jwks:key:${epoch}`);
-    const kid = createHash("sha256")
-      .update(key.publicKey)
-      .digest()
-      .subarray(0, 20)
-      .toString("base64url");
+  private async generateKey() {
+    const key = this.keyService.deriveEd25519Key("auth:jwk");
     const secret = {
       kty: "OKP",
       crv: "Ed25519",
@@ -51,7 +27,11 @@ export class JWKSStore {
       alg: "EdDSA",
     };
     const pub = {
-      kid,
+      kid: createHash("sha256")
+        .update(secret.x)
+        .digest()
+        .subarray(0, 20)
+        .toString("base64url"),
       kty: secret.kty,
       crv: secret.crv,
       x: secret.x,

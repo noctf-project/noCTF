@@ -45,7 +45,7 @@ export class IdentityService {
   constructor({ databaseClient, cacheService, keyService }: Props) {
     this.databaseClient = databaseClient;
     this.cacheService = cacheService;
-    this.secret = keyService.deriveKey("identity");
+    this.secret = keyService.deriveKey("core:identity");
     this.identityDAO = new UserIdentityDAO(databaseClient.get());
     this.sessionDAO = new SessionDAO(databaseClient.get());
   }

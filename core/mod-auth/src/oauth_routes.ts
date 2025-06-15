@@ -26,12 +26,6 @@ import { JWK, SignJWT } from "jose";
 import { nanoid } from "nanoid";
 import { JWKSStore } from "./oauth_jwks.ts";
 
-enum ResponseType {
-  CODE = "code",
-  ID_TOKEN = "id_token",
-}
-const VALID_RESPONSE_TYPES = new Set(Object.values(ResponseType));
-
 export default async function (fastify: FastifyInstance) {
   const {
     identityService,
@@ -61,7 +55,7 @@ export default async function (fastify: FastifyInstance) {
   const signIdToken = async (clientId: string, userId: number) => {
     const membership = await teamService.getMembershipForUser(userId);
     const user = await userService.get(userId);
-    const key = await jwksStore.getSigningKey();
+    const key = await jwksStore.getKey();
 
     return await new SignJWT({
       "noctf.dev/team_id": membership?.team_id.toString(),
@@ -82,22 +76,25 @@ export default async function (fastify: FastifyInstance) {
   fastify.get<{ Reply: OAuthConfigurationResponse }>(
     "/.well-known/openid-configuration",
     async () => {
-      const host = fastify.apiURL;
+      const apiURL = fastify.apiURL.endsWith("/")
+        ? fastify.apiURL
+        : fastify.apiURL + "/";
       return {
-        issuer: host,
+        issuer: apiURL,
         authorization_endpoint: new URL(
-          "/auth/oauth/authorize",
-          host,
+          "auth/oauth/authorize",
+          apiURL,
         ).toString(),
-        token_endpoint: new URL("/auth/oauth/token", host).toString(),
-        response_types_supported: ["code", "token"],
+        token_endpoint: new URL("auth/oauth/token", apiURL).toString(),
+        jwks_uri: new URL("auth/oauth/jwks", apiURL).toString(),
+        response_types_supported: ["code", "id_token token"],
         id_token_signing_alg_values_supported: ["Ed25519"],
       };
     },
   );
 
   fastify.get<{ Reply: { keys: JWK[] } }>("/auth/oauth/jwks", async () => {
-    return { keys: await jwksStore.getPublicKeys() };
+    return { keys: [(await jwksStore.getKey()).pub] };
   });
 
   fastify.post<{
@@ -180,23 +177,24 @@ export default async function (fastify: FastifyInstance) {
         url.searchParams.set("state", state);
         return reply.redirect(url.toString());
       }
-      const responseTypes = new Set(response_type.toLowerCase().split(" "));
-      for (const t in responseTypes) {
-        if (!VALID_RESPONSE_TYPES.has(t as ResponseType))
-          throw new BadRequestError("InvalidResponseType");
-      }
-      if (responseTypes.size === 0) {
+      const normalisedResponseType = response_type
+        .toLowerCase()
+        .split(" ")
+        .filter((x) => x)
+        .sort()
+        .join(" ");
+      if (!normalisedResponseType) {
         throw new BadRequestError("NoResponseType");
       }
       const scopes = new Set(scope.toLowerCase().split(" "));
 
       const url = new URL(redirect_uri);
-      url.searchParams.set("state", state);
       const app = await appService.getValidatedAppWithClientID(
         client_id,
         redirect_uri,
       );
-      if (responseTypes.has(ResponseType.CODE)) {
+      if (normalisedResponseType === "code") {
+        url.searchParams.set("state", state);
         url.searchParams.set(
           "code",
           await appService.generateAuthorizationCode(
@@ -207,16 +205,17 @@ export default async function (fastify: FastifyInstance) {
           ),
         );
         return { url };
+      } else if (
+        normalisedResponseType === "id_token token" &&
+        scopes.has("openid")
+      ) {
+        const param = new URLSearchParams();
+        param.set("id_token", await signIdToken(client_id, userId));
+        param.set("state", state);
+        url.hash = param.toString();
+        return { url };
       }
-
-      let hasResponse = false;
-      // Only return this if code is not specified (implicit)
-      if (responseTypes.has(ResponseType.ID_TOKEN) && scopes.has("openid")) {
-        url.searchParams.set("id_token", await signIdToken(client_id, userId));
-        hasResponse = true;
-      }
-      if (!hasResponse) throw new BadRequestError("NoResponseType");
-      return { url };
+      throw new BadRequestError("NoResponseType");
     },
   );
 

@@ -323,6 +323,7 @@ export const OAuthConfigurationResponse = Type.Object({
   issuer: Type.String({ format: "uri" }),
   authorization_endpoint: Type.String({ format: "uri" }),
   token_endpoint: Type.String({ format: "uri" }),
+  jwks_uri: Type.String({ format: "uri" }),
   response_types_supported: Type.Array(Type.String()),
   id_token_signing_alg_values_supported: Type.Array(Type.String()),
 });
