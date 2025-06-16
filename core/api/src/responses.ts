@@ -306,10 +306,14 @@ export const GetSiteConfigResponse = Type.Object({
 });
 export type GetSiteConfigResponse = Static<typeof GetSiteConfigResponse>;
 
-export const OAuthAuthorizeResponse = Type.Object({
-  url: Type.String(),
+export const OAuthAuthorizeInternalResponse = Type.Object({
+  data: Type.Object({
+    url: Type.String(),
+  }),
 });
-export type OAuthAuthorizeResponse = Static<typeof OAuthAuthorizeResponse>;
+export type OAuthAuthorizeInternalResponse = Static<
+  typeof OAuthAuthorizeInternalResponse
+>;
 
 export const OAuthTokenResponse = Type.Object({
   access_token: Type.String(),
