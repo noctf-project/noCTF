@@ -40,6 +40,7 @@
     } catch (error) {
       toasts.error("An error occurred during authorization");
       console.error(error);
+      isLoading = false;
     }
   }
 
@@ -91,6 +92,7 @@
       goto("/auth?redirect_uri=/auth/authorize");
     }
     isLoading = false;
+    handleAuthorize();
   });
 </script>
 
