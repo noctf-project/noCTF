@@ -311,3 +311,22 @@ export const OAuthTokenRequest = Type.Object({
   redirect_uri: Type.String(),
 });
 export type OAuthTokenRequest = Static<typeof OAuthTokenRequest>;
+
+export const OAuthAuthorizeInternalRequest = Type.Object({
+  client_id: Type.String(),
+  redirect_uri: Type.String(),
+  scope: Type.Array(Type.String({ pattern: "^[a-z0-9-_/\\.]{1,256}$" }), {
+    minItems: 1,
+    maxItems: 64,
+    uniqueItems: true,
+  }),
+  state: Type.String({ minLength: 1 }),
+  response_type: Type.Array(Type.String({ pattern: "^[a-z0-9-_]{1,32}$" }), {
+    minItems: 1,
+    maxItems: 32,
+    uniqueItems: true,
+  }),
+});
+export type OAuthAuthorizeInternalRequest = Static<
+  typeof OAuthAuthorizeInternalRequest
+>;
