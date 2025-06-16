@@ -258,7 +258,7 @@ export default async function (fastify: FastifyInstance) {
         if (scopes.includes("openid")) {
           return reply.send({
             ...result,
-            id_token: signIdToken(clientId, user_id),
+            id_token: await signIdToken(clientId, user_id),
           });
         }
         reply.send(result);

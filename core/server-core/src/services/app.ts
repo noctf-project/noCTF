@@ -78,7 +78,7 @@ export class AppService {
           throw new BadRequestError("code_not_found");
         }
         if (context.redirect_uri !== redirect_uri) {
-          throw new BadRequestError("inalid_redirect_uri");
+          throw new BadRequestError("invalid_redirect_uri");
         }
 
         await this.cacheService.del(CACHE_NAMESPACE, `code:${signed}`);
