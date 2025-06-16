@@ -31,8 +31,10 @@ class AuthState {
         (["/team", "/team/edit"].includes(path) || path.startsWith("/settings"))
       ) {
         window.location.href = "/auth";
-      } else if (this.isAuthenticated && path === "/auth") {
-        loginState.finishAuth("/");
+      } else if (this.isAuthenticated && path.startsWith("/auth")) {
+        if (path !== '/auth/authorize') {
+          loginState.finishAuth("/");
+        }
       } else if (!this.isAdmin && path.startsWith("/admin")) {
         if (this.isAuthenticated) {
           window.location.href = "/";

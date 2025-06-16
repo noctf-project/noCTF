@@ -24,7 +24,7 @@ class LoginState {
 
     if (checkEmailRes.error) {
       if (checkEmailRes.error.error === "EmailVerificationRequired") {
-        goto("/auth/verify");
+        goto("/auth/verify" + window.location.search);
         return;
       }
       toasts.error(
@@ -37,11 +37,11 @@ class LoginState {
     // Handle different responses based on if email exists
     if (checkEmailRes.data?.data?.token) {
       this.registrationToken = checkEmailRes.data.data.token;
-      goto("/auth/register");
+      goto("/auth/register" + window.location.search);
     } else if (checkEmailRes.error) {
       toasts.error("Unexpected response from server");
     } else {
-      goto("/auth/login");
+      goto("/auth/login" + window.location.search);
     }
   }
 
@@ -77,7 +77,9 @@ class LoginState {
     if (loginRes.data?.data?.type === "session") {
       localStorage.setItem(SESSION_TOKEN_KEY, loginRes.data.data.token);
       authState.refresh();
-      this.finishAuth();
+      // pass in redirect_uri if present
+      const redirectURL = new URLSearchParams(window.location.search).get("redirect_uri");
+      this.finishAuth(redirectURL ?? undefined);
     } else {
       toasts.error("Login failed");
     }
@@ -154,7 +156,7 @@ class LoginState {
       const errorMessage =
         response.error?.message || "Invalid or expired registration link.";
       toasts.error(errorMessage);
-      goto("/auth");
+      goto("/auth" + window.location.search);
       return;
     }
 
