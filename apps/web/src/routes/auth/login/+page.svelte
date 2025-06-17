@@ -33,6 +33,8 @@
       <span class="label-text">Password</span>
     </label>
     <div class="relative">
+      <!-- Ignoring below because I don't know a better way to autofocus the password input -->
+      <!-- svelte-ignore a11y_autofocus -->
       <input
         id="password"
         type={passwordVisible ? "text" : "password"}
@@ -40,6 +42,7 @@
         class="input input-bordered w-full pr-10"
         bind:value={loginState.password}
         required
+        autofocus
         autocomplete="current-password"
       />
       <button

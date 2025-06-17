@@ -16,6 +16,7 @@ class LoginState {
   redirectUri = this.urlParams.get("redirect_uri");
   scope = this.urlParams.get("scope");
   state = this.urlParams.get("state");
+  responseType = this.urlParams.get("response_type");
 
   async checkEmail() {
     const checkEmailRes = await api.POST("/auth/email/init", {
@@ -125,23 +126,31 @@ class LoginState {
 
   async finishAuth(target = "/") {
     // handle OAuth flow when query params are present
-    if (this.clientId && this.redirectUri && this.scope && this.state) {
-      const r = await api.GET("/auth/oauth/authorize", {
-        params: {
-          query: {
-            client_id: this.clientId,
-            redirect_uri: this.redirectUri,
-            scope: this.scope,
-            state: this.state,
-          },
+    if (this.clientId && this.redirectUri && this.scope && this.state && this.responseType) {
+      const r = await api.POST("/auth/oauth/authorize_internal", {
+        body: {
+          client_id: this.clientId,
+          redirect_uri: this.redirectUri,
+          scope: this.scope?.split(" ") ?? [],
+          state: this.state,
+          response_type: this.responseType?.split(" ") ?? [],
         },
       });
-      if (r.data?.url) {
-        window.location.replace(r.data?.url);
-      } else {
-        window.location.href = "/";
+
+      if (r.error) {
+        toasts.error(r.error.message ?? "An error occurred during OAuth flow");
+        goto("/");
+        return;
       }
+
+      if (r.data?.data?.url) {
+        window.location.replace(r.data.data.url);
+      } else {
+        goto("/");
+      }
+
     } else {
+      console.log("redirecting to", target);
       window.location.href = target;
     }
   }

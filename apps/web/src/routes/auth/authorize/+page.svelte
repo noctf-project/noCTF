@@ -19,24 +19,25 @@
   async function handleAuthorize() {
     try {
       isLoading = true;
-      const res = await api.GET("/auth/oauth/authorize", {
-        params: {
-          query: {
-            redirect_uri: redirectUri ?? "",
-            client_id: clientId ?? "",
-            scope: scopes ?? "",
-            state: stateParam ?? "",
-            response_type: responseType ?? "",
-          },
+      const res = await api.POST("/auth/oauth/authorize_internal", {
+        body: {
+          redirect_uri: redirectUri ?? "",
+          client_id: clientId ?? "",
+          scope: scopes?.split(" ") ?? [],
+          state: stateParam ?? "",
+          response_type: responseType?.split(" ") ?? [],
         },
       });
 
       if (res.error) {
-        toasts.error("An error occurred during authorization");
+        toasts.error(
+          "An error occurred during authorization: " + res.error.message,
+        );
         console.error(res.error);
+        isLoading = false;
         return;
       }
-      window.location.href = res.data.url;
+      window.location.href = res.data.data.url;
     } catch (error) {
       toasts.error("An error occurred during authorization");
       console.error(error);
@@ -61,36 +62,41 @@
     // TODO: Fetch app details and requested scopes from the server
     // This is a placeholder for demonstration
     isLoading = false;
+    if (!authState.isAuthenticated) {
+      goto("/auth?redirect_uri=/auth/authorize");
+      return;
+    }
 
     if (!redirectUri) {
       toasts.error("No redirect URI provided");
       goto("/");
+      return;
     }
 
-    console.log(redirectUri);
     if (!clientId) {
       toasts.error("No client ID provided");
       goto("/");
+      return;
     }
 
     if (!scopes) {
       toasts.error("No scopes provided");
       goto("/");
+      return;
     }
 
     if (!stateParam) {
       toasts.error("No state provided");
       goto("/");
+      return;
     }
 
     if (!responseType) {
       toasts.error("No response type provided");
       goto("/");
+      return;
     }
 
-    if (!authState.isAuthenticated) {
-      goto("/auth?redirect_uri=/auth/authorize");
-    }
     isLoading = false;
     handleAuthorize();
   });
