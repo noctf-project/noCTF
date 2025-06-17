@@ -3,6 +3,10 @@ import type { TeamService } from "../services/team.ts";
 import type { Policy } from "../util/policy.ts";
 
 declare module "fastify" {
+  interface FastifyInstance {
+    readonly apiURL: string;
+  }
+
   interface FastifySchema {
     tags?: string[];
     description?: string;

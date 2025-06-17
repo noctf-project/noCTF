@@ -8,9 +8,11 @@ import { PolicyService } from "./policy.ts";
 import { ServiceCradle } from "../index.ts";
 import { PolicyDocument } from "@noctf/api/datatypes";
 import { AuthConfig } from "@noctf/api/config";
+import { TeamDAO } from "../dao/team.ts";
 
 vi.mock(import("../dao/policy.ts"));
 vi.mock(import("../dao/user.ts"));
+vi.mock(import("../dao/team.ts"));
 vi.mock(import("../util/policy.ts"));
 
 describe(PolicyService, () => {
@@ -19,6 +21,7 @@ describe(PolicyService, () => {
   const configService = mockDeep<ServiceCradle["configService"]>();
 
   const mockPolicyDAO = mockDeep<PolicyDAO>();
+  const mockTeamDAO = mockDeep<TeamDAO>();
   const mockUserDAO = mockDeep<UserDAO>();
 
   let policyService: PolicyService;
@@ -31,6 +34,7 @@ describe(PolicyService, () => {
     mockReset(mockUserDAO);
 
     vi.mocked(PolicyDAO).mockImplementation(() => mockPolicyDAO);
+    vi.mocked(TeamDAO).mockImplementation(() => mockTeamDAO);
     vi.mocked(UserDAO).mockImplementation(() => mockUserDAO);
 
     policyService = new PolicyService({
@@ -140,6 +144,24 @@ describe(PolicyService, () => {
       });
       const result = await policyService.getRolesForUser(1);
       expect(result).toEqual(new Set<string>(["user", "active"]));
+    });
+
+    it("should add a has_team role if user belongs to a team", async () => {
+      (configService.get<AuthConfig>).mockResolvedValue({
+        value: { validate_email: true },
+        version: 1,
+      });
+      mockUserDAO.getFlagsAndRoles.mockResolvedValue({
+        roles: ["user"],
+        flags: [UserFlag.VALID_EMAIL],
+      });
+      mockTeamDAO.getMembershipForUser.mockResolvedValue({
+        division_id: 1,
+        team_id: 1,
+        role: "member",
+      });
+      const result = await policyService.getRolesForUser(1);
+      expect(result).toEqual(new Set<string>(["user", "active", "has_team"]));
     });
 
     it.each([true, false])(

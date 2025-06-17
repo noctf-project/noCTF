@@ -1,4 +1,4 @@
-import type { FastifyRequest } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import fastify from "fastify";
 import { asClass, asFunction, asValue, createContainer } from "awilix";
 import { IdentityService } from "@noctf/server-core/services/identity";
@@ -31,6 +31,7 @@ import {
   ENABLE_SWAGGER,
   ALLOWED_ORIGINS,
   ENABLE_COMPRESSION,
+  API_URL,
 } from "./config.ts";
 import core from "./core.ts";
 import { MetricsClient } from "@noctf/server-core/clients/metrics";
@@ -47,6 +48,8 @@ import { EmailService } from "@noctf/server-core/services/email/index";
 import { TSchema } from "@sinclair/typebox";
 import { BaseResponse } from "@noctf/api/responses";
 import { AppService } from "@noctf/server-core/services/app";
+import { AsMutable } from "@noctf/server-core/types/primitives";
+import { KeyService } from "@noctf/server-core/services/key";
 
 export const server = fastify({
   logger: {
@@ -58,6 +61,7 @@ export const server = fastify({
   ...{ http2: ENABLE_HTTP2 }, // typescript is being funny
 });
 if (ENABLE_COMPRESSION) server.register(fastifyCompress);
+(server as AsMutable<FastifyInstance, "apiURL">).apiURL = API_URL;
 server.register(fastifyMultipart, {
   limits: {
     fileSize: 1024 * 1024 * 1024, // 1GB
@@ -71,6 +75,7 @@ server.register(fastifyCors, {
 
 server.register(async () => {
   server.container = createContainer();
+  const keyService = new KeyService(TOKEN_SECRET);
 
   server.container.register({
     logger: asValue(server.log),
@@ -95,14 +100,8 @@ server.register(async () => {
     eventBusService: asClass(EventBusService).singleton(),
     fileService: asClass(FileService).singleton(),
     configService: asClass(ConfigService).singleton(),
-    identityService: asFunction(
-      ({ databaseClient, cacheService }) =>
-        new IdentityService({
-          databaseClient,
-          cacheService,
-          secret: TOKEN_SECRET,
-        }),
-    ).singleton(),
+    identityService: asClass(IdentityService).singleton(),
+    keyService: asValue(keyService),
     policyService: asClass(PolicyService).singleton(),
     rateLimitService: asClass(RateLimitService).singleton(),
     teamService: asClass(TeamService).singleton(),

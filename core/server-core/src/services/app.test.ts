@@ -63,10 +63,8 @@ describe(AppService, () => {
     });
 
     it("should generate code and store in cache", async () => {
-      appDAO.getByActiveClientID.mockResolvedValue(ENABLED_APP_1);
-
       const code = await service.generateAuthorizationCode(
-        "test-client",
+        ENABLED_APP_1,
         "https://auth.example.com/",
         1,
         ["read"],
@@ -84,19 +82,17 @@ describe(AppService, () => {
         DEFAULT_EXPIRY_SECONDS,
       );
     });
+  });
 
-    it("should not generate code if redirect uri is not in config", async () => {
+  describe(AppService.prototype.getValidatedAppWithClientID, () => {
+    it("should throw error if redirect uri is not in config", async () => {
       appDAO.getByActiveClientID.mockResolvedValue(ENABLED_APP_1);
-
       await expect(
-        service.generateAuthorizationCode(
-          "test-client",
+        service.getValidatedAppWithClientID(
+          "test_client",
           "https://invalid.example.com/",
-          1,
-          ["read"],
         ),
       ).rejects.toThrowError(BadRequestError);
-      expect(cacheService.put).not.toHaveBeenCalled();
     });
   });
 
@@ -125,8 +121,13 @@ describe(AppService, () => {
       );
 
       expect(result).toEqual({
-        access_token: mockToken,
-        refresh_token: "s",
+        result: {
+          access_token: mockToken,
+          refresh_token: "s",
+          expires_in: 3600,
+        },
+        user_id: 1,
+        scopes: ["read"],
       });
       expect(cacheService.del).toHaveBeenCalledWith(
         CACHE_NAMESPACE,

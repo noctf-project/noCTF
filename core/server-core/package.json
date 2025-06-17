@@ -31,7 +31,8 @@
     "nats": "^2.28.2",
     "nodemailer": "^6.10.0",
     "p-limit": "catalog:",
-    "redis": "^4.7.0"
+    "redis": "^4.7.0",
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
     "@types/mime-types": "^2.1.4",

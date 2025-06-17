@@ -12,9 +12,10 @@ import { SessionDAO } from "../dao/session.ts";
 import { nanoid } from "nanoid";
 import { OAuthTokenResponse } from "@noctf/api/responses";
 
-type Props = Pick<ServiceCradle, "databaseClient" | "cacheService"> & {
-  secret: string;
-};
+type Props = Pick<
+  ServiceCradle,
+  "databaseClient" | "cacheService" | "keyService"
+>;
 export interface IdentityProvider {
   id(): string;
   listMethods(): Promise<AuthMethod[]>;
@@ -30,9 +31,9 @@ const REVOKE_NS = "core:identity:session:rev";
 export class IdentityService {
   private readonly databaseClient;
   private readonly cacheService;
-  private readonly secret;
   private readonly identityDAO;
   private readonly sessionDAO;
+  private readonly secret;
 
   private readonly revocationCache = new LocalCache<string, boolean>({
     max: 10000,
@@ -41,10 +42,10 @@ export class IdentityService {
 
   private providers: Map<string, IdentityProvider> = new Map();
 
-  constructor({ databaseClient, cacheService, secret }: Props) {
+  constructor({ databaseClient, cacheService, keyService }: Props) {
     this.databaseClient = databaseClient;
     this.cacheService = cacheService;
-    this.secret = createHash("sha256").update(secret).digest();
+    this.secret = keyService.deriveKey("core:identity");
     this.identityDAO = new UserIdentityDAO(databaseClient.get());
     this.sessionDAO = new SessionDAO(databaseClient.get());
   }

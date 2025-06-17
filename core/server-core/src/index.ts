@@ -20,7 +20,8 @@ import type { ScoreboardService } from "./services/scoreboard/index.ts";
 import type { SubmissionService } from "./services/submission.ts";
 import type { RateLimitService } from "./services/rate_limit.ts";
 import type { EmailService } from "./services/email/index.ts";
-import { AppService } from "./services/app.ts";
+import type { AppService } from "./services/app.ts";
+import type { KeyService } from "./services/key.ts";
 
 export type ServiceCradle = {
   logger: Logger;
@@ -35,6 +36,7 @@ export type ServiceCradle = {
   emailService: EmailService;
   eventBusService: EventBusService;
   fileService: FileService;
+  keyService: KeyService;
   configService: ConfigService;
   identityService: IdentityService;
   policyService: PolicyService;

@@ -26,3 +26,7 @@ export interface Logger {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   child: (bindings: { [k: string]: any }) => Logger;
 }
+
+export type AsMutable<T, K extends keyof T> = Omit<T, K> & {
+  -readonly [P in K]: T[P];
+};

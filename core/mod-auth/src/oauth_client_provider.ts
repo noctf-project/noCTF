@@ -9,8 +9,6 @@ import { UserNotFoundError } from "./error.ts";
 import { FinishAuthResponse } from "@noctf/api/responses";
 import { TokenProvider } from "./token_provider.ts";
 
-export const TOKEN_AUDIENCE = "noctf/auth/oauth/state";
-
 export class OAuthConfigProvider {
   constructor(
     private configService: ServiceCradle["configService"],
