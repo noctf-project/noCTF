@@ -32,7 +32,7 @@ class AuthState {
       ) {
         window.location.href = "/auth";
       } else if (this.isAuthenticated && path.startsWith("/auth")) {
-        if (path !== '/auth/authorize') {
+        if (path !== "/auth/authorize") {
           loginState.finishAuth("/");
         }
       } else if (!this.isAdmin && path.startsWith("/admin")) {

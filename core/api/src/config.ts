@@ -28,6 +28,13 @@ export const AuthConfig = Type.Object(
     validate_email: Type.Boolean({
       title: "Require validation of email",
     }),
+    allowed_email_domains: Type.Optional(
+      Type.Array(
+        Type.String({
+          format: "hostname",
+        }),
+      ),
+    ),
   },
   { $id: "core.auth", additionalProperties: false },
 );
