@@ -21,55 +21,71 @@
   import { type Difficulty } from "$lib/constants/difficulties";
 
   const { data, onclick }: ChallengeCardProps = $props();
-  // Cannot destructure data here, breaks reactivity https://svelte.dev/docs/svelte/$state#Deep-state
-  // const { title, categories, solves, points, isSolved, difficulty } = data;
 </script>
 
+<!-- class:bg-blue-500/5={!data.isSolved} -->
 <button
-  class={`text-left card w-60 h-32 pop ${data.isSolved ? "bg-primary text-primary-content" : "bg-base-100"} rounded-lg shadow-black`}
+  class={`min-w-80 text-left p-2 border-b border-gray-200 flex items-center gap-3 hover:bg-gray-100/50 transition-colors duration-150 ${data.isSolved ? "bg-blue-500/5" : "bg-base-100"}`}
   onclick={() => onclick(data)}
 >
-  <div class="card-body p-3 flex flex-col">
-    <div class="card-title line-clamp-1 font-black">
-      {data.title}
+  <!-- Blue bar for unsolved challenges -->
+  <div class="flex-shrink-0 w-1 self-stretch">
+    {#if !data.isSolved}
+      <div class="w-1 h-full bg-blue-500 rounded-sm"></div>
+    {/if}
+  </div>
+
+  <!-- Icon / Avatar -->
+  <div class="flex-shrink-0">
+    <div
+      class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200"
+    >
+      <Icon
+        icon={categoryToIcon(data.categories[0] ?? "misc")}
+        class="text-2xl text-gray-600"
+      />
     </div>
-    <div class="flex flex-row items-center gap-3">
-      {#if data.difficulty}
-        <div
-          class={`badge badge-sm rounded-xl text-xs text-base-500 font-black pop ${difficultyToBgColour(data.difficulty as Difficulty)}`}
-        >
-          {data.difficulty}
-        </div>
-      {/if}
-      <div
-        class={`${data.isSolved ? "bg-primary-content" : "bg-neutral-400"} w-full h-[1px]`}
-      ></div>
-      <div
-        class={`self-center flex flex-row gap-1 text-2xl ${data.isSolved ? "text-primary-content" : "text-neutral-400"}`}
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 min-w-0">
+    <!-- From / Points -->
+    <div class="flex justify-between items-baseline">
+      <p
+        class="text-sm leading-tight truncate"
+        class:font-semibold={!data.isSolved}
       >
-        {#each data.categories as cat}
-          <div class="tooltip" data-tip={cat}>
-            <Icon icon={categoryToIcon(cat)} />
-          </div>
-        {/each}
-      </div>
+        {data.title}
+      </p>
+      <p class="text-xs text-gray-500 pl-2 whitespace-nowrap">
+        {data.points} pts
+      </p>
     </div>
-    <div class="flex-grow"></div>
-    <div class="flex flex-col gap-4">
-      <div class="flex flex-row justify-between">
-        <div class="flex flex-row items-center gap-1 font-bold text-xl">
-          <Icon icon="material-symbols:flag" class="text-3xl" />
-          {data.solves}
-        </div>
-        <div class="flex flex-row items-center gap-1 font-bold text-xl">
+
+    <!-- Subject -->
+
+    <!-- Preview / Solves & Difficulty -->
+    <div class="flex justify-between items-center text-sm text-gray-500 mt-0.5">
+      <p class="truncate pr-2">
+        {data.solves}
+        {data.solves === 1 ? "solve" : "solves"}
+      </p>
+      <div class="flex items-center gap-2 flex-shrink-0">
+        {#if data.difficulty}
+          <div
+            class={`badge badge-xs ${difficultyToBgColour(
+              data.difficulty as Difficulty,
+            )}`}
+          >
+            {data.difficulty}
+          </div>
+        {/if}
+        {#if data.isSolved}
           <Icon
-            icon={data.isSolved
-              ? "material-symbols:check-circle-outline-rounded"
-              : "material-symbols:stars-outline-rounded"}
-            class="text-3xl"
+            icon="material-symbols:check-circle-outline"
+            class="text-lg text-green-600"
           />
-          {data.points}
-        </div>
+        {/if}
       </div>
     </div>
   </div>

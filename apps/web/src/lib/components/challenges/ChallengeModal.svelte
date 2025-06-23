@@ -37,6 +37,7 @@
   import { getRelativeTime } from "$lib/utils/time";
   import TeamNamesService from "$lib/state/team_query.svelte";
   import { toasts } from "$lib/stores/toast";
+  import authState from "$lib/state/auth.svelte";
 
   let {
     challData,
@@ -75,8 +76,15 @@
     duration: 600,
     easing: cubicInOut,
   });
+
+  async function playEmailSentSound() {
+    const audio = new Audio("/sounds/mail-sent.mp3");
+    audio.play();
+  }
+
   async function submitFlag(e: Event) {
     e.preventDefault();
+    playEmailSentSound();
 
     if (!flagInput || ["submitting", "correct"].includes(flagSubmitStatus)) {
       return;
@@ -171,28 +179,31 @@
   <div
     in:fade={{ duration: 100 }}
     out:fade={{ duration: 100 }}
-    class="fixed inset-0 bg-black bg-opacity-40 md:flex md:-mt-32 md:items-center p-4 z-50"
+    class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50"
   >
     <div
-      class="flex flex-col md:flex-row lg:flex-row gap-4 w-full justify-center"
+      class="flex flex-row gap-4 w-full justify-center max-h-[calc(100vh-4rem)]"
       in:fly={{ y: 25, duration: 150, delay: 100 }}
       out:fade={{ duration: 100 }}
     >
       {/* @ts-expect-error use directive incorrect typing */ null}
       <div
-        class="bg-base-200 rounded-lg pop w-full p-6 h-fit w-ful lg:max-w-[50%]"
+        class="bg-base-100 p-4 rounded-lg shadow-xl w-full lg:max-w-[50%] flex flex-col gap-4"
         use:outsideClickHandler
       >
-        <div class="mb-2 w-full">
-          <div class="flex flex-row justify-between mb-4">
-            <h2 class="text-2xl font-bold">{challData?.title}</h2>
-            <div class="flex flex-row gap-2">
-              <div class="flex flex-row items-center gap-1 font-bold text-xl">
+        <!-- Email Header -->
+        <div class="pb-4 border-b border-base-200">
+          <div class="flex justify-between items-start">
+            <div>
+              <h2 class="text-2xl font-semibold">Re: {challData?.title}</h2>
+            </div>
+            <div class="flex flex-row items-center gap-4 text-gray-500 text-sm">
+              <div class="flex items-center gap-1">
                 <Icon
                   icon="material-symbols:stars-outline-rounded"
-                  class="text-3xl"
+                  class="text-xl"
                 />
-                {challData?.points}
+                <span>{challData?.points} pts</span>
               </div>
               <div class="relative">
                 {#if showHint}
@@ -203,7 +214,7 @@
                   ></div>
                 {/if}
                 <button
-                  class="tooltip flex flex-row items-center gap-1 font-bold text-xl hover:text-primary hover:cursor-pointer"
+                  class="flex items-center gap-1 hover:text-primary"
                   data-tip={scoreModalVisible ? "Hide solvers" : "Show solvers"}
                   onclick={() => {
                     if (!knowsSolvesClick) {
@@ -212,81 +223,94 @@
                     toggleScores();
                   }}
                 >
-                  <Icon icon="material-symbols:flag" class="text-3xl" />
-                  {challData?.solves}
+                  <Icon icon="material-symbols:flag" class="text-xl" />
+                  <span>{challData?.solves} solves</span>
                 </button>
               </div>
             </div>
           </div>
-
-          <div class="flex flex-row items-center gap-3 w-full">
+          <div class="mt-4 flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-600"
+            >
+              <Icon
+                icon={categoryToIcon(challData?.categories[0] ?? "misc")}
+                class="text-2xl"
+              />
+            </div>
+            <div>
+              <p class="font-semibold text-sm">
+                To: {authState.user?.name}@
+              </p>
+              <!-- <p class="text-xs text-gray-500">From: challenges@noctf.local</p> -->
+            </div>
+            <div class="flex-grow"></div>
             {#if challData?.difficulty}
               <div
-                class={`badge badge-sm text-base-500 rounded-xl text-xs font-black pop ${difficultyToBgColour(challData?.difficulty as Difficulty)}`}
+                class={`badge badge-sm text-base-500 rounded-md text-xs font-black ${difficultyToBgColour(challData?.difficulty as Difficulty)}`}
               >
                 {challData?.difficulty}
               </div>
             {/if}
-            <div class="bg-neutral-400 w-full h-[1px]"></div>
-            <div
-              class="self-center flex flex-row gap-1 text-2xl text-neutral-400"
-            >
-              {#each challData!.categories! as cat}
-                <div class="tooltip" data-tip={cat}>
-                  <Icon icon={categoryToIcon(cat)} />
-                </div>
-              {/each}
-            </div>
           </div>
+        </div>
 
+        <!-- Email Body -->
+        <div class="flex">
           {#if loading}
-            <div class="flex flex-col items-center gap-4 my-16">
+            <div class="flex flex-col gap-4">
               <div
                 class="loading loading-spinner loading-lg text-primary"
               ></div>
               <p class="text-center">Loading challenge details...</p>
             </div>
           {:else}
-            <div class="max-h-[48vh] overflow-auto w-full">
-              <Markdown {carta} value={challDetails!.description} />
+            <div class="prose max-w-none">
+              <Markdown
+                {carta}
+                value={"Dear " +
+                  authState.user?.name +
+                  ",\n\n" +
+                  challDetails!.description}
+              />
             </div>
-
-            {#if challDetails!.files.length > 0}
-              <div class="flex flex-col gap-2 mb-6">
-                <div class="flex flex-row gap-1 items-center">
-                  <Icon
-                    icon="material-symbols:attach-file-rounded"
-                    class="text-xl"
-                  ></Icon>
-                  <div class="text-xl font-bold">Files</div>
-                  <button
-                    title="Show file hashes"
-                    onclick={() => (showHash = !showHash)}
-                    ><Icon icon="material-symbols:tag-rounded" class="text-xl"
-                    ></Icon>
-                  </button>
-                </div>
-                <ul class="flex flex-row flex-wrap gap-x-4 gap-y-2">
-                  {#each challDetails!.files as file}
-                    <li>
-                      <a
-                        href={file.url.startsWith("http")
-                          ? file.url
-                          : `${API_BASE_URL}/${file.url}`}
-                        class="link text-primary font-semibold"
-                        title={`${file.filename} - ${formatFileSize(file.size)} (${file.hash})`}
-                        >{file.filename}</a
-                      >
-                      {#if showHash}
-                        <pre>{file.hash}</pre>
-                      {/if}
-                    </li>
-                  {/each}
-                </ul>
-              </div>
-            {/if}
           {/if}
         </div>
+
+        <!-- Attachments -->
+        {#if !loading && challDetails!.files.length > 0}
+          <div class="border-t border-base-200">
+            <div class="flex flex-row gap-2 items-center mb-2">
+              <Icon icon="material-symbols:attach-file-rounded" class="text-xl"
+              ></Icon>
+              <h3 class="text-lg font-bold">Attachments</h3>
+              <button
+                title="Show file hashes"
+                onclick={() => (showHint = !showHint)}
+                class="text-gray-400 hover:text-gray-600"
+                ><Icon icon="material-symbols:tag-rounded" class="text-xl"
+                ></Icon>
+              </button>
+            </div>
+            <ul class="flex flex-row flex-wrap gap-x-4 gap-y-2">
+              {#each challDetails!.files as file}
+                <li>
+                  <a
+                    href={file.url.startsWith("http")
+                      ? file.url
+                      : `${API_BASE_URL}/${file.url}`}
+                    class="link text-primary font-semibold"
+                    title={`${file.filename} - ${formatFileSize(file.size)}`}
+                    >{file.filename}</a
+                  >
+                  {#if showHash}
+                    <pre class="text-xs text-gray-500 mt-1">{file.hash}</pre>
+                  {/if}
+                </li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
 
         {#if challData?.isSolved}
           <div class="flex gap-2">
@@ -354,7 +378,12 @@
             <button
               type="submit"
               onclick={submitFlag}
-              class="btn pop hover:pop btn-primary">Submit</button
+              class="btn pop hover:pop btn-primary"
+              >Reply
+              <Icon
+                icon="material-symbols:arrow-forward-rounded"
+                class="text-xl"
+              /></button
             >
           </form>
         {/if}

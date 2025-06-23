@@ -140,7 +140,7 @@
 </script>
 
 <div class="w-full mx-auto px-4 sm:px-6 lg:px-8 h-auto mt-8">
-  <div class="text-center text-4xl font-black pb-4">Challenges</div>
+  <div class="text-center text-4xl font-black pb-4">Inbox</div>
 
   {#if apiChallenges.loading}
     <div class="flex flex-col items-center gap-4 mt-16">

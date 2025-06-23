@@ -66,24 +66,31 @@
 </script>
 
 {#snippet categoryBtn(category: string, solved: number, total: number)}
-  {@const btnClass =
-    "btn btn-ghost font-bold hover:pop pop w-9/12 max-w-64 flex flex-row pl-2 gap-3 justify-start"}
   {@const selected =
-    (category == "All" && anyFilter) || categoryFilters[category]}
+    (category === "All" && anyFilter) || categoryFilters[category]}
   <button
-    class={`${btnClass} ${selected ? "bg-primary text-primary-content hover:bg-primary" : "bg-base-100"}`}
+    class="flex items-center w-full text-left px-2 py-1.5 rounded-md transition-colors duration-150 text-sm"
+    class:font-semibold={selected}
+    class:bg-blue-100={selected}
+    class:text-blue-700={selected}
+    class:text-gray-700={!selected}
+    class:hover:bg-gray-100={!selected}
     onclick={() => setFilter(category)}
   >
-    <Icon icon={categoryToIcon(category)} height="70%" class="w-auto" />
-    <div>{category}</div>
-    <div class="flex-grow"></div>
-    <div class={selected ? "text-gray-200" : "text-gray-500"}>
+    <Icon icon={categoryToIcon(category)} class="w-5 h-5 mr-3 text-gray-400" />
+    <span class="flex-grow truncate">{category}</span>
+    <span
+      class="text-xs"
+      class:text-blue-600={selected}
+      class:text-gray-500={!selected}
+    >
       {solved}/{total}
-    </div>
+    </span>
   </button>
 {/snippet}
 
-<div class="flex flex-row flex-wrap justify-center md:flex-col gap-4">
+<div class="flex flex-col gap-1 w-full p-2">
+  <div class="px-2 pt-2 pb-1 text-xs font-bold text-gray-500">CATEGORIES</div>
   {@render categoryBtn("All", allSolveCount, allCount)}
   {#each categories as cat}
     {@const counts = getCategoryCounts(cat)}
