@@ -150,7 +150,6 @@ class LoginState {
       }
 
     } else {
-      console.log("redirecting to", target);
       window.location.href = target;
     }
   }
