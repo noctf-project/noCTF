@@ -16,6 +16,7 @@ class LoginState {
   redirectUri = this.urlParams.get("redirect_uri");
   scope = this.urlParams.get("scope");
   state = this.urlParams.get("state");
+  responseType = this.urlParams.get("response_type");
 
   async checkEmail() {
     const checkEmailRes = await api.POST("/auth/email/init", {
@@ -24,7 +25,7 @@ class LoginState {
 
     if (checkEmailRes.error) {
       if (checkEmailRes.error.error === "EmailVerificationRequired") {
-        goto("/auth/verify");
+        goto("/auth/verify" + window.location.search);
         return;
       }
       toasts.error(
@@ -37,11 +38,11 @@ class LoginState {
     // Handle different responses based on if email exists
     if (checkEmailRes.data?.data?.token) {
       this.registrationToken = checkEmailRes.data.data.token;
-      goto("/auth/register");
+      goto("/auth/register" + window.location.search);
     } else if (checkEmailRes.error) {
       toasts.error("Unexpected response from server");
     } else {
-      goto("/auth/login");
+      goto("/auth/login" + window.location.search);
     }
   }
 
@@ -77,7 +78,9 @@ class LoginState {
     if (loginRes.data?.data?.type === "session") {
       localStorage.setItem(SESSION_TOKEN_KEY, loginRes.data.data.token);
       authState.refresh();
-      this.finishAuth();
+      // pass in redirect_uri if present
+      const redirectURL = new URLSearchParams(window.location.search).get("redirect_uri");
+      this.finishAuth(redirectURL ?? undefined);
     } else {
       toasts.error("Login failed");
     }
@@ -123,22 +126,29 @@ class LoginState {
 
   async finishAuth(target = "/") {
     // handle OAuth flow when query params are present
-    if (this.clientId && this.redirectUri && this.scope && this.state) {
-      const r = await api.GET("/auth/oauth/authorize", {
-        params: {
-          query: {
-            client_id: this.clientId,
-            redirect_uri: this.redirectUri,
-            scope: this.scope,
-            state: this.state,
-          },
+    if (this.clientId && this.redirectUri && this.scope && this.state && this.responseType) {
+      const r = await api.POST("/auth/oauth/authorize_internal", {
+        body: {
+          client_id: this.clientId,
+          redirect_uri: this.redirectUri,
+          scope: this.scope?.split(" ") ?? [],
+          state: this.state,
+          response_type: this.responseType?.split(" ") ?? [],
         },
       });
-      if (r.data?.url) {
-        window.location.replace(r.data?.url);
-      } else {
-        window.location.href = "/";
+
+      if (r.error) {
+        toasts.error(r.error.message ?? "An error occurred during OAuth flow");
+        goto("/");
+        return;
       }
+
+      if (r.data?.data?.url) {
+        window.location.replace(r.data.data.url);
+      } else {
+        goto("/");
+      }
+
     } else {
       window.location.href = target;
     }
@@ -154,7 +164,7 @@ class LoginState {
       const errorMessage =
         response.error?.message || "Invalid or expired registration link.";
       toasts.error(errorMessage);
-      goto("/auth");
+      goto("/auth" + window.location.search);
       return;
     }
 

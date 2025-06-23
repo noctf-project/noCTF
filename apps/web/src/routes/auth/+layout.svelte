@@ -59,10 +59,10 @@
     </div>
   </div>
 
-  <div class="text-sm text-gray-500 text-center max-w-md">
+  <!-- <div class="text-sm text-gray-500 text-center max-w-md">
     By continuing, you agree to our <a href="/terms" class="link"
       >Terms of Service</a
     >
     and <a href="/privacy" class="link">Privacy Policy</a>.
-  </div>
+  </div> -->
 </div>
