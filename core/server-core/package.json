@@ -23,6 +23,7 @@
     "expr-eval": "catalog:",
     "fastify": "catalog:",
     "handlebars": "^4.7.8",
+    "ip-address": "^10.0.1",
     "jose": "^6.0.11",
     "kysely": "catalog:",
     "mime-types": "^2.1.35",
