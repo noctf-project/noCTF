@@ -79,7 +79,9 @@ class LoginState {
       localStorage.setItem(SESSION_TOKEN_KEY, loginRes.data.data.token);
       authState.refresh();
       // pass in redirect_uri if present
-      const redirectURL = new URLSearchParams(window.location.search).get("redirect_uri");
+      const redirectURL = new URLSearchParams(window.location.search).get(
+        "redirect_uri",
+      );
       this.finishAuth(redirectURL ?? undefined);
     } else {
       toasts.error("Login failed");
@@ -126,7 +128,13 @@ class LoginState {
 
   async finishAuth(target = "/") {
     // handle OAuth flow when query params are present
-    if (this.clientId && this.redirectUri && this.scope && this.state && this.responseType) {
+    if (
+      this.clientId &&
+      this.redirectUri &&
+      this.scope &&
+      this.state &&
+      this.responseType
+    ) {
       const r = await api.POST("/auth/oauth/authorize_internal", {
         body: {
           client_id: this.clientId,
@@ -148,7 +156,6 @@ class LoginState {
       } else {
         goto("/");
       }
-
     } else {
       window.location.href = target;
     }

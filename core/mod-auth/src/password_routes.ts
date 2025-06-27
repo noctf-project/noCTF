@@ -56,8 +56,11 @@ export default async function (fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const { validate_email, enable_register_password } =
-        await passwordProvider.getConfig();
+      const {
+        validate_email,
+        enable_register_password,
+        allowed_email_domains,
+      } = await passwordProvider.getConfig();
       const email = request.body.email.toLowerCase();
       try {
         await passwordProvider.authPreCheck(email);
@@ -67,6 +70,17 @@ export default async function (fastify: FastifyInstance) {
       }
       if (!enable_register_password) {
         throw new NotFoundError("The requested auth provider cannot be found");
+      }
+      if (
+        allowed_email_domains &&
+        allowed_email_domains.length &&
+        !allowed_email_domains.includes(
+          email.toLowerCase().split("@")[1] || "".replace(/\.$/, ""),
+        )
+      ) {
+        throw new ForbiddenError(
+          "Registration is only open to specific domains",
+        );
       }
       const token = await tokenProvider.create("register", {
         identity: [
