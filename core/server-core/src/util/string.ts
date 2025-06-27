@@ -3,3 +3,9 @@ export const NormalizeName = (s: string) =>
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+
+export const NormalizeEmail = (s: string) =>
+  s
+    .toLowerCase()
+    .trim()
+    .replace(/\+.*(?=@)/, "");
