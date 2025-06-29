@@ -3,7 +3,7 @@ import { ServiceCradle } from "../index.ts";
 
 type Props = Pick<ServiceCradle, "redisClientFactory" | "logger">;
 
-const FLUSH_INTERVAL_MS = 10;
+const FLUSH_INTERVAL_MS = 0;
 const BUCKET_NAMESPACE = "core:rl:bucket";
 
 export type RateLimitBucket = {

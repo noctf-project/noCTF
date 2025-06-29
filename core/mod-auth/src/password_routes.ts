@@ -27,7 +27,11 @@ import {
 import { Generate } from "./hash_util.ts";
 import { Type } from "@sinclair/typebox";
 import { NormalizeEmail } from "@noctf/server-core/util/string";
-import { GetRouteUserIPKey, NormalizeIPPrefix } from "@noctf/server-core/util/limit_keys";
+import {
+  GetRouteKey,
+  GetRouteUserIPKey,
+  NormalizeIPPrefix,
+} from "@noctf/server-core/util/limit_keys";
 
 export default async function (fastify: FastifyInstance) {
   const {
@@ -53,12 +57,12 @@ export default async function (fastify: FastifyInstance) {
         body: InitAuthEmailRequest,
         rateLimit: (r: FastifyRequest<{ Body: InitAuthEmailRequest }>) => [
           {
-            key: `${r.routeOptions.url}:i${NormalizeIPPrefix(r.ip)}`,
+            key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
             limit: 12,
             windowSeconds: 60,
           },
           r.body.verify && {
-            key: `${r.routeOptions.url}:e:${NormalizeEmail(r.body.email)}`,
+            key: `${GetRouteKey(r)}:e:${NormalizeEmail(r.body.email)}`,
             limit: 2,
             windowSeconds: 60,
           },
@@ -152,12 +156,12 @@ export default async function (fastify: FastifyInstance) {
           r: FastifyRequest<{ Body: CreateResetAuthEmailRequest }>,
         ) => [
           {
-            key: `${r.routeOptions.url}:i${NormalizeIPPrefix(r.ip)}`,
+            key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
             limit: 8,
             windowSeconds: 60,
           },
           {
-            key: `${r.routeOptions.url}:e:${NormalizeEmail(r.body.email)}`,
+            key: `${GetRouteKey(r)}:e:${NormalizeEmail(r.body.email)}`,
             limit: 2,
             windowSeconds: 60,
           },
@@ -265,7 +269,7 @@ export default async function (fastify: FastifyInstance) {
         body: FinishAuthEmailRequest,
         rateLimit: (r) => [
           {
-            key: `${r.routeOptions.url}:i${NormalizeIPPrefix(r.ip)}`,
+            key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
             limit: 30,
             windowSeconds: 60,
           },

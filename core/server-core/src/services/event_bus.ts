@@ -283,6 +283,13 @@ export class EventBusService {
         });
       } catch (e) {
         if (e instanceof NatsError) {
+          this.logger.warn(
+            {
+              stack: e.stack,
+              name: stream.name,
+            },
+            "Error creating nats stream",
+          );
           await manager.streams.update(stream.name, {
             ...stream,
             subjects: [`${type}.>`],
