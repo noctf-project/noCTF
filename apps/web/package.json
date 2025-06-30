@@ -37,6 +37,7 @@
     "date-fns": "^4.1.0",
     "expr-eval": "catalog:",
     "i18n-iso-countries": "^7.14.0",
+    "isomorphic-dompurify": "^2.25.0",
     "lru-cache": "^11.0.2",
     "openapi-fetch": "^0.13.4"
   }
