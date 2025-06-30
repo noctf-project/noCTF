@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { AppDAO } from "../dao/app.ts";
 import { ServiceCradle } from "../index.ts";
-import { createHmac } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { BadRequestError } from "../errors.ts";
 import { App } from "@noctf/api/datatypes";
 
@@ -66,7 +66,13 @@ export class AppService {
     redirect_uri: string,
     code: string,
   ) {
-    const signed = AppService.signCode(client_id, client_secret, code);
+    const signed = AppService.signCode(
+      client_id,
+      // no salt needed since these are effectively random since they're generated
+      // by the server
+      createHash("sha256").update(client_secret).digest("base64url"),
+      code,
+    );
     return await this.lockService.withLease(
       `${CACHE_NAMESPACE}:lock:${signed}`,
       async () => {

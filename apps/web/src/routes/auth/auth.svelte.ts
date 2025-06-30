@@ -157,7 +157,7 @@ class LoginState {
         goto("/");
       }
     } else {
-      window.location.href = target;
+      goto(target);
     }
   }
 

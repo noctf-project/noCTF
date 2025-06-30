@@ -113,9 +113,9 @@ export default async function (fastify: FastifyInstance) {
     },
     async (request) => {
       try {
-        const url = await provider.generateAuthoriseUrl(request.body.name);
+        const data = await provider.generateAuthoriseUrl(request.body.name);
         return {
-          data: url,
+          data,
         };
       } catch (e) {
         if (e instanceof NoResultError) {

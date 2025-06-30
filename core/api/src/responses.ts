@@ -57,7 +57,10 @@ export type ListUserIdentitiesResponse = Static<
 >;
 
 export const InitAuthOauthResponse = Type.Object({
-  data: Type.String(),
+  data: Type.Object({
+    url: Type.String(),
+    state: Type.String(),
+  }),
 });
 export type InitAuthOauthResponse = Static<typeof InitAuthOauthResponse>;
 
