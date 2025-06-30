@@ -6,6 +6,7 @@
   import { header } from "../+layout.svelte";
   import authState from "$lib/state/auth.svelte";
   import api from "$lib/api/index.svelte";
+  import { SanitizedRedirect } from "$lib/utils/redirect";
 
   let isLoading = $state(true);
 
@@ -37,7 +38,7 @@
         isLoading = false;
         return;
       }
-      window.location.href = res.data.data.url;
+      SanitizedRedirect(res.data.data.url);
     } catch (error) {
       toasts.error("An error occurred during authorization");
       console.error(error);
@@ -63,7 +64,9 @@
     // This is a placeholder for demonstration
     isLoading = false;
     if (!authState.isAuthenticated) {
-      goto("/auth?redirect_uri=/auth/authorize");
+      goto(
+        `/auth?redirect_uri=${encodeURIComponent(location.href.slice(location.origin.length))}`,
+      );
       return;
     }
 
