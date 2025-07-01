@@ -12,6 +12,8 @@
   } from "$lib/components/challenges/ChallengeModal.svelte";
   import { onMount } from "svelte";
   import { toasts } from "$lib/stores/toast";
+  import Icon from "@iconify/svelte";
+  import ChallengeInfo from "$lib/components/challenges/ChallengeInfo.svelte";
 
   let apiChallenges = $state(wrapLoadable(api.GET("/challenges")));
   let challDetailsMap: { [id in number]: ChallDetails } = {};
@@ -29,6 +31,10 @@
 
   onMount(() => {
     const refresh = setInterval(refreshChallenges, 20000);
+    const stored = localStorage.getItem("isEmailView");
+    if (stored !== null) {
+      isEmailView = stored === "true";
+    }
 
     return () => {
       clearInterval(refresh);
@@ -89,6 +95,8 @@
   let modalLoading = $state(false);
   let modalChallData: ChallengeCardData | undefined = $state();
   let modalChallDetails: ChallDetails | undefined = $state();
+  let isEmailView = $state(false);
+  let collapsedCategories = $state<Record<string, boolean>>({});
 
   async function onChallengeClicked(challData: ChallengeCardData) {
     modalVisible = true;
@@ -141,7 +149,24 @@
 
 <div class="w-full mx-auto px-4 sm:px-6 lg:px-8 h-auto mt-8">
   <div class="text-center text-4xl font-black pb-4">Inbox</div>
-
+  <div class="flex justify-center mb-6">
+    <button
+      class="btn btn-outline btn-sm gap-2"
+      onclick={() => {
+        isEmailView = !isEmailView;
+        modalChallData = undefined;
+        modalVisible = false;
+        localStorage.setItem("isEmailView", String(isEmailView));
+      }}
+    >
+      <Icon
+        icon={isEmailView
+          ? "material-symbols:view-list"
+          : "material-symbols:mail"}
+      />
+      {isEmailView ? "Grid View" : "Inbox View"}
+    </button>
+  </div>
   {#if apiChallenges.loading}
     <div class="flex flex-col items-center gap-4 mt-16">
       <div class="loading loading-spinner loading-lg text-primary"></div>
@@ -165,9 +190,9 @@
     </div>
   {:else}
     <div
-      class="flex flex-col md:grid grid-cols-[min(25%,20rem)_1fr] gap-6 lg:gap-8 py-8"
+      class="flex flex-col md:grid grid-cols-[min(25%,20rem)_1fr] gap-6 lg:gap-8 bg-white-500"
     >
-      <div class="md:sticky top-8 self-start mb-6 md:mb-0 md:mt-8">
+      <div class="md:sticky top-8 self-start mb-6 md:mb-0">
         <ChallengeFilterer
           challenges={allChallenges || []}
           onFilter={(res) => (challenges = res)}
@@ -176,25 +201,78 @@
 
       <div class="flex flex-wrap gap-6 h-fit">
         {#if challenges !== undefined && Object.keys(challengesByCategory).length > 0}
-          {#each Object.entries(challengesByCategory) as [category, categoryChallenges] (category)}
-            <div class="flex flex-col gap-2">
-              <h1
-                class="text-2xl text-center w-full md:text-left p-3 rounded font-bold top-0 py-2 z-10"
-              >
-                {category}
-              </h1>
+          <!-- Grid View -->
+          {#if isEmailView}
+            <div class="flex w-full gap-5">
               <div
-                class="flex flex-wrap md:justify-start justify-center pt-2 gap-4 min-w-[150px]"
+                class="flex flex-col gap-2 overflow-y-auto no-scrollbar"
+                style="max-height: calc(100vh - 24rem); width: max-content; min-width: 320px;"
               >
-                {#each categoryChallenges as challenge (challenge.id)}
-                  <ChallengeCard
-                    data={challenge}
-                    onclick={onChallengeClicked}
-                  />
+                {#each Object.entries(challengesByCategory) as [category, categoryChallenges] (category)}
+                  <div class="border rounded-lg bg-base-200 mb-2">
+                    <button
+                      class="flex w-full items-center justify-between px-4 py-2 cursor-pointer select-none bg-base-300 hover:bg-base-100 border-b"
+                      onclick={() =>
+                        (collapsedCategories = {
+                          ...collapsedCategories,
+                          [category]: !collapsedCategories[category],
+                        })}
+                    >
+                      <span class="font-bold text-lg">{category}</span>
+                      <Icon
+                        icon={collapsedCategories[category]
+                          ? "mdi:chevron-right"
+                          : "mdi:chevron-down"}
+                        class="transition-transform duration-200"
+                      />
+                    </button>
+                    {#if !collapsedCategories[category]}
+                      <div class="flex flex-col divide-y">
+                        {#each categoryChallenges as challenge (challenge.id)}
+                          <div
+                            class="hover:bg-base-100 transition-colors cursor-pointer"
+                          >
+                            <ChallengeCard
+                              data={challenge}
+                              onclick={onChallengeClicked}
+                            />
+                          </div>
+                        {/each}
+                      </div>
+                    {/if}
+                  </div>
                 {/each}
               </div>
+              <div class="flex-grow w-full">
+                <ChallengeInfo
+                  challData={modalChallData}
+                  challDetails={modalChallDetails}
+                  loading={modalLoading}
+                  onSolve={() => setTimeout(refreshChallenges, 2000)}
+                />
+              </div>
             </div>
-          {/each}
+          {:else}
+            {#each Object.entries(challengesByCategory) as [category, categoryChallenges] (category)}
+              <div class="flex flex-col gap-2">
+                <h1
+                  class="text-2xl text-center w-full md:text-left p-3 rounded font-bold top-0 py-2 z-10"
+                >
+                  {category}
+                </h1>
+                <div
+                  class="flex flex-wrap md:justify-start justify-center pt-2 gap-4 min-w-[150px]"
+                >
+                  {#each categoryChallenges as challenge (challenge.id)}
+                    <ChallengeCard
+                      data={challenge}
+                      onclick={onChallengeClicked}
+                    />
+                  {/each}
+                </div>
+              </div>
+            {/each}
+          {/if}
         {:else if challenges !== undefined && challenges.length === 0}
           <p class="w-full text-center text-neutral-500 py-10">
             No challenges match the current filters.
@@ -206,14 +284,25 @@
         {/if}
       </div>
     </div>
-
-    <ChallengeModal
-      visible={modalVisible}
-      loading={modalLoading}
-      challData={modalChallData}
-      challDetails={modalChallDetails}
-      onClose={closeModal}
-      onSolve={() => setTimeout(refreshChallenges, 2000)}
-    />
+    {#if !isEmailView}
+      <ChallengeModal
+        visible={modalVisible}
+        loading={modalLoading}
+        challData={modalChallData}
+        challDetails={modalChallDetails}
+        onClose={closeModal}
+        onSolve={() => setTimeout(refreshChallenges, 2000)}
+      />
+    {/if}
   {/if}
 </div>
+
+<style>
+  .no-scrollbar {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE 10+ */
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Webkit */
+  }
+</style>
