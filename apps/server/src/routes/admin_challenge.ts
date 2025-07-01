@@ -12,7 +12,7 @@ import {
 import { FilterChallengesQuery } from "@noctf/api/query";
 import { ActorType } from "@noctf/server-core/types/enums";
 import type { FastifyInstance } from "fastify";
-import { IdParams } from "@noctf/api/params";
+import { IdOrSlugParams, IdParams } from "@noctf/api/params";
 
 export async function routes(fastify: FastifyInstance) {
   const { challengeService, scoreService } = fastify.container.cradle;
@@ -98,7 +98,7 @@ export async function routes(fastify: FastifyInstance) {
   );
 
   fastify.get<{
-    Params: IdParams;
+    Params: IdOrSlugParams;
     Reply: AdminGetChallengeResponse;
   }>(
     "/admin/challenges/:id",
@@ -110,7 +110,7 @@ export async function routes(fastify: FastifyInstance) {
           require: true,
           policy: ["admin.challenge.create"],
         },
-        params: IdParams,
+        params: IdOrSlugParams,
         response: {
           200: AdminGetChallengeResponse,
         },

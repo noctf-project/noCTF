@@ -8,6 +8,7 @@ import type { AuditLogActor } from "../../types/audit_log.ts";
 import type { ChallengePublicMetadataBase } from "@noctf/api/datatypes";
 import { SubmissionUpdateEvent } from "@noctf/api/events";
 import {
+  Slug,
   type Challenge,
   type ChallengeMetadata,
   type PublicChallenge,
@@ -15,6 +16,7 @@ import {
 import type { ValidateFunction } from "ajv";
 import { Ajv } from "ajv";
 import {
+  BadRequestError,
   ConflictError,
   NotImplementedError,
   ValidationError,
@@ -37,6 +39,7 @@ type Props = Pick<
   | "scoreService"
 >;
 
+const SLUG_REGEX = new RegExp(Slug.format!);
 export class ChallengeService {
   private readonly logger;
   private readonly auditLogService;
@@ -48,7 +51,7 @@ export class ChallengeService {
     max: 256,
     ttl: 5000,
   });
-  private readonly getCache = new LocalCache<number, Challenge>({
+  private readonly getCache = new LocalCache<number | string, Challenge>({
     max: 256,
     ttl: 5000,
   });
@@ -149,11 +152,23 @@ export class ChallengeService {
     return this.listCache.load(`list:${options?.cacheKey}`, fn);
   }
 
-  async get(id: number, cached = false): Promise<Challenge> {
-    if (cached) {
-      return this.getCache.load(id, () => this.challengeDAO.get(id));
+  async get(idOrSlug: number | string, cached = false): Promise<Challenge> {
+    if (typeof idOrSlug === "string") {
+      if (parseInt(idOrSlug)) {
+        idOrSlug = parseInt(idOrSlug);
+      } else if (!idOrSlug.match(SLUG_REGEX)) {
+        throw new BadRequestError(
+          "ValidationError",
+          "Slug does not match format",
+        );
+      }
     }
-    return this.challengeDAO.get(id);
+    if (cached) {
+      return this.getCache.load(idOrSlug, () =>
+        this.challengeDAO.get(idOrSlug),
+      );
+    }
+    return this.challengeDAO.get(idOrSlug);
   }
 
   async delete(id: number) {

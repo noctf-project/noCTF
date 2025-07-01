@@ -14,7 +14,7 @@ export type TypeDate = Static<typeof TypeDate>;
 
 export const Slug = Type.String({
   maxLength: 64,
-  pattern: "^(?!\\d+$)[a-z\\d][-a-z\\d]*[a-z\\d]$",
+  pattern: "^[-_a-z][-_a-z\\d]+$",
 });
 export type Slug = Static<typeof Slug>;
 
