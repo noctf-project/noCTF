@@ -60,7 +60,7 @@ describe(RateLimitService, () => {
         { key: "test", windowSeconds: 60, limit: 10 },
       ];
 
-      mockRedisClient.mGet.mockResolvedValueOnce(["5", "8"]);
+      mockRedisClient.mGet.mockResolvedValueOnce(["7", "8"]);
 
       const result = await service.evaluate(buckets);
 

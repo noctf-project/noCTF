@@ -85,8 +85,7 @@ export class RateLimitService {
       const [_, prev, current] = AddWritesToRead(read, write, windowSeconds);
       const estimate =
         (prev * (windowSeconds - (now % windowSeconds))) / windowSeconds +
-        current +
-        1;
+        current;
       if (estimate >= limit) {
         const diff = estimate - limit;
         const ttl = Math.floor(
