@@ -90,7 +90,7 @@ export class ScoreboardHistory {
       fetched.forEach((v, k) => out.set(k, v));
     }
     for (const [team, promise] of inProgress) {
-      out.set(team, await promise.catch(() => [])); // we want to return at least sth
+      out.set(team, await promise.catch(() => [] as DataPoint[])); // we want to return at least sth
     }
     return out;
   }
@@ -99,7 +99,7 @@ export class ScoreboardHistory {
     toFetch: Map<number, PromiseWithResolvers<DataPoint[]>>,
   ) {
     const fetched = new Map<number, DataPoint[]>(
-      toFetch.keys().map((t) => [t, []]),
+      toFetch.keys().map((t) => [t, []] as [number, DataPoint[]]),
     );
     const client = await this.redisClientFactory.getClient();
     let lastTeamId: number | undefined;

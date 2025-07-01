@@ -32,7 +32,7 @@ export class LocalFileProvider
       .digest();
   }
 
-  getSchema() {
+  getSchema(): null {
     return null;
   }
 

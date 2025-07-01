@@ -68,7 +68,7 @@ export class DiscordProvider {
     const {
       version,
       value: { discord },
-    } = await this.configService.get<TicketConfig>(TicketConfig.$id);
+    } = await this.configService.get(TicketConfig);
     if (!discord) {
       // throw untryable error
       throw new Error("discord config is not present");

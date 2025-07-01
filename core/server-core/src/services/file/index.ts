@@ -64,7 +64,7 @@ export class FileService {
   }
 
   async getInstance(name: string) {
-    const config = await this.configService.get<FileConfig>(FileConfig.$id!);
+    const config = await this.configService.get(FileConfig);
     if (this.configVersion !== config.version) {
       this.instances = new Map();
       this.configVersion = this.configVersion;
@@ -92,7 +92,7 @@ export class FileService {
   async upload(filename: string, readStream: Readable): Promise<FileMetadata> {
     const {
       value: { upload },
-    } = await this.configService.get<FileConfig>(FileConfig.$id!);
+    } = await this.configService.get(FileConfig);
     const instance = await this.getInstance(upload);
     const sHash = new PassThrough();
     const sSize = new PassThrough();

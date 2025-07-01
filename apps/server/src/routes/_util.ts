@@ -18,7 +18,7 @@ export const GetUtils = ({ policyService, configService }: ServiceCradle) => {
     if (!admin) {
       const {
         value: { active, start_time_s },
-      } = await configService.get<SetupConfig>(SetupConfig.$id);
+      } = await configService.get(SetupConfig);
       if (!active) {
         throw new ForbiddenError("The CTF is not currently active");
       }

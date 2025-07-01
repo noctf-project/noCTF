@@ -11,6 +11,8 @@ import type {
 } from "./schema/datatypes.ts";
 import { TicketState } from "./schema/datatypes.ts";
 import { EventBusNonRetryableError } from "@noctf/server-core/services/event_bus";
+import { GetRouteKey } from "@noctf/server-core/util/limit_keys";
+import { ForbiddenError } from "@noctf/server-core/errors";
 
 export async function initServer(fastify: FastifyInstance) {
   const { configService } = fastify.container.cradle as ServiceCradle;
@@ -22,6 +24,13 @@ export async function initServer(fastify: FastifyInstance) {
       schema: {
         tags: ["tickets"],
         security: [{ bearer: [] }],
+        rateLimit: async (r) => [
+          {
+            key: `${GetRouteKey(r)}:t${(await r.user.membership).team_id}`,
+            windowSeconds: 60,
+            limit: 1,
+          },
+        ],
         body: OpenTicketRequest,
         auth: {
           require: true,
@@ -32,6 +41,10 @@ export async function initServer(fastify: FastifyInstance) {
       },
     },
     async () => {
+      const config = await configService.get(TicketConfig);
+      if (!config.value.enabled) {
+        throw new ForbiddenError("Ticket functionality is not enabled");
+      }
       return {
         data: {
           id: 0,

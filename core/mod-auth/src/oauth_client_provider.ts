@@ -17,8 +17,7 @@ export class OAuthConfigProvider {
   ) {}
 
   private async isEnabled(): Promise<boolean> {
-    return !!(await this.configService.get<AuthConfig>(AuthConfig.$id)).value
-      .enable_oauth;
+    return !!(await this.configService.get(AuthConfig)).value.enable_oauth;
   }
 
   async listMethods(): Promise<AuthMethod[]> {

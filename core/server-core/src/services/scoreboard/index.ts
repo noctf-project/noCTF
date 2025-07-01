@@ -150,7 +150,7 @@ export class ScoreboardService {
   async getTopScoreHistory(division: number, count: number, tags?: number[]) {
     const {
       value: { start_time_s, end_time_s },
-    } = await this.configService.get<SetupConfig>(SetupConfig.$id!);
+    } = await this.configService.get(SetupConfig);
     const start = start_time_s !== undefined ? start_time_s * 1000 : undefined;
     const end = end_time_s !== undefined ? end_time_s * 1000 : undefined;
     const [_count, ranks] = await this.dataLoader.getRanks(
@@ -175,7 +175,7 @@ export class ScoreboardService {
   async getTeamScoreHistory(id: number) {
     const {
       value: { start_time_s, end_time_s },
-    } = await this.configService.get<SetupConfig>(SetupConfig.$id!);
+    } = await this.configService.get(SetupConfig);
     const start = start_time_s !== undefined ? start_time_s * 1000 : undefined;
     const end = end_time_s !== undefined ? end_time_s * 1000 : undefined;
     const data = await this.history.getHistoryForTeams([id]);
@@ -243,7 +243,7 @@ export class ScoreboardService {
 
     const teams = await this.teamDAO.listForScoreboard();
     const teamMap = new Map<number, MinimalTeamInfo[]>(
-      divisions.map(({ id }) => [id, []]),
+      divisions.map(({ id }) => [id, []] as [number, MinimalTeamInfo[]]),
     );
     teams.forEach((t) => teamMap.get(t.division_id)?.push(t));
     return {

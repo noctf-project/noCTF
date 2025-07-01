@@ -117,7 +117,7 @@ export default async function (fastify: FastifyInstance) {
           );
         }
         const { root_url, name: ctf_name } = (
-          await configService.get<SetupConfig>(SetupConfig.$id!)
+          await configService.get(SetupConfig)
         ).value;
         await emailService.sendEmail({
           to: [{ address: email, name: "" }],
@@ -189,7 +189,7 @@ export default async function (fastify: FastifyInstance) {
         created_at: new Date(),
       });
       const { root_url, name: ctf_name } = (
-        await configService.get<SetupConfig>(SetupConfig.$id!)
+        await configService.get(SetupConfig)
       ).value;
       await emailService.sendEmail({
         to: [{ address: email, name: "" }],
@@ -367,7 +367,7 @@ export default async function (fastify: FastifyInstance) {
             user_id: request.user?.id,
           });
           const { root_url, name: ctf_name } = (
-            await configService.get<SetupConfig>(SetupConfig.$id!)
+            await configService.get(SetupConfig)
           ).value;
           await emailService.sendEmail({
             to: [{ address: newEmail, name: "" }],

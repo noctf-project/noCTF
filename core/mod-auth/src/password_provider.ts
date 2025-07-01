@@ -76,7 +76,7 @@ export class PasswordProvider implements IdentityProvider {
       enable_register_password,
       validate_email,
       allowed_email_domains,
-    } = (await this.configService.get<AuthConfig>(AuthConfig.$id)).value;
+    } = (await this.configService.get(AuthConfig)).value;
     return {
       enable_login_password,
       enable_register_password,

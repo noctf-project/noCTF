@@ -237,7 +237,7 @@ export class TeamService {
     ) {
       throw new NotFoundError("Team not found");
     }
-    const config = await this.configService.get<TeamConfig>(TeamConfig.$id!);
+    const config = await this.configService.get(TeamConfig);
     await this.databaseClient.transaction(async (tx) => {
       const dao = new TeamDAO(tx);
       const n = await dao.listMembers(result.id, true);

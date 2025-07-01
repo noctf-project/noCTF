@@ -157,7 +157,7 @@ export default async function (fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const config = await configService.get<SetupConfig>(SetupConfig.$id);
+      const config = await configService.get(SetupConfig);
       const url = new URL("auth/authorize", config.value.root_url);
       url.search = new URLSearchParams(
         request.query as Record<string, string>,

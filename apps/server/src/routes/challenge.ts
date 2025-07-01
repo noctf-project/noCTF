@@ -205,7 +205,7 @@ export async function routes(fastify: FastifyInstance) {
       const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
       const { id } = request.params;
 
-      const config = await configService.get<SetupConfig>(SetupConfig.$id);
+      const config = await configService.get(SetupConfig);
       const end = config.value.end_time_s;
       if ((end || end === 0) && ctime * 1000 > end) {
         throw new ForbiddenError("The CTF has ended. Thanks for playing!");
