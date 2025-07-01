@@ -1,9 +1,8 @@
 import { nanoid } from "nanoid";
-import { AppDAO } from "../dao/app.ts";
+import { AppDAO, DBApp } from "../dao/app.ts";
 import { ServiceCradle } from "../index.ts";
 import { createHash, createHmac } from "node:crypto";
-import { BadRequestError } from "../errors.ts";
-import { App } from "@noctf/api/datatypes";
+import { BadRequestError, ForbiddenError } from "../errors.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -39,13 +38,29 @@ export class AppService {
   }
 
   async generateAuthorizationCode(
-    app: App,
+    app: DBApp,
     redirect_uri: string,
     user_id: number,
     scopes: string[],
   ) {
+    if (!app.client_secret_hash)
+      throw new BadRequestError(
+        "NoCodeFlow",
+        "App does not support authorization code flow",
+      );
+
+    const appScopes = new Set(["openid", ...app.scopes]);
+    if (new Set(scopes).difference(appScopes).size > 0)
+      throw new ForbiddenError(
+        "App is not configured for all the requested scopes",
+      );
+
     const code = nanoid();
-    const signed = AppService.signCode(app.client_id, app.client_secret, code);
+    const signed = AppService.signCode(
+      app.client_id,
+      app.client_secret_hash,
+      code,
+    );
     await this.cacheService.put<AuthorizationCodeContext>(
       CACHE_NAMESPACE,
       `code:${signed}`,
@@ -70,7 +85,7 @@ export class AppService {
       client_id,
       // no salt needed since these are effectively random since they're generated
       // by the server
-      createHash("sha256").update(client_secret).digest("base64url"),
+      createHash("sha256").update(client_secret).digest(),
       code,
     );
     return await this.lockService.withLease(
@@ -114,7 +129,7 @@ export class AppService {
 
   private static signCode(
     client_id: string,
-    client_secret: string,
+    client_secret: Buffer,
     code: string,
   ) {
     const signed = createHmac("sha256", client_secret)
