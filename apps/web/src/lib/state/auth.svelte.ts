@@ -1,3 +1,4 @@
+import { goto } from "$app/navigation";
 import api, { SESSION_TOKEN_KEY } from "$lib/api/index.svelte";
 import { toasts } from "$lib/stores/toast";
 import loginState from "../../routes/auth/auth.svelte";
@@ -30,16 +31,18 @@ class AuthState {
         !this.isAuthenticated &&
         (["/team", "/team/edit"].includes(path) || path.startsWith("/settings"))
       ) {
-        window.location.href = "/auth";
+        goto(`/auth?redirect_to=${path}`);
+      } else if (!this.isAuthenticated && path === "/auth/authorize") {
+        goto(
+          `/auth?redirect_to=${encodeURIComponent(location.href.slice(location.origin.length))}`,
+        );
       } else if (this.isAuthenticated && path.startsWith("/auth")) {
-        if (path !== "/auth/authorize") {
-          loginState.finishAuth("/");
-        }
+        goto("/");
       } else if (!this.isAdmin && path.startsWith("/admin")) {
         if (this.isAuthenticated) {
-          window.location.href = "/";
+          goto("/");
         } else {
-          window.location.href = "/auth";
+          goto("/auth");
         }
       }
     });
@@ -102,7 +105,8 @@ class AuthState {
       localStorage.removeItem(USER_DATA_KEY);
       this.user = undefined;
     }
-    window.location.href = "/";
+    goto("/");
+    window.location.reload();
   }
 }
 

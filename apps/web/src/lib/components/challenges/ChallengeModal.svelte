@@ -32,6 +32,7 @@
   import { Tween } from "svelte/motion";
   import { cubicInOut } from "svelte/easing";
   import { fade, fly } from "svelte/transition";
+  import DOMPurify from "isomorphic-dompurify";
   import { onMount } from "svelte";
   import api, { API_BASE_URL } from "$lib/api/index.svelte";
   import { getRelativeTime } from "$lib/utils/time";
@@ -68,7 +69,7 @@
   }, 2500);
 
   const carta = new Carta({
-    sanitizer: false,
+    sanitizer: DOMPurify.sanitize,
   });
 
   const correctAnim = new Tween(0, {

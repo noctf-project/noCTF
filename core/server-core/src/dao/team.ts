@@ -30,6 +30,11 @@ export type MinimalTeamInfo = {
   tag_ids: number[];
 };
 
+type TeamMember = {
+  user_id: DB["team_member"]["user_id"];
+  role: "member" | "owner";
+};
+
 export class TeamDAO {
   constructor(private readonly db: DBType) {}
 
@@ -310,12 +315,22 @@ export class TeamDAO {
     return result;
   }
 
-  async listMembers(id: number) {
-    return this.db
-      .selectFrom("team_member")
-      .select(["user_id", "role"])
-      .where("team_id", "=", id)
-      .execute();
+  async listMembers(id: number, count: true): Promise<number>;
+  async listMembers(id: number, count?: false): Promise<TeamMember[]>;
+  async listMembers(id: number, count = false): Promise<TeamMember[] | number> {
+    const query = this.db.selectFrom("team_member").where("team_id", "=", id);
+    if (count) {
+      return query.select(["user_id", "role"]).execute() as Promise<
+        TeamMember[]
+      >;
+    }
+    return Number(
+      (
+        await query
+          .select((eb) => eb.fn.countAll().as("count"))
+          .executeTakeFirstOrThrow()
+      ).count,
+    );
   }
 
   private listQuery(

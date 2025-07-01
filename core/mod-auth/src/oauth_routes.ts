@@ -113,9 +113,9 @@ export default async function (fastify: FastifyInstance) {
     },
     async (request) => {
       try {
-        const url = await provider.generateAuthoriseUrl(request.body.name);
+        const data = await provider.generateAuthoriseUrl(request.body.name);
         return {
-          data: url,
+          data,
         };
       } catch (e) {
         if (e instanceof NoResultError) {
@@ -158,7 +158,7 @@ export default async function (fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const config = await configService.get<SetupConfig>(SetupConfig.$id);
-      const url = new URL("auth", config.value.root_url);
+      const url = new URL("auth/authorize", config.value.root_url);
       url.search = new URLSearchParams(
         request.query as Record<string, string>,
       ).toString();
@@ -187,7 +187,12 @@ export default async function (fastify: FastifyInstance) {
       const { response_type, scope, redirect_uri, state, client_id } =
         request.body;
       const responseSet = new Set([...response_type]);
-      const url = new URL(redirect_uri);
+      let url: URL;
+      try {
+        url = new URL(redirect_uri);
+      } catch {
+        throw new BadRequestError("Invalid redirect URI");
+      }
       const app = await appService.getValidatedAppWithClientID(
         client_id,
         redirect_uri,
