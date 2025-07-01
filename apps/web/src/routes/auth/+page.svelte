@@ -28,8 +28,6 @@
   }
 
   async function handleSocialLogin(provider: string) {
-    // TODO: Redirect to social login provider went implemented
-    // window.location.href = `/auth/${provider}/init?redirect_to=${encodeURIComponent(redirectParam || "/")}`;
     toasts.info(
       `Social login with ${provider} is not implemented yet. Please use email login.`,
     );

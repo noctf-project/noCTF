@@ -31,12 +31,13 @@ class AuthState {
         !this.isAuthenticated &&
         (["/team", "/team/edit"].includes(path) || path.startsWith("/settings"))
       ) {
-        goto("/auth");
+        goto(`/auth?redirect_to=${path}`);
+      } else if (!this.isAuthenticated && path === "/auth/authorize") {
+        goto(
+          `/auth?redirect_to=${encodeURIComponent(location.href.slice(location.origin.length))}`,
+        );
       } else if (this.isAuthenticated && path.startsWith("/auth")) {
-        console.log("test", path);
-        if (path !== "/auth/authorize") {
-          goto("/");
-        }
+        goto("/");
       } else if (!this.isAdmin && path.startsWith("/admin")) {
         if (this.isAuthenticated) {
           goto("/");

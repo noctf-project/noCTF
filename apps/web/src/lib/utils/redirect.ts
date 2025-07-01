@@ -1,23 +1,19 @@
-const DISALLOWED_PROTOCOLS = new Set([
-  "javascript:",
-  "vbscript:",
-  "data:",
-  "about:",
-  "file:",
-]);
+const ALLOWED_PROTOCOLS = new Set(["http:", "https:"]);
 
-export const SanitizedRedirect = (u: string) => {
+export const ExternalRedirect = (u: string) => {
   if (!u) return;
-  if (/^\/[^\/]/.test(u)) {
+  if (/^\/[^/]/.test(u)) {
     window.location.href = u;
     return;
   }
   try {
     const url = new URL(u);
-    if (DISALLOWED_PROTOCOLS.has(url.protocol)) {
-      window.location.href = "/";
+    if (ALLOWED_PROTOCOLS.has(url.protocol)) {
+      window.location.href = url.toString();
       return;
     }
-  } catch {}
+  } catch {
+    /* empty */
+  }
   window.location.href = "/";
 };

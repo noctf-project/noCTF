@@ -78,10 +78,10 @@ class LoginState {
     if (loginRes.data?.data?.type === "session") {
       localStorage.setItem(SESSION_TOKEN_KEY, loginRes.data.data.token);
       await authState.refresh();
-      let redirectURL = new URLSearchParams(window.location.search).get(
-        "redirect_uri",
+      const redirectTo = new URLSearchParams(window.location.search).get(
+        "redirect_to",
       );
-      goto(redirectURL || "/");
+      goto(redirectTo || "/").catch(() => goto("/"));
     } else {
       toasts.error("Login failed");
     }
