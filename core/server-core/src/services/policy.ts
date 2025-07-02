@@ -20,7 +20,6 @@ export class PolicyService {
 
   private readonly policyDAO;
   private readonly userDAO;
-  private readonly teamDAO;
 
   private readonly userRolesCache = new LocalCache<number, Set<string>>({
     max: 16384,
@@ -36,7 +35,6 @@ export class PolicyService {
     this.configService = configService;
     this.policyDAO = new PolicyDAO(databaseClient.get());
     this.userDAO = new UserDAO(databaseClient.get());
-    this.teamDAO = new TeamDAO(databaseClient.get());
   }
 
   async getPoliciesForUser(userId: number) {

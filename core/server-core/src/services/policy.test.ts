@@ -21,7 +21,6 @@ describe(PolicyService, () => {
   const configService = mockDeep<ServiceCradle["configService"]>();
 
   const mockPolicyDAO = mockDeep<PolicyDAO>();
-  const mockTeamDAO = mockDeep<TeamDAO>();
   const mockUserDAO = mockDeep<UserDAO>();
 
   let policyService: PolicyService;
@@ -34,7 +33,6 @@ describe(PolicyService, () => {
     mockReset(mockUserDAO);
 
     vi.mocked(PolicyDAO).mockImplementation(() => mockPolicyDAO);
-    vi.mocked(TeamDAO).mockImplementation(() => mockTeamDAO);
     vi.mocked(UserDAO).mockImplementation(() => mockUserDAO);
 
     policyService = new PolicyService({
@@ -99,6 +97,7 @@ describe(PolicyService, () => {
       mockUserDAO.getFlagsAndRoles.mockResolvedValue({
         roles: Array.from(userRoles),
         flags: [UserFlag.VALID_EMAIL],
+        team_id: null
       });
 
       mockPolicyDAO.listPolicies.mockResolvedValue(mockPolicies);
@@ -128,6 +127,7 @@ describe(PolicyService, () => {
       mockUserDAO.getFlagsAndRoles.mockResolvedValue({
         roles: ["user"],
         flags: [],
+        team_id: null
       });
       const result = await policyService.getRolesForUser(1);
       expect(result).toEqual(new Set<string>(["user"]));
@@ -141,6 +141,7 @@ describe(PolicyService, () => {
       mockUserDAO.getFlagsAndRoles.mockResolvedValue({
         roles: ["user"],
         flags: [UserFlag.VALID_EMAIL],
+        team_id: null
       });
       const result = await policyService.getRolesForUser(1);
       expect(result).toEqual(new Set<string>(["user", "active"]));
@@ -154,11 +155,7 @@ describe(PolicyService, () => {
       mockUserDAO.getFlagsAndRoles.mockResolvedValue({
         roles: ["user"],
         flags: [UserFlag.VALID_EMAIL],
-      });
-      mockTeamDAO.getMembershipForUser.mockResolvedValue({
-        division_id: 1,
-        team_id: 1,
-        role: "member",
+        team_id: 1
       });
       const result = await policyService.getRolesForUser(1);
       expect(result).toEqual(new Set<string>(["user", "active", "has_team"]));
@@ -176,6 +173,7 @@ describe(PolicyService, () => {
           flags: [UserFlag.BLOCKED].concat(
             validate_email ? [UserFlag.VALID_EMAIL] : [],
           ),
+          team_id: null
         });
         const result = await policyService.getRolesForUser(1);
         expect(result).toEqual(new Set<string>(["user", "blocked"]));
