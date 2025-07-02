@@ -4,6 +4,7 @@ import { routes as adminConfig } from "./routes/admin_config.ts";
 import { routes as adminFile } from "./routes/admin_file.ts";
 import { routes as adminSetup } from "./routes/admin_setup.ts";
 import { routes as adminSubmission } from "./routes/admin_submission.ts";
+import { routes as adminUser } from "./routes/admin_user.ts";
 
 import { routes as challenge } from "./routes/challenge.ts";
 import { routes as file } from "./routes/file.ts";
@@ -42,6 +43,7 @@ export default async function (fastify: FastifyInstance) {
   fastify.register(adminFile);
   fastify.register(adminSetup);
   fastify.register(adminSubmission);
+  fastify.register(adminUser);
 
   fastify.register(challenge);
   fastify.register(file);

@@ -20,7 +20,7 @@ import {
   MeTeamResponse,
   SuccessResponse,
 } from "@noctf/api/responses";
-import { ActorType } from "@noctf/server-core/types/enums";
+import { ActorType, TeamFlag } from "@noctf/server-core/types/enums";
 import { Policy } from "@noctf/server-core/util/policy";
 import SingleValueCache from "@noctf/server-core/util/single_value_cache";
 
@@ -253,6 +253,12 @@ export async function routes(fastify: FastifyInstance) {
       }
       if (membership.role !== "owner") {
         throw new ForbiddenError("Only the team's owner can update the team");
+      }
+      const team = await teamService.get(membership.team_id);
+
+      // after we verify teams, we don't want them to update it
+      if (team.flags.includes(TeamFlag.FROZEN)) {
+        throw new ForbiddenError("An admin has locked changes to your team.");
       }
       await teamService.update(membership.team_id, request.body, {
         actor: {

@@ -121,6 +121,22 @@ export const ListUsersResponse = Type.Object({
 });
 export type ListUsersResponse = Static<typeof ListUsersResponse>;
 
+export const AdminListUsersResponse = Type.Object({
+  data: Type.Object({
+    entries: Type.Array(
+      Type.Composite([
+        UserSummary,
+        Type.Object({
+          derived_roles: Type.Array(Type.String()),
+        }),
+      ]),
+    ),
+    page_size: Type.Integer(),
+    total: Type.Integer(),
+  }),
+});
+export type AdminListUsersResponse = Static<typeof AdminListUsersResponse>;
+
 export const MeUserResponse = Type.Object({
   data: Type.Composite([
     Type.Omit(UserSummary, ["flags"]),
