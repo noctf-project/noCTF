@@ -137,6 +137,9 @@ export const AdminListUsersResponse = Type.Object({
         UserSummary,
         Type.Object({
           derived_roles: Type.Array(Type.String()),
+          identities: Type.Array(
+            Type.Pick(UserIdentity, ["provider", "provider_id"]),
+          ),
         }),
       ]),
     ),

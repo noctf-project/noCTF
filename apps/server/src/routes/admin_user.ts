@@ -1,11 +1,13 @@
 import { AdminQueryUsersRequest } from "@noctf/api/requests";
 import { AdminListUsersResponse } from "@noctf/api/responses";
+import { RunInParallelWithLimit } from "@noctf/server-core/util/semaphore";
 import { FastifyInstance } from "fastify";
 
 export const PAGE_SIZE = 60;
 
 export async function routes(fastify: FastifyInstance) {
-  const { userService, policyService } = fastify.container.cradle;
+  const { userService, policyService, identityService } =
+    fastify.container.cradle;
 
   fastify.post<{ Reply: AdminListUsersResponse; Body: AdminQueryUsersRequest }>(
     "/admin/users/query",
@@ -36,12 +38,15 @@ export async function routes(fastify: FastifyInstance) {
         !(query.ids && query.ids.length) ? userService.getCount(query) : 0,
       ]);
 
+      const results = await RunInParallelWithLimit(entries, 8, async (e) => ({
+        ...e,
+        derived_roles: [...(await policyService.computeRolesForUser(e))],
+        identities: await identityService.listProvidersForUser(e.id),
+      }));
       const derivedEntries: AdminListUsersResponse["data"]["entries"] = [];
-      for (const e of entries) {
-        derivedEntries.push({
-          ...e,
-          derived_roles: [...(await policyService.computeRolesForUser(e))],
-        });
+      for (const r of results) {
+        if (r.status !== "fulfilled") throw r.reason;
+        derivedEntries.push(r.value);
       }
 
       return {
