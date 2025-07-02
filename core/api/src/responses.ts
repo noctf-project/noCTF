@@ -301,7 +301,11 @@ export const ScoreboardSolvesResponse = Type.Object({
 export type ScoreboardSolvesResponse = Static<typeof ScoreboardSolvesResponse>;
 
 export const AdminQuerySubmissionsResponse = Type.Object({
-  data: Type.Array(Submission),
+  data: Type.Object({
+    entries: Type.Array(Submission),
+    page_size: Type.Integer(),
+    total: Type.Integer(),
+  }),
 });
 export type AdminQuerySubmissionsResponse = Static<
   typeof AdminQuerySubmissionsResponse

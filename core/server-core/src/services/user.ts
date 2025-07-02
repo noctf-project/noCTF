@@ -38,7 +38,12 @@ export class UserService {
       ids?: number[];
       name_prefix?: string;
     },
-    limit?: { limit?: number; offset?: number },
+    limit?: {
+      limit?: number;
+      offset?: number;
+
+      sort_order?: "asc" | "desc";
+    },
   ) {
     return this.userDAO.listSummary(params, limit);
   }

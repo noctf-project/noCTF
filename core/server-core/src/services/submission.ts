@@ -24,8 +24,29 @@ export class SubmissionService {
     this.dao = new SubmissionDAO(databaseClient.get());
   }
 
-  async query(q: AdminQuerySubmissionsRequest): Promise<Submission[]> {
-    return this.dao.query(q, { limit: q.limit, offset: q.offset });
+  async query(
+    q: AdminQuerySubmissionsRequest,
+    pagination: { limit: number; offset: number },
+  ): Promise<{
+    entries: Submission[];
+    total: number;
+  }> {
+    const query = {
+      created_at: q.created_at,
+      user_id: q.user_id,
+      team_id: q.team_id,
+      status: q.status,
+      hidden: q.hidden,
+      challenge_id: q.challenge_id,
+      data: q.data,
+    };
+
+    const [entries, total] = await Promise.all([
+      this.dao.query(query, pagination),
+      this.dao.getCount(query),
+    ]);
+
+    return { entries, total };
   }
 
   async update(r: AdminUpdateSubmissionsRequest, audit?: AuditParams) {

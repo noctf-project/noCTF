@@ -109,7 +109,7 @@ export class ScoreboardHistory {
       // We are assuming that this is sorted by team and then updated_at
       (await this.scoreHistoryDAO.getByTeams(toFetch.keys().toArray())).forEach(
         ({ team_id, score, updated_at }) => {
-          let team = fetched.get(team_id);
+          const team = fetched.get(team_id);
           // this shouldn't happen
           if (!team) {
             throw new Error("team missing from fetched");

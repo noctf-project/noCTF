@@ -150,6 +150,8 @@ export type QueryAuditLogRequest = Static<typeof QueryAuditLogRequest>;
 
 export const AdminQuerySubmissionsRequest = Type.Object(
   {
+    page: Type.Optional(Type.Integer({ minimum: 1 })),
+    page_size: Type.Optional(Type.Integer()),
     created_at: Type.Optional(
       Type.Tuple([
         Type.Union([TypeDate, Type.Null()]),
@@ -162,8 +164,6 @@ export const AdminQuerySubmissionsRequest = Type.Object(
     status: Type.Optional(Type.Array(SubmissionStatus)),
     hidden: Type.Optional(Type.Boolean()),
     data: Type.Optional(Type.String()),
-    offset: Type.Optional(Type.Number()),
-    limit: Type.Optional(Type.Number()),
   },
   { additionalProperties: false },
 );
@@ -329,6 +329,9 @@ export const QueryUsersRequest = Type.Object(
     page_size: Type.Optional(Type.Integer()),
     name_prefix: Type.Optional(Type.String({ maxLength: 64 })),
     ids: Type.Optional(Type.Array(Type.Integer(), { maxItems: 50 })),
+    sort_order: Type.Optional(
+      Type.Union([Type.Literal("asc"), Type.Literal("desc")]),
+    ),
   },
   { additionalProperties: false },
 );
