@@ -69,9 +69,11 @@ export class IdentityService {
       app_id,
       user_id,
       scopes,
+      ip,
     }: {
       app_id?: number;
       user_id: number;
+      ip?: string;
       scopes?: string[];
     },
     generateRefreshToken = false,
@@ -84,6 +86,7 @@ export class IdentityService {
       user_id,
       app_id,
       scopes,
+      ip,
       expires_at,
       refresh_token_hash: refreshToken
         ? createHash("sha256").update(refreshToken).digest()

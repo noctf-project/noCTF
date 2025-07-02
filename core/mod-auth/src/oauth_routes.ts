@@ -143,7 +143,12 @@ export default async function (fastify: FastifyInstance) {
     async (request) => {
       const { state, code, redirect_uri } = request.body;
       return {
-        data: await provider.authenticate(state, code, redirect_uri),
+        data: await provider.authenticate(
+          request.ip,
+          state,
+          code,
+          redirect_uri,
+        ),
       };
     },
   );
