@@ -12,7 +12,7 @@ export async function routes(fastify: FastifyInstance) {
     {
       schema: {
         security: [{ bearer: [] }],
-        tags: ["user"],
+        tags: ["admin"],
         auth: {
           require: true,
           policy: ["admin.user.get"],

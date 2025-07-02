@@ -105,6 +105,15 @@ export const ListTeamsResponse = Type.Object({
 });
 export type ListTeamsResponse = Static<typeof ListTeamsResponse>;
 
+export const AdminListTeamsResponse = Type.Object({
+  data: Type.Object({
+    entries: Type.Array(Type.Omit(TeamSummary, ["flags"])),
+    page_size: Type.Integer(),
+    total: Type.Integer(),
+  }),
+});
+export type AdminListTeamsResponse = Static<typeof AdminListTeamsResponse>;
+
 export const ListTeamTagsResponse = Type.Object({
   data: Type.Object({
     tags: Type.Array(Type.Omit(TeamTag, ["created_at"])),
