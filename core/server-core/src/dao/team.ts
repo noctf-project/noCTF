@@ -120,8 +120,12 @@ export class TeamDAO {
 
   async listSummary(
     params?: Parameters<TeamDAO["listQuery"]>[0],
-    limit?: Parameters<TeamDAO["listQuery"]>[1],
+    limit?: Parameters<TeamDAO["listQuery"]>[1] & {
+      sort_order?: "asc" | "desc";
+    },
   ): Promise<TeamSummary[]> {
+    const sortOrder = limit?.sort_order || "asc";
+
     const query = this.listQuery(params, limit)
       .select([
         "team.id",
@@ -146,7 +150,7 @@ export class TeamDAO {
           )
         `.as("tag_ids"),
       ])
-      .orderBy("id");
+      .orderBy("team.created_at", sortOrder);
     return query.execute() as Promise<TeamSummary[]>;
   }
 

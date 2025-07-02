@@ -201,7 +201,7 @@ export class TeamService {
       division_id?: number;
       ids?: number[];
     },
-    limit?: { limit?: number; offset?: number },
+    limit?: { limit?: number; offset?: number; sort_order?: "asc" | "desc" },
   ) {
     return this.teamDAO.listSummary(params, limit);
   }

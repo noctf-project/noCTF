@@ -306,6 +306,9 @@ export const QueryTeamsRequest = Type.Object(
     page_size: Type.Optional(Type.Integer()),
     name_prefix: Type.Optional(Type.String({ maxLength: 64 })),
     ids: Type.Optional(Type.Array(Type.Integer(), { maxItems: 50 })),
+    sort_order: Type.Optional(
+      Type.Union([Type.Literal("asc"), Type.Literal("desc")]),
+    ),
   },
   { additionalProperties: false },
 );
