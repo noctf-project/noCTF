@@ -237,11 +237,21 @@ export class TeamService {
     ) {
       throw new NotFoundError("Team not found");
     }
-    await this.teamDAO.assign({
-      user_id,
-      team_id: result.id,
-      role: "member",
+    const config = await this.configService.get(TeamConfig);
+    await this.databaseClient.transaction(async (tx) => {
+      const dao = new TeamDAO(tx);
+      const n = await dao.listMembers(result.id, true);
+      const limit = config.value.max_members;
+      if (limit && n > limit) {
+        throw new ForbiddenError(`Team limit of ${limit} members reached`);
+      }
+      await this.teamDAO.assign({
+        user_id,
+        team_id: result.id,
+        role: "member",
+      });
     });
+
     await this.auditLogService.log({
       actor: {
         type: ActorType.USER,

@@ -1,9 +1,12 @@
 import { TooManyRequestsError } from "@noctf/server-core/errors";
 import { RateLimitBucket } from "@noctf/server-core/services/rate_limit";
+import { NormalizeIPPrefix } from "@noctf/server-core/util/limit_keys";
 import { FastifyReply, FastifyRequest } from "fastify";
 
 const DEFAULT_CONFIG = (r: FastifyRequest) => ({
-  key: r.routeOptions.url && `all:${r.user ? "u" + r.user.id : "i" + r.ip}`,
+  key:
+    r.routeOptions.url &&
+    `all:${r.user ? "u" + r.user.id : "i" + NormalizeIPPrefix(r.ip)}`,
   limit: r.user ? 200 : 500,
   windowSeconds: 60,
 });
@@ -18,7 +21,7 @@ export const RateLimitHook = async (
   if (typeof config === "function") {
     const derived = await config(request);
     if (Array.isArray(derived)) {
-      buckets = derived;
+      buckets = derived.filter((x) => x);
     } else {
       buckets.push(derived);
     }

@@ -24,6 +24,7 @@ class CTFClient:
         path: str, 
         data: Optional[Dict[str, Any]] = None, 
         params: Optional[Dict[str, Any]] = None,
+        files: Optional[Dict[str, Any]] = None,
         auth: bool = True
     ) -> Dict[str, Any]:
         headers = {}
@@ -35,6 +36,7 @@ class CTFClient:
             url=path,
             json=data,
             params=params,
+            files=files,
             headers=headers
         )
 
@@ -126,6 +128,14 @@ class CTFClient:
         )
         return response.get("data", {})
 
+    async def create_attachment(self, file_name: str, file_data: bytes) -> Dict[str, Any]:
+        response = await self._request(
+            "POST",
+            "/admin/files",
+            files={"file": (file_name, file_data)}
+        )
+        return response.get("data", {})
+
 
 class ChallengeConverter:
     @staticmethod
@@ -182,10 +192,19 @@ async def register_user_and_team(base_url: str, password: str = "Password123!") 
     return client
 
 
-async def upload_challenge_from_yaml(client: CTFClient, yaml_content: str) -> Dict[str, Any]:
+async def upload_challenge_from_yaml(client: CTFClient, yaml_content: str, files: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
     challenge_data = ChallengeConverter.from_yaml(yaml_content)
+    challenge_data["private_metadata"]["files"] = [{"id": file["id"], "is_attachment": True} for file in files] if files else []
     return await client.create_challenge(challenge_data)
 
+async def upload_attachments_from_yaml(client: CTFClient, yaml_content: str) -> Dict[str, Any]:
+    results = []
+    attachments =  yaml.safe_load(yaml_content).get("files", [])
+    for attachment in attachments:
+        file_data = open(attachment, "rb").read()
+        result = await client.create_attachment(attachment, file_data)
+        results.append(result)
+    return results
 
 async def mass_solve_challenges(client: CTFClient, num_challenges: Optional[int] = None) -> List[str]:
     challenges = await client.get_challenges()

@@ -50,7 +50,7 @@ export class TicketService {
   ): Promise<Ticket> {
     const {
       value: { provider },
-    } = await this.configService.get<TicketConfig>(TicketConfig.$id);
+    } = await this.configService.get(TicketConfig);
     if (!provider) {
       throw new Error("A provider has not been configured");
     }

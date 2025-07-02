@@ -7,7 +7,7 @@ import {
 } from "@noctf/api/requests";
 import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
 import { PasswordProvider } from "./password_provider.ts";
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import { UserFlag } from "@noctf/server-core/types/enums";
 import { TokenProvider } from "./token_provider.ts";
 import { UserNotFoundError } from "./error.ts";
@@ -26,6 +26,12 @@ import {
 } from "@noctf/server-core/errors";
 import { Generate } from "./hash_util.ts";
 import { Type } from "@sinclair/typebox";
+import { NormalizeEmail } from "@noctf/server-core/util/string";
+import {
+  GetRouteKey,
+  GetRouteUserIPKey,
+  NormalizeIPPrefix,
+} from "@noctf/server-core/util/limit_keys";
 
 export default async function (fastify: FastifyInstance) {
   const {
@@ -49,6 +55,18 @@ export default async function (fastify: FastifyInstance) {
         description:
           "Checks if an email exists, returning a message or registration token if not",
         body: InitAuthEmailRequest,
+        rateLimit: (r: FastifyRequest<{ Body: InitAuthEmailRequest }>) => [
+          {
+            key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
+            limit: 12,
+            windowSeconds: 60,
+          },
+          r.body.verify && {
+            key: `${GetRouteKey(r)}:e:${NormalizeEmail(r.body.email)}`,
+            limit: 2,
+            windowSeconds: 60,
+          },
+        ],
         response: {
           201: FinishAuthResponse,
           default: BaseResponse,
@@ -56,8 +74,11 @@ export default async function (fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const { validate_email, enable_register_password } =
-        await passwordProvider.getConfig();
+      const {
+        validate_email,
+        enable_register_password,
+        allowed_email_domains,
+      } = await passwordProvider.getConfig();
       const email = request.body.email.toLowerCase();
       try {
         await passwordProvider.authPreCheck(email);
@@ -67,6 +88,17 @@ export default async function (fastify: FastifyInstance) {
       }
       if (!enable_register_password) {
         throw new NotFoundError("The requested auth provider cannot be found");
+      }
+      if (
+        allowed_email_domains &&
+        allowed_email_domains.length &&
+        !allowed_email_domains.includes(
+          email.toLowerCase().split("@")[1] || "".replace(/\.$/, ""),
+        )
+      ) {
+        throw new ForbiddenError(
+          "Registration is only open to specific domains",
+        );
       }
       const token = await tokenProvider.create("register", {
         identity: [
@@ -85,7 +117,7 @@ export default async function (fastify: FastifyInstance) {
           );
         }
         const { root_url, name: ctf_name } = (
-          await configService.get<SetupConfig>(SetupConfig.$id!)
+          await configService.get(SetupConfig)
         ).value;
         await emailService.sendEmail({
           to: [{ address: email, name: "" }],
@@ -120,6 +152,20 @@ export default async function (fastify: FastifyInstance) {
         tags: ["auth"],
         description: "Reset password",
         body: CreateResetAuthEmailRequest,
+        rateLimit: (
+          r: FastifyRequest<{ Body: CreateResetAuthEmailRequest }>,
+        ) => [
+          {
+            key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
+            limit: 8,
+            windowSeconds: 60,
+          },
+          {
+            key: `${GetRouteKey(r)}:e:${NormalizeEmail(r.body.email)}`,
+            limit: 2,
+            windowSeconds: 60,
+          },
+        ],
         response: {
           default: BaseResponse,
         },
@@ -143,7 +189,7 @@ export default async function (fastify: FastifyInstance) {
         created_at: new Date(),
       });
       const { root_url, name: ctf_name } = (
-        await configService.get<SetupConfig>(SetupConfig.$id!)
+        await configService.get(SetupConfig)
       ).value;
       await emailService.sendEmail({
         to: [{ address: email, name: "" }],
@@ -221,6 +267,13 @@ export default async function (fastify: FastifyInstance) {
         tags: ["auth"],
         description: "Log a user in using their email and password",
         body: FinishAuthEmailRequest,
+        rateLimit: (r) => [
+          {
+            key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
+            limit: 30,
+            windowSeconds: 60,
+          },
+        ],
         response: {
           200: FinishAuthResponse,
           default: BaseResponse,
@@ -261,6 +314,13 @@ export default async function (fastify: FastifyInstance) {
           require: true,
           policy: ["user.self.update"],
         },
+        rateLimit: (r: FastifyRequest<{ Body: InitAuthEmailRequest }>) => [
+          {
+            key: GetRouteUserIPKey(r),
+            limit: 5,
+            windowSeconds: 60,
+          },
+        ],
         body: ChangeAuthEmailRequest,
         response: {
           200: Type.Composite([BaseResponse, FinishAuthResponse]),
@@ -307,7 +367,7 @@ export default async function (fastify: FastifyInstance) {
             user_id: request.user?.id,
           });
           const { root_url, name: ctf_name } = (
-            await configService.get<SetupConfig>(SetupConfig.$id!)
+            await configService.get(SetupConfig)
           ).value;
           await emailService.sendEmail({
             to: [{ address: newEmail, name: "" }],

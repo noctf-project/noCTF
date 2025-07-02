@@ -17,8 +17,7 @@ export class OAuthConfigProvider {
   ) {}
 
   private async isEnabled(): Promise<boolean> {
-    return !!(await this.configService.get<AuthConfig>(AuthConfig.$id)).value
-      .enable_oauth;
+    return !!(await this.configService.get(AuthConfig)).value.enable_oauth;
   }
 
   async listMethods(): Promise<AuthMethod[]> {
@@ -158,16 +157,14 @@ export class OAuthIdentityProvider implements IdentityProvider {
   async generateAuthoriseUrl(name: string) {
     const { authorize_url, client_id } =
       await this.configProvider.getMethod(name);
+    const state = await this.tokenProvider.create("state", {
+      name,
+    });
     const url = new URL(authorize_url);
     url.searchParams.set("client_id", client_id);
     url.searchParams.set("response_type", "code");
-    url.searchParams.set(
-      "state",
-      await this.tokenProvider.create("state", {
-        name,
-      }),
-    );
-    return url.toString();
+    url.searchParams.set("state", state);
+    return { url: url.toString(), state };
   }
 
   async getExternalId(

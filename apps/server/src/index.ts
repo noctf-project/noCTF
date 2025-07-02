@@ -183,9 +183,6 @@ const logRequest = async (
   );
 };
 
-server.addHook("onSend", async (_request, reply) => {
-  reply.header("x-response-time", reply.elapsedTime.toFixed(0));
-});
 server.addHook("onResponse", async (request, reply) => {
   await logRequest(request, reply);
 });

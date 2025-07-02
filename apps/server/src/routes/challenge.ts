@@ -11,9 +11,11 @@ import type { FastifyInstance } from "fastify";
 import { SolveChallengeRequest } from "@noctf/api/requests";
 import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
+import { SetupConfig } from "@noctf/api/config";
 
 export async function routes(fastify: FastifyInstance) {
-  const { challengeService, scoreboardService } = fastify.container.cradle;
+  const { challengeService, scoreboardService, configService } =
+    fastify.container.cradle;
 
   const { gateStartTime } = GetUtils(fastify.container.cradle);
   const adminPolicy: Policy = ["admin.challenge.get"];
@@ -202,6 +204,12 @@ export async function routes(fastify: FastifyInstance) {
       const ctime = Date.now();
       const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
       const { id } = request.params;
+
+      const config = await configService.get(SetupConfig);
+      const end = config.value.end_time_s;
+      if ((end || end === 0) && ctime * 1000 > end) {
+        throw new ForbiddenError("The CTF has ended. Thanks for playing!");
+      }
 
       // Cannot cache directly as could be rendered with team_id as param
       const challenge = await challengeService.get(id, true);

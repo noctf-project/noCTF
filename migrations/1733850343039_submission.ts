@@ -21,7 +21,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.notNull().references("team.id").onDelete("cascade"),
     )
     .addColumn("challenge_id", "integer", (col) =>
-      col.notNull().references("challenge.id"),
+      col.notNull().references("challenge.id").onDelete("cascade"),
     )
     .addColumn("data", "text", (col) => col.notNull().defaultTo(""))
     .addColumn("comments", "text", (col) => col.notNull().defaultTo(""))

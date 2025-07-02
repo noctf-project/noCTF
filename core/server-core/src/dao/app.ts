@@ -1,11 +1,24 @@
-import { App } from "@noctf/api/datatypes";
+import { DB } from "@noctf/schema";
 import { DBType } from "../clients/database.ts";
 import { NotFoundError } from "../errors.ts";
+import { Selectable } from "kysely";
 
+export type DBApp = Pick<
+  Selectable<DB["app"]>,
+  | "id"
+  | "name"
+  | "client_id"
+  | "client_secret_hash"
+  | "redirect_uris"
+  | "scopes"
+  | "enabled"
+  | "created_at"
+  | "updated_at"
+>;
 export class AppDAO {
   constructor(private readonly db: DBType) {}
 
-  async getByActiveClientID(clientId: string): Promise<App> {
+  async getByActiveClientID(clientId: string): Promise<DBApp> {
     const result = await this.db
       .selectFrom("app")
       .where("client_id", "=", clientId)
@@ -14,7 +27,7 @@ export class AppDAO {
         "id",
         "name",
         "client_id",
-        "client_secret",
+        "client_secret_hash",
         "redirect_uris",
         "scopes",
         "enabled",

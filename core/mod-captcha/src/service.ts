@@ -31,8 +31,7 @@ export class CaptchaService {
   }
 
   async getConfig(): Promise<CaptchaConfig> {
-    return (await this.configService.get<CaptchaConfig>(CaptchaConfig.$id))
-      .value;
+    return (await this.configService.get(CaptchaConfig)).value;
   }
 
   async validate(response: string, clientIp: string): Promise<number> {

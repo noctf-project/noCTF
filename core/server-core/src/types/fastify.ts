@@ -19,7 +19,9 @@ declare module "fastify" {
     rateLimit?:
       | RateLimitBucket
       | RateLimitBucket[]
-      | (() =>
+      | ((
+          r: FastifyRequest,
+        ) =>
           | Promise<RateLimitBucket | RateLimitBucket[]>
           | RateLimitBucket
           | RateLimitBucket[]);

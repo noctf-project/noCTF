@@ -8,11 +8,11 @@ import {
   CACHE_NAMESPACE,
   DEFAULT_EXPIRY_SECONDS,
 } from "./app.ts";
-import { AppDAO } from "../dao/app.ts";
+import { AppDAO, DBApp } from "../dao/app.ts";
 import { DatabaseClient } from "../clients/database.ts";
-import { App } from "@noctf/api/datatypes";
+import { createHash } from "node:crypto";
 import { nanoid } from "nanoid";
-import { BadRequestError } from "../errors.ts";
+import { BadRequestError, ForbiddenError } from "../errors.ts";
 import { LockService } from "./lock.ts";
 
 vi.mock("nanoid", () => ({
@@ -21,13 +21,13 @@ vi.mock("nanoid", () => ({
 
 vi.mock(import("../dao/app.ts"));
 
-const ENABLED_APP_1: App = {
+const ENABLED_APP_1: DBApp = {
   id: 1,
   client_id: "test-client",
-  client_secret: "test-secret",
+  client_secret_hash: createHash("sha256").update("test_secret").digest(),
   name: "",
   redirect_uris: ["https://auth.example.com/"],
-  scopes: [],
+  scopes: ["read"],
   enabled: true,
   created_at: new Date(0),
   updated_at: new Date(0),
@@ -67,7 +67,7 @@ describe(AppService, () => {
         ENABLED_APP_1,
         "https://auth.example.com/",
         1,
-        ["read"],
+        ["openid", "read"],
       );
       expect(code).toBe("test-code");
       expect(cacheService.put).toBeCalledWith(
@@ -77,10 +77,34 @@ describe(AppService, () => {
           app_id: 1,
           user_id: 1,
           redirect_uri: "https://auth.example.com/",
-          scopes: ["read"],
+          scopes: ["openid", "read"],
         },
         DEFAULT_EXPIRY_SECONDS,
       );
+    });
+
+    it("should not generate code if there is no client secret", async () => {
+      await expect(
+        service.generateAuthorizationCode(
+          { ...ENABLED_APP_1, client_secret_hash: null },
+          "https://auth.example.com/",
+          1,
+          ["openid"],
+        ),
+      ).rejects.toThrowError(BadRequestError);
+      expect(cacheService.put).not.toHaveBeenCalled();
+    });
+
+    it("should not generate code if scopes requested don't exist", async () => {
+      await expect(
+        service.generateAuthorizationCode(
+          ENABLED_APP_1,
+          "https://auth.example.com/",
+          1,
+          ["superpowers"],
+        ),
+      ).rejects.toThrowError(ForbiddenError);
+      expect(cacheService.put).not.toHaveBeenCalled();
     });
   });
 

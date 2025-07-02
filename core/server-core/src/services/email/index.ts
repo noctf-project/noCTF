@@ -59,8 +59,7 @@ export class EmailService {
   }
 
   async sendEmail(data: EmailQueueEvent) {
-    const config = (await this.configService.get<EmailConfig>(EmailConfig.$id!))
-      ?.value;
+    const config = (await this.configService.get(EmailConfig))?.value;
 
     const provider = this.providers.get(config.provider);
     if (!provider || !provider.queued) {
@@ -71,9 +70,8 @@ export class EmailService {
   }
 
   private async doSend(config: EmailConfig, data: EmailQueueEvent) {
-    const { name: siteName } = (
-      await this.configService.get<SetupConfig>(SetupConfig.$id!)
-    ).value;
+    const { name: siteName } = (await this.configService.get(SetupConfig))
+      .value;
     const provider = this.providers.get(config.provider);
     if (!provider)
       throw new Error(
@@ -124,9 +122,7 @@ export class EmailService {
       {
         concurrency: 3,
         handler: async (data) => {
-          const config = (
-            await this.configService.get<EmailConfig>(EmailConfig.$id!)
-          )?.value;
+          const config = (await this.configService.get(EmailConfig))?.value;
           if (!config) {
             this.logger.error("Email config does not exist");
             return;

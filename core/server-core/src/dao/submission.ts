@@ -53,7 +53,7 @@ export class SubmissionDAO {
       .updateTable("submission")
       .where("id", "in", ids)
       .set("updated_at", sql`CURRENT_TIMESTAMP`)
-      .returning((eb) => [
+      .returning([
         "id",
         "user_id",
         "team_id",

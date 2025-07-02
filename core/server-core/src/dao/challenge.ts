@@ -94,8 +94,8 @@ export class ChallengeDAO {
     return (await query.execute()) as unknown as ChallengeMetadata[];
   }
 
-  async get(id: number): Promise<Challenge> {
-    const challenge = await this.db
+  async get(idOrSlug: number | string): Promise<Challenge> {
+    let query = this.db
       .selectFrom("challenge")
       .select([
         "id",
@@ -109,14 +109,18 @@ export class ChallengeDAO {
         "visible_at",
         "created_at",
         "updated_at",
-      ])
-      .where("id", "=", id)
-      .executeTakeFirst();
+      ]);
+    if (typeof idOrSlug === "number") {
+      query = query.where("id", "=", idOrSlug);
+    } else {
+      query = query.where("slug", "=", idOrSlug);
+    }
+    const result = await query.executeTakeFirst();
 
-    if (!challenge) {
+    if (!result) {
       throw new NotFoundError("Challenge not found");
     }
-    return challenge as Challenge;
+    return result as Challenge;
   }
 
   async update(id: number, v: AdminUpdateChallengeRequest) {

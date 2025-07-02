@@ -77,10 +77,11 @@ class LoginState {
     }
     if (loginRes.data?.data?.type === "session") {
       localStorage.setItem(SESSION_TOKEN_KEY, loginRes.data.data.token);
-      authState.refresh();
-      // pass in redirect_uri if present
-      const redirectURL = new URLSearchParams(window.location.search).get("redirect_uri");
-      this.finishAuth(redirectURL ?? undefined);
+      await authState.refresh();
+      const redirectTo = new URLSearchParams(window.location.search).get(
+        "redirect_to",
+      );
+      goto(redirectTo || "/").catch(() => goto("/"));
     } else {
       toasts.error("Login failed");
     }
@@ -117,40 +118,10 @@ class LoginState {
       toasts.success("Account created successfully!");
       localStorage.setItem(SESSION_TOKEN_KEY, registerRes.data.data.token);
       authState.refresh();
-      this.finishAuth("/team");
+      goto("/team");
       return true;
     } else {
       toasts.error("Registration failed");
-    }
-  }
-
-  async finishAuth(target = "/") {
-    // handle OAuth flow when query params are present
-    if (this.clientId && this.redirectUri && this.scope && this.state && this.responseType) {
-      const r = await api.POST("/auth/oauth/authorize_internal", {
-        body: {
-          client_id: this.clientId,
-          redirect_uri: this.redirectUri,
-          scope: this.scope?.split(" ") ?? [],
-          state: this.state,
-          response_type: this.responseType?.split(" ") ?? [],
-        },
-      });
-
-      if (r.error) {
-        toasts.error(r.error.message ?? "An error occurred during OAuth flow");
-        goto("/");
-        return;
-      }
-
-      if (r.data?.data?.url) {
-        window.location.replace(r.data.data.url);
-      } else {
-        goto("/");
-      }
-
-    } else {
-      window.location.href = target;
     }
   }
 

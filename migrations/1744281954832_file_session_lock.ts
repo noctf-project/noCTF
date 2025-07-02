@@ -35,7 +35,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .addColumn("name", "varchar(64)", (col) => col.notNull())
     .addColumn("client_id", "varchar(128)", (col) => col.notNull().unique())
-    .addColumn("client_secret", "varchar(255)", (col) => col.notNull())
+    .addColumn("client_secret_hash", sql`bytea`)
     .addColumn("redirect_uris", sql`varchar[]`, (col) =>
       col.notNull().defaultTo("{}"),
     )

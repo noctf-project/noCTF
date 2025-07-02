@@ -19,7 +19,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async () => {
       return {
-        data: (await configService.get<SetupConfig>(SetupConfig.$id)).value,
+        data: (await configService.get(SetupConfig)).value,
       };
     },
   );

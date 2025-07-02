@@ -96,7 +96,7 @@ export class ScoreService {
   async getStrategies() {
     const {
       value: { strategies: cfgStrategies },
-    } = await this.configService.get<ScoreConfig>(ScoreConfig.$id!);
+    } = await this.configService.get(ScoreConfig);
     const strategies: Record<string, ScoringStrategy> = {};
     Object.keys(STRATEGIES).map(
       (k) =>

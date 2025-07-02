@@ -233,8 +233,8 @@ export function ComputeScoreboard(
         updated_at: new Date(0),
         last_solve: new Date(0),
         hidden: flags.includes("hidden"),
-        solves: [],
-        awards: [],
+        solves: [] as Solve[],
+        awards: [] as Award[],
       },
     ]),
   );

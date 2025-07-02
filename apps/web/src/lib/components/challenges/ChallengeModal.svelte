@@ -17,6 +17,7 @@
 
 <script lang="ts">
   import { fade, fly } from "svelte/transition";
+  import DOMPurify from "isomorphic-dompurify";
   import { onMount } from "svelte";
   import ChallengeInfo from "./ChallengeInfo.svelte";
 

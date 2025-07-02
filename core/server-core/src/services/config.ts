@@ -1,4 +1,4 @@
-import type { Static, TSchema } from "@sinclair/typebox";
+import type { Static, TObject, TSchema } from "@sinclair/typebox";
 import type { ServiceCradle } from "../index.ts";
 import { ValidationError } from "../errors.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
@@ -59,10 +59,26 @@ export class ConfigService {
    * @param namespace namespace
    * @returns configuration map
    */
-  async get<T extends SerializableMap>(
-    namespace: string,
+  async get<S extends SerializableMap>(
+    namespaceOrDef: string,
     noCache?: boolean,
-  ): Promise<ConfigValue<T>> {
+  ): Promise<ConfigValue<S>>;
+  async get<T extends TObject>(
+    namespaceOrDef: T,
+    noCache?: boolean,
+  ): Promise<ConfigValue<Static<T> & SerializableMap>>;
+  async get<
+    T extends TObject = TObject,
+    S extends SerializableMap = T extends TObject
+      ? Static<T> & SerializableMap
+      : SerializableMap,
+  >(namespaceOrDef: string | T, noCache?: boolean): Promise<ConfigValue<S>> {
+    let namespace: string;
+    if (typeof namespaceOrDef === "string") {
+      namespace = namespaceOrDef;
+    } else {
+      namespace = namespaceOrDef.$id!;
+    }
     if (!this.validators.has(namespace)) {
       throw new ValidationError("Config namespace does not exist");
     }
@@ -75,7 +91,7 @@ export class ConfigService {
       const [promise, exp] = v;
       if (exp > now) {
         try {
-          return promise as Promise<ConfigValue<T>>;
+          return promise as Promise<ConfigValue<S>>;
         } catch (error) {
           this.logger.debug(
             { namespace },
@@ -90,7 +106,7 @@ export class ConfigService {
     const result = await newPromise;
     // Update expiry time since we just fetched the object
     this.cache.set(namespace, [newPromise, performance.now() + EXPIRY_MS]);
-    return result;
+    return result as unknown as ConfigValue<S>;
   }
 
   /**

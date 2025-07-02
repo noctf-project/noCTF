@@ -50,6 +50,7 @@
   import Icon from "@iconify/svelte";
   import axios from "axios";
   import { Carta, MarkdownEditor } from "carta-md";
+  import DOMPurify from "isomorphic-dompurify";
   import "carta-md/default.css";
   import { Parser } from "expr-eval";
 
@@ -98,7 +99,7 @@
   };
 
   const carta = new Carta({
-    sanitizer: false,
+    sanitizer: DOMPurify.sanitize,
   });
 
   function handleCatInput(event: KeyboardEvent): void {

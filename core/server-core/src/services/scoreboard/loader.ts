@@ -345,9 +345,9 @@ export class ScoreboardDataLoader {
     return out;
   }
 
-  async touch(pointer: number, division_id: number) {
+  async touch(pointer: number, division_id: number): Promise<void> {
     const version = pointer || (await this.getLatestPointer(division_id));
-    if (!version) return [];
+    if (!version) return;
     const keys = this.getCacheKeys(version, division_id);
     const multi = (await this.factory.getClient()).multi();
     for (const key of Object.values(keys)) {
