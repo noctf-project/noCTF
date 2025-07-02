@@ -92,7 +92,7 @@ class CTFClient:
         response = await self._request(
             "POST",
             "/teams",
-            data={"name": name, "division_id": division_id}
+            data={"name": name, "division_id": division_id, "tag_ids":[]}
         )
         return response.get("data", {})
 
