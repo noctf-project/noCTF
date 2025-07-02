@@ -25,6 +25,7 @@
     difficultyToBgColour,
     formatFileSize,
   } from "$lib/utils/challenges";
+  import DOMPurify from "isomorphic-dompurify";
   import Icon from "@iconify/svelte";
   import { type Difficulty } from "$lib/constants/difficulties";
   import { Tween } from "svelte/motion";
@@ -60,7 +61,7 @@
   }, 2500);
 
   const carta = new Carta({
-    sanitizer: false,
+    sanitizer: DOMPurify.sanitize,
   });
 
   const correctAnim = new Tween(0, {
@@ -228,7 +229,7 @@
             <h3 class="text-lg font-bold">Attachments</h3>
             <button
               title="Show file hashes"
-              onclick={() => (showHint = !showHint)}
+              onclick={() => (showHash = !showHash)}
               class="text-gray-400 hover:text-gray-600"
               ><Icon icon="material-symbols:tag-rounded" class="text-xl"></Icon>
             </button>
