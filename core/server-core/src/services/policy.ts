@@ -7,7 +7,6 @@ import { UserDAO } from "../dao/user.ts";
 import { AuthConfig } from "@noctf/api/config";
 import { UserFlag, UserRole } from "../types/enums.ts";
 import SingleValueCache from "../util/single_value_cache.ts";
-import { TeamDAO } from "../dao/team.ts";
 
 type Props = Pick<ServiceCradle, "databaseClient" | "logger" | "configService">;
 
