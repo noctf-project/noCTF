@@ -58,12 +58,8 @@ export class UserDAO {
 
   async listSummary(
     params?: Parameters<UserDAO["listQuery"]>[0],
-    limit?: Parameters<UserDAO["listQuery"]>[1] & {
-      sort_order?: "asc" | "desc";
-    },
+    limit?: Parameters<UserDAO["listQuery"]>[1],
   ): Promise<UserSummary[]> {
-    const sortOrder = limit?.sort_order || "asc";
-
     const query = this.listQuery(params, limit)
       .leftJoin("team_member as tm", "user.id", "tm.user_id")
       .select([
@@ -75,7 +71,7 @@ export class UserDAO {
         "user.roles",
         "tm.team_id as team_id",
       ])
-      .orderBy("user.created_at", sortOrder);
+      .orderBy("id");
 
     return query.execute();
   }

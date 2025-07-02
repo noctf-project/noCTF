@@ -32,7 +32,6 @@ export async function routes(fastify: FastifyInstance) {
         userService.listSummary(query, {
           limit: page_size,
           offset: (page - 1) * page_size,
-          sort_order: request.body.sort_order || "asc",
         }),
         !(query.ids && query.ids.length) ? userService.getCount(query) : 0,
       ]);

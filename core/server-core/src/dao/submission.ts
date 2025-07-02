@@ -96,7 +96,7 @@ export class SubmissionDAO {
 
   private listQuery(
     params?: {
-      created_at?: [Date?, Date?];
+      created_at?: [Date | null, Date | null];
       user_id?: number[];
       team_id?: number[];
       status?: SubmissionStatus[];
@@ -109,8 +109,10 @@ export class SubmissionDAO {
     let query = this.db.selectFrom("submission");
 
     if (params?.created_at) {
-      if (params.created_at[0]) query = query.where("created_at", ">=", params.created_at[0]);
-      if (params.created_at[1]) query = query.where("created_at", "<=", params.created_at[1]);
+      if (params.created_at[0])
+        query = query.where("created_at", ">=", params.created_at[0]);
+      if (params.created_at[1])
+        query = query.where("created_at", "<=", params.created_at[1]);
     }
 
     if (params?.user_id && params.user_id.length) {
