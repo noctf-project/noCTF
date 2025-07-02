@@ -123,7 +123,14 @@ export type ListUsersResponse = Static<typeof ListUsersResponse>;
 
 export const AdminListUsersResponse = Type.Object({
   data: Type.Object({
-    entries: Type.Array(UserSummary),
+    entries: Type.Array(
+      Type.Composite([
+        UserSummary,
+        Type.Object({
+          derived_roles: Type.Array(Type.String()),
+        }),
+      ]),
+    ),
     page_size: Type.Integer(),
     total: Type.Integer(),
   }),

@@ -304,6 +304,18 @@ export const QueryUsersRequest = Type.Object(
 );
 export type QueryUsersRequest = Static<typeof QueryUsersRequest>;
 
+export const AdminQueryUsersRequest = Type.Composite([
+  QueryUsersRequest,
+  Type.Object({
+    flags: Type.Optional(
+      Type.Array(Type.String({ minLength: 1, maxLength: 64 }), {
+        maxItems: 50,
+      }),
+    ),
+  }),
+]);
+export type AdminQueryUsersRequest = Static<typeof AdminQueryUsersRequest>;
+
 export const OAuthTokenRequest = Type.Object({
   grant_type: Type.String(),
   response_type: Type.Optional(Type.String()),

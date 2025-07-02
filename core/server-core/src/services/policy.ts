@@ -77,25 +77,28 @@ export class PolicyService {
   }
 
   private async fetchRolesForUser(id: number): Promise<Set<string>> {
-    const [flagsAndRoles, membership] = await Promise.all([
-      this.userDAO.getFlagsAndRoles(id),
-      this.teamDAO.getMembershipForUser(id),
-    ]);
-
+    const flagsAndRoles = await this.userDAO.getFlagsAndRoles(id);
     // User not found
     if (!flagsAndRoles) return new Set();
+    return this.computeRolesForUser(flagsAndRoles);
+  }
 
-    const roleSet = new Set(flagsAndRoles.roles);
-    const isBlocked = flagsAndRoles.flags.includes(UserFlag.BLOCKED);
+  async computeRolesForUser(p: {
+    flags: string[];
+    roles: string[];
+    team_id: number | null;
+  }) {
+    const roleSet = new Set(p.roles);
+    const isBlocked = p.flags.includes(UserFlag.BLOCKED);
     if (isBlocked) {
       roleSet.add(UserRole.BLOCKED);
     } else if (
-      flagsAndRoles.flags.includes(UserFlag.VALID_EMAIL) ||
+      p.flags.includes(UserFlag.VALID_EMAIL) ||
       !(await this.configService.get(AuthConfig)).value.validate_email
     ) {
       roleSet.add(UserRole.ACTIVE);
     }
-    if (membership) {
+    if (p.team_id) {
       roleSet.add(UserRole.HAS_TEAM);
     }
     return roleSet;

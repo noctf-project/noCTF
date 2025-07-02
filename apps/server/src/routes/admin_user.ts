@@ -1,13 +1,13 @@
-import { QueryUsersRequest } from "@noctf/api/requests";
+import { AdminQueryUsersRequest } from "@noctf/api/requests";
 import { AdminListUsersResponse } from "@noctf/api/responses";
 import { FastifyInstance } from "fastify";
 
 export const PAGE_SIZE = 60;
 
 export async function routes(fastify: FastifyInstance) {
-  const { userService } = fastify.container.cradle;
+  const { userService, policyService } = fastify.container.cradle;
 
-  fastify.post<{ Reply: AdminListUsersResponse; Body: QueryUsersRequest }>(
+  fastify.post<{ Reply: AdminListUsersResponse; Body: AdminQueryUsersRequest }>(
     "/admin/users/query",
     {
       schema: {
@@ -17,7 +17,7 @@ export async function routes(fastify: FastifyInstance) {
           require: true,
           policy: ["admin.user.get"],
         },
-        body: QueryUsersRequest,
+        body: AdminQueryUsersRequest,
         response: {
           200: AdminListUsersResponse,
         },
@@ -26,10 +26,8 @@ export async function routes(fastify: FastifyInstance) {
     async (request) => {
       const page = request.body.page || 1;
       const page_size = request.body.page_size ?? PAGE_SIZE;
-      const query = {
-        name_prefix: request.body.name_prefix,
-        ids: request.body.ids,
-      };
+
+      const query = request.body;
       const [entries, total] = await Promise.all([
         userService.listSummary(query, {
           limit: page_size,
@@ -38,8 +36,20 @@ export async function routes(fastify: FastifyInstance) {
         !(query.ids && query.ids.length) ? userService.getCount(query) : 0,
       ]);
 
+      const derivedEntries: AdminListUsersResponse["data"]["entries"] = [];
+      for (const e of entries) {
+        derivedEntries.push({
+          ...e,
+          derived_roles: [...(await policyService.computeRolesForUser(e))],
+        });
+      }
+
       return {
-        data: { entries, page_size, total: total || entries.length },
+        data: {
+          entries: derivedEntries,
+          page_size,
+          total: total || entries.length,
+        },
       };
     },
   );
