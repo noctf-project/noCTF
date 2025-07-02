@@ -255,6 +255,24 @@ export const UpdateTeamRequest = Type.Composite(
 );
 export type UpdateTeamRequest = Static<typeof UpdateTeamRequest>;
 
+export const AdminUpdateTeamRequest = Type.Composite(
+  [
+    Type.Pick(Team, ["bio", "country", "tag_ids", "division_id", "flags"]),
+    Type.Object({
+      name: Type.String({
+        minLength: 1,
+        maxLength: 64,
+        pattern: NoInvalidWhitespace,
+      }),
+    }),
+    Type.Object({
+      join_code: Type.Optional(Type.Enum(UpdateTeamJoinCodeAction)),
+    }),
+  ],
+  { additionalProperties: false },
+);
+export type AdminUpdateTeamRequest = Static<typeof AdminUpdateTeamRequest>;
+
 export const AdminCreateChallengeRequest = Type.Omit(
   Challenge,
   ["created_at", "updated_at", "id", "version"],
@@ -292,6 +310,18 @@ export const QueryTeamsRequest = Type.Object(
   { additionalProperties: false },
 );
 export type QueryTeamsRequest = Static<typeof QueryTeamsRequest>;
+
+export const AdminQueryTeamsRequest = Type.Composite([
+  QueryTeamsRequest,
+  Type.Object({
+    flags: Type.Optional(
+      Type.Array(Type.String({ minLength: 1, maxLength: 64 }), {
+        maxItems: 50,
+      }),
+    ),
+  }),
+]);
+export type AdminQueryTeamsRequest = Static<typeof AdminQueryTeamsRequest>;
 
 export const QueryUsersRequest = Type.Object(
   {
