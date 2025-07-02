@@ -47,7 +47,9 @@
           <a href="/admin/teams" class={isActive("/admin/teams")}>Teams</a>
         </li>
         <li>
-          <a href="/admin/submissions" class={isActive("/admin/submissions")}>Submissions</a>
+          <a href="/admin/submissions" class={isActive("/admin/submissions")}
+            >Submissions</a
+          >
         </li>
         <li>
           <a href="/admin/config" class={isActive("/admin/config")}>Config</a>
@@ -83,7 +85,9 @@
           <a href="/admin/teams" class={isActive("/admin/teams")}>Teams</a>
         </li>
         <li>
-          <a href="/admin/submissions" class={isActive("/admin/submissions")}>Submissions</a>
+          <a href="/admin/submissions" class={isActive("/admin/submissions")}
+            >Submissions</a
+          >
         </li>
         <li>
           <a href="/admin/config" class={isActive("/admin/config")}>Config</a>

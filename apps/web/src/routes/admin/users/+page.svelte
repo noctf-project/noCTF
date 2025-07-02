@@ -6,7 +6,6 @@
 
   let searchQuery = $state("");
   let currentPage = $state(0);
-  let sortOrder = $state<"asc" | "desc">("asc");
   const pageSize = 50;
 
   const users = $derived.by(() => {
@@ -16,7 +15,6 @@
           page: currentPage + 1,
           page_size: pageSize,
           name_prefix: searchQuery || undefined,
-          sort_order: sortOrder,
         },
       }),
     );
@@ -40,19 +38,8 @@
     currentPage = 0;
   }
 
-  function handleSort() {
-    sortOrder = sortOrder === "asc" ? "desc" : "asc";
-    currentPage = 0;
-  }
-
   function formatDateTime(dateString: string) {
     return new Date(dateString).toLocaleString();
-  }
-
-  function getSortIcon() {
-    return sortOrder === "asc"
-      ? "material-symbols:keyboard-arrow-up"
-      : "material-symbols:keyboard-arrow-down";
   }
 
   function getFlagBadgeClass(flag: string) {
@@ -144,13 +131,7 @@
               Roles
             </th>
             <th scope="col" class="w-48 text-center font-semibold">
-              <button
-                class="flex items-center gap-1 hover:text-primary transition-colors mx-auto"
-                onclick={handleSort}
-              >
-                Created
-                <Icon icon={getSortIcon()} class="text-sm" />
-              </button>
+              Created
             </th>
           </tr>
         </thead>
@@ -159,25 +140,32 @@
             <tr
               class="border border-r border-base-300 hover:bg-base-50 transition-colors"
             >
-                <td
-                 class="border-r border-base-400 text-center font-mono text-sm"
-               >
-                 {user.id}
-               </td>               <td class="border-r border-base-400 font-semibold">
-                 <a href="/admin/user/{user.id}" class="link link-primary hover:link-hover">
-                   {user.name}
-                 </a>
-               </td>              <td class="border-r border-base-400">
+              <td
+                class="border-r border-base-400 text-center font-mono text-sm"
+              >
+                {user.id}
+              </td>
+              <td class="border-r border-base-400 font-semibold">
+                <a
+                  href="/admin/user/{user.id}"
+                  class="link link-primary hover:link-hover"
+                >
+                  {user.name}
+                </a>
+              </td>
+              <td class="border-r border-base-400">
                 {#if user.team_id}
                   {#await TeamQueryService.get(user.team_id)}
-                    <span class="text-base-content/60">(Team {user.team_id})</span
+                    <span class="text-base-content/60"
+                      >(Team {user.team_id})</span
                     >
                   {:then team}
                     <span class="text-sm"
                       >{team?.name || `(Team ${user.team_id})`}</span
                     >
                   {:catch}
-                    <span class="text-base-content/60">(Team {user.team_id})</span
+                    <span class="text-base-content/60"
+                      >(Team {user.team_id})</span
                     >
                   {/await}
                 {:else}

@@ -6,7 +6,6 @@
 
   let searchQuery = $state("");
   let currentPage = $state(0);
-  let sortOrder = $state<"asc" | "desc">("asc");
   const pageSize = 60;
 
   const teams = $derived.by(() => {
@@ -16,7 +15,6 @@
           page: currentPage + 1,
           page_size: pageSize,
           name_prefix: searchQuery || undefined,
-          sort_order: sortOrder,
         },
       }),
     );
@@ -24,17 +22,6 @@
 
   function handleSearch() {
     currentPage = 0;
-  }
-
-  function handleSort() {
-    sortOrder = sortOrder === "asc" ? "desc" : "asc";
-    currentPage = 0;
-  }
-
-  function getSortIcon() {
-    return sortOrder === "asc"
-      ? "material-symbols:keyboard-arrow-up"
-      : "material-symbols:keyboard-arrow-down";
   }
 
   function formatDateTime(dateString: string) {
@@ -84,43 +71,62 @@
       >
         <thead>
           <tr class="bg-base-300 border-b-2 border-base-400">
-            <th scope="col" class="w-16 border-r-2 border-base-400 text-center font-semibold">
+            <th
+              scope="col"
+              class="w-16 border-r-2 border-base-400 text-center font-semibold"
+            >
               ID
             </th>
-            <th scope="col" class="w-48 border-r-2 border-base-400 font-semibold">
+            <th
+              scope="col"
+              class="w-48 border-r-2 border-base-400 font-semibold"
+            >
               Name
             </th>
-            <th scope="col" class="w-32 border-r-2 border-base-400 text-center font-semibold">
+            <th
+              scope="col"
+              class="w-32 border-r-2 border-base-400 text-center font-semibold"
+            >
               Country
             </th>
-            <th scope="col" class="w-32 border-r-2 border-base-400 text-center font-semibold">
+            <th
+              scope="col"
+              class="w-32 border-r-2 border-base-400 text-center font-semibold"
+            >
               Division
             </th>
-            <th scope="col" class="w-32 border-r-2 border-base-400 text-center font-semibold">
+            <th
+              scope="col"
+              class="w-32 border-r-2 border-base-400 text-center font-semibold"
+            >
               Members
             </th>
-            <th scope="col" class="w-32 border-r-2 border-base-400 text-center font-semibold">
+            <th
+              scope="col"
+              class="w-32 border-r-2 border-base-400 text-center font-semibold"
+            >
               Tags
             </th>
             <th scope="col" class="w-48 text-center font-semibold">
-              <button
-                class="flex items-center gap-1 hover:text-primary transition-colors mx-auto"
-                onclick={handleSort}
-              >
-                Created
-                <Icon icon={getSortIcon()} class="text-sm" />
-              </button>
+              Created
             </th>
           </tr>
         </thead>
         <tbody>
           {#each data.entries as team}
-            <tr class="border border-r border-base-300 hover:bg-base-50 transition-colors">
-              <td class="border-r border-base-400 text-center font-mono text-sm">
+            <tr
+              class="border border-r border-base-300 hover:bg-base-50 transition-colors"
+            >
+              <td
+                class="border-r border-base-400 text-center font-mono text-sm"
+              >
                 {team.id}
               </td>
               <td class="border-r border-base-400 font-semibold">
-                <a href="/admin/team/{team.id}" class="link link-primary hover:link-hover">
+                <a
+                  href="/admin/team/{team.id}"
+                  class="link link-primary hover:link-hover"
+                >
                   {team.name}
                 </a>
               </td>
@@ -135,7 +141,9 @@
               </td>
               <td class="border-r border-base-400 text-center">
                 {#if team.division_name}
-                  <span class="badge badge-secondary badge-sm">{team.division_name}</span>
+                  <span class="badge badge-secondary badge-sm"
+                    >{team.division_name}</span
+                  >
                 {:else}
                   <span class="text-base-content/60">None</span>
                 {/if}

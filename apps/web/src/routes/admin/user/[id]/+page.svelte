@@ -14,7 +14,7 @@
 
   const submissions = wrapLoadable(
     api.POST("/admin/submissions/query", {
-      body: { 
+      body: {
         user_id: [userId],
         offset: 0,
       },
@@ -22,7 +22,7 @@
   );
 
   const challenges = wrapLoadable(api.GET("/challenges"));
-  
+
   // Create a lookup map for challenge names
   const challengeMap = $derived.by(() => {
     if (!challenges.r?.data?.data?.challenges) return new Map();
@@ -37,7 +37,7 @@
   let loading = $state(false);
   let error = $state("");
   let success = $state("");
-  
+
   let editForm = $state({
     name: "",
     bio: "",
@@ -81,7 +81,7 @@
 
       success = "User updated successfully!";
       editMode = false;
-      
+
       // Refresh user data
       const refreshedData = await api.POST("/admin/users/query", {
         body: { ids: [userId] },
@@ -103,7 +103,7 @@
   }
 
   function removeFlag(flag: string) {
-    editForm.flags = editForm.flags.filter(f => f !== flag);
+    editForm.flags = editForm.flags.filter((f) => f !== flag);
   }
 
   function addRole() {
@@ -114,7 +114,7 @@
   }
 
   function removeRole(role: string) {
-    editForm.roles = editForm.roles.filter(r => r !== role);
+    editForm.roles = editForm.roles.filter((r) => r !== role);
   }
 
   function getFlagBadgeClass(flag: string) {
@@ -125,20 +125,20 @@
 
   function getRoleBadgeClass(role: string) {
     const roleColors = {
-      "admin": "badge-error",
-      "moderator": "badge-warning", 
-      "user": "badge-info",
-      "judge": "badge-success",
+      admin: "badge-error",
+      moderator: "badge-warning",
+      user: "badge-info",
+      judge: "badge-success",
     };
     return roleColors[role as keyof typeof roleColors] || "badge-primary";
   }
 
   function getSubmissionStatusBadgeClass(status: string) {
     const statusColors = {
-      "correct": "badge-success",
-      "incorrect": "badge-error",
-      "queued": "badge-warning",
-      "invalid": "badge-neutral",
+      correct: "badge-success",
+      incorrect: "badge-error",
+      queued: "badge-warning",
+      invalid: "badge-neutral",
     };
     return statusColors[status as keyof typeof statusColors] || "badge-info";
   }
@@ -147,10 +147,15 @@
     return new Date(dateString).toLocaleString();
   }
 
-  async function toggleSubmissionVisibility(submissionId: number, currentlyHidden: boolean) {
+  async function toggleSubmissionVisibility(
+    submissionId: number,
+    currentlyHidden: boolean,
+  ) {
     const action = currentlyHidden ? "unhide" : "hide";
-    const confirmed = confirm(`Are you sure you want to ${action} this submission?`);
-    
+    const confirmed = confirm(
+      `Are you sure you want to ${action} this submission?`,
+    );
+
     if (!confirmed) return;
 
     try {
@@ -168,7 +173,7 @@
 
       // Refresh submissions data
       const refreshedData = await api.POST("/admin/submissions/query", {
-        body: { 
+        body: {
           user_id: [userId],
           offset: 0,
         },
@@ -182,7 +187,9 @@
 </script>
 
 <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+  <div
+    class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"
+  >
     <div class="flex items-center gap-4">
       <a href="/admin/users" class="btn btn-sm bg-base-100 pop hover:pop">
         <Icon icon="material-symbols:arrow-back" class="text-lg" />
@@ -192,8 +199,8 @@
     </div>
     <div class="flex gap-2">
       {#if editMode}
-        <button 
-          class="btn btn-primary pop hover:pop" 
+        <button
+          class="btn btn-primary pop hover:pop"
           onclick={saveUser}
           disabled={loading}
         >
@@ -205,11 +212,17 @@
             Save Changes
           {/if}
         </button>
-        <button class="btn btn-ghost pop hover:pop" onclick={() => editMode = false}>
+        <button
+          class="btn btn-ghost pop hover:pop"
+          onclick={() => (editMode = false)}
+        >
           Cancel
         </button>
       {:else}
-        <button class="btn btn-primary pop hover:pop" onclick={() => editMode = true}>
+        <button
+          class="btn btn-primary pop hover:pop"
+          onclick={() => (editMode = true)}
+        >
           <Icon icon="material-symbols:edit" class="text-lg" />
           Edit
         </button>
@@ -242,7 +255,10 @@
 
           {#if success}
             <div class="alert alert-success pop">
-              <Icon icon="material-symbols:check-circle-outline" class="text-2xl" />
+              <Icon
+                icon="material-symbols:check-circle-outline"
+                class="text-2xl"
+              />
               <span>{success}</span>
             </div>
           {/if}
@@ -251,17 +267,17 @@
             <!-- Basic Information -->
             <div class="space-y-4">
               <h2 class="text-xl font-bold">Basic Information</h2>
-              
+
               <div class="form-control w-full">
                 <label for="user-id" class="label">
                   <span class="label-text">User ID</span>
                 </label>
-                <input 
+                <input
                   id="user-id"
-                  type="text" 
-                  value={userData.id} 
-                  class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70" 
-                  readonly 
+                  type="text"
+                  value={userData.id}
+                  class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70"
+                  readonly
                 />
               </div>
 
@@ -270,21 +286,21 @@
                   <span class="label-text">Name</span>
                 </label>
                 {#if editMode}
-                  <input 
+                  <input
                     id="user-name"
-                    type="text" 
+                    type="text"
                     bind:value={editForm.name}
-                    class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0" 
+                    class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
                     placeholder="Enter name"
                     required
                   />
                 {:else}
-                  <input 
+                  <input
                     id="user-name"
-                    type="text" 
-                    value={userData.name} 
-                    class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70" 
-                    readonly 
+                    type="text"
+                    value={userData.name}
+                    class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70"
+                    readonly
                   />
                 {/if}
               </div>
@@ -294,17 +310,17 @@
                   <span class="label-text">Bio</span>
                 </label>
                 {#if editMode}
-                  <textarea 
+                  <textarea
                     id="user-bio"
                     bind:value={editForm.bio}
-                    class="input input-bordered h-32 w-full focus:outline-none focus:ring-0 focus:ring-offset-0 pt-2" 
+                    class="input input-bordered h-32 w-full focus:outline-none focus:ring-0 focus:ring-offset-0 pt-2"
                     placeholder="Enter bio"
                   ></textarea>
                 {:else}
-                  <textarea 
+                  <textarea
                     id="user-bio"
-                    value={userData.bio} 
-                    class="input input-bordered h-32 w-full focus:outline-none focus:ring-0 focus:ring-offset-0 pt-2 bg-base-200 text-base-content/70" 
+                    value={userData.bio}
+                    class="input input-bordered h-32 w-full focus:outline-none focus:ring-0 focus:ring-offset-0 pt-2 bg-base-200 text-base-content/70"
                     readonly
                   ></textarea>
                 {/if}
@@ -314,12 +330,12 @@
                 <label for="user-created" class="label">
                   <span class="label-text">Created</span>
                 </label>
-                <input 
+                <input
                   id="user-created"
-                  type="text" 
-                  value={new Date(userData.created_at).toLocaleString()} 
-                  class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70" 
-                  readonly 
+                  type="text"
+                  value={new Date(userData.created_at).toLocaleString()}
+                  class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70"
+                  readonly
                 />
               </div>
             </div>
@@ -327,50 +343,53 @@
             <!-- Team Information -->
             <div class="space-y-4">
               <h2 class="text-xl font-bold">Team Information</h2>
-              
+
               <div class="form-control w-full">
                 <label for="user-team" class="label">
                   <span class="label-text">Team</span>
                 </label>
                 {#if userData.team_id}
                   {#await TeamQueryService.get(userData.team_id)}
-                    <input 
+                    <input
                       id="user-team"
-                      type="text" 
-                      value="Loading..." 
-                      class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70" 
-                      readonly 
+                      type="text"
+                      value="Loading..."
+                      class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70"
+                      readonly
                     />
                   {:then team}
                     <div class="flex gap-2">
-                      <input 
+                      <input
                         id="user-team"
-                        type="text" 
-                        value={team?.name || `Team ${userData.team_id}`} 
-                        class="input input-bordered flex-1 focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70" 
-                        readonly 
+                        type="text"
+                        value={team?.name || `Team ${userData.team_id}`}
+                        class="input input-bordered flex-1 focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70"
+                        readonly
                       />
-                      <a href="/admin/team/{userData.team_id}" class="btn btn-outline btn-sm pop hover:pop">
+                      <a
+                        href="/admin/team/{userData.team_id}"
+                        class="btn btn-outline btn-sm pop hover:pop"
+                      >
                         <Icon icon="material-symbols:open-in-new" />
                         View Team
                       </a>
                     </div>
                   {:catch}
-                    <input 
+                    <input
                       id="user-team"
-                      type="text" 
-                      value={`Team ${userData.team_id}`} 
-                      class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70" 
-                      readonly 
+                      type="text"
+                      value={`Team ${userData.team_id}`}
+                      class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70"
+                      readonly
                     />
                   {/await}
                 {:else}
-                  <input 
+                  <input
                     id="user-team"
-                    type="text" 
-                    value="No team" 
-                    class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70" 
-                    readonly 
+                    type="text"
+                    value="No team"
+                    class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70"
+                    readonly
                   />
                 {/if}
               </div>
@@ -381,39 +400,49 @@
             <!-- User Flags -->
             <div class="space-y-4">
               <h2 class="text-xl font-bold">User Flags</h2>
-              
+
               {#if editMode}
                 <div class="form-control w-full">
                   <label for="new-flag" class="label">
                     <span class="label-text">Add Flag</span>
                   </label>
                   <div class="flex gap-2">
-                    <input 
+                    <input
                       id="new-flag"
-                      type="text" 
+                      type="text"
                       bind:value={newFlag}
-                      class="input input-bordered flex-1 focus:outline-none focus:ring-0 focus:ring-offset-0" 
+                      class="input input-bordered flex-1 focus:outline-none focus:ring-0 focus:ring-offset-0"
                       placeholder="Enter flag name"
                       onkeydown={(e) => e.key === "Enter" && addFlag()}
                     />
-                    <button class="btn btn-primary btn-sm pop hover:pop" onclick={addFlag}>Add</button>
+                    <button
+                      class="btn btn-primary btn-sm pop hover:pop"
+                      onclick={addFlag}>Add</button
+                    >
                   </div>
                 </div>
               {/if}
 
-              <div class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg">
-                {#each (editMode ? editForm.flags : userData.flags) as flag}
+              <div
+                class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg"
+              >
+                {#each editMode ? editForm.flags : userData.flags as flag}
                   <div class="badge {getFlagBadgeClass(flag)} gap-2">
                     {flag}
                     {#if editMode}
-                      <button class="btn btn-ghost btn-xs" onclick={() => removeFlag(flag)}>
+                      <button
+                        class="btn btn-ghost btn-xs"
+                        onclick={() => removeFlag(flag)}
+                      >
                         <Icon icon="material-symbols:close" class="text-xs" />
                       </button>
                     {/if}
                   </div>
                 {/each}
                 {#if (editMode ? editForm.flags : userData.flags).length === 0}
-                  <span class="text-base-content/60 w-full text-center">No flags</span>
+                  <span class="text-base-content/60 w-full text-center"
+                    >No flags</span
+                  >
                 {/if}
               </div>
             </div>
@@ -421,39 +450,49 @@
             <!-- Roles -->
             <div class="space-y-4">
               <h2 class="text-xl font-bold">Roles</h2>
-              
+
               {#if editMode}
                 <div class="form-control w-full">
                   <label for="new-role" class="label">
                     <span class="label-text">Add Role</span>
                   </label>
                   <div class="flex gap-2">
-                    <input 
+                    <input
                       id="new-role"
-                      type="text" 
+                      type="text"
                       bind:value={newRole}
-                      class="input input-bordered flex-1 focus:outline-none focus:ring-0 focus:ring-offset-0" 
+                      class="input input-bordered flex-1 focus:outline-none focus:ring-0 focus:ring-offset-0"
                       placeholder="Enter role name"
                       onkeydown={(e) => e.key === "Enter" && addRole()}
                     />
-                    <button class="btn btn-primary btn-sm pop hover:pop" onclick={addRole}>Add</button>
+                    <button
+                      class="btn btn-primary btn-sm pop hover:pop"
+                      onclick={addRole}>Add</button
+                    >
                   </div>
                 </div>
               {/if}
 
-              <div class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg">
-                {#each (editMode ? editForm.roles : userData.roles) as role}
+              <div
+                class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg"
+              >
+                {#each editMode ? editForm.roles : userData.roles as role}
                   <div class="badge {getRoleBadgeClass(role)} gap-2">
                     {role}
                     {#if editMode}
-                      <button class="btn btn-ghost btn-xs" onclick={() => removeRole(role)}>
+                      <button
+                        class="btn btn-ghost btn-xs"
+                        onclick={() => removeRole(role)}
+                      >
                         <Icon icon="material-symbols:close" class="text-xs" />
                       </button>
                     {/if}
                   </div>
                 {/each}
                 {#if (editMode ? editForm.roles : userData.roles).length === 0}
-                  <span class="text-base-content/60 w-full text-center">No roles</span>
+                  <span class="text-base-content/60 w-full text-center"
+                    >No roles</span
+                  >
                 {/if}
               </div>
             </div>
@@ -465,7 +504,7 @@
     <!-- Submissions Section -->
     <div class="space-y-4 mt-6">
       <h2 class="text-xl font-bold">Submissions</h2>
-      
+
       {#if submissions.loading}
         <div class="flex justify-center items-center py-8">
           <span class="loading loading-spinner loading-lg"></span>
@@ -477,56 +516,100 @@
         </div>
       {:else if submissions.r?.data?.data}
         {@const submissionData = submissions.r.data.data.entries}
-        
+
         {#if submissionData.length > 0}
-          <div class="pop border border-base-500 bg-base-100 rounded-lg overflow-x-auto">
+          <div
+            class="pop border border-base-500 bg-base-100 rounded-lg overflow-x-auto"
+          >
             <table class="w-full border-collapse">
               <thead>
                 <tr>
-                  <th class="border-y border-base-300 bg-base-200 py-2 px-3 text-left font-bold">ID</th>
-                  <th class="border-y border-base-300 bg-base-200 py-2 px-3 text-left font-bold">Challenge</th>
-                  <th class="border-y border-base-300 bg-base-200 py-2 px-3 text-center font-bold">Status</th>
-                  <th class="border-y border-base-300 bg-base-200 py-2 px-3 text-left font-bold">Data</th>
-                  <th class="border-y border-base-300 bg-base-200 py-2 px-3 text-center font-bold">Created</th>
-                  <th class="border-y border-base-300 bg-base-200 py-2 px-3 text-center font-bold">Actions</th>
+                  <th
+                    class="border-y border-base-300 bg-base-200 py-2 px-3 text-left font-bold"
+                    >ID</th
+                  >
+                  <th
+                    class="border-y border-base-300 bg-base-200 py-2 px-3 text-left font-bold"
+                    >Challenge</th
+                  >
+                  <th
+                    class="border-y border-base-300 bg-base-200 py-2 px-3 text-center font-bold"
+                    >Status</th
+                  >
+                  <th
+                    class="border-y border-base-300 bg-base-200 py-2 px-3 text-left font-bold"
+                    >Data</th
+                  >
+                  <th
+                    class="border-y border-base-300 bg-base-200 py-2 px-3 text-center font-bold"
+                    >Created</th
+                  >
+                  <th
+                    class="border-y border-base-300 bg-base-200 py-2 px-3 text-center font-bold"
+                    >Actions</th
+                  >
                 </tr>
               </thead>
               <tbody>
                 {#each submissionData as submission}
-                  <tr class="bg-base-100 hover:bg-base-300/30 {submission.hidden ? 'opacity-60' : ''}">
-                    <td class="border-y border-base-300 py-2 px-3 font-mono text-sm">
+                  <tr
+                    class="bg-base-100 hover:bg-base-300/30 {submission.hidden
+                      ? 'opacity-60'
+                      : ''}"
+                  >
+                    <td
+                      class="border-y border-base-300 py-2 px-3 font-mono text-sm"
+                    >
                       {submission.id}
                       {#if submission.hidden}
-                        <span class="badge badge-neutral badge-xs ml-1">Hidden</span>
+                        <span class="badge badge-neutral badge-xs ml-1"
+                          >Hidden</span
+                        >
                       {/if}
                     </td>
                     <td class="border-y border-base-300 py-2 px-3">
                       <div class="flex flex-col">
                         <span class="font-medium">
-                          {challengeMap.get(submission.challenge_id) || `Challenge ${submission.challenge_id}`}
+                          {challengeMap.get(submission.challenge_id) ||
+                            `Challenge ${submission.challenge_id}`}
                         </span>
-                        <span class="text-sm text-base-content/60 font-mono">ID: {submission.challenge_id}</span>
+                        <span class="text-sm text-base-content/60 font-mono"
+                          >ID: {submission.challenge_id}</span
+                        >
                       </div>
                     </td>
                     <td class="border-y border-base-300 py-2 px-3 text-center">
-                      <span class="badge {getSubmissionStatusBadgeClass(submission.status)} badge-sm">
+                      <span
+                        class="badge {getSubmissionStatusBadgeClass(
+                          submission.status,
+                        )} badge-sm"
+                      >
                         {submission.status}
                       </span>
                     </td>
                     <td class="border-y border-base-300 py-2 px-3 max-w-xs">
-                      <div class="truncate font-mono text-sm" title={submission.data}>
+                      <div
+                        class="truncate font-mono text-sm"
+                        title={submission.data}
+                      >
                         {submission.data}
                       </div>
                     </td>
-                    <td class="border-y border-base-300 py-2 px-3 text-center text-sm text-base-content/70 font-mono">
+                    <td
+                      class="border-y border-base-300 py-2 px-3 text-center text-sm text-base-content/70 font-mono"
+                    >
                       {formatDateTime(submission.created_at)}
                     </td>
                     <td class="border-y border-base-300 py-2 px-3 text-center">
-                      <button 
+                      <button
                         class="btn btn-error btn-xs pop hover:pop"
-                        onclick={() => toggleSubmissionVisibility(submission.id, submission.hidden)}
+                        onclick={() =>
+                          toggleSubmissionVisibility(
+                            submission.id,
+                            submission.hidden,
+                          )}
                       >
-                        {submission.hidden ? 'Unhide' : 'Hide'}
+                        {submission.hidden ? "Unhide" : "Hide"}
                       </button>
                     </td>
                   </tr>
@@ -534,13 +617,21 @@
               </tbody>
             </table>
           </div>
-          
+
           <div class="text-sm text-base-content/70 text-center">
-            Showing {submissionData.length} submission{submissionData.length !== 1 ? 's' : ''}
+            Showing {submissionData.length} submission{submissionData.length !==
+            1
+              ? "s"
+              : ""}
           </div>
         {:else}
-          <div class="flex flex-col items-center justify-center py-8 text-base-content/70">
-            <Icon icon="material-symbols:assignment-outline" class="text-5xl mb-2" />
+          <div
+            class="flex flex-col items-center justify-center py-8 text-base-content/70"
+          >
+            <Icon
+              icon="material-symbols:assignment-outline"
+              class="text-5xl mb-2"
+            />
             <p class="text-lg font-medium">No submissions yet</p>
             <p class="text-sm">This user hasn't made any submissions</p>
           </div>

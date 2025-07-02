@@ -30,21 +30,30 @@
     }
 
     if (userIdFilter.trim()) {
-      const userIds = userIdFilter.split(',').map(id => Number(id.trim())).filter(id => !isNaN(id));
+      const userIds = userIdFilter
+        .split(",")
+        .map((id) => Number(id.trim()))
+        .filter((id) => !isNaN(id));
       if (userIds.length > 0) {
         filters.user_id = userIds;
       }
     }
 
     if (teamIdFilter.trim()) {
-      const teamIds = teamIdFilter.split(',').map(id => Number(id.trim())).filter(id => !isNaN(id));
+      const teamIds = teamIdFilter
+        .split(",")
+        .map((id) => Number(id.trim()))
+        .filter((id) => !isNaN(id));
       if (teamIds.length > 0) {
         filters.team_id = teamIds;
       }
     }
 
     if (challengeIdFilter.trim()) {
-      const challengeIds = challengeIdFilter.split(',').map(id => Number(id.trim())).filter(id => !isNaN(id));
+      const challengeIds = challengeIdFilter
+        .split(",")
+        .map((id) => Number(id.trim()))
+        .filter((id) => !isNaN(id));
       if (challengeIds.length > 0) {
         filters.challenge_id = challengeIds;
       }
@@ -62,7 +71,7 @@
   });
 
   const challenges = wrapLoadable(api.GET("/challenges"));
-  
+
   // Create a lookup map for challenge names
   const challengeMap = $derived.by(() => {
     if (!challenges.r?.data?.data?.challenges) return new Map();
@@ -102,17 +111,17 @@
 
   function getSubmissionStatusBadgeClass(status: string) {
     const statusColors = {
-      "correct": "badge-success",
-      "incorrect": "badge-error",
-      "queued": "badge-warning",
-      "invalid": "badge-neutral",
+      correct: "badge-success",
+      incorrect: "badge-error",
+      queued: "badge-warning",
+      invalid: "badge-neutral",
     };
     return statusColors[status as keyof typeof statusColors] || "badge-info";
   }
 
   function toggleStatusFilter(status: string) {
     if (statusFilter.includes(status)) {
-      statusFilter = statusFilter.filter(s => s !== status);
+      statusFilter = statusFilter.filter((s) => s !== status);
     } else {
       statusFilter = [...statusFilter, status];
     }
@@ -129,10 +138,15 @@
     currentPage = 0;
   }
 
-  async function toggleSubmissionVisibility(submissionId: number, currentlyHidden: boolean) {
+  async function toggleSubmissionVisibility(
+    submissionId: number,
+    currentlyHidden: boolean,
+  ) {
     const action = currentlyHidden ? "unhide" : "hide";
-    const confirmed = confirm(`Are you sure you want to ${action} this submission?`);
-    
+    const confirmed = confirm(
+      `Are you sure you want to ${action} this submission?`,
+    );
+
     if (!confirmed) return;
 
     try {
@@ -166,7 +180,7 @@
   <div class="card bg-base-100 pop rounded-lg w-full mb-6">
     <div class="card-body">
       <h2 class="text-xl font-bold mb-4">Filters</h2>
-      
+
       <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         <!-- Status Filter -->
         <div class="form-control">
@@ -200,10 +214,10 @@
           <label class="label">
             <span class="label-text">Visibility</span>
           </label>
-          <select 
-            bind:value={hiddenFilter} 
+          <select
+            bind:value={hiddenFilter}
             class="select select-bordered"
-            onchange={() => currentPage = 0}
+            onchange={() => (currentPage = 0)}
           >
             <option value={undefined}>All submissions</option>
             <option value={false}>Visible only</option>
@@ -301,25 +315,46 @@
       >
         <thead>
           <tr class="bg-base-300 border-b-2 border-base-400">
-            <th scope="col" class="w-16 border-r-2 border-base-400 text-center font-semibold">
+            <th
+              scope="col"
+              class="w-16 border-r-2 border-base-400 text-center font-semibold"
+            >
               ID
             </th>
-            <th scope="col" class="w-48 border-r-2 border-base-400 font-semibold">
+            <th
+              scope="col"
+              class="w-48 border-r-2 border-base-400 font-semibold"
+            >
               Challenge
             </th>
-            <th scope="col" class="w-32 border-r-2 border-base-400 font-semibold">
+            <th
+              scope="col"
+              class="w-32 border-r-2 border-base-400 font-semibold"
+            >
               User
             </th>
-            <th scope="col" class="w-32 border-r-2 border-base-400 font-semibold">
+            <th
+              scope="col"
+              class="w-32 border-r-2 border-base-400 font-semibold"
+            >
               Team
             </th>
-            <th scope="col" class="w-24 border-r-2 border-base-400 text-center font-semibold">
+            <th
+              scope="col"
+              class="w-24 border-r-2 border-base-400 text-center font-semibold"
+            >
               Status
             </th>
-            <th scope="col" class="w-48 border-r-2 border-base-400 font-semibold">
+            <th
+              scope="col"
+              class="w-48 border-r-2 border-base-400 font-semibold"
+            >
               Data
             </th>
-            <th scope="col" class="w-32 border-r-2 border-base-400 text-center font-semibold">
+            <th
+              scope="col"
+              class="w-32 border-r-2 border-base-400 text-center font-semibold"
+            >
               Created
             </th>
             <th scope="col" class="w-24 text-center font-semibold">
@@ -329,8 +364,14 @@
         </thead>
         <tbody>
           {#each data.entries as submission}
-            <tr class="border border-r border-base-300 hover:bg-base-50 transition-colors {submission.hidden ? 'opacity-60' : ''}">
-              <td class="border-r border-base-400 text-center font-mono text-sm">
+            <tr
+              class="border border-r border-base-300 hover:bg-base-50 transition-colors {submission.hidden
+                ? 'opacity-60'
+                : ''}"
+            >
+              <td
+                class="border-r border-base-400 text-center font-mono text-sm"
+              >
                 {submission.id}
                 {#if submission.hidden}
                   <span class="badge badge-neutral badge-xs ml-1">Hidden</span>
@@ -339,24 +380,36 @@
               <td class="border-r border-base-400">
                 <div class="flex flex-col">
                   <span class="font-medium">
-                    {challengeMap.get(submission.challenge_id) || `Challenge ${submission.challenge_id}`}
+                    {challengeMap.get(submission.challenge_id) ||
+                      `Challenge ${submission.challenge_id}`}
                   </span>
-                  <span class="text-sm text-base-content/60 font-mono">ID: {submission.challenge_id}</span>
+                  <span class="text-sm text-base-content/60 font-mono"
+                    >ID: {submission.challenge_id}</span
+                  >
                 </div>
               </td>
               <td class="border-r border-base-400">
                 {#if submission.user_id}
                   {#await UserQueryService.get(submission.user_id)}
-                    <span class="text-base-content/60">User {submission.user_id}</span>
+                    <span class="text-base-content/60"
+                      >User {submission.user_id}</span
+                    >
                   {:then user}
                     <div class="flex flex-col">
-                      <a href="/admin/user/{submission.user_id}" class="link link-primary font-medium">
+                      <a
+                        href="/admin/user/{submission.user_id}"
+                        class="link link-primary font-medium"
+                      >
                         {user?.name || `User ${submission.user_id}`}
                       </a>
-                      <span class="text-sm text-base-content/60 font-mono">ID: {submission.user_id}</span>
+                      <span class="text-sm text-base-content/60 font-mono"
+                        >ID: {submission.user_id}</span
+                      >
                     </div>
                   {:catch}
-                    <span class="text-base-content/60">User {submission.user_id}</span>
+                    <span class="text-base-content/60"
+                      >User {submission.user_id}</span
+                    >
                   {/await}
                 {:else}
                   <span class="text-base-content/60 italic">System</span>
@@ -364,37 +417,59 @@
               </td>
               <td class="border-r border-base-400">
                 {#await TeamQueryService.get(submission.team_id)}
-                  <span class="text-base-content/60">Team {submission.team_id}</span>
+                  <span class="text-base-content/60"
+                    >Team {submission.team_id}</span
+                  >
                 {:then team}
                   <div class="flex flex-col">
-                    <a href="/admin/team/{submission.team_id}" class="link link-primary font-medium">
+                    <a
+                      href="/admin/team/{submission.team_id}"
+                      class="link link-primary font-medium"
+                    >
                       {team?.name || `Team ${submission.team_id}`}
                     </a>
-                    <span class="text-sm text-base-content/60 font-mono">ID: {submission.team_id}</span>
+                    <span class="text-sm text-base-content/60 font-mono"
+                      >ID: {submission.team_id}</span
+                    >
                   </div>
                 {:catch}
-                  <span class="text-base-content/60">Team {submission.team_id}</span>
+                  <span class="text-base-content/60"
+                    >Team {submission.team_id}</span
+                  >
                 {/await}
               </td>
               <td class="border-r border-base-400 text-center">
-                <span class="badge {getSubmissionStatusBadgeClass(submission.status)} badge-sm">
+                <span
+                  class="badge {getSubmissionStatusBadgeClass(
+                    submission.status,
+                  )} badge-sm"
+                >
                   {submission.status}
                 </span>
               </td>
               <td class="border-r border-base-400">
-                <div class="truncate font-mono text-sm max-w-xs" title={submission.data}>
+                <div
+                  class="truncate font-mono text-sm max-w-xs"
+                  title={submission.data}
+                >
                   {submission.data}
                 </div>
               </td>
-              <td class="border-r border-base-400 text-center text-sm text-base-content/70 font-mono">
+              <td
+                class="border-r border-base-400 text-center text-sm text-base-content/70 font-mono"
+              >
                 {formatDateTime(submission.created_at)}
               </td>
               <td class="text-center">
-                <button 
+                <button
                   class="btn btn-error btn-xs pop hover:pop"
-                  onclick={() => toggleSubmissionVisibility(submission.id, submission.hidden)}
+                  onclick={() =>
+                    toggleSubmissionVisibility(
+                      submission.id,
+                      submission.hidden,
+                    )}
                 >
-                  {submission.hidden ? 'Unhide' : 'Hide'}
+                  {submission.hidden ? "Unhide" : "Hide"}
                 </button>
               </td>
             </tr>
