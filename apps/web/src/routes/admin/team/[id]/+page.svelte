@@ -187,36 +187,47 @@
 </script>
 
 <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8">
-  <div class="flex gap-2">
-    {#if editMode}
-      <button
-        class="btn btn-primary pop hover:pop"
-        onclick={saveTeam}
-        disabled={loading}
-      >
-        {#if loading}
-          <div class="loading loading-spinner loading-xs"></div>
-          Saving...
-        {:else}
-          <Icon icon="material-symbols:save" class="text-lg" />
-          Save Changes
-        {/if}
-      </button>
-      <button
-        class="btn btn-ghost pop hover:pop"
-        onclick={() => (editMode = false)}
-      >
-        Cancel
-      </button>
-    {:else}
-      <button
-        class="btn btn-primary pop hover:pop"
-        onclick={() => (editMode = true)}
-      >
-        <Icon icon="material-symbols:edit" class="text-lg" />
-        Edit
-      </button>
-    {/if}
+  <div
+    class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"
+  >
+    <div class="flex items-center gap-4">
+      <a href="/admin/teams" class="btn btn-sm bg-base-100 pop hover:pop">
+        <Icon icon="material-symbols:arrow-back" class="text-lg" />
+        Back to Teams
+      </a>
+      <h1 class="text-2xl font-bold">Team Details</h1>
+    </div>
+    <div class="flex gap-2">
+      {#if editMode}
+        <button
+          class="btn btn-primary pop hover:pop"
+          onclick={saveTeam}
+          disabled={loading}
+        >
+          {#if loading}
+            <div class="loading loading-spinner loading-xs"></div>
+            Saving...
+          {:else}
+            <Icon icon="material-symbols:save" class="text-lg" />
+            Save Changes
+          {/if}
+        </button>
+        <button
+          class="btn btn-ghost pop hover:pop"
+          onclick={() => (editMode = false)}
+        >
+          Cancel
+        </button>
+      {:else}
+        <button
+          class="btn btn-primary pop hover:pop"
+          onclick={() => (editMode = true)}
+        >
+          <Icon icon="material-symbols:edit" class="text-lg" />
+          Edit
+        </button>
+      {/if}
+    </div>
   </div>
 
   {#if team.loading}
