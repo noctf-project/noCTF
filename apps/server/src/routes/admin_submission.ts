@@ -43,15 +43,7 @@ export async function routes(fastify: FastifyInstance) {
     async (request) => {
       const page = request.body.page || 1;
       const page_size = request.body.page_size ?? PAGE_SIZE;
-      const query = {
-        created_at: request.body.created_at,
-        user_id: request.body.user_id,
-        team_id: request.body.team_id,
-        status: request.body.status,
-        hidden: request.body.hidden,
-        challenge_id: request.body.challenge_id,
-        data: request.body.data,
-      };
+      const query = request.body;
       const [entries, total] = await Promise.all([
         submissionService.listSummary(query, {
           limit: page_size,
