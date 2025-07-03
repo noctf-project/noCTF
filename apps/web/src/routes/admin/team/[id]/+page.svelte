@@ -8,6 +8,7 @@
     AllCountries,
   } from "$lib/utils/country";
   import UserQueryService from "$lib/state/user_query.svelte";
+  import SubmissionsTable from "$lib/components/SubmissionsTable.svelte";
 
   const teamId = Number(page.params.id);
 
@@ -146,16 +147,6 @@
     }
   }
 
-  function getSubmissionStatusBadgeClass(status: string) {
-    const statusColors = {
-      correct: "badge-success",
-      incorrect: "badge-error",
-      queued: "badge-warning",
-      invalid: "badge-neutral",
-    };
-    return statusColors[status as keyof typeof statusColors] || "badge-info";
-  }
-
   async function toggleSubmissionVisibility(
     submissionId: number,
     currentlyHidden: boolean,
@@ -196,47 +187,36 @@
 </script>
 
 <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8">
-  <div
-    class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"
-  >
-    <div class="flex items-center gap-4">
-      <a href="/admin/teams" class="btn btn-sm bg-base-100 pop hover:pop">
-        <Icon icon="material-symbols:arrow-back" class="text-lg" />
-        Back to Teams
-      </a>
-      <h1 class="text-2xl font-bold">Team Details</h1>
-    </div>
-    <div class="flex gap-2">
-      {#if editMode}
-        <button
-          class="btn btn-primary pop hover:pop"
-          onclick={saveTeam}
-          disabled={loading}
-        >
-          {#if loading}
-            <div class="loading loading-spinner loading-xs"></div>
-            Saving...
-          {:else}
-            <Icon icon="material-symbols:save" class="text-lg" />
-            Save Changes
-          {/if}
-        </button>
-        <button
-          class="btn btn-ghost pop hover:pop"
-          onclick={() => (editMode = false)}
-        >
-          Cancel
-        </button>
-      {:else}
-        <button
-          class="btn btn-primary pop hover:pop"
-          onclick={() => (editMode = true)}
-        >
-          <Icon icon="material-symbols:edit" class="text-lg" />
-          Edit
-        </button>
-      {/if}
-    </div>
+  <div class="flex gap-2">
+    {#if editMode}
+      <button
+        class="btn btn-primary pop hover:pop"
+        onclick={saveTeam}
+        disabled={loading}
+      >
+        {#if loading}
+          <div class="loading loading-spinner loading-xs"></div>
+          Saving...
+        {:else}
+          <Icon icon="material-symbols:save" class="text-lg" />
+          Save Changes
+        {/if}
+      </button>
+      <button
+        class="btn btn-ghost pop hover:pop"
+        onclick={() => (editMode = false)}
+      >
+        Cancel
+      </button>
+    {:else}
+      <button
+        class="btn btn-primary pop hover:pop"
+        onclick={() => (editMode = true)}
+      >
+        <Icon icon="material-symbols:edit" class="text-lg" />
+        Edit
+      </button>
+    {/if}
   </div>
 
   {#if team.loading}
@@ -604,134 +584,15 @@
         {@const submissionData = submissions.r.data.data.entries}
 
         {#if submissionData.length > 0}
-          <div
-            class="pop border border-base-500 bg-base-100 rounded-lg overflow-x-auto"
-          >
-            <table class="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th
-                    class="border-y border-base-300 bg-base-200 py-2 px-3 text-left font-bold"
-                    >ID</th
-                  >
-                  <th
-                    class="border-y border-base-300 bg-base-200 py-2 px-3 text-left font-bold"
-                    >Challenge</th
-                  >
-                  <th
-                    class="border-y border-base-300 bg-base-200 py-2 px-3 text-left font-bold"
-                    >User</th
-                  >
-                  <th
-                    class="border-y border-base-300 bg-base-200 py-2 px-3 text-center font-bold"
-                    >Status</th
-                  >
-                  <th
-                    class="border-y border-base-300 bg-base-200 py-2 px-3 text-left font-bold"
-                    >Data</th
-                  >
-                  <th
-                    class="border-y border-base-300 bg-base-200 py-2 px-3 text-center font-bold"
-                    >Created</th
-                  >
-                  <th
-                    class="border-y border-base-300 bg-base-200 py-2 px-3 text-center font-bold"
-                    >Actions</th
-                  >
-                </tr>
-              </thead>
-              <tbody>
-                {#each submissionData as submission}
-                  <tr
-                    class="bg-base-100 hover:bg-base-300/30 {submission.hidden
-                      ? 'opacity-60'
-                      : ''}"
-                  >
-                    <td
-                      class="border-y border-base-300 py-2 px-3 font-mono text-sm"
-                    >
-                      {submission.id}
-                      {#if submission.hidden}
-                        <span class="badge badge-neutral badge-xs ml-1"
-                          >Hidden</span
-                        >
-                      {/if}
-                    </td>
-                    <td class="border-y border-base-300 py-2 px-3">
-                      <div class="flex flex-col">
-                        <span class="font-medium">
-                          {challengeMap.get(submission.challenge_id) ||
-                            `Challenge ${submission.challenge_id}`}
-                        </span>
-                        <span class="text-sm text-base-content/60 font-mono"
-                          >ID: {submission.challenge_id}</span
-                        >
-                      </div>
-                    </td>
-                    <td class="border-y border-base-300 py-2 px-3">
-                      {#if submission.user_id}
-                        {#await UserQueryService.get(submission.user_id)}
-                          <span class="text-base-content/60"
-                            >User {submission.user_id}</span
-                          >
-                        {:then user}
-                          <div class="flex flex-col">
-                            <span class="font-medium"
-                              >{user?.name ||
-                                `User ${submission.user_id}`}</span
-                            >
-                            <span class="text-sm text-base-content/60 font-mono"
-                              >ID: {submission.user_id}</span
-                            >
-                          </div>
-                        {:catch}
-                          <span class="text-base-content/60"
-                            >User {submission.user_id}</span
-                          >
-                        {/await}
-                      {:else}
-                        <span class="text-base-content/60 italic">System</span>
-                      {/if}
-                    </td>
-                    <td class="border-y border-base-300 py-2 px-3 text-center">
-                      <span
-                        class="badge {getSubmissionStatusBadgeClass(
-                          submission.status,
-                        )} badge-sm"
-                      >
-                        {submission.status}
-                      </span>
-                    </td>
-                    <td class="border-y border-base-300 py-2 px-3 max-w-xs">
-                      <div
-                        class="truncate font-mono text-sm"
-                        title={submission.data}
-                      >
-                        {submission.data}
-                      </div>
-                    </td>
-                    <td
-                      class="border-y border-base-300 py-2 px-3 text-center text-sm text-base-content/70 font-mono"
-                    >
-                      {formatDateTime(submission.created_at)}
-                    </td>
-                    <td class="border-y border-base-300 py-2 px-3 text-center">
-                      <button
-                        class="btn btn-error btn-xs pop hover:pop"
-                        onclick={() =>
-                          toggleSubmissionVisibility(
-                            submission.id,
-                            submission.hidden,
-                          )}
-                      >
-                        {submission.hidden ? "Unhide" : "Hide"}
-                      </button>
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
+          <SubmissionsTable
+            submissions={submissionData}
+            {challengeMap}
+            showUser={true}
+            showTeam={false}
+            showActions={true}
+            variant="compact"
+            onVisibilityToggle={toggleSubmissionVisibility}
+          />
 
           <div class="text-sm text-base-content/70 text-center">
             Showing {submissionData.length} submission{submissionData.length !==
