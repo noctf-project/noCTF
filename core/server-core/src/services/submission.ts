@@ -1,12 +1,9 @@
-import { Submission } from "@noctf/api/datatypes";
-import {
-  AdminQuerySubmissionsRequest,
-  AdminUpdateSubmissionsRequest,
-} from "@noctf/api/requests";
+import { AdminUpdateSubmissionsRequest } from "@noctf/api/requests";
 import { ServiceCradle } from "../index.ts";
 import { SubmissionDAO } from "../dao/submission.ts";
 import { AuditParams } from "../types/audit_log.ts";
 import { SubmissionUpdateEvent } from "@noctf/api/events";
+import { SubmissionStatus } from "@noctf/api/enums";
 
 type Props = Pick<
   ServiceCradle,
@@ -24,8 +21,31 @@ export class SubmissionService {
     this.dao = new SubmissionDAO(databaseClient.get());
   }
 
-  async query(q: AdminQuerySubmissionsRequest): Promise<Submission[]> {
-    return this.dao.query(q, { limit: q.limit, offset: q.offset });
+  async listSummary(
+    params?: {
+      created_at?: [Date | null, Date | null];
+      user_id?: number[];
+      team_id?: number[];
+      status?: SubmissionStatus[];
+      hidden?: boolean;
+      challenge_id?: number[];
+      data?: string;
+    },
+    limit?: { limit?: number; offset?: number },
+  ) {
+    return this.dao.listSummary(params, limit);
+  }
+
+  async getCount(params?: {
+    created_at?: [Date | null, Date | null];
+    user_id?: number[];
+    team_id?: number[];
+    status?: SubmissionStatus[];
+    hidden?: boolean;
+    challenge_id?: number[];
+    data?: string;
+  }) {
+    return this.dao.getCount(params);
   }
 
   async update(r: AdminUpdateSubmissionsRequest, audit?: AuditParams) {

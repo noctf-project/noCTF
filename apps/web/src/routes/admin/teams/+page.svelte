@@ -1,16 +1,16 @@
 <script lang="ts">
   import Icon from "@iconify/svelte";
   import api, { wrapLoadable } from "$lib/api/index.svelte";
-  import TeamQueryService from "$lib/state/team_query.svelte";
   import Pagination from "$lib/components/Pagination.svelte";
+  import { countryCodeToFlag } from "$lib/utils/country";
 
   let searchQuery = $state("");
   let currentPage = $state(0);
-  const pageSize = 50;
+  const pageSize = 60;
 
-  const users = $derived.by(() => {
+  const teams = $derived.by(() => {
     return wrapLoadable(
-      api.POST("/admin/users/query", {
+      api.POST("/teams/query", {
         body: {
           page: currentPage + 1,
           page_size: pageSize,
@@ -20,20 +20,6 @@
     );
   });
 
-  $effect(() => {
-    if (users.r?.data?.data.entries) {
-      const teamIds = users.r.data.data.entries
-        .map((user) => user.team_id)
-        .filter((id): id is number => id !== null);
-      // Preload teams using TeamQueryService
-      teamIds.forEach((id) => {
-        TeamQueryService.get(id).catch(() => {
-          // Ignore errors for preloading
-        });
-      });
-    }
-  });
-
   function handleSearch() {
     currentPage = 0;
   }
@@ -41,26 +27,11 @@
   function formatDateTime(dateString: string) {
     return new Date(dateString).toLocaleString();
   }
-
-  function getFlagBadgeClass(flag: string) {
-    if (flag === "blocked") return "badge-error";
-    if (flag === "hidden") return "badge-neutral";
-    return "badge-warning";
-  }
-
-  function getRoleBadgeClass(role: string) {
-    const roleColors = {
-      admin: "badge-primary",
-      moderator: "badge-warning",
-      judge: "badge-success",
-    };
-    return roleColors[role as keyof typeof roleColors] || "badge-info";
-  }
 </script>
 
 <div class="container mx-auto p-6">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-4xl font-bold">Users</h1>
+    <h1 class="text-4xl font-bold">Teams</h1>
   </div>
 
   <!-- Search Bar -->
@@ -68,7 +39,7 @@
     <div class="flex gap-2">
       <input
         type="text"
-        placeholder="Search users by name..."
+        placeholder="Search teams by name..."
         class="input input-bordered flex-1"
         bind:value={searchQuery}
         onkeydown={(e) => e.key === "Enter" && handleSearch()}
@@ -80,23 +51,23 @@
     </div>
   </div>
 
-  {#if users.loading}
+  {#if teams.loading}
     <div class="flex justify-center items-center py-12">
       <span class="loading loading-spinner loading-lg"></span>
     </div>
-  {:else if users.error}
+  {:else if teams.error}
     <div class="alert alert-error">
       <Icon icon="material-symbols:error" />
-      <span>Failed to load users</span>
+      <span>Failed to load teams</span>
     </div>
-  {:else if users.r?.data}
-    {@const data = users.r.data.data}
+  {:else if teams.r?.data}
+    {@const data = teams.r.data.data}
 
-    <!-- Users Table -->
+    <!-- Teams Table -->
     <div class="overflow-x-auto pop rounded-lg">
       <table
         class="table table-sm table-fixed bg-base-100 w-full"
-        aria-label="Users list"
+        aria-label="Teams list"
       >
         <thead>
           <tr class="bg-base-300 border-b-2 border-base-400">
@@ -114,21 +85,27 @@
             </th>
             <th
               scope="col"
-              class="w-48 border-r-2 border-base-400 font-semibold"
+              class="w-32 border-r-2 border-base-400 text-center font-semibold"
             >
-              Team
+              Country
             </th>
             <th
               scope="col"
               class="w-32 border-r-2 border-base-400 text-center font-semibold"
             >
-              Flags
+              Division
             </th>
             <th
               scope="col"
               class="w-32 border-r-2 border-base-400 text-center font-semibold"
             >
-              Roles
+              Members
+            </th>
+            <th
+              scope="col"
+              class="w-32 border-r-2 border-base-400 text-center font-semibold"
+            >
+              Tags
             </th>
             <th scope="col" class="w-48 text-center font-semibold">
               Created
@@ -136,62 +113,49 @@
           </tr>
         </thead>
         <tbody>
-          {#each data.entries as user}
+          {#each data.entries as team}
             <tr
               class="border border-r border-base-300 hover:bg-base-50 transition-colors"
             >
               <td
                 class="border-r border-base-400 text-center font-mono text-sm"
               >
-                {user.id}
+                {team.id}
               </td>
               <td class="border-r border-base-400 font-semibold">
                 <a
-                  href="/admin/user/{user.id}"
+                  href="/admin/team/{team.id}"
                   class="link link-primary hover:link-hover"
                 >
-                  {user.name}
+                  {team.name}
                 </a>
               </td>
-              <td class="border-r border-base-400">
-                {#if user.team_id}
-                  {#await TeamQueryService.get(user.team_id)}
-                    <span class="text-base-content/60"
-                      >(Team {user.team_id})</span
-                    >
-                  {:then team}
-                    <span class="text-sm"
-                      >{team?.name || `(Team ${user.team_id})`}</span
-                    >
-                  {:catch}
-                    <span class="text-base-content/60"
-                      >(Team {user.team_id})</span
-                    >
-                  {/await}
-                {:else}
-                  <span class="text-base-content/60">No team</span>
-                {/if}
-              </td>
               <td class="border-r border-base-400 text-center">
-                {#if user.flags && user.flags.length > 0}
-                  <div class="flex gap-1 flex-wrap justify-center">
-                    {#each user.flags as flag}
-                      <span class="badge {getFlagBadgeClass(flag)} badge-sm pop"
-                        >{flag}</span
-                      >
-                    {/each}
-                  </div>
+                {#if team.country}
+                  <span class="text-lg" title={team.country}>
+                    {countryCodeToFlag(team.country)}
+                  </span>
                 {:else}
                   <span class="text-base-content/60">None</span>
                 {/if}
               </td>
               <td class="border-r border-base-400 text-center">
-                {#if user.roles && user.roles.length > 0}
+                {#if team.division_name}
+                  <span class="badge badge-secondary badge-sm"
+                    >{team.division_name}</span
+                  >
+                {:else}
+                  <span class="text-base-content/60">None</span>
+                {/if}
+              </td>
+              <td class="border-r border-base-400 text-center">
+                {team.members?.length || 0}
+              </td>
+              <td class="border-r border-base-400 text-center">
+                {#if team.tag_names && team.tag_names.length > 0}
                   <div class="flex gap-1 flex-wrap justify-center">
-                    {#each user.roles as role}
-                      <span class="badge {getRoleBadgeClass(role)} badge-sm pop"
-                        >{role}</span
-                      >
+                    {#each team.tag_names as tag}
+                      <span class="badge badge-outline badge-sm">{tag}</span>
                     {/each}
                   </div>
                 {:else}
@@ -199,7 +163,7 @@
                 {/if}
               </td>
               <td class="text-center text-sm text-base-content/70 font-mono">
-                {formatDateTime(user.created_at)}
+                {formatDateTime(team.created_at)}
               </td>
             </tr>
           {/each}
