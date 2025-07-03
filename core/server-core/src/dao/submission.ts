@@ -1,7 +1,6 @@
 import type { DB } from "@noctf/schema";
 import { sql, type Insertable } from "kysely";
 import { DBType } from "../clients/database.ts";
-import { AdminQuerySubmissionsRequest } from "@noctf/api/requests";
 import { LimitOffset, Submission } from "@noctf/api/datatypes";
 import { SubmissionStatus } from "@noctf/api/enums";
 import { PostgresErrorCode, TryPGConstraintError } from "../util/pgerror.ts";
@@ -149,8 +148,8 @@ export class SubmissionDAO {
     return query;
   }
 
-  async query(
-    filters: Omit<AdminQuerySubmissionsRequest, "page" | "page_size">,
+  async listSummary(
+    filters: Parameters<SubmissionDAO["listQuery"]>[0],
     limit?: LimitOffset,
   ): Promise<Submission[]> {
     const query = this.listQuery(filters, limit)
