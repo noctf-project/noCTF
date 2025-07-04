@@ -228,10 +228,10 @@
                       />
                     </button>
                     {#if !collapsedCategories[category]}
-                      <div class="flex flex-col divide-y">
+                      <div class="flex flex-col divide-y dark:divide-gray-900">
                         {#each categoryChallenges as challenge (challenge.id)}
                           <div
-                            class="hover:bg-base-100 transition-colors cursor-pointer"
+                            class="transition-colors cursor-pointer"
                           >
                             <ChallengeCard
                               data={challenge}

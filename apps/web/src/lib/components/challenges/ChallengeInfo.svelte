@@ -227,7 +227,7 @@
       <div>
         <!-- Attachments -->
         {#if !loading && challDetails!.files.length > 0}
-          <div class="border-t border-base-200">
+          <div class="border-t border-base-200 py-2">
             <div class="flex flex-row gap-2 items-center mb-2">
               <Icon icon="material-symbols:attach-file-rounded" class="text-xl"
               ></Icon>
