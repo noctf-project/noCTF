@@ -20,6 +20,7 @@ class AuthState {
   isLoading: boolean = $state(true);
   isAuthenticated: boolean = $derived(!!this.user?.id);
   isAdmin: boolean = $derived(!!this.user?.roles?.includes("admin"));
+  isPartOfTeam: boolean = $derived(!!this.user?.team_id);
 
   constructor() {
     this.loadCachedUser();

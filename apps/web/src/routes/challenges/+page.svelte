@@ -190,7 +190,8 @@
     </div>
   {:else}
     <div
-      class="flex flex-col md:grid grid-cols-[min(25%,20rem)_1fr] gap-6 lg:gap-8 bg-white-500"
+      class="flex min-h-screen flex-col rounded md:grid grid-cols-[min(25%,20rem)_1fr] gap-6 lg:gap-8 bg-base-100"
+      style="min-height: calc(100vh - 24rem);"
     >
       <div class="md:sticky top-8 self-start mb-6 md:mb-0">
         <ChallengeFilterer
@@ -201,17 +202,17 @@
 
       <div class="flex flex-wrap gap-6 h-fit">
         {#if challenges !== undefined && Object.keys(challengesByCategory).length > 0}
-          <!-- Grid View -->
+          <!-- Email View -->
           {#if isEmailView}
             <div class="flex w-full gap-5">
               <div
                 class="flex flex-col gap-2 overflow-y-auto no-scrollbar"
-                style="max-height: calc(100vh - 24rem); width: max-content; min-width: 320px;"
+                style="height: calc(100vh - 24rem); width: max-content; min-width: 320px;"
               >
                 {#each Object.entries(challengesByCategory) as [category, categoryChallenges] (category)}
-                  <div class="border rounded-lg bg-base-200 mb-2">
+                  <div class=" rounded-lg mb-2">
                     <button
-                      class="flex w-full items-center justify-between px-4 py-2 cursor-pointer select-none bg-base-300 hover:bg-base-100 border-b"
+                      class="flex w-full items-center justify-between px-4 py-2 cursor-pointer select-none bg-base-300 hover:bg-base-100"
                       onclick={() =>
                         (collapsedCategories = {
                           ...collapsedCategories,
@@ -284,6 +285,7 @@
         {/if}
       </div>
     </div>
+    <!-- Grid View -->
     {#if !isEmailView}
       <ChallengeModal
         visible={modalVisible}

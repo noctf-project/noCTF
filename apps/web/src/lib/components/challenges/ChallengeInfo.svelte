@@ -94,6 +94,7 @@
 
     if (r.error) {
       toasts.error((r as { error: { message: string } }).error.message);
+      flagSubmitStatus = "waiting";
       return;
     }
     if (r.data) {
@@ -126,206 +127,213 @@
   }
 </script>
 
-<div class="flex flex-row gap-4 w-full justify-center">
+<div class="flex flex-row gap-4 w-full justify-center h-full">
   {#if challData}
     <div
-      class="bg-base-100 p-4 rounded-lg shadow-xl w-full flex flex-col gap-4"
+      class="bg-base-100 p-4 rounded-lg justify-between shadow-xl w-full flex flex-col gap-4"
     >
-      <!-- Email Header -->
-      <div class="pb-4 border-b border-base-200">
-        <div class="flex justify-between items-start">
-          <div>
-            <h2 class="text-2xl font-semibold">Re: {challData?.title}</h2>
-          </div>
-          <div class="flex flex-row items-center gap-4 text-gray-500 text-sm">
-            <div class="flex items-center gap-1">
-              <Icon
-                icon="material-symbols:stars-outline-rounded"
-                class="text-xl"
-              />
-              <span>{challData?.points} pts</span>
+      <div>
+        <!-- Email Header -->
+        <div class="pb-4 border-b border-base-200">
+          <div class="flex justify-between items-start">
+            <div>
+              <h2 class="text-2xl font-semibold">Re: {challData?.title}</h2>
             </div>
-            <div class="relative">
-              {#if showHint}
-                <div
-                  transition:fade
-                  class="tooltip absolute -top-2 left-8 before:!opacity-100 after:!opacity-100"
-                  data-tip="Click to show solvers"
-                ></div>
-              {/if}
-              <button
-                class="flex items-center gap-1 hover:text-primary"
-                data-tip={scoreModalVisible ? "Hide solvers" : "Show solvers"}
-                onclick={() => {
-                  if (!knowsSolvesClick) {
-                    localStorage.setItem("knowsSolvesClick", "1");
-                  }
-                  toggleScores();
-                }}
-              >
-                <Icon icon="material-symbols:flag" class="text-xl" />
-                <span>{challData?.solves} solves</span>
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="mt-4 flex items-center gap-3">
-          <div
-            class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-600"
-          >
-            <Icon
-              icon={categoryToIcon(challData?.categories[0] ?? "misc")}
-              class="text-2xl"
-            />
-          </div>
-          <div>
-            <p class="font-semibold text-sm">
-              To: {authState.user?.name}@{authState.user?.team_name
-                ?.replaceAll(" ", "_")
-                .toLowerCase()}.duc.tf
-            </p>
-            <!-- <p class="text-xs text-gray-500">From: challenges@noctf.local</p> -->
-          </div>
-          <div class="flex-grow"></div>
-          {#if challData?.difficulty}
-            <div
-              class={`badge badge-sm text-base-500 rounded-md text-xs font-black ${difficultyToBgColour(challData?.difficulty as Difficulty)}`}
-            >
-              {challData?.difficulty}
-            </div>
-          {/if}
-        </div>
-      </div>
-
-      <!-- Email Body -->
-      <div class="flex">
-        {#if loading}
-          <div class="flex flex-col gap-4">
-            <div class="loading loading-spinner loading-lg text-primary"></div>
-            <p class="text-center">Loading challenge details...</p>
-          </div>
-        {:else}
-          <!-- I'm not sure why this is needed since svelte isn't re-rendering the component -->
-          {#key challDetails?.description}
-            <div class="prose max-w-none">
-              <Markdown
-                {carta}
-                value={"Dear " +
-                  authState.user?.name +
-                  ",\n\n" +
-                  challDetails!.description}
-              />
-            </div>
-          {/key}
-        {/if}
-      </div>
-
-      <!-- Attachments -->
-      {#if !loading && challDetails!.files.length > 0}
-        <div class="border-t border-base-200">
-          <div class="flex flex-row gap-2 items-center mb-2">
-            <Icon icon="material-symbols:attach-file-rounded" class="text-xl"
-            ></Icon>
-            <h3 class="text-lg font-bold">Attachments</h3>
-            <button
-              title="Show file hashes"
-              onclick={() => (showHash = !showHash)}
-              class="text-gray-400 hover:text-gray-600"
-              ><Icon icon="material-symbols:tag-rounded" class="text-xl"></Icon>
-            </button>
-          </div>
-          <ul class="flex flex-row flex-wrap gap-x-4 gap-y-2">
-            {#each challDetails!.files as file}
-              <li>
-                <a
-                  href={file.url.startsWith("http")
-                    ? file.url
-                    : `${API_BASE_URL}/${file.url}`}
-                  class="link text-primary font-semibold"
-                  title={`${file.filename} - ${formatFileSize(file.size)}`}
-                  >{file.filename}</a
-                >
-                {#if showHash}
-                  <pre class="text-xs text-gray-500 mt-1">{file.hash}</pre>
+            <div class="flex flex-row items-center gap-4 text-gray-500 text-sm">
+              <div class="flex items-center gap-1">
+                <Icon
+                  icon="material-symbols:stars-outline-rounded"
+                  class="text-xl"
+                />
+                <span>{challData?.points} pts</span>
+              </div>
+              <div class="relative">
+                {#if showHint}
+                  <div
+                    transition:fade
+                    class="tooltip absolute -top-2 left-8 before:!opacity-100 after:!opacity-100"
+                    data-tip="Click to show solvers"
+                  ></div>
                 {/if}
-              </li>
-            {/each}
-          </ul>
-        </div>
-      {/if}
-
-      {#if challData?.isSolved}
-        <div class="flex gap-2">
-          <input
-            type="text"
-            placeholder={"You've solved this challenge!"}
-            class="input input-bordered flex-grow !bg-base-100"
-            disabled
-          />
-        </div>
-      {:else}
-        <form class="flex gap-2 w-full">
-          <div class="relative w-full">
-            <input
-              bind:value={flagInput}
-              oninput={() => {
-                if (flagSubmitStatus !== "correct") {
-                  flagSubmitStatus = "waiting";
-                }
-              }}
-              type="text"
-              disabled={["correct", "submitting"].includes(flagSubmitStatus)}
-              placeholder={"noCTF{...}"}
-              required
-              class={"w-full input input-bordered flex-grow pop duration-200 transition-colors focus:outline-none focus:pop focus:ring-0 focus:ring-offset-0 " +
-                (flagSubmitStatus == "incorrect"
-                  ? "bg-error shake text-base-content/30"
-                  : "bg-base-100")}
-            />
-            {#if flagSubmitStatus == "correct"}
-              <div
-                class="absolute inset-0 overflow-hidden rounded-lg pointer-events-none pop"
-              >
-                <div
-                  class="absolute left-0 top-0 h-full bg-success"
-                  style="width: {correctAnim.current * 100}%"
-                ></div>
-              </div>
-
-              <div
-                class="absolute inset-0 flex items-center justify-center"
-                transition:fade={{ duration: 400 }}
-              >
-                <span
-                  class="text-success-content font-bold"
-                  in:fly={{ y: 40, duration: 400 }}
+                <button
+                  class="flex items-center gap-1 hover:text-primary"
+                  data-tip={scoreModalVisible ? "Hide solvers" : "Show solvers"}
+                  onclick={() => {
+                    if (!knowsSolvesClick) {
+                      localStorage.setItem("knowsSolvesClick", "1");
+                    }
+                    toggleScores();
+                  }}
                 >
-                  Correct! 🎉
-                </span>
+                  <Icon icon="material-symbols:flag" class="text-xl" />
+                  <span>{challData?.solves} solves</span>
+                </button>
               </div>
-            {:else if flagSubmitStatus == "incorrect"}
+            </div>
+          </div>
+          <div class="mt-4 flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-600"
+            >
+              <Icon
+                icon={categoryToIcon(challData?.categories[0] ?? "misc")}
+                class="text-2xl"
+              />
+            </div>
+            <div>
+              <p class="font-semibold text-sm">
+                To: {authState.user?.name}@{authState.user?.team_name
+                  ?.replaceAll(" ", "_")
+                  .toLowerCase()}.duc.tf
+              </p>
+              <!-- <p class="text-xs text-gray-500">From: challenges@noctf.local</p> -->
+            </div>
+            <div class="flex-grow"></div>
+            {#if challData?.difficulty}
               <div
-                class="absolute inset-0 flex items-center justify-center pointer-events-none"
-                transition:fade={{ duration: 400 }}
+                class={`badge badge-sm text-base-500 rounded-md text-xs font-black ${difficultyToBgColour(challData?.difficulty as Difficulty)}`}
               >
-                <span
-                  class="text-error-content font-bold"
-                  in:fly={{ y: 40, duration: 400 }}
-                >
-                  Incorrect...
-                </span>
+                {challData?.difficulty}
               </div>
             {/if}
           </div>
-          <button
-            type="submit"
-            onclick={submitFlag}
-            class="btn pop hover:pop btn-primary"
-            >Reply
-            <Icon icon="material-symbols:send" class="text-xl" /></button
-          >
-        </form>
-      {/if}
+        </div>
+
+        <!-- Email Body -->
+        <div class="flex">
+          {#if loading}
+            <div class="flex flex-col gap-4">
+              <div
+                class="loading loading-spinner loading-lg text-primary"
+              ></div>
+              <p class="text-center">Loading challenge details...</p>
+            </div>
+          {:else}
+            <!-- I'm not sure why this is needed since svelte isn't re-rendering the component -->
+            {#key challDetails?.description}
+              <div class="prose max-w-none">
+                <Markdown
+                  {carta}
+                  value={"Dear " +
+                    authState.user?.name +
+                    ",\n\n" +
+                    challDetails!.description}
+                />
+              </div>
+            {/key}
+          {/if}
+        </div>
+      </div>
+      <div>
+        <!-- Attachments -->
+        {#if !loading && challDetails!.files.length > 0}
+          <div class="border-t border-base-200">
+            <div class="flex flex-row gap-2 items-center mb-2">
+              <Icon icon="material-symbols:attach-file-rounded" class="text-xl"
+              ></Icon>
+              <h3 class="text-lg font-bold">Attachments</h3>
+              <button
+                title="Show file hashes"
+                onclick={() => (showHash = !showHash)}
+                class="text-gray-400 hover:text-gray-600"
+                ><Icon icon="material-symbols:tag-rounded" class="text-xl"
+                ></Icon>
+              </button>
+            </div>
+            <ul class="flex flex-row flex-wrap gap-x-4 gap-y-2">
+              {#each challDetails!.files as file}
+                <li>
+                  <a
+                    href={file.url.startsWith("http")
+                      ? file.url
+                      : `${API_BASE_URL}/${file.url}`}
+                    class="link text-primary font-semibold"
+                    title={`${file.filename} - ${formatFileSize(file.size)}`}
+                    >{file.filename}</a
+                  >
+                  {#if showHash}
+                    <pre class="text-xs text-gray-500 mt-1">{file.hash}</pre>
+                  {/if}
+                </li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
+
+        {#if challData?.isSolved}
+          <div class="flex gap-2">
+            <input
+              type="text"
+              placeholder={"You've solved this challenge!"}
+              class="input input-bordered flex-grow !bg-base-100"
+              disabled
+            />
+          </div>
+        {:else}
+          <form class="flex gap-2 w-full">
+            <div class="relative w-full">
+              <input
+                bind:value={flagInput}
+                oninput={() => {
+                  if (flagSubmitStatus !== "correct") {
+                    flagSubmitStatus = "waiting";
+                  }
+                }}
+                type="text"
+                disabled={["correct", "submitting"].includes(flagSubmitStatus)}
+                placeholder={"noCTF{...}"}
+                required
+                class={"w-full input input-bordered flex-grow pop duration-200 transition-colors focus:outline-none focus:pop focus:ring-0 focus:ring-offset-0 " +
+                  (flagSubmitStatus == "incorrect"
+                    ? "bg-error shake text-base-content/30"
+                    : "bg-base-100")}
+              />
+              {#if flagSubmitStatus == "correct"}
+                <div
+                  class="absolute inset-0 overflow-hidden rounded-lg pointer-events-none pop"
+                >
+                  <div
+                    class="absolute left-0 top-0 h-full bg-success"
+                    style="width: {correctAnim.current * 100}%"
+                  ></div>
+                </div>
+
+                <div
+                  class="absolute inset-0 flex items-center justify-center"
+                  transition:fade={{ duration: 400 }}
+                >
+                  <span
+                    class="text-success-content font-bold"
+                    in:fly={{ y: 40, duration: 400 }}
+                  >
+                    Correct! 🎉
+                  </span>
+                </div>
+              {:else if flagSubmitStatus == "incorrect"}
+                <div
+                  class="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  transition:fade={{ duration: 400 }}
+                >
+                  <span
+                    class="text-error-content font-bold"
+                    in:fly={{ y: 40, duration: 400 }}
+                  >
+                    Incorrect...
+                  </span>
+                </div>
+              {/if}
+            </div>
+            <button
+              type="submit"
+              onclick={submitFlag}
+              class="btn pop hover:pop btn-primary"
+              disabled={!authState.isPartOfTeam}
+              >Reply
+              <Icon icon="material-symbols:send" class="text-xl" /></button
+            >
+          </form>
+        {/if}
+      </div>
     </div>
     {#if scoreModalVisible}
       <div

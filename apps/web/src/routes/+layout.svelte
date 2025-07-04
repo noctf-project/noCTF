@@ -23,7 +23,11 @@
   <title>{configState.siteConfig?.name || "noCTF"}</title>
 </svelte:head>
 
-<div class="flex flex-col min-h-screen h-auto">
+<div
+  class="bg-[url(/background.png)] bg-center bg-cover opacity-40"
+  style="height: 100vh; width: 100vw; z-index: -999; position: fixed;"
+></div>
+<div class="flex flex-col min-h-screen h-auto opacity-100">
   {#if page.url.pathname.startsWith("/admin")}
     <AdminHeader />
   {:else}
