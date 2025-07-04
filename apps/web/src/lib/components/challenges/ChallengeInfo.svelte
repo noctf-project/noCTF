@@ -400,8 +400,8 @@
       </div>
     {/if}
   {:else}
-    <div class="flex flex-col gap-4">
-      <p class="text-center">Select an email</p>
+    <div class="flex flex-col justify-center gap-4">
+      <p class="text-center">Select an email to read</p>
     </div>
   {/if}
 </div>
