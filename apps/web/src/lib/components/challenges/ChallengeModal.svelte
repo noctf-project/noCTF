@@ -1,10 +1,6 @@
 <script module lang="ts">
   import { type ChallengeCardData } from "./ChallengeCard.svelte";
 
-  export interface ChallDetails {
-    description: string;
-    files: { filename: string; url: string; size: number; hash: string }[];
-  }
   export interface ChallengeModalProps {
     challData?: ChallengeCardData;
     challDetails?: ChallDetails;
@@ -18,7 +14,7 @@
 <script lang="ts">
   import { fade, fly } from "svelte/transition";
   import { onMount } from "svelte";
-  import ChallengeInfo from "./ChallengeInfo.svelte";
+  import ChallengeInfo, { type ChallDetails } from "./ChallengeInfo.svelte";
 
   let {
     challData,

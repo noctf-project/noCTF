@@ -19,6 +19,7 @@
   import Icon from "@iconify/svelte";
   import { categoryToIcon, difficultyToBgColour } from "$lib/utils/challenges";
   import { type Difficulty } from "$lib/constants/difficulties";
+  import DifficultyChip from "./DifficultyChip.svelte";
 
   const { data, onclick }: ChallengeCardProps = $props();
 </script>
@@ -72,13 +73,7 @@
       </p>
       <div class="flex items-center gap-2 flex-shrink-0">
         {#if data.difficulty}
-          <div
-            class={`badge badge-xs ${difficultyToBgColour(
-              data.difficulty as Difficulty,
-            )}`}
-          >
-            {data.difficulty}
-          </div>
+          <DifficultyChip difficulty={data.difficulty as Difficulty} />
         {/if}
         {#if data.isSolved}
           <Icon

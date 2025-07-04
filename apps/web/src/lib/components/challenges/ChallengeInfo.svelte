@@ -36,6 +36,7 @@
   import TeamNamesService from "$lib/state/team_query.svelte";
   import { toasts } from "$lib/stores/toast";
   import authState from "$lib/state/auth.svelte";
+  import DifficultyChip from "./DifficultyChip.svelte";
 
   let { challData, challDetails, loading, onSolve }: ChallengeInfoProps =
     $props();
@@ -190,11 +191,9 @@
             </div>
             <div class="flex-grow"></div>
             {#if challData?.difficulty}
-              <div
-                class={`badge badge-sm text-base-500 rounded-md text-xs font-black ${difficultyToBgColour(challData?.difficulty as Difficulty)}`}
-              >
-                {challData?.difficulty}
-              </div>
+              <DifficultyChip
+                difficulty={challData?.difficulty as Difficulty}
+              />
             {/if}
           </div>
         </div>
