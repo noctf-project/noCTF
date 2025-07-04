@@ -211,7 +211,7 @@
           {:else}
             <!-- I'm not sure why this is needed since svelte isn't re-rendering the component -->
             {#key challDetails?.description}
-              <div class="prose max-w-none">
+              <div class="prose w-full">
                 <Markdown
                   {carta}
                   value={"Dear " +
