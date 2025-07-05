@@ -95,8 +95,8 @@
     class:font-semibold={selected}
     class:bg-blue-100={selected}
     class:text-blue-700={selected}
-    class:text-gray-700={!selected}
     class:hover:bg-gray-100={!selected}
+    class:dark:hover:bg-gray-800={!selected}
     onclick={() => setFilter(category)}
   >
     <Icon icon={categoryToIcon(category)} class="w-5 h-5 mr-3 text-gray-400" />

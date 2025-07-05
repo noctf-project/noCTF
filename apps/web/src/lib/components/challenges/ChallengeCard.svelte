@@ -26,7 +26,7 @@
 
 <!-- class:bg-blue-500/5={!data.isSolved} -->
 <button
-  class={`w-80 text-left p-2   flex items-center gap-3 hover:bg-gray-100/50 transition-colors duration-150 bg-base-100`}
+  class={`min-w-80 text-left p-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150 bg-base-100`}
   onclick={() => onclick(data)}
 >
   <!-- Blue bar for unsolved challenges -->

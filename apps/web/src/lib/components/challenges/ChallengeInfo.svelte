@@ -207,7 +207,7 @@
           {:else}
             <!-- I'm not sure why this is needed since svelte isn't re-rendering the component -->
             {#key challDetails?.description}
-              <div class="prose max-w-none">
+              <div class="prose w-full">
                 <Markdown
                   {carta}
                   value={"Dear " +
@@ -223,7 +223,7 @@
       <div>
         <!-- Attachments -->
         {#if !loading && challDetails!.files.length > 0}
-          <div class="border-t border-base-200">
+          <div class="border-t border-base-200 py-2">
             <div class="flex flex-row gap-2 items-center mb-2">
               <Icon icon="material-symbols:attach-file-rounded" class="text-xl"
               ></Icon>
@@ -407,8 +407,8 @@
       </div>
     {/if}
   {:else}
-    <div class="flex flex-col gap-4">
-      <p class="text-center">Select an email</p>
+    <div class="flex flex-col justify-center gap-4">
+      <p class="text-center">Select an email to read</p>
     </div>
   {/if}
 </div>
