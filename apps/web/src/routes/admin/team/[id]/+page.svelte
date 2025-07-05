@@ -10,6 +10,7 @@
   import UserQueryService from "$lib/state/user_query.svelte";
   import SubmissionsTable from "$lib/components/SubmissionsTable.svelte";
   import { goto } from "$app/navigation";
+  import { availableFlags, getFlagConfig } from "$lib/utils/team-flags";
 
   const teamId = Number(page.params.id);
 
@@ -92,16 +93,6 @@
   const apiDivisions = wrapLoadable(api.GET("/divisions"));
   const divisions = $derived(apiDivisions.r?.data?.data || []);
 
-  const availableFlags = [
-    { name: "blocked", color: "badge-error", icon: "material-symbols:block" },
-    {
-      name: "hidden",
-      color: "badge-neutral",
-      icon: "material-symbols:visibility-off",
-    },
-    { name: "frozen", color: "badge-info", icon: "material-symbols:ac-unit" },
-  ];
-
   $effect(() => {
     if (team.r?.data?.data.entries?.[0]) {
       const teamData = team.r.data.data.entries[0];
@@ -173,16 +164,6 @@
     } else {
       editForm.flags = [...editForm.flags, flagName];
     }
-  }
-
-  function getFlagConfig(flagName: string) {
-    return (
-      availableFlags.find((f) => f.name === flagName) || {
-        name: flagName,
-        color: "badge-warning",
-        icon: "material-symbols:flag",
-      }
-    );
   }
 
   async function deleteTeam() {

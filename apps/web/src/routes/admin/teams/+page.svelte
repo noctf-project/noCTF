@@ -3,6 +3,7 @@
   import api, { wrapLoadable } from "$lib/api/index.svelte";
   import Pagination from "$lib/components/Pagination.svelte";
   import { countryCodeToFlag } from "$lib/utils/country";
+  import { getFlagConfig } from "$lib/utils/team-flags";
 
   let searchQuery = $state("");
   let currentPage = $state(0);
@@ -19,6 +20,18 @@
       }),
     );
   });
+
+  type TeamTag = {
+    id: number;
+    name: string;
+    is_joinable: boolean;
+  };
+
+  const apiTeamTags = wrapLoadable(api.GET("/team_tags"));
+  const teamTags: TeamTag[] = $derived(apiTeamTags.r?.data?.data?.tags || []);
+
+  const apiDivisions = wrapLoadable(api.GET("/divisions"));
+  const divisions = $derived(apiDivisions.r?.data?.data || []);
 
   function handleSearch() {
     currentPage = 0;
@@ -85,19 +98,13 @@
             </th>
             <th
               scope="col"
-              class="w-32 border-r-2 border-base-400 text-center font-semibold"
-            >
-              Country
-            </th>
-            <th
-              scope="col"
-              class="w-32 border-r-2 border-base-400 text-center font-semibold"
+              class="w-16 border-r-2 border-base-400 text-center font-semibold"
             >
               Division
             </th>
             <th
               scope="col"
-              class="w-32 border-r-2 border-base-400 text-center font-semibold"
+              class="w-12 border-r-2 border-base-400 text-center font-semibold"
             >
               Members
             </th>
@@ -106,6 +113,12 @@
               class="w-32 border-r-2 border-base-400 text-center font-semibold"
             >
               Tags
+            </th>
+            <th
+              scope="col"
+              class="w-32 border-r-2 border-base-400 text-center font-semibold"
+            >
+              Flags
             </th>
             <th scope="col" class="w-48 text-center font-semibold">
               Created
@@ -123,27 +136,26 @@
                 {team.id}
               </td>
               <td class="border-r border-base-400 font-semibold">
-                <a
-                  href="/admin/team/{team.id}"
-                  class="link link-primary hover:link-hover"
-                >
-                  {team.name}
-                </a>
-              </td>
-              <td class="border-r border-base-400 text-center">
-                {#if team.country}
-                  <span class="text-lg" title={team.country}>
-                    {countryCodeToFlag(team.country)}
-                  </span>
-                {:else}
-                  <span class="text-base-content/60">None</span>
-                {/if}
-              </td>
-              <td class="border-r border-base-400 text-center">
-                {#if team.division_name}
-                  <span class="badge badge-secondary badge-sm"
-                    >{team.division_name}</span
+                <div class="flex items-center gap-2">
+                  {#if team.country}
+                    <span class="text-lg" title={team.country}>
+                      {countryCodeToFlag(team.country)}
+                    </span>
+                  {/if}
+                  <a
+                    href="/admin/team/{team.id}"
+                    class="link link-primary hover:link-hover"
                   >
+                    {team.name}
+                  </a>
+                </div>
+              </td>
+              <td class="border-r border-base-400 text-center">
+                {#if team.division_id}
+                  {@const division = divisions.find(
+                    (d) => d.id === team.division_id,
+                  )}
+                  {division?.name || `Division ${team.division_id}`}
                 {:else}
                   <span class="text-base-content/60">None</span>
                 {/if}
@@ -152,10 +164,33 @@
                 {team.members?.length || 0}
               </td>
               <td class="border-r border-base-400 text-center">
-                {#if team.tag_names && team.tag_names.length > 0}
+                {#if team.tag_ids && team.tag_ids.length > 0}
                   <div class="flex gap-1 flex-wrap justify-center">
-                    {#each team.tag_names as tag}
-                      <span class="badge badge-outline badge-sm">{tag}</span>
+                    {#each team.tag_ids as tagId}
+                      {@const tag = teamTags.find((t) => t.id === tagId)}
+                      <div
+                        class="btn btn-xs btn-primary pop pointer-events-none"
+                      >
+                        <Icon icon="material-symbols:check" class="text-xs" />
+                        {tag?.name || `Tag ${tagId}`}
+                      </div>
+                    {/each}
+                  </div>
+                {:else}
+                  <span class="text-base-content/60">None</span>
+                {/if}
+              </td>
+              <td class="border-r border-base-400 text-center">
+                {#if team.flags && team.flags.length > 0}
+                  <div class="flex gap-1 flex-wrap justify-center">
+                    {#each team.flags as flagName}
+                      {@const flagConfig = getFlagConfig(flagName)}
+                      <div
+                        class="btn btn-xs {flagConfig.color} text-white pop pointer-events-none"
+                      >
+                        <Icon icon={flagConfig.icon} class="text-xs" />
+                        {flagName}
+                      </div>
                     {/each}
                   </div>
                 {:else}
