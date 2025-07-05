@@ -44,10 +44,13 @@ export class UserDAO {
 
   async getFlagsAndRoles(
     id: number,
-  ): Promise<{ roles: string[]; flags: string[] } | undefined> {
+  ): Promise<
+    { roles: string[]; flags: string[]; team_id: number | null } | undefined
+  > {
     const result = await this.db
       .selectFrom("user")
-      .select(["roles", "flags"])
+      .leftJoin("team_member as tm", "user.id", "tm.user_id")
+      .select(["roles", "flags", "tm.team_id as team_id"])
       .where("id", "=", id)
       .executeTakeFirst();
     return result;

@@ -150,6 +150,8 @@ export type QueryAuditLogRequest = Static<typeof QueryAuditLogRequest>;
 
 export const AdminQuerySubmissionsRequest = Type.Object(
   {
+    page: Type.Optional(Type.Integer({ minimum: 1 })),
+    page_size: Type.Optional(Type.Integer()),
     created_at: Type.Optional(
       Type.Tuple([
         Type.Union([TypeDate, Type.Null()]),
@@ -162,8 +164,6 @@ export const AdminQuerySubmissionsRequest = Type.Object(
     status: Type.Optional(Type.Array(SubmissionStatus)),
     hidden: Type.Optional(Type.Boolean()),
     data: Type.Optional(Type.String()),
-    offset: Type.Optional(Type.Number()),
-    limit: Type.Optional(Type.Number()),
   },
   { additionalProperties: false },
 );
@@ -255,6 +255,24 @@ export const UpdateTeamRequest = Type.Composite(
 );
 export type UpdateTeamRequest = Static<typeof UpdateTeamRequest>;
 
+export const AdminUpdateTeamRequest = Type.Composite(
+  [
+    Type.Pick(Team, ["bio", "country", "tag_ids", "division_id", "flags"]),
+    Type.Object({
+      name: Type.String({
+        minLength: 1,
+        maxLength: 64,
+        pattern: NoInvalidWhitespace,
+      }),
+    }),
+    Type.Object({
+      join_code: Type.Optional(Type.Enum(UpdateTeamJoinCodeAction)),
+    }),
+  ],
+  { additionalProperties: false },
+);
+export type AdminUpdateTeamRequest = Static<typeof AdminUpdateTeamRequest>;
+
 export const AdminCreateChallengeRequest = Type.Omit(
   Challenge,
   ["created_at", "updated_at", "id", "version"],
@@ -293,6 +311,18 @@ export const QueryTeamsRequest = Type.Object(
 );
 export type QueryTeamsRequest = Static<typeof QueryTeamsRequest>;
 
+export const AdminQueryTeamsRequest = Type.Composite([
+  QueryTeamsRequest,
+  Type.Object({
+    flags: Type.Optional(
+      Type.Array(Type.String({ minLength: 1, maxLength: 64 }), {
+        maxItems: 50,
+      }),
+    ),
+  }),
+]);
+export type AdminQueryTeamsRequest = Static<typeof AdminQueryTeamsRequest>;
+
 export const QueryUsersRequest = Type.Object(
   {
     page: Type.Optional(Type.Integer({ minimum: 1 })),
@@ -303,6 +333,18 @@ export const QueryUsersRequest = Type.Object(
   { additionalProperties: false },
 );
 export type QueryUsersRequest = Static<typeof QueryUsersRequest>;
+
+export const AdminQueryUsersRequest = Type.Composite([
+  QueryUsersRequest,
+  Type.Object({
+    flags: Type.Optional(
+      Type.Array(Type.String({ minLength: 1, maxLength: 64 }), {
+        maxItems: 50,
+      }),
+    ),
+  }),
+]);
+export type AdminQueryUsersRequest = Static<typeof AdminQueryUsersRequest>;
 
 export const OAuthTokenRequest = Type.Object({
   grant_type: Type.String(),

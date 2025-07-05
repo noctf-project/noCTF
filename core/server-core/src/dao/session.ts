@@ -11,10 +11,11 @@ export class SessionDAO {
     app_id,
     refresh_token_hash,
     expires_at,
+    ip,
     scopes,
   }: Pick<
     Insertable<DB["session"]>,
-    "user_id" | "app_id" | "refresh_token_hash" | "expires_at" | "scopes"
+    "user_id" | "app_id" | "refresh_token_hash" | "expires_at" | "scopes" | "ip"
   >) {
     return (
       await this.db
@@ -25,6 +26,7 @@ export class SessionDAO {
           refresh_token_hash,
           expires_at,
           scopes,
+          ip,
         })
         .returning("id")
         .executeTakeFirstOrThrow()

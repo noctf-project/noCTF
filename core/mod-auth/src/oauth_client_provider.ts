@@ -96,6 +96,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
   }
 
   async authenticate(
+    ip: string,
     state: string,
     code: string,
     redirect_uri: string,
@@ -130,6 +131,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
       token: (
         await this.identityService.createSession({
           user_id: identity.user_id,
+          ip,
         })
       ).access_token,
     };

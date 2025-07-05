@@ -9,6 +9,7 @@ import { ServiceCradle } from "../index.ts";
 import { PolicyDocument } from "@noctf/api/datatypes";
 import { AuthConfig } from "@noctf/api/config";
 import { TeamDAO } from "../dao/team.ts";
+import { ConfigService, ConfigValue } from "./config.ts";
 
 vi.mock(import("../dao/policy.ts"));
 vi.mock(import("../dao/user.ts"));
@@ -21,7 +22,6 @@ describe(PolicyService, () => {
   const configService = mockDeep<ServiceCradle["configService"]>();
 
   const mockPolicyDAO = mockDeep<PolicyDAO>();
-  const mockTeamDAO = mockDeep<TeamDAO>();
   const mockUserDAO = mockDeep<UserDAO>();
 
   let policyService: PolicyService;
@@ -34,7 +34,6 @@ describe(PolicyService, () => {
     mockReset(mockUserDAO);
 
     vi.mocked(PolicyDAO).mockImplementation(() => mockPolicyDAO);
-    vi.mocked(TeamDAO).mockImplementation(() => mockTeamDAO);
     vi.mocked(UserDAO).mockImplementation(() => mockUserDAO);
 
     policyService = new PolicyService({
@@ -99,6 +98,7 @@ describe(PolicyService, () => {
       mockUserDAO.getFlagsAndRoles.mockResolvedValue({
         roles: Array.from(userRoles),
         flags: [UserFlag.VALID_EMAIL],
+        team_id: null,
       });
 
       mockPolicyDAO.listPolicies.mockResolvedValue(mockPolicies);
@@ -121,44 +121,63 @@ describe(PolicyService, () => {
 
   describe(PolicyService.prototype.getRolesForUser, () => {
     it("should not add an active role if email validation is on and user is not validated", async () => {
-      (configService.get<AuthConfig>).mockResolvedValue({
-        value: { validate_email: true },
+      vi.mocked(
+        configService.get as (id: string) => Promise<ConfigValue<AuthConfig>>,
+      ).mockResolvedValue({
+        value: {
+          validate_email: true,
+          enable_register_password: false,
+          enable_login_password: false,
+          enable_oauth: false,
+        },
         version: 1,
       });
       mockUserDAO.getFlagsAndRoles.mockResolvedValue({
         roles: ["user"],
         flags: [],
+        team_id: null,
       });
       const result = await policyService.getRolesForUser(1);
       expect(result).toEqual(new Set<string>(["user"]));
     });
 
     it("should add an active role if email validation is on and user is validated", async () => {
-      (configService.get<AuthConfig>).mockResolvedValue({
-        value: { validate_email: true },
+      vi.mocked(
+        configService.get as (id: string) => Promise<ConfigValue<AuthConfig>>,
+      ).mockResolvedValue({
+        value: {
+          validate_email: true,
+          enable_register_password: false,
+          enable_login_password: false,
+          enable_oauth: false,
+        },
         version: 1,
       });
       mockUserDAO.getFlagsAndRoles.mockResolvedValue({
         roles: ["user"],
         flags: [UserFlag.VALID_EMAIL],
+        team_id: null,
       });
       const result = await policyService.getRolesForUser(1);
       expect(result).toEqual(new Set<string>(["user", "active"]));
     });
 
     it("should add a has_team role if user belongs to a team", async () => {
-      (configService.get<AuthConfig>).mockResolvedValue({
-        value: { validate_email: true },
+      vi.mocked(
+        configService.get as (id: string) => Promise<ConfigValue<AuthConfig>>,
+      ).mockResolvedValue({
+        value: {
+          validate_email: true,
+          enable_register_password: false,
+          enable_login_password: false,
+          enable_oauth: false,
+        },
         version: 1,
       });
       mockUserDAO.getFlagsAndRoles.mockResolvedValue({
         roles: ["user"],
         flags: [UserFlag.VALID_EMAIL],
-      });
-      mockTeamDAO.getMembershipForUser.mockResolvedValue({
-        division_id: 1,
         team_id: 1,
-        role: "member",
       });
       const result = await policyService.getRolesForUser(1);
       expect(result).toEqual(new Set<string>(["user", "active", "has_team"]));
@@ -167,8 +186,15 @@ describe(PolicyService, () => {
     it.each([true, false])(
       "should replace active with blocked if user is blocked",
       async (validate_email) => {
-        (configService.get<AuthConfig>).mockResolvedValueOnce({
-          value: { validate_email },
+        vi.mocked(
+          configService.get as (id: string) => Promise<ConfigValue<AuthConfig>>,
+        ).mockResolvedValue({
+          value: {
+            validate_email,
+            enable_register_password: false,
+            enable_login_password: false,
+            enable_oauth: false,
+          },
           version: 1,
         });
         mockUserDAO.getFlagsAndRoles.mockResolvedValue({
@@ -176,6 +202,7 @@ describe(PolicyService, () => {
           flags: [UserFlag.BLOCKED].concat(
             validate_email ? [UserFlag.VALID_EMAIL] : [],
           ),
+          team_id: null,
         });
         const result = await policyService.getRolesForUser(1);
         expect(result).toEqual(new Set<string>(["user", "blocked"]));

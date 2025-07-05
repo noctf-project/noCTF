@@ -7,7 +7,6 @@ import { UserDAO } from "../dao/user.ts";
 import { AuthConfig } from "@noctf/api/config";
 import { UserFlag, UserRole } from "../types/enums.ts";
 import SingleValueCache from "../util/single_value_cache.ts";
-import { TeamDAO } from "../dao/team.ts";
 
 type Props = Pick<ServiceCradle, "databaseClient" | "logger" | "configService">;
 
@@ -20,7 +19,6 @@ export class PolicyService {
 
   private readonly policyDAO;
   private readonly userDAO;
-  private readonly teamDAO;
 
   private readonly userRolesCache = new LocalCache<number, Set<string>>({
     max: 16384,
@@ -36,7 +34,6 @@ export class PolicyService {
     this.configService = configService;
     this.policyDAO = new PolicyDAO(databaseClient.get());
     this.userDAO = new UserDAO(databaseClient.get());
-    this.teamDAO = new TeamDAO(databaseClient.get());
   }
 
   async getPoliciesForUser(userId: number) {
@@ -77,25 +74,28 @@ export class PolicyService {
   }
 
   private async fetchRolesForUser(id: number): Promise<Set<string>> {
-    const [flagsAndRoles, membership] = await Promise.all([
-      this.userDAO.getFlagsAndRoles(id),
-      this.teamDAO.getMembershipForUser(id),
-    ]);
-
+    const flagsAndRoles = await this.userDAO.getFlagsAndRoles(id);
     // User not found
     if (!flagsAndRoles) return new Set();
+    return this.computeRolesForUser(flagsAndRoles);
+  }
 
-    const roleSet = new Set(flagsAndRoles.roles);
-    const isBlocked = flagsAndRoles.flags.includes(UserFlag.BLOCKED);
+  async computeRolesForUser(p: {
+    flags: string[];
+    roles: string[];
+    team_id: number | null;
+  }) {
+    const roleSet = new Set(p.roles);
+    const isBlocked = p.flags.includes(UserFlag.BLOCKED);
     if (isBlocked) {
       roleSet.add(UserRole.BLOCKED);
     } else if (
-      flagsAndRoles.flags.includes(UserFlag.VALID_EMAIL) ||
+      p.flags.includes(UserFlag.VALID_EMAIL) ||
       !(await this.configService.get(AuthConfig)).value.validate_email
     ) {
       roleSet.add(UserRole.ACTIVE);
     }
-    if (membership) {
+    if (p.team_id) {
       roleSet.add(UserRole.HAS_TEAM);
     }
     return roleSet;

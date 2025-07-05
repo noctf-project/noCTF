@@ -105,6 +105,15 @@ export const ListTeamsResponse = Type.Object({
 });
 export type ListTeamsResponse = Static<typeof ListTeamsResponse>;
 
+export const AdminListTeamsResponse = Type.Object({
+  data: Type.Object({
+    entries: Type.Array(TeamSummary),
+    page_size: Type.Integer(),
+    total: Type.Integer(),
+  }),
+});
+export type AdminListTeamsResponse = Static<typeof AdminListTeamsResponse>;
+
 export const ListTeamTagsResponse = Type.Object({
   data: Type.Object({
     tags: Type.Array(Type.Omit(TeamTag, ["created_at"])),
@@ -120,6 +129,25 @@ export const ListUsersResponse = Type.Object({
   }),
 });
 export type ListUsersResponse = Static<typeof ListUsersResponse>;
+
+export const AdminListUsersResponse = Type.Object({
+  data: Type.Object({
+    entries: Type.Array(
+      Type.Composite([
+        UserSummary,
+        Type.Object({
+          derived_roles: Type.Array(Type.String()),
+          identities: Type.Array(
+            Type.Pick(UserIdentity, ["provider", "provider_id"]),
+          ),
+        }),
+      ]),
+    ),
+    page_size: Type.Integer(),
+    total: Type.Integer(),
+  }),
+});
+export type AdminListUsersResponse = Static<typeof AdminListUsersResponse>;
 
 export const MeUserResponse = Type.Object({
   data: Type.Composite([
@@ -276,7 +304,11 @@ export const ScoreboardSolvesResponse = Type.Object({
 export type ScoreboardSolvesResponse = Static<typeof ScoreboardSolvesResponse>;
 
 export const AdminQuerySubmissionsResponse = Type.Object({
-  data: Type.Array(Submission),
+  data: Type.Object({
+    entries: Type.Array(Submission),
+    page_size: Type.Integer(),
+    total: Type.Integer(),
+  }),
 });
 export type AdminQuerySubmissionsResponse = Static<
   typeof AdminQuerySubmissionsResponse

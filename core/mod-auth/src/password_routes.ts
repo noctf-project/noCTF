@@ -247,6 +247,7 @@ export default async function (fastify: FastifyInstance) {
       );
       const sessionToken = await identityService.createSession({
         user_id: id,
+        ip: request.ip,
       });
       return {
         data: {
@@ -290,7 +291,10 @@ export default async function (fastify: FastifyInstance) {
       const password = request.body.password;
       const user_id = await passwordProvider.authenticate(email, password);
 
-      const { access_token } = await identityService.createSession({ user_id });
+      const { access_token } = await identityService.createSession({
+        user_id,
+        ip: request.ip,
+      });
 
       return {
         data: {
@@ -406,6 +410,7 @@ export default async function (fastify: FastifyInstance) {
         await identityService.revokeUserSessions(identity.user_id);
         const sessionToken = await identityService.createSession({
           user_id: request.user.id,
+          ip: request.ip,
         });
         return {
           data: {

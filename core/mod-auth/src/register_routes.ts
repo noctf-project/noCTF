@@ -111,6 +111,7 @@ export default async function (fastify: FastifyInstance) {
       );
       const sessionToken = await identityService.createSession({
         user_id: id,
+        ip: request.ip,
       });
       return {
         data: {

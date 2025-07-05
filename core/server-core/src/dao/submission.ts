@@ -1,7 +1,6 @@
 import type { DB } from "@noctf/schema";
 import { sql, type Insertable } from "kysely";
 import { DBType } from "../clients/database.ts";
-import { AdminQuerySubmissionsRequest } from "@noctf/api/requests";
 import { LimitOffset, Submission } from "@noctf/api/datatypes";
 import { SubmissionStatus } from "@noctf/api/enums";
 import { PostgresErrorCode, TryPGConstraintError } from "../util/pgerror.ts";
@@ -26,7 +25,7 @@ export class SubmissionDAO {
     return await this.db
       .insertInto("submission")
       .values(v)
-      .returning((eb) => ["id", "updated_at"])
+      .returning(["id", "updated_at"])
       .executeTakeFirstOrThrow();
   }
 
@@ -94,20 +93,66 @@ export class SubmissionDAO {
     }
   }
 
-  async query(
-    {
-      created_at,
-      user_id,
-      team_id,
-      status,
-      hidden,
-      challenge_id,
-      data,
-    }: Omit<AdminQuerySubmissionsRequest, "limit|offset">,
+  private listQuery(
+    params?: {
+      created_at?: [Date | null, Date | null];
+      user_id?: number[];
+      team_id?: number[];
+      status?: SubmissionStatus[];
+      hidden?: boolean;
+      challenge_id?: number[];
+      data?: string;
+    },
+    limit?: { limit?: number; offset?: number },
+  ) {
+    let query = this.db.selectFrom("submission");
+
+    if (params?.created_at) {
+      if (params.created_at[0])
+        query = query.where("created_at", ">=", params.created_at[0]);
+      if (params.created_at[1])
+        query = query.where("created_at", "<=", params.created_at[1]);
+    }
+
+    if (params?.user_id && params.user_id.length) {
+      query = query.where("user_id", "in", params.user_id);
+    }
+
+    if (params?.team_id && params.team_id.length) {
+      query = query.where("team_id", "in", params.team_id);
+    }
+
+    if (params?.status && params.status.length) {
+      query = query.where("status", "in", params.status);
+    }
+
+    if (typeof params?.hidden === "boolean") {
+      query = query.where("hidden", "=", params.hidden);
+    }
+
+    if (params?.challenge_id && params.challenge_id.length) {
+      query = query.where("challenge_id", "in", params.challenge_id);
+    }
+
+    if (params?.data) {
+      query = query.where("data", "like", params.data);
+    }
+
+    if (limit?.limit) {
+      query = query.limit(limit.limit);
+    }
+    if (limit?.offset) {
+      query = query.offset(limit.offset);
+    }
+
+    return query;
+  }
+
+  async listSummary(
+    filters: Parameters<SubmissionDAO["listQuery"]>[0],
     limit?: LimitOffset,
   ): Promise<Submission[]> {
-    let query = this.db
-      .selectFrom("submission")
+    const query = this.listQuery(filters, limit)
       .select([
         "id",
         "user_id",
@@ -121,45 +166,20 @@ export class SubmissionDAO {
         "status",
         "created_at",
         "updated_at",
-      ]);
+      ])
+      .orderBy("created_at desc");
 
-    if (created_at) {
-      if (created_at[0]) query = query.where("created_at", ">=", created_at[0]);
-      if (created_at[1]) query = query.where("created_at", "<=", created_at[1]);
-    }
+    return query.execute();
+  }
 
-    if (user_id && user_id.length) {
-      query = query.where("user_id", "in", user_id);
-    }
-
-    if (team_id && team_id.length) {
-      query = query.where("team_id", "in", team_id);
-    }
-
-    if (status && status.length) {
-      query = query.where("status", "in", status);
-    }
-
-    if (typeof hidden === "boolean") {
-      query = query.where("hidden", "=", hidden);
-    }
-
-    if (challenge_id && challenge_id.length) {
-      query = query.where("challenge_id", "in", challenge_id);
-    }
-
-    if (data) {
-      query = query.where("data", "like", data);
-    }
-
-    if (limit?.limit) {
-      query = query.limit(limit.limit);
-    }
-
-    return query
-      .orderBy("created_at desc")
-      .offset(limit?.offset || 0)
-      .execute();
+  async getCount(
+    params?: Parameters<SubmissionDAO["listQuery"]>[0],
+  ): Promise<number> {
+    return (
+      await this.listQuery(params)
+        .select(this.db.fn.countAll().as("count"))
+        .executeTakeFirstOrThrow()
+    ).count as number;
   }
 
   async getSolvesForCalculation(
