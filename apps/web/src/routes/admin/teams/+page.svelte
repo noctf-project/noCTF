@@ -171,7 +171,6 @@
                       <div
                         class="btn btn-xs btn-primary pop pointer-events-none"
                       >
-                        <Icon icon="material-symbols:check" class="text-xs" />
                         {tag?.name || `Tag ${tagId}`}
                       </div>
                     {/each}
