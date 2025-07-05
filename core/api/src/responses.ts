@@ -92,13 +92,13 @@ export const QueryAuditLogResponse = Type.Object({
 export type QueryAuditLogResponse = Static<typeof QueryAuditLogResponse>;
 
 export const MeTeamResponse = Type.Object({
-  data: Team,
+  data: Type.Composite([Type.Omit(TeamSummary, ["flags"])]),
 });
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
 
 export const ListTeamsResponse = Type.Object({
   data: Type.Object({
-    entries: Type.Array(Type.Omit(TeamSummary, ["flags"])),
+    entries: Type.Array(Type.Omit(TeamSummary, ["flags", "join_code"])),
     page_size: Type.Integer(),
     total: Type.Integer(),
   }),

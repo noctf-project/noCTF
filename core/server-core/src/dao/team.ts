@@ -1,4 +1,4 @@
-import type { Insertable, Updateable } from "kysely";
+import type { Insertable, SelectQueryBuilder, Updateable } from "kysely";
 import type { DBType } from "../clients/database.ts";
 import type { Team, TeamSummary } from "@noctf/api/datatypes";
 import type { DB, TeamMemberRole } from "@noctf/schema";
@@ -89,27 +89,8 @@ export class TeamDAO {
     return result;
   }
 
-  async get(id: number): Promise<Team> {
-    const result = await this.db
-      .selectFrom("team")
-      .select([
-        "id",
-        "name",
-        "bio",
-        "country",
-        "join_code",
-        "division_id",
-        "flags",
-        "created_at",
-        sql<number[]>`
-          COALESCE(
-            (SELECT json_agg(ttm.tag_id) 
-            FROM team_tag_member ttm 
-            WHERE ttm.team_id = team.id),
-            '[]'::json
-          )
-        `.as("tag_ids"),
-      ])
+  async get(id: number): Promise<TeamSummary> {
+    const result = await this.select(this.db.selectFrom("team"))
       .where("id", "=", id)
       .executeTakeFirst();
     if (!result) {
@@ -122,31 +103,7 @@ export class TeamDAO {
     params?: Parameters<TeamDAO["listQuery"]>[0],
     limit?: Parameters<TeamDAO["listQuery"]>[1],
   ): Promise<TeamSummary[]> {
-    const query = this.listQuery(params, limit)
-      .select([
-        "team.id",
-        "team.name",
-        "team.bio",
-        "team.country",
-        "team.division_id",
-        "team.created_at",
-        "team.flags",
-        jsonArrayFrom(
-          this.db
-            .selectFrom("team_member as tm")
-            .select(["tm.user_id as user_id", "tm.role as role"])
-            .whereRef("tm.team_id", "=", sql`team.id`),
-        ).as("members"),
-        sql<number[]>`
-          COALESCE(
-            (SELECT json_agg(ttm.tag_id) 
-            FROM team_tag_member ttm 
-            WHERE ttm.team_id = team.id),
-            '[]'::json
-          )
-        `.as("tag_ids"),
-      ])
-      .orderBy("id");
+    const query = this.select(this.listQuery(params, limit)).orderBy("id");
     return query.execute() as Promise<TeamSummary[]>;
   }
 
@@ -376,5 +333,32 @@ export class TeamDAO {
       query = query.offset(limit.offset);
     }
     return query;
+  }
+
+  private select<S, T extends SelectQueryBuilder<DB, "team", S>>(db: T) {
+    return db.select([
+      "team.id",
+      "team.name",
+      "team.bio",
+      "team.country",
+      "team.division_id",
+      "team.created_at",
+      "team.join_code",
+      "team.flags",
+      jsonArrayFrom(
+        this.db
+          .selectFrom("team_member as tm")
+          .select(["tm.user_id as user_id", "tm.role as role"])
+          .whereRef("tm.team_id", "=", sql`team.id`),
+      ).as("members"),
+      sql<number[]>`
+        COALESCE(
+          (SELECT json_agg(ttm.tag_id) 
+          FROM team_tag_member ttm 
+          WHERE ttm.team_id = team.id),
+          '[]'::json
+        )
+      `.as("tag_ids"),
+    ]);
   }
 }
