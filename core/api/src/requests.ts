@@ -4,6 +4,7 @@ import {
   CaptchaValidationString,
   Challenge,
   Team,
+  TeamMemberType,
   TypeDate,
   User,
 } from "./datatypes.ts";
@@ -272,6 +273,17 @@ export const AdminUpdateTeamRequest = Type.Composite(
   { additionalProperties: false },
 );
 export type AdminUpdateTeamRequest = Static<typeof AdminUpdateTeamRequest>;
+
+export const AdminUpdateTeamMemberRequest = Type.Object(
+  {
+    user_id: Type.Integer(),
+    role: TeamMemberType,
+  },
+  { additionalProperties: false },
+);
+export type AdminUpdateTeamMemberRequest = Static<
+  typeof AdminUpdateTeamMemberRequest
+>;
 
 export const AdminCreateChallengeRequest = Type.Omit(
   Challenge,

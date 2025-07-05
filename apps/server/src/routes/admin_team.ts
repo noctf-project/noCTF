@@ -1,6 +1,7 @@
 import { IdParams } from "@noctf/api/params";
 import {
   AdminQueryTeamsRequest,
+  AdminUpdateTeamMemberRequest,
   AdminUpdateTeamRequest,
 } from "@noctf/api/requests";
 import { AdminListTeamsResponse, BaseResponse } from "@noctf/api/responses";
@@ -108,7 +109,66 @@ export async function routes(fastify: FastifyInstance) {
           type: ActorType.USER,
           id: request.user.id,
         },
+        message: "Team deleted by admin",
       });
+      return {};
+    },
+  );
+
+  fastify.put<{
+    Body: AdminUpdateTeamMemberRequest;
+    Reply: BaseResponse;
+    Params: IdParams;
+  }>(
+    "/admin/teams/:id/members",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["admin"],
+        response: {
+          200: BaseResponse,
+        },
+        params: IdParams,
+        body: AdminUpdateTeamMemberRequest,
+        auth: {
+          require: true,
+          policy: ["admin.team.update"],
+        },
+      },
+    },
+    async (request) => {
+      const role = request.body.role;
+      if (role === "none") {
+        await teamService.unassignMember(
+          {
+            team_id: request.params.id,
+            user_id: request.body.user_id,
+          },
+          {
+            actor: {
+              type: ActorType.USER,
+              id: request.user.id,
+            },
+            message: "Member removed by admin",
+          },
+        );
+        return {};
+      }
+      await teamService.assignMember(
+        {
+          team_id: request.params.id,
+          user_id: request.body.user_id,
+          role: role,
+        },
+        {
+          actor: {
+            type: ActorType.USER,
+            id: request.user.id,
+          },
+          message: `Member assigned role ${role} by admin`,
+        },
+      );
+
       return {};
     },
   );

@@ -376,3 +376,10 @@ export const App = Type.Object({
   updated_at: TypeDate,
 });
 export type App = Static<typeof App>;
+
+export const TeamMemberType = Type.Union([
+  Type.Literal("owner"),
+  Type.Literal("member"),
+  Type.Literal("none"),
+]);
+export type TeamMemberType = Static<typeof TeamMemberType>;
