@@ -10,7 +10,7 @@
 
   const teams = $derived.by(() => {
     return wrapLoadable(
-      api.POST("/teams/query", {
+      api.POST("/admin/teams/query", {
         body: {
           page: currentPage + 1,
           page_size: pageSize,

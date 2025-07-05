@@ -9,11 +9,12 @@
   } from "$lib/utils/country";
   import UserQueryService from "$lib/state/user_query.svelte";
   import SubmissionsTable from "$lib/components/SubmissionsTable.svelte";
+  import { goto } from "$app/navigation";
 
   const teamId = Number(page.params.id);
 
   const team = wrapLoadable(
-    api.POST("/teams/query", {
+    api.POST("/admin/teams/query", {
       body: { ids: [teamId] },
     }),
   );
@@ -74,7 +75,9 @@
     name: "",
     bio: "",
     country: "",
+    division_id: null as number | null,
     tag_ids: [] as number[],
+    flags: [] as string[],
   });
 
   type TeamTag = {
@@ -86,6 +89,19 @@
   const apiTeamTags = wrapLoadable(api.GET("/team_tags"));
   const teamTags: TeamTag[] = $derived(apiTeamTags.r?.data?.data?.tags || []);
 
+  const apiDivisions = wrapLoadable(api.GET("/divisions"));
+  const divisions = $derived(apiDivisions.r?.data?.data || []);
+
+  const availableFlags = [
+    { name: "blocked", color: "badge-error", icon: "material-symbols:block" },
+    {
+      name: "hidden",
+      color: "badge-neutral",
+      icon: "material-symbols:visibility-off",
+    },
+    { name: "frozen", color: "badge-info", icon: "material-symbols:ac-unit" },
+  ];
+
   $effect(() => {
     if (team.r?.data?.data.entries?.[0]) {
       const teamData = team.r.data.data.entries[0];
@@ -93,7 +109,9 @@
         name: teamData.name,
         bio: teamData.bio,
         country: teamData.country || "",
+        division_id: teamData.division_id,
         tag_ids: teamData.tag_ids || [],
+        flags: teamData.flags || [],
       };
     }
   });
@@ -104,13 +122,15 @@
     success = "";
 
     try {
-      const result = await api.PUT("/teams/{id}", {
+      const result = await api.PUT("/admin/teams/{id}", {
         params: { path: { id: teamId } },
         body: {
           name: editForm.name,
           bio: editForm.bio,
           country: editForm.country || null,
+          division_id: editForm.division_id || 1,
           tag_ids: editForm.tag_ids,
+          flags: editForm.flags,
         },
       });
 
@@ -123,7 +143,7 @@
       editMode = false;
 
       // Refresh team data
-      const refreshedData = await api.POST("/teams/query", {
+      const refreshedData = await api.POST("/admin/teams/query", {
         body: { ids: [teamId] },
       });
       team.r = refreshedData;
@@ -144,6 +164,54 @@
       editForm.tag_ids = editForm.tag_ids.filter((id) => id !== tagId);
     } else {
       editForm.tag_ids = [...editForm.tag_ids, tagId];
+    }
+  }
+
+  function toggleFlagSelection(flagName: string) {
+    if (editForm.flags.includes(flagName)) {
+      editForm.flags = editForm.flags.filter((flag) => flag !== flagName);
+    } else {
+      editForm.flags = [...editForm.flags, flagName];
+    }
+  }
+
+  function getFlagConfig(flagName: string) {
+    return (
+      availableFlags.find((f) => f.name === flagName) || {
+        name: flagName,
+        color: "badge-warning",
+        icon: "material-symbols:flag",
+      }
+    );
+  }
+
+  async function deleteTeam() {
+    const confirmed = confirm(
+      `Are you sure you want to delete this team? This action cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    loading = true;
+    error = "";
+    success = "";
+
+    try {
+      const result = await api.DELETE("/admin/teams/{id}", {
+        params: { path: { id: teamId } },
+      });
+
+      if (result.error) {
+        error = "Failed to delete team";
+        return;
+      }
+
+      goto("/admin/teams");
+    } catch (e) {
+      error = "An error occurred while deleting the team";
+      console.error(e);
+    } finally {
+      loading = false;
     }
   }
 
@@ -225,6 +293,19 @@
         >
           <Icon icon="material-symbols:edit" class="text-lg" />
           Edit
+        </button>
+        <button
+          class="btn btn-error pop hover:pop"
+          onclick={deleteTeam}
+          disabled={loading}
+        >
+          {#if loading}
+            <div class="loading loading-spinner loading-xs"></div>
+            Deleting...
+          {:else}
+            <Icon icon="material-symbols:delete" class="text-lg" />
+            Delete
+          {/if}
         </button>
       {/if}
     </div>
@@ -406,15 +487,34 @@
                 <label for="team-division" class="label">
                   <span class="label-text">Division</span>
                 </label>
-                <input
-                  id="team-division"
-                  type="text"
-                  value={teamData.division_id
-                    ? `Division ${teamData.division_id}`
-                    : "No division"}
-                  class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70"
-                  readonly
-                />
+                {#if editMode}
+                  <select
+                    id="team-division"
+                    bind:value={editForm.division_id}
+                    class="select select-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+                  >
+                    {#if apiDivisions.loading}
+                      <option disabled>Loading divisions...</option>
+                    {:else}
+                      {#each divisions as division}
+                        <option value={division.id}>
+                          {division.name}
+                        </option>
+                      {/each}
+                    {/if}
+                  </select>
+                {:else}
+                  <input
+                    id="team-division"
+                    type="text"
+                    value={teamData.division_id
+                      ? divisions.find((d) => d.id === teamData.division_id)
+                          ?.name || `Division ${teamData.division_id}`
+                      : "No division"}
+                    class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70"
+                    readonly
+                  />
+                {/if}
               </div>
 
               <div class="form-control w-full">
@@ -486,13 +586,74 @@
                     {#if teamData.tag_ids && teamData.tag_ids.length > 0}
                       {#each teamData.tag_ids as tagId}
                         {@const tag = teamTags.find((t) => t.id === tagId)}
-                        <span class="badge badge-outline"
-                          >{tag?.name || `Tag ${tagId}`}</span
+                        <div
+                          class="btn btn-sm btn-primary pop pointer-events-none"
                         >
+                          <Icon icon="material-symbols:check" class="text-sm" />
+                          {tag?.name || `Tag ${tagId}`}
+                        </div>
                       {/each}
                     {:else}
                       <span class="text-base-content/60 w-full text-center"
                         >No tags</span
+                      >
+                    {/if}
+                  </div>
+                {/if}
+              </div>
+
+              <div class="form-control w-full">
+                <label for="team-flags" class="label">
+                  <span class="label-text">Flags</span>
+                </label>
+                {#if editMode}
+                  <div
+                    class="flex flex-wrap gap-2 p-3 bg-base-200 rounded-lg min-h-[60px]"
+                  >
+                    {#each availableFlags as flag}
+                      {@const isSelected = editForm.flags.includes(flag.name)}
+                      <label class="cursor-pointer">
+                        <input
+                          type="checkbox"
+                          class="sr-only"
+                          checked={isSelected}
+                          onchange={() => toggleFlagSelection(flag.name)}
+                        />
+                        <div
+                          class={`btn btn-sm ${isSelected ? `${flag.color} text-white` : "btn-outline bg-base-100"} pop hover:pop`}
+                        >
+                          {#if isSelected}
+                            <Icon icon={flag.icon} class="text-sm" />
+                          {/if}
+                          {flag.name}
+                        </div>
+                      </label>
+                    {/each}
+                  </div>
+                  <div class="text-xs opacity-70 mt-1 h-2">
+                    {#if editForm.flags.length > 0}
+                      {editForm.flags.length} flag{editForm.flags.length !== 1
+                        ? "s"
+                        : ""} selected
+                    {/if}
+                  </div>
+                {:else}
+                  <div
+                    class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg"
+                  >
+                    {#if teamData.flags && teamData.flags.length > 0}
+                      {#each teamData.flags as flagName}
+                        {@const flagConfig = getFlagConfig(flagName)}
+                        <div
+                          class="btn btn-sm {flagConfig.color} text-white pop pointer-events-none"
+                        >
+                          <Icon icon={flagConfig.icon} class="text-sm" />
+                          {flagName}
+                        </div>
+                      {/each}
+                    {:else}
+                      <span class="text-base-content/60 w-full text-center"
+                        >No flags</span
                       >
                     {/if}
                   </div>
