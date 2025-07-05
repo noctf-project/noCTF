@@ -20,11 +20,7 @@
 
 <script lang="ts">
   import { Carta, Markdown } from "carta-md";
-  import {
-    categoryToIcon,
-    difficultyToBgColour,
-    formatFileSize,
-  } from "$lib/utils/challenges";
+  import { categoryToIcon, formatFileSize } from "$lib/utils/challenges";
   import DOMPurify from "isomorphic-dompurify";
   import Icon from "@iconify/svelte";
   import { type Difficulty } from "$lib/constants/difficulties";
@@ -37,6 +33,7 @@
   import { toasts } from "$lib/stores/toast";
   import authState from "$lib/state/auth.svelte";
   import DifficultyChip from "./DifficultyChip.svelte";
+  import { goto } from "$app/navigation";
 
   let { challData, challDetails, loading, onSolve }: ChallengeInfoProps =
     $props();
@@ -267,6 +264,17 @@
               class="input input-bordered flex-grow !bg-base-100"
               disabled
             />
+          </div>
+        {:else if !authState.isPartOfTeam}
+          <div class="flex justify-center gap-2">
+            <button
+              onclick={() => {
+                goto("/team");
+              }}
+              class="btn btn-primary"
+            >
+              Sign up to a team
+            </button>
           </div>
         {:else}
           <form class="flex gap-2 w-full">

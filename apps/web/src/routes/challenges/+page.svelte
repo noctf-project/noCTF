@@ -7,9 +7,8 @@
     getDifficultyFromTags,
   } from "$lib/utils/challenges";
   import ChallengeCard from "$lib/components/challenges/ChallengeCard.svelte";
-  import ChallengeModal, {
-    type ChallDetails,
-  } from "$lib/components/challenges/ChallengeModal.svelte";
+  import ChallengeModal from "$lib/components/challenges/ChallengeModal.svelte";
+  import type { ChallDetails } from "$lib/components/challenges/ChallengeInfo.svelte";
   import { onMount } from "svelte";
   import { toasts } from "$lib/stores/toast";
   import Icon from "@iconify/svelte";
@@ -39,6 +38,16 @@
     return () => {
       clearInterval(refresh);
     };
+  });
+
+  // Watch for when challenges become available and select the first one in email view
+  $effect(() => {
+    if (isEmailView && challenges && challenges.length > 0 && !modalChallData) {
+      const firstChallenge = challenges[0];
+      if (firstChallenge) {
+        onChallengeClicked(firstChallenge);
+      }
+    }
   });
 
   let allChallenges: ChallengeCardData[] | undefined = $derived(
@@ -95,7 +104,7 @@
   let modalLoading = $state(false);
   let modalChallData: ChallengeCardData | undefined = $state();
   let modalChallDetails: ChallDetails | undefined = $state();
-  let isEmailView = $state(false);
+  let isEmailView = $state(true);
   let collapsedCategories = $state<Record<string, boolean>>({});
 
   async function onChallengeClicked(challData: ChallengeCardData) {
@@ -148,7 +157,7 @@
 </script>
 
 <div class="w-full mx-auto px-4 sm:px-6 lg:px-8 h-auto mt-8">
-  <div class="text-center text-4xl font-black pb-4">Inbox</div>
+  <!-- <div class="text-center text-4xl font-black pb-4">Inbox</div> -->
   <div class="flex justify-center mb-6">
     <button
       class="btn btn-outline btn-sm gap-2"
@@ -190,7 +199,7 @@
     </div>
   {:else}
     <div
-      class="flex min-h-screen flex-col rounded md:grid grid-cols-[min(25%,20rem)_1fr] gap-6 lg:gap-8 bg-base-100"
+      class="flex min-h-screen flex-col p-2 rounded md:grid grid-cols-[min(25%,20rem)_1fr] gap-6 lg:gap-8 bg-base-300"
       style="min-height: calc(100vh - 24rem);"
     >
       <div class="md:sticky top-8 self-start mb-6 md:mb-0">
@@ -205,44 +214,49 @@
           <!-- Email View -->
           {#if isEmailView}
             <div class="flex w-full gap-5">
-              <div
-                class="flex flex-col gap-2 overflow-y-auto no-scrollbar"
-                style="height: calc(100vh - 24rem); width: max-content; min-width: 320px;"
-              >
-                {#each Object.entries(challengesByCategory) as [category, categoryChallenges] (category)}
-                  <div class=" rounded-lg mb-2">
-                    <button
-                      class="flex w-full items-center justify-between px-4 py-2 cursor-pointer select-none bg-base-300 hover:bg-base-100"
-                      onclick={() =>
-                        (collapsedCategories = {
-                          ...collapsedCategories,
-                          [category]: !collapsedCategories[category],
-                        })}
-                    >
-                      <span class="font-bold text-lg">{category}</span>
-                      <Icon
-                        icon={collapsedCategories[category]
-                          ? "mdi:chevron-right"
-                          : "mdi:chevron-down"}
-                        class="transition-transform duration-200"
-                      />
-                    </button>
-                    {#if !collapsedCategories[category]}
-                      <div class="flex flex-col divide-y">
-                        {#each categoryChallenges as challenge (challenge.id)}
-                          <div
-                            class="hover:bg-base-100 transition-colors cursor-pointer"
-                          >
-                            <ChallengeCard
-                              data={challenge}
-                              onclick={onChallengeClicked}
-                            />
-                          </div>
-                        {/each}
-                      </div>
-                    {/if}
-                  </div>
-                {/each}
+              <div class="flex flex-col shadow-md border-base-400 rounded-md">
+                <div class="py-2 px-3 bg-base-100 rounded-t-md">
+                  <h2 class="text-xl font-bold">Inbox</h2>
+                </div>
+                <div
+                  class="flex flex-col overflow-y-auto no-scrollbar"
+                  style="height: calc(100vh - 24rem); width: max-content; min-width: 320px;"
+                >
+                  {#each Object.entries(challengesByCategory) as [category, categoryChallenges] (category)}
+                    <div class="rounded-lg">
+                      <button
+                        class="flex w-full items-center justify-between px-4 py-1 cursor-pointer select-none bg-base-300"
+                        onclick={() =>
+                          (collapsedCategories = {
+                            ...collapsedCategories,
+                            [category]: !collapsedCategories[category],
+                          })}
+                      >
+                        <span class="font-semibold text-md">{category}</span>
+                        <Icon
+                          icon={collapsedCategories[category]
+                            ? "mdi:chevron-right"
+                            : "mdi:chevron-down"}
+                          class="transition-transform duration-200"
+                        />
+                      </button>
+                      {#if !collapsedCategories[category]}
+                        <div class="flex flex-col divide-y">
+                          {#each categoryChallenges as challenge (challenge.id)}
+                            <div
+                              class="hover:bg-base-100 transition-colors cursor-pointer"
+                            >
+                              <ChallengeCard
+                                data={challenge}
+                                onclick={onChallengeClicked}
+                              />
+                            </div>
+                          {/each}
+                        </div>
+                      {/if}
+                    </div>
+                  {/each}
+                </div>
               </div>
               <div class="flex-grow w-full">
                 <ChallengeInfo

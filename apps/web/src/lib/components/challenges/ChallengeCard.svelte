@@ -26,7 +26,7 @@
 
 <!-- class:bg-blue-500/5={!data.isSolved} -->
 <button
-  class={`min-w-80 text-left p-2   flex items-center gap-3 hover:bg-gray-100/50 transition-colors duration-150 ${data.isSolved ? "bg-base-300" : "bg-base-100"}`}
+  class={`w-80 text-left p-2   flex items-center gap-3 hover:bg-gray-100/50 transition-colors duration-150 bg-base-100`}
   onclick={() => onclick(data)}
 >
   <!-- Blue bar for unsolved challenges -->
@@ -55,6 +55,7 @@
       <p
         class="text-sm leading-tight truncate"
         class:font-semibold={!data.isSolved}
+        class:text-blue-400={!data.isSolved}
       >
         {data.title}
       </p>
