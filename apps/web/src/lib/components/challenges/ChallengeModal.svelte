@@ -38,6 +38,7 @@
   import { getRelativeTime } from "$lib/utils/time";
   import TeamNamesService from "$lib/state/team_query.svelte";
   import { toasts } from "$lib/stores/toast";
+  import DifficultyChip from "./DifficultyChip.svelte";
 
   let {
     challData,
@@ -222,11 +223,9 @@
 
           <div class="flex flex-row items-center gap-3 w-full">
             {#if challData?.difficulty}
-              <div
-                class={`badge badge-sm text-base-500 rounded-xl text-xs font-black pop ${difficultyToBgColour(challData?.difficulty as Difficulty)}`}
-              >
-                {challData?.difficulty}
-              </div>
+              <DifficultyChip
+                difficulty={challData?.difficulty as Difficulty}
+              />
             {/if}
             <div class="bg-neutral-400 w-full h-[1px]"></div>
             <div

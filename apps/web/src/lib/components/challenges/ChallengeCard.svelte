@@ -17,8 +17,9 @@
 
 <script lang="ts">
   import Icon from "@iconify/svelte";
-  import { categoryToIcon, difficultyToBgColour } from "$lib/utils/challenges";
+  import { categoryToIcon } from "$lib/utils/challenges";
   import { type Difficulty } from "$lib/constants/difficulties";
+  import DifficultyChip from "./DifficultyChip.svelte";
 
   const { data, onclick }: ChallengeCardProps = $props();
   // Cannot destructure data here, breaks reactivity https://svelte.dev/docs/svelte/$state#Deep-state
@@ -35,11 +36,7 @@
     </div>
     <div class="flex flex-row items-center gap-3">
       {#if data.difficulty}
-        <div
-          class={`badge badge-sm rounded-xl text-xs text-base-500 font-black pop ${difficultyToBgColour(data.difficulty as Difficulty)}`}
-        >
-          {data.difficulty}
-        </div>
+        <DifficultyChip difficulty={data.difficulty as Difficulty} />
       {/if}
       <div
         class={`${data.isSolved ? "bg-primary-content" : "bg-neutral-400"} w-full h-[1px]`}
