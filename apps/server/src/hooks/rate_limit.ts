@@ -2,6 +2,7 @@ import { TooManyRequestsError } from "@noctf/server-core/errors";
 import { RateLimitBucket } from "@noctf/server-core/services/rate_limit";
 import { NormalizeIPPrefix } from "@noctf/server-core/util/limit_keys";
 import { FastifyReply, FastifyRequest } from "fastify";
+import { DISABLE_RATE_LIMIT } from "../config.ts";
 
 const DEFAULT_CONFIG = (r: FastifyRequest) => ({
   key:
@@ -15,6 +16,7 @@ export const RateLimitHook = async (
   request: FastifyRequest,
   reply: FastifyReply,
 ) => {
+  if (DISABLE_RATE_LIMIT) return;
   const { rateLimitService } = request.server.container.cradle;
   const config = request.routeOptions.schema?.rateLimit || DEFAULT_CONFIG;
   let buckets: RateLimitBucket[] = [];

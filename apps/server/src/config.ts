@@ -22,6 +22,9 @@ export const ENABLE_HTTP2 = ["1", "true"].includes(
 export const ENABLE_SWAGGER = ["1", "true"].includes(
   (process.env.ENABLE_SWAGGER || "").toLowerCase(),
 );
+export const DISABLE_RATE_LIMIT = ["1", "true"].includes(
+  (process.env.DISABLE_RATE_LIMIT || "").toLowerCase(),
+);
 
 export const FILE_LOCAL_PATH = process.env.FILE_LOCAL_PATH || "files/";
 
