@@ -1,11 +1,11 @@
 import { AssociateRequest } from "@noctf/api/requests";
-import { SuccessResponse } from "@noctf/api/responses";
+import { BaseResponse, SuccessResponse } from "@noctf/api/responses";
 import { FastifyInstance } from "fastify";
 import { TokenProvider } from "./token_provider.ts";
 import { ForbiddenError } from "@noctf/server-core/errors";
 
 export default async function (fastify: FastifyInstance) {
-  const { identityService, configService, cacheService, emailService } =
+  const { identityService, cacheService } =
     fastify.container.cradle;
   const tokenProvider = new TokenProvider({ cacheService });
 

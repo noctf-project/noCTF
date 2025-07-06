@@ -1,5 +1,11 @@
-import { AdminQueryUsersRequest } from "@noctf/api/requests";
-import { AdminListUsersResponse } from "@noctf/api/responses";
+import { IdParams } from "@noctf/api/params";
+import {
+  AdminQueryUsersRequest,
+  AdminUpdateUserRequest,
+} from "@noctf/api/requests";
+import { AdminListUsersResponse, BaseResponse } from "@noctf/api/responses";
+import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
+import { ActorType } from "@noctf/server-core/types/enums";
 import { RunInParallelWithLimit } from "@noctf/server-core/util/semaphore";
 import { FastifyInstance } from "fastify";
 
@@ -56,6 +62,65 @@ export async function routes(fastify: FastifyInstance) {
           total: total || entries.length,
         },
       };
+    },
+  );
+
+  fastify.put<{ Body: AdminUpdateUserRequest; Params: IdParams; Reply: BaseResponse }>(
+    "/admin/user/:id",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["admin"],
+        auth: {
+          require: true,
+          policy: ["admin.user.update"],
+        },
+        body: AdminUpdateUserRequest,
+        response: {
+          200: BaseResponse,
+        },
+      },
+    },
+    async (request) => {
+      const ex = await userService.get(request.params.id);
+      if (!ex) throw new NotFoundError("User not found");
+      const { name, bio, flags, roles } = request.body;
+
+      const sFlags = new Set(flags);
+      const sRoles = new Set(roles);
+
+      const changed = [
+        name !== ex.name && "name",
+        bio !== ex.bio && "bio",
+        sRoles.symmetricDifference(new Set(ex.roles)).size > 0 && "roles",
+        sFlags.symmetricDifference(new Set(ex.flags)).size > 0 && "flags",
+      ].filter((x) => x);
+      
+      if (changed.length === 0) return {};
+      if (changed.includes("roles")) {
+        const allowed = await policyService.evaluate(request.user.id, [
+          "admin.policy.update",
+        ]);
+        if (!allowed) throw new ForbiddenError("Not allowed to update roles");
+      }
+
+      await userService.update(
+        request.user.id,
+        {
+          name: request.body.name,
+          bio: request.body.bio,
+          flags: [...sFlags],
+          roles: [...sRoles],
+        },
+        {
+          actor: {
+            type: ActorType.USER,
+            id: request.user.id,
+          },
+          message: `Properties ${changed.join(", ")} were updated.`,
+        },
+      );
+      return {};
     },
   );
 }

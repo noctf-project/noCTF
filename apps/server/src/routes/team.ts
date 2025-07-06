@@ -14,6 +14,7 @@ import {
   UpdateTeamRequest,
 } from "@noctf/api/requests";
 import {
+  BaseResponse,
   ListDivisionsResponse,
   ListTeamsResponse,
   ListTeamTagsResponse,
@@ -233,7 +234,7 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.put<{ Body: UpdateTeamRequest; Reply: SuccessResponse }>(
+  fastify.put<{ Body: UpdateTeamRequest; Reply: BaseResponse }>(
     "/team",
     {
       schema: {
@@ -245,7 +246,7 @@ export async function routes(fastify: FastifyInstance) {
         },
         body: UpdateTeamRequest,
         response: {
-          200: SuccessResponse,
+          200: BaseResponse,
         },
       },
     },
@@ -269,9 +270,7 @@ export async function routes(fastify: FastifyInstance) {
           id: request.user.id,
         },
       });
-      return {
-        data: true,
-      };
+      return {};
     },
   );
 

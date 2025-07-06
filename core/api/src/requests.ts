@@ -3,6 +3,7 @@ import { Type } from "@sinclair/typebox";
 import {
   CaptchaValidationString,
   Challenge,
+  Name,
   Team,
   TeamMemberType,
   TeamTag,
@@ -11,27 +12,19 @@ import {
 } from "./datatypes.ts";
 import { SubmissionStatus } from "./enums.ts";
 
-const NoInvalidWhitespace =
-  "^(?! )[^\\t\\n\\r\\f\\v\\u00A0\\u1680\\u2000\\u2001\\u2002\\u2003\\u2004\\u2005\\u2006\\u2007\\u2008\\u2009\\u200A\\u200B\\u200C\\u200D\\u200E\\u200F\\u2028\\u2029\\u202F\\u205F\\u2060\\u3000\\uFEFF]+(?<! )$";
+export const UpdateUserRequest = Type.Pick(User, ["bio", "name"], {
+  additionalProperties: false,
+});
+export type UpdateUserRequest = Static<typeof UpdateUserRequest>;
 
-export const UpdateUserRequest = Type.Composite(
-  [
-    Type.Pick(User, ["bio"]),
-    Type.Object({
-      name: Type.Optional(
-        Type.String({
-          minLength: 1,
-          maxLength: 64,
-          pattern: NoInvalidWhitespace,
-        }),
-      ),
-    }),
-  ],
+export const AdminUpdateUserRequest = Type.Pick(
+  User,
+  ["bio", "name", "flags", "roles"],
   {
     additionalProperties: false,
   },
 );
-export type UpdateUserRequest = Static<typeof UpdateUserRequest>;
+export type AdminUpdateUserRequest = Static<typeof AdminUpdateUserRequest>;
 
 export const InitAuthOauthRequest = Type.Object(
   {
@@ -108,17 +101,15 @@ export const AssociateRequest = Type.Object(
 );
 export type AssociateRequest = Static<typeof AssociateRequest>;
 
-export const RegisterAuthRequest = Type.Object(
-  {
-    token: Type.String(),
-    name: Type.String({
-      minLength: 1,
-      maxLength: 64,
-      pattern: NoInvalidWhitespace,
+export const RegisterAuthRequest = Type.Composite(
+  [
+    Type.Object({
+      token: Type.String(),
+      email: Type.Optional(Type.String({ format: "email" })),
+      password: Type.Optional(Type.String({ minLength: 8, maxLength: 256 })),
     }),
-    email: Type.Optional(Type.String({ format: "email" })),
-    password: Type.Optional(Type.String({ minLength: 8, maxLength: 256 })),
-  },
+    Type.Partial(Type.Pick(User, ["name"])),
+  ],
   { additionalProperties: false },
 );
 export type RegisterAuthRequest = Static<typeof RegisterAuthRequest>;
@@ -206,11 +197,7 @@ export const CreateTeamRequest = Type.Composite(
   [
     Type.Pick(Team, ["division_id", "tag_ids"]),
     Type.Object({
-      name: Type.String({
-        minLength: 1,
-        maxLength: 64,
-        pattern: NoInvalidWhitespace,
-      }),
+      name: Name,
       division_password: Type.Optional(
         Type.String({
           minLength: 1,
@@ -241,14 +228,7 @@ export enum UpdateTeamJoinCodeAction {
 
 export const UpdateTeamRequest = Type.Composite(
   [
-    Type.Pick(Team, ["bio", "country", "tag_ids"]),
-    Type.Object({
-      name: Type.String({
-        minLength: 1,
-        maxLength: 64,
-        pattern: NoInvalidWhitespace,
-      }),
-    }),
+    Type.Pick(Team, ["bio", "country", "tag_ids", "name"]),
     Type.Object({
       join_code: Type.Optional(Type.Enum(UpdateTeamJoinCodeAction)),
     }),
@@ -259,14 +239,14 @@ export type UpdateTeamRequest = Static<typeof UpdateTeamRequest>;
 
 export const AdminUpdateTeamRequest = Type.Composite(
   [
-    Type.Pick(Team, ["bio", "country", "tag_ids", "division_id", "flags"]),
-    Type.Object({
-      name: Type.String({
-        minLength: 1,
-        maxLength: 64,
-        pattern: NoInvalidWhitespace,
-      }),
-    }),
+    Type.Pick(Team, [
+      "bio",
+      "country",
+      "tag_ids",
+      "division_id",
+      "flags",
+      "name",
+    ]),
     Type.Object({
       join_code: Type.Optional(Type.Enum(UpdateTeamJoinCodeAction)),
     }),
