@@ -50,6 +50,7 @@
   let scoresLoading = $state(false);
   let showHash = $state(false);
   let scoresData: ScoreEntry[] | undefined = $state(undefined);
+  let scoreModalRef: HTMLElement | undefined = $state();
 
   let knowsSolvesClick = localStorage.getItem("knowsSolvesClick") == "1";
   let showHint = $state(!knowsSolvesClick);
