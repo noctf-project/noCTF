@@ -98,11 +98,11 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const { name, bio } = request.body;
-      const x = await userService.get(request.user.id);
-      if (!x) throw new NotFoundError("User not found");
+      const ex = await userService.get(request.user.id);
+      if (!ex) throw new NotFoundError("User not found");
       const changed = [
-        name !== x.name && "name",
-        bio !== x.bio && "bio",
+        name !== ex.name && "name",
+        bio !== ex.bio && "bio",
       ].filter((x) => x);
       if (changed.length === 0) return {};
 

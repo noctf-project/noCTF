@@ -82,18 +82,18 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const x = await userService.get(request.user.id);
-      if (!x) throw new NotFoundError("User not found");
+      const ex = await userService.get(request.user.id);
+      if (!ex) throw new NotFoundError("User not found");
       const { name, bio, flags, roles } = request.body;
 
       const sFlags = new Set(flags);
       const sRoles = new Set(roles);
 
       const changed = [
-        name !== x.name && "name",
-        bio !== x.bio && "bio",
-        sRoles.symmetricDifference(new Set(x.roles)).size > 0 && "roles",
-        sFlags.symmetricDifference(new Set(x.flags)).size > 0 && "flags",
+        name !== ex.name && "name",
+        bio !== ex.bio && "bio",
+        sRoles.symmetricDifference(new Set(ex.roles)).size > 0 && "roles",
+        sFlags.symmetricDifference(new Set(ex.flags)).size > 0 && "flags",
       ].filter((x) => x);
       
       if (changed.length === 0) return {};
