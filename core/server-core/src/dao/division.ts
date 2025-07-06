@@ -8,8 +8,8 @@ export class DivisionDAO {
     return this.listQuery().execute();
   }
 
-  async get(id: number): Promise<Division> {
-    return this.listQuery().where("id", "=", id).executeTakeFirstOrThrow();
+  async get(id: number): Promise<Division | undefined> {
+    return this.listQuery().where("id", "=", id).executeTakeFirst();
   }
 
   private listQuery() {

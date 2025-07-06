@@ -24,3 +24,11 @@ export const GetFileQuery = Type.Object(
   { additionalProperties: false },
 );
 export type GetFileQuery = Static<typeof GetFileQuery>;
+
+export const SolveQuery = Type.Object(
+  {
+    division_id: Type.Optional(Type.Integer()),
+  },
+  { additionalProperties: false },
+);
+export type SolveQuery = Static<typeof SolveQuery>;

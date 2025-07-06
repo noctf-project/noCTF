@@ -19,7 +19,6 @@ import {
   ListTeamsResponse,
   ListTeamTagsResponse,
   MeTeamResponse,
-  SuccessResponse,
 } from "@noctf/api/responses";
 import { ActorType, TeamFlag } from "@noctf/server-core/types/enums";
 import { Policy } from "@noctf/server-core/util/policy";
