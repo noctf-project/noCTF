@@ -160,7 +160,7 @@
 
   <div class="space-y-6">
     <!-- Create New Tag -->
-    <div class="card bg-base-200 pop rounded-lg">
+    <div class="card bg-base-100 pop rounded-lg">
       <div class="card-body">
         <h3 class="text-lg font-semibold mb-4">Create New Tag</h3>
 
