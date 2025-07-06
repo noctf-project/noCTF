@@ -299,7 +299,7 @@ export async function routes(fastify: FastifyInstance) {
           ? request.body.page_size
           : Math.min(PAGE_SIZE, request.body.page_size)) || PAGE_SIZE;
       const query = {
-        flags: ["!hidden"],
+        flags: admin ? [] : ["!hidden"],
         division_id: request.body.division_id,
         name_prefix: request.body.name_prefix,
         ids: request.body.ids,
