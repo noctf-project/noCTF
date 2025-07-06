@@ -32,5 +32,5 @@ FROM base AS build_web
 RUN pnpm --filter '@noctf/web' build
 FROM joseluisq/static-web-server AS out_web
 COPY --from=build_web /build/apps/web/dist /public
-COPY --from=build_web /build/apps/web/dist/404.html /public/index.html
+COPY --from=build_web /build/apps/web/dist/index.html /public/index.html
 EXPOSE 80/tcp

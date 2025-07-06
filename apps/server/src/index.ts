@@ -166,6 +166,7 @@ const logRequest = async (
       path: request.originalUrl,
       method: request.method,
       ip: request.ip,
+      u: request.user?.id,
       ...(flag && { [flag]: true }),
     },
     "request",
