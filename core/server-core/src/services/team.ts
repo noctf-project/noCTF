@@ -282,7 +282,7 @@ export class TeamService {
     try {
       await this.teamDAO.assign(v);
     } catch (e) {
-      if (!(e instanceof ConflictError) || v.role !== "owner") {
+      if (!(e instanceof ConflictError) || !e.cause || v.role !== "owner") {
         throw e;
       }
       // atomic owner swap (if exists)
