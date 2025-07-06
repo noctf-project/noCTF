@@ -233,6 +233,70 @@
       console.error(e);
     }
   }
+
+  async function removeMember(userId: number, userName: string) {
+    const confirmed = confirm(
+      `Are you sure you want to remove ${userName} from this team? This action cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const result = await api.PUT("/admin/teams/{id}/members", {
+        params: { path: { id: teamId } },
+        body: {
+          user_id: userId,
+          role: "none",
+        },
+      });
+
+      if (result.error) {
+        alert("Failed to remove member");
+        return;
+      }
+
+      // Refresh team data
+      const refreshedData = await api.POST("/admin/teams/query", {
+        body: { ids: [teamId] },
+      });
+      team.r = refreshedData;
+    } catch (e) {
+      alert("An error occurred while removing the member");
+      console.error(e);
+    }
+  }
+
+  async function transferOwnership(userId: number, userName: string) {
+    const confirmed = confirm(
+      `Are you sure you want to transfer ownership to ${userName}? This will make them the team owner and demote the current owner to a regular member.`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const result = await api.PUT("/admin/teams/{id}/members", {
+        params: { path: { id: teamId } },
+        body: {
+          user_id: userId,
+          role: "owner",
+        },
+      });
+
+      if (result.error) {
+        alert("Failed to transfer ownership");
+        return;
+      }
+
+      // Refresh team data
+      const refreshedData = await api.POST("/admin/teams/query", {
+        body: { ids: [teamId] },
+      });
+      team.r = refreshedData;
+    } catch (e) {
+      alert("An error occurred while transferring ownership");
+      console.error(e);
+    }
+  }
 </script>
 
 <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8">
@@ -666,7 +730,7 @@
                   >Role</th
                 >
                 <th
-                  class="border-y border-base-300 bg-base-200 py-2 px-3 text-center font-bold"
+                  class="border-y border-base-300 bg-base-200 py-2 px-3 text-right font-bold"
                   >Actions</th
                 >
               </tr>
@@ -696,21 +760,53 @@
                   </td>
                   <td class="border-y border-base-300 py-2 px-3">
                     <span
-                      class="badge {member.role === 'owner'
+                      class="badge pop {member.role === 'owner'
                         ? 'badge-primary'
                         : 'badge-secondary'}"
                     >
+                      {#if member.role === 'owner'}
+                        <Icon icon="material-symbols:crown" class="text-xs" />
+                      {:else}
+                        <Icon icon="material-symbols:person" class="text-xs" />
+                      {/if}
+                      &nbsp;
                       {member.role}
                     </span>
                   </td>
-                  <td class="border-y border-base-300 py-2 px-3 text-center">
-                    <a
-                      href="/admin/user/{member.user_id}"
-                      class="btn btn-ghost btn-xs pop hover:pop"
-                    >
-                      <Icon icon="material-symbols:open-in-new" />
-                      View User
-                    </a>
+                  <td class="border-y border-base-300 py-2 px-3 text-right">
+                    <div class="flex gap-2 justify-end">
+                      <a
+                        href="/admin/user/{member.user_id}"
+                        class="btn btn-ghost btn-xs pop hover:pop"
+                      >
+                        <Icon icon="material-symbols:open-in-new" />
+                        View User
+                      </a>
+                      {#if member.role !== "owner"}
+                        <button
+                          class="btn btn-primary btn-xs pop hover:pop"
+                          onclick={() => {
+                            UserQueryService.get(member.user_id).then((user) => {
+                              transferOwnership(member.user_id, user?.name || `User ${member.user_id}`);
+                            });
+                          }}
+                        >
+                          <Icon icon="material-symbols:crown" />
+                          Make Owner
+                        </button>
+                      {/if}
+                      <button
+                        class="btn btn-error btn-xs pop hover:pop"
+                        onclick={() => {
+                          UserQueryService.get(member.user_id).then((user) => {
+                            removeMember(member.user_id, user?.name || `User ${member.user_id}`);
+                          });
+                        }}
+                      >
+                        <Icon icon="material-symbols:person-remove" />
+                        Remove
+                      </button>
+                    </div>
                   </td>
                 </tr>
               {/each}
