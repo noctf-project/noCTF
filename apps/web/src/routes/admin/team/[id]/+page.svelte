@@ -166,6 +166,26 @@
     }
   }
 
+  let customFlagInput = $state("");
+
+  function addCustomFlag() {
+    const flagName = customFlagInput.trim();
+    if (flagName && !editForm.flags.includes(flagName)) {
+      editForm.flags = [...editForm.flags, flagName];
+      customFlagInput = "";
+    }
+  }
+
+  function removeCustomFlag(flagName: string) {
+    editForm.flags = editForm.flags.filter((flag) => flag !== flagName);
+  }
+
+  // Get predefined flag names for filtering
+  const predefinedFlagNames = $derived(availableFlags.map((f) => f.name));
+  const customFlags = $derived(
+    editForm.flags.filter((flag) => !predefinedFlagNames.includes(flag)),
+  );
+
   async function deleteTeam() {
     const confirmed = confirm(
       `Are you sure you want to delete this team? This action cannot be undone.`,
@@ -652,6 +672,7 @@
                   <span class="label-text">Flags</span>
                 </label>
                 {#if editMode}
+                  <!-- All Flags Container -->
                   <div
                     class="flex flex-wrap gap-2 p-3 bg-base-200 rounded-lg min-h-[60px]"
                   >
@@ -674,7 +695,50 @@
                         </div>
                       </label>
                     {/each}
+
+                    {#each customFlags as flagName}
+                      <div class="btn btn-sm badge-warning text-white pop relative group">
+                        {flagName}
+                        <button
+                          type="button"
+                          class="ml-1 opacity-60 hover:opacity-100"
+                          onclick={() => removeCustomFlag(flagName)}
+                          title="Remove custom flag"
+                        >
+                          <Icon icon="material-symbols:close" class="text-xs" />
+                        </button>
+                      </div>
+                    {/each}
                   </div>
+
+                  <!-- Add Custom Flag Input -->
+                  <div class="mt-2">
+                    <div class="text-sm font-medium mb-2 opacity-70">Add Custom Flag</div>
+                    <div class="flex gap-2">
+                      <input
+                        type="text"
+                        bind:value={customFlagInput}
+                        placeholder="Enter custom flag name"
+                        class="input input-bordered h-8 flex-1 focus:outline-none focus:ring-0 focus:ring-offset-0"
+                        onkeydown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addCustomFlag();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        class="btn btn-primary btn-sm pop hover:pop h-8 min-h-8"
+                        onclick={addCustomFlag}
+                        disabled={!customFlagInput.trim() || editForm.flags.includes(customFlagInput.trim())}
+                      >
+                        <Icon icon="material-symbols:add" class="text-sm" />
+                        Add
+                      </button>
+                    </div>
+                  </div>
+
                   <div class="text-xs opacity-70 mt-1 h-2">
                     {#if editForm.flags.length > 0}
                       {editForm.flags.length} flag{editForm.flags.length !== 1
@@ -689,11 +753,17 @@
                     {#if teamData.flags && teamData.flags.length > 0}
                       {#each teamData.flags as flagName}
                         {@const flagConfig = getFlagConfig(flagName)}
+                        {@const isCustomFlag = !predefinedFlagNames.includes(flagName)}
                         <div
                           class="btn btn-sm {flagConfig.color} text-white pop pointer-events-none"
                         >
-                          <Icon icon={flagConfig.icon} class="text-sm" />
+                          {#if flagConfig.icon}
+                            <Icon icon={flagConfig.icon} class="text-sm" />
+                          {/if}
                           {flagName}
+                          {#if isCustomFlag}
+                            <span class="ml-1 opacity-60 text-xs">(custom)</span>
+                          {/if}
                         </div>
                       {/each}
                     {:else}
