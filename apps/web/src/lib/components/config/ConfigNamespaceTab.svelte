@@ -270,9 +270,5 @@
         {/if}
       </div>
     </div>
-
-    <div class="text-sm text-base-content/60">
-      Version: {version}
-    </div>
   {/if}
 </div>
