@@ -4,6 +4,7 @@ import "@noctf/server-core/types/fastify";
 import { ActorType } from "@noctf/server-core/types/enums";
 import { QueryUsersRequest, UpdateUserRequest } from "@noctf/api/requests";
 import {
+  BaseResponse,
   ListUserIdentitiesResponse,
   ListUsersResponse,
   MeUserResponse,
@@ -80,7 +81,7 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.put<{ Body: UpdateUserRequest; Reply: SuccessResponse }>(
+  fastify.put<{ Body: UpdateUserRequest; Reply: BaseResponse }>(
     "/user/me",
     {
       schema: {
@@ -92,11 +93,20 @@ export async function routes(fastify: FastifyInstance) {
         },
         body: UpdateUserRequest,
         response: {
-          200: SuccessResponse,
+          200: BaseResponse,
         },
       },
     },
     async (request) => {
+      const { name, bio } = request.body;
+      const ex = await userService.get(request.user.id);
+      if (!ex) throw new NotFoundError("User not found");
+      const changed = [
+        name !== ex.name && "name",
+        bio !== ex.bio && "bio",
+      ].filter((x) => x);
+      if (changed.length === 0) return [];
+
       await userService.update(
         request.user.id,
         {
@@ -104,13 +114,14 @@ export async function routes(fastify: FastifyInstance) {
           bio: request.body.bio,
         },
         {
-          type: ActorType.USER,
-          id: request.user.id,
+          actor: {
+            type: ActorType.USER,
+            id: request.user.id,
+          },
+          message: `Properties ${changed.join(", ")} were updated.`,
         },
       );
-      return {
-        data: true,
-      };
+      return {};
     },
   );
 

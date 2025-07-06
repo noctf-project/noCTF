@@ -30,10 +30,7 @@
 
       const response = await api.PUT("/user/me", {
         body: {
-          name:
-            profileForm.name.trim() === userProfile?.r?.data?.name
-              ? undefined
-              : profileForm.name.trim(),
+          name: profileForm.name.trim(),
           bio: profileForm.bio,
         },
       });
