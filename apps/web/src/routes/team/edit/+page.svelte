@@ -7,20 +7,11 @@
   let teamLoader = wrapLoadable(api.GET("/team"));
   let team = $derived(teamLoader.r?.data?.data);
 
-  let teamDetailsLoader = $derived.by(() => {
-    if (team) {
-      return wrapLoadable(
-        api.POST("/teams/query", { body: { ids: [team.id] } }),
-      );
-    }
-  });
-  let teamDetails = $derived(teamDetailsLoader?.r?.data?.data?.entries?.[0]);
-
   let isAuthorized = $derived.by(() => {
-    if (!team || !teamDetails) return undefined;
+    if (!team) return undefined;
     return (
       authState.user?.team_id === team.id &&
-      teamDetails.members.some(
+      team.members.some(
         (m) => m.user_id === authState.user?.id && m.role === "owner",
       )
     );
@@ -116,11 +107,12 @@
 <div class="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-8">
   {#if isAuthorized === false}
     <div class="flex flex-col items-center gap-4 mt-16">
-      <div class="alert alert-error">
+      <div class="alert alert-error pop">
         <Icon icon="material-symbols:error-outline" class="text-2xl" />
         <span>You do not have permission to edit this team</span>
       </div>
-      <a href="/team" class="btn btn-primary mt-4">Back to Team</a>
+      <a href="/team" class="btn btn-primary pop hover:pop mt-4">Back to Team</a
+      >
     </div>
   {:else if team === undefined}
     <div class="flex flex-col items-center gap-4 mt-16">

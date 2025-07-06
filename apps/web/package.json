@@ -30,6 +30,7 @@
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/forms": "^0.5.9",
     "@tailwindcss/typography": "^0.5.15",
+    "ajv-formats": "^3.0.1",
     "axios": "^1.7.9",
     "carta-md": "^4.6.7",
     "chart.js": "^4.4.8",
@@ -39,6 +40,7 @@
     "i18n-iso-countries": "^7.14.0",
     "isomorphic-dompurify": "^2.25.0",
     "lru-cache": "^11.0.2",
-    "openapi-fetch": "^0.13.4"
+    "openapi-fetch": "^0.13.4",
+    "svelte-jsoneditor": "^3.6.1"
   }
 }

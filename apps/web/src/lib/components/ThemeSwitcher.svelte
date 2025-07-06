@@ -1,3 +1,8 @@
+<script lang="ts" module>
+  export const hasFastThemeSwitcher = () =>
+    localStorage.getItem("fast-theme-switch");
+</script>
+
 <script lang="ts">
   import { onMount } from "svelte";
 

@@ -2,7 +2,9 @@
   import { page } from "$app/state";
   import AdminHeader from "$lib/components/AdminHeader.svelte";
   import Header from "$lib/components/Header.svelte";
-  import ThemeSwitcher from "$lib/components/ThemeSwitcher.svelte";
+  import ThemeSwitcher, {
+    hasFastThemeSwitcher,
+  } from "$lib/components/ThemeSwitcher.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import { onMount } from "svelte";
   import "../app.css";
@@ -37,9 +39,11 @@
     {@render children()}
   </div>
 
-  <div class="fixed left-6 bottom-4">
-    <ThemeSwitcher />
-  </div>
+  {#if hasFastThemeSwitcher()}
+    <div class="fixed left-6 bottom-4">
+      <ThemeSwitcher />
+    </div>
+  {/if}
   <Toast />
   <footer class="text-center pb-4 text-xs">
     Powered by <a href="https://noctf.dev" class="text-primary">noCTF</a>

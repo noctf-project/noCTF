@@ -6,7 +6,7 @@ export const GetRouteKey = (r: FastifyRequest) =>
   `${r.routeOptions.method}${r.routeOptions.url}`;
 
 export const GetRouteUserIPKey = (r: FastifyRequest) =>
-  `${GetRouteKey(r)}:${r.user ? "u" + r.user.id : "i" + NormalizeIPPrefix(r.ip)}`;
+  `${GetRouteKey(r)}:${r.user ? "u" + r.user.id + (r.user.app ? "a" + r.user.app : "") : "i" + NormalizeIPPrefix(r.ip)}`;
 
 export const NormalizeIPPrefix = (ip: string, prefix6 = 56) => {
   if (isIPv4(ip)) {
