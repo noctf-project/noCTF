@@ -82,7 +82,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const ex = await userService.get(request.user.id);
+      const ex = await userService.get(request.params.id);
       if (!ex) throw new NotFoundError("User not found");
       const { name, bio, flags, roles } = request.body;
 
