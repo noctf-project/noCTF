@@ -1,8 +1,6 @@
 <script lang="ts">
-  import Icon from "@iconify/svelte";
   import UserQueryService from "$lib/state/user_query.svelte";
   import TeamQueryService from "$lib/state/team_query.svelte";
-  import api from "$lib/api/index.svelte";
 
   interface Submission {
     id: number;
