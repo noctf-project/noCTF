@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 import { IdParams } from "@noctf/api/params";
-=======
->>>>>>> 0c2d60a (add update user API)
 import {
   AdminQueryUsersRequest,
   AdminUpdateUserRequest,
@@ -68,11 +65,7 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-<<<<<<< HEAD
   fastify.put<{ Body: AdminUpdateUserRequest; Params: IdParams; Reply: BaseResponse }>(
-=======
-  fastify.put<{ Body: AdminUpdateUserRequest; Reply: BaseResponse }>(
->>>>>>> 0c2d60a (add update user API)
     "/admin/user/:id",
     {
       schema: {
