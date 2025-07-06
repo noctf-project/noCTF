@@ -8,7 +8,6 @@ import {
   ListUserIdentitiesResponse,
   ListUsersResponse,
   MeUserResponse,
-  SuccessResponse,
 } from "@noctf/api/responses";
 import { NotFoundError } from "@noctf/server-core/errors";
 import { Policy } from "@noctf/server-core/util/policy";
@@ -99,11 +98,11 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const { name, bio } = request.body;
-      const ex = await userService.get(request.user.id);
-      if (!ex) throw new NotFoundError("User not found");
+      const x = await userService.get(request.user.id);
+      if (!x) throw new NotFoundError("User not found");
       const changed = [
-        name !== ex.name && "name",
-        bio !== ex.bio && "bio",
+        name !== x.name && "name",
+        bio !== x.bio && "bio",
       ].filter((x) => x);
       if (changed.length === 0) return [];
 

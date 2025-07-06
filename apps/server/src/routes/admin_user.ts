@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 import { IdParams } from "@noctf/api/params";
+=======
+>>>>>>> 0c2d60a (add update user API)
 import {
   AdminQueryUsersRequest,
   AdminUpdateUserRequest,
@@ -65,7 +68,11 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
+<<<<<<< HEAD
   fastify.put<{ Body: AdminUpdateUserRequest; Params: IdParams; Reply: BaseResponse }>(
+=======
+  fastify.put<{ Body: AdminUpdateUserRequest; Reply: BaseResponse }>(
+>>>>>>> 0c2d60a (add update user API)
     "/admin/user/:id",
     {
       schema: {
@@ -76,25 +83,24 @@ export async function routes(fastify: FastifyInstance) {
           policy: ["admin.user.update"],
         },
         body: AdminUpdateUserRequest,
-        params: IdParams,
         response: {
           200: BaseResponse,
         },
       },
     },
     async (request) => {
-      const ex = await userService.get(request.params.id);
-      if (!ex) throw new NotFoundError("User not found");
+      const x = await userService.get(request.user.id);
+      if (!x) throw new NotFoundError("User not found");
       const { name, bio, flags, roles } = request.body;
 
       const sFlags = new Set(flags);
       const sRoles = new Set(roles);
 
       const changed = [
-        name !== ex.name && "name",
-        bio !== ex.bio && "bio",
-        sRoles.symmetricDifference(new Set(ex.roles)).size > 0 && "roles",
-        sFlags.symmetricDifference(new Set(ex.flags)).size > 0 && "flags",
+        name !== x.name && "name",
+        bio !== x.bio && "bio",
+        sRoles.symmetricDifference(new Set(x.roles)).size > 0 && "roles",
+        sFlags.symmetricDifference(new Set(x.flags)).size > 0 && "flags",
       ].filter((x) => x);
       if (changed.includes("roles")) {
         const allowed = await policyService.evaluate(request.user.id, [
