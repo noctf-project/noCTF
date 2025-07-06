@@ -352,7 +352,7 @@ export type TeamMembership = Static<typeof TeamMembership>;
 
 export const TeamTag = Type.Object({
   id: Type.Number(),
-  name: Type.String({ maxLength: 64 }),
+  name: Type.String({ minLength: 1, maxLength: 64 }),
   is_joinable: Type.Boolean(),
   created_at: TypeDate,
 });

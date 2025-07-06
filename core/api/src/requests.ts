@@ -5,6 +5,7 @@ import {
   Challenge,
   Team,
   TeamMemberType,
+  TeamTag,
   TypeDate,
   User,
 } from "./datatypes.ts";
@@ -383,4 +384,22 @@ export const OAuthAuthorizeInternalRequest = Type.Object({
 });
 export type OAuthAuthorizeInternalRequest = Static<
   typeof OAuthAuthorizeInternalRequest
+>;
+
+export const AdminCreateTeamTagRequest = Type.Pick(
+  TeamTag,
+  ["name", "is_joinable"],
+  { additionalProperties: false },
+);
+export type AdminCreateTeamTagRequest = Static<
+  typeof AdminCreateTeamTagRequest
+>;
+
+export const AdminUpdateTeamTagRequest = Type.Pick(
+  TeamTag,
+  ["name", "is_joinable"],
+  { additionalProperties: false },
+);
+export type AdminUpdateTeamTagRequest = Static<
+  typeof AdminUpdateTeamTagRequest
 >;

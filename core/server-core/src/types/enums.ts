@@ -21,4 +21,5 @@ export enum ActorType {
   ROLE = "role",
   SYSTEM = "sys",
   TEAM = "team",
+  TEAM_TAG = "team_tag",
 }
