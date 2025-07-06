@@ -4,6 +4,8 @@ import {
   CaptchaValidationString,
   Challenge,
   Team,
+  TeamMemberType,
+  TeamTag,
   TypeDate,
   User,
 } from "./datatypes.ts";
@@ -273,6 +275,17 @@ export const AdminUpdateTeamRequest = Type.Composite(
 );
 export type AdminUpdateTeamRequest = Static<typeof AdminUpdateTeamRequest>;
 
+export const AdminUpdateTeamMemberRequest = Type.Object(
+  {
+    user_id: Type.Integer(),
+    role: TeamMemberType,
+  },
+  { additionalProperties: false },
+);
+export type AdminUpdateTeamMemberRequest = Static<
+  typeof AdminUpdateTeamMemberRequest
+>;
+
 export const AdminCreateChallengeRequest = Type.Omit(
   Challenge,
   ["created_at", "updated_at", "id", "version"],
@@ -371,4 +384,22 @@ export const OAuthAuthorizeInternalRequest = Type.Object({
 });
 export type OAuthAuthorizeInternalRequest = Static<
   typeof OAuthAuthorizeInternalRequest
+>;
+
+export const AdminCreateTeamTagRequest = Type.Pick(
+  TeamTag,
+  ["name", "is_joinable"],
+  { additionalProperties: false },
+);
+export type AdminCreateTeamTagRequest = Static<
+  typeof AdminCreateTeamTagRequest
+>;
+
+export const AdminUpdateTeamTagRequest = Type.Pick(
+  TeamTag,
+  ["name", "is_joinable"],
+  { additionalProperties: false },
+);
+export type AdminUpdateTeamTagRequest = Static<
+  typeof AdminUpdateTeamTagRequest
 >;

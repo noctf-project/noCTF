@@ -1,4 +1,4 @@
-import { ForbiddenError, NotFoundError } from "../errors.ts";
+import { ConflictError, ForbiddenError, NotFoundError } from "../errors.ts";
 import { TeamFlag } from "../types/enums.ts";
 import type { ServiceCradle } from "../index.ts";
 import { nanoid } from "nanoid";
@@ -48,6 +48,44 @@ export class TeamService {
 
   async listTags() {
     return this.teamTagDAO.list();
+  }
+
+  async createTag(
+    v: Parameters<TeamTagDAO["create"]>[0],
+    { actor, message }: AuditParams = {},
+  ) {
+    const tag = await this.teamTagDAO.create(v);
+    await this.auditLogService.log({
+      operation: "team_tag.create",
+      actor,
+      data: message,
+      entities: [`${ActorType.TEAM_TAG}:${tag.id}`],
+    });
+    return tag;
+  }
+
+  async updateTag(
+    tagId: number,
+    v: Parameters<TeamTagDAO["update"]>[1],
+    { actor, message }: AuditParams = {},
+  ) {
+    await this.teamTagDAO.update(tagId, v);
+    await this.auditLogService.log({
+      operation: "team_tag.update",
+      actor,
+      data: message,
+      entities: [`${ActorType.TEAM_TAG}:${tagId}`],
+    });
+  }
+
+  async deleteTag(tagId: number, { actor, message }: AuditParams = {}) {
+    await this.teamTagDAO.delete(tagId);
+    await this.auditLogService.log({
+      operation: "team_tag.delete",
+      actor,
+      data: message,
+      entities: [`${ActorType.TEAM_TAG}:${tagId}`],
+    });
   }
 
   private async validateTags(tag_ids?: number[]) {
@@ -279,7 +317,27 @@ export class TeamService {
     v: Parameters<TeamDAO["assign"]>[0],
     { actor, message }: AuditParams = {},
   ) {
-    await this.teamDAO.assign(v);
+    try {
+      await this.teamDAO.assign(v);
+    } catch (e) {
+      if (!(e instanceof ConflictError) || !e.cause || v.role !== "owner") {
+        throw e;
+      }
+      // atomic owner swap (if exists)
+      await this.databaseClient.transaction(async (db) => {
+        const dao = new TeamDAO(db);
+        const members = await dao.listMembers(v.team_id);
+        const owner = members.find((m) => m.role === "owner");
+        if (!owner || owner.user_id === v.user_id) throw e;
+        await dao.unassign({ user_id: owner.user_id, team_id: v.team_id });
+        await dao.assign(v);
+        await dao.assign({
+          user_id: owner.user_id,
+          team_id: v.team_id,
+          role: "member",
+        });
+      });
+    }
     await this.auditLogService.log({
       actor,
       operation: "team.member.assign",
@@ -296,6 +354,7 @@ export class TeamService {
     v: Parameters<TeamDAO["unassign"]>[0],
     { actor, message }: AuditParams,
   ) {
+    await this.teamDAO.unassign(v);
     await this.auditLogService.log({
       actor,
       operation: "team.member.remove",

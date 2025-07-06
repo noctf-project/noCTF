@@ -6,7 +6,7 @@ import daisyui from "daisyui";
 import daisyuiThemes from "daisyui/src/theming/themes";
 
 export default {
-  darkMode: ['selector', '[data-theme="dark"]'],
+  darkMode: ["selector", '[data-theme="dark"]'],
   content: ["./src/**/*.{html,js,svelte,ts}"],
 
   theme: {

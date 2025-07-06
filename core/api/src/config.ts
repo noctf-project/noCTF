@@ -1,6 +1,7 @@
 import type { Static } from "@sinclair/typebox";
 import { Type } from "@sinclair/typebox";
 import { EmailAddress, ScoringStrategy } from "./datatypes.ts";
+import { CaptchaHTTPMethod } from "./types.ts";
 
 export const TeamConfig = Type.Object(
   {
@@ -59,9 +60,13 @@ export const CaptchaConfig = Type.Object(
       }),
     ),
     routes: Type.Array(
-      Type.String({
-        title: "Protected routes",
-      }),
+      Type.Object(
+        {
+          method: Type.Enum(CaptchaHTTPMethod, { title: "HTTP Method" }),
+          path: Type.String({ title: "Route path" }),
+        },
+        { additionalProperties: false },
+      ),
     ),
   },
   { $id: "core.captcha", additionalProperties: false },

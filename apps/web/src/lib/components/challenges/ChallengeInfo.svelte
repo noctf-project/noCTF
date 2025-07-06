@@ -31,8 +31,8 @@
   import { getRelativeTime } from "$lib/utils/time";
   import TeamNamesService from "$lib/state/team_query.svelte";
   import { toasts } from "$lib/stores/toast";
-  import authState from "$lib/state/auth.svelte";
   import DifficultyChip from "./DifficultyChip.svelte";
+  import authState from "$lib/state/auth.svelte";
   import { goto } from "$app/navigation";
 
   let { challData, challDetails, loading, onSolve }: ChallengeInfoProps =
@@ -47,7 +47,6 @@
     | "correct"
     | "queued" = $state("waiting");
   let scoreModalVisible = $state(false);
-  let scoreModalRef: HTMLElement | undefined = $state();
   let scoresLoading = $state(false);
   let showHash = $state(false);
   let scoresData: ScoreEntry[] | undefined = $state(undefined);

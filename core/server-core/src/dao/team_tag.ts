@@ -1,6 +1,6 @@
 import { TeamTag } from "@noctf/api/datatypes";
 import { DBType } from "../clients/database.ts";
-import { ConflictError } from "../errors.ts";
+import { ConflictError, NotFoundError } from "../errors.ts";
 import {
   PostgresErrorCode,
   PostgresErrorConfig,
@@ -23,7 +23,7 @@ export class TeamTagDAO {
       .execute();
   }
 
-  async create(v: { name: string; is_joinable: boolean }) {
+  async create(v: { name: string; is_joinable: boolean }): Promise<TeamTag> {
     const i = {
       name: v.name,
       is_joinable: v.is_joinable,
@@ -32,16 +32,41 @@ export class TeamTagDAO {
       const result = await this.db
         .insertInto("team_tag")
         .values(i)
-        .returning("id")
+        .returning(["id", "created_at"])
         .executeTakeFirstOrThrow();
       return {
         ...i,
+        created_at: result.created_at,
         id: result.id,
       };
     } catch (e) {
       const pgerror = TryPGConstraintError(e, CREATE_ERROR_CONFIG);
       if (pgerror) throw pgerror;
       throw e;
+    }
+  }
+
+  async delete(id: number) {
+    const rows = await this.db
+      .deleteFrom("team_tag")
+      .where("id", "=", id)
+      .executeTakeFirst();
+    if (!rows.numDeletedRows) {
+      throw new NotFoundError("Could not find tag");
+    }
+  }
+
+  async update(id: number, v: { name: string; is_joinable: boolean }) {
+    const { numUpdatedRows } = await this.db
+      .updateTable("team_tag")
+      .set({
+        name: v.name,
+        is_joinable: v.is_joinable,
+      })
+      .where("id", "=", id)
+      .executeTakeFirst();
+    if (!numUpdatedRows) {
+      throw new NotFoundError("Could not find tag");
     }
   }
 

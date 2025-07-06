@@ -125,10 +125,12 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      await gateStartTime(adminPolicy, ctime, request.user?.id);
+      const isAdmin = await gateStartTime(adminPolicy, ctime, request.user?.id);
 
       const team = await teamService.get(request.params.id);
-      if (!team || team.flags.includes("hidden")) {
+      const membership = await request.user?.membership;
+      const showHidden = membership?.team_id === request.params.id || isAdmin;
+      if (!team || (team.flags.includes("hidden") && !showHidden)) {
         throw new NotFoundError("Team not found");
       }
       const entry = await scoreboardService.getTeam(team.division_id, team.id);
@@ -149,7 +151,9 @@ export async function routes(fastify: FastifyInstance) {
       const graph = await scoreboardService.getTeamScoreHistory(
         request.params.id,
       );
-      const solves = entry.solves.filter(({ hidden }) => !hidden);
+      const solves = showHidden
+        ? entry.solves
+        : entry.solves.filter(({ hidden }) => !hidden);
       return {
         data: {
           ...entry,

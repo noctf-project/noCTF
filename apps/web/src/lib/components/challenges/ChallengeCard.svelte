@@ -17,7 +17,7 @@
 
 <script lang="ts">
   import Icon from "@iconify/svelte";
-  import { categoryToIcon, difficultyToBgColour } from "$lib/utils/challenges";
+  import { categoryToIcon } from "$lib/utils/challenges";
   import { type Difficulty } from "$lib/constants/difficulties";
   import DifficultyChip from "./DifficultyChip.svelte";
 

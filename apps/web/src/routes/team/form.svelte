@@ -222,29 +222,34 @@
               class="w-full input input-bordered focus:outline-none focus:ring-0 focus:ring-offset-0"
             />
 
-            <label class="label" for="division">
-              <span class="label-text">Division</span>
-            </label>
-            <select bind:value={division} class="select select-bordered w-full">
-              {#each divisions as div}
-                <option value={div.id} disabled={!div.is_joinable}
-                  >{div.name}</option
-                >
-              {/each}
-            </select>
-
-            {#if divisions.find(({ id }) => id === division)?.is_password}
-              <label class="label" for="division-password">
-                <span class="label-text">Division Password</span>
+            {#if divisions.length > 1}
+              <label class="label" for="division">
+                <span class="label-text">Division</span>
               </label>
-              <input
-                id="division-password"
-                bind:value={divisionPassword}
-                type="password"
-                placeholder="Password"
-                required
-                class="w-full input input-bordered focus:outline-none focus:ring-0 focus:ring-offset-0"
-              />
+              <select
+                bind:value={division}
+                class="select select-bordered w-full"
+              >
+                {#each divisions as div}
+                  <option value={div.id} disabled={!div.is_joinable}
+                    >{div.name}</option
+                  >
+                {/each}
+              </select>
+
+              {#if divisions.find(({ id }) => id === division)?.is_password}
+                <label class="label" for="division-password">
+                  <span class="label-text">Division Password</span>
+                </label>
+                <input
+                  id="division-password"
+                  bind:value={divisionPassword}
+                  type="password"
+                  placeholder="Password"
+                  required
+                  class="w-full input input-bordered focus:outline-none focus:ring-0 focus:ring-offset-0"
+                />
+              {/if}
             {/if}
           </div>
 

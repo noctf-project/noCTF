@@ -197,7 +197,7 @@ async def upload_challenge_from_yaml(client: CTFClient, yaml_content: str, files
     challenge_data["private_metadata"]["files"] = [{"id": file["id"], "is_attachment": True} for file in files] if files else []
     return await client.create_challenge(challenge_data)
 
-async def upload_attachments_from_yaml(client: CTFClient, yaml_content: str) -> Dict[str, Any]:
+async def upload_attachments_from_yaml(client: CTFClient, yaml_content: str) -> List[Dict[str, Any]]:
     results = []
     attachments =  yaml.safe_load(yaml_content).get("files", [])
     for attachment in attachments:
@@ -208,7 +208,6 @@ async def upload_attachments_from_yaml(client: CTFClient, yaml_content: str) -> 
 
 async def mass_solve_challenges(client: CTFClient, num_challenges: Optional[int] = None) -> List[str]:
     challenges = await client.get_challenges()
-    
     if num_challenges:
         challenges = challenges[:num_challenges]
     
