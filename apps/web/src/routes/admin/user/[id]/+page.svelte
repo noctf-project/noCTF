@@ -433,10 +433,10 @@
                 </div>
                 {#if userData.identities && userData.identities.length > 0}
                   <div class="text-xs opacity-70 mt-1">
-                    {userData.identities.length} identity{userData.identities
-                      .length !== 1
-                      ? "ies"
-                      : "y"}
+                    {userData.identities.length}
+                    {userData.identities.length === 1
+                      ? "identity"
+                      : "identities"}
                   </div>
                 {/if}
               </div>
