@@ -10,7 +10,7 @@ export default {
       runes: true,
       precompress: false,
       strict: true,
-      fallback: "404.html",
+      fallback: "index.html",
     }),
   },
   vite: {
