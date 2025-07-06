@@ -6,7 +6,7 @@ import { ChallengeDAO } from "../../dao/challenge.ts";
 import type { ServiceCradle } from "../../index.ts";
 import type { AuditLogActor } from "../../types/audit_log.ts";
 import type { ChallengePublicMetadataBase } from "@noctf/api/datatypes";
-import { SubmissionUpdateEvent } from "@noctf/api/events";
+import { ChallengeUpdateEvent, SubmissionUpdateEvent } from "@noctf/api/events";
 import {
   Slug,
   type Challenge,
@@ -105,6 +105,13 @@ export class ChallengeService {
       actor,
       entities: [`challenge:${challenge.id}`],
     });
+    await this.eventBusService.publish(ChallengeUpdateEvent, {
+      id: challenge.id,
+      slug: challenge.slug,
+      version: challenge.version,
+      updated_at: challenge.updated_at,
+      hidden: challenge.hidden,
+    });
     return challenge;
   }
 
@@ -115,12 +122,20 @@ export class ChallengeService {
   ) {
     if (v.private_metadata)
       await this.validatePrivateMetadata(v.private_metadata);
-    const { version } = await this.challengeDAO.update(id, v);
+    const { version, slug, updated_at, hidden } =
+      await this.challengeDAO.update(id, v);
     await this.auditLogService.log({
       operation: "challenge.update",
       actor,
       entities: [`challenge:${id}`],
       data: `Updated to version ${version}`,
+    });
+    await this.eventBusService.publish(ChallengeUpdateEvent, {
+      id,
+      slug,
+      version,
+      updated_at,
+      hidden,
     });
     return version;
   }

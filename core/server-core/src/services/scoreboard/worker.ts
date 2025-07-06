@@ -1,4 +1,4 @@
-import { SubmissionUpdateEvent } from "@noctf/api/events";
+import { ChallengeUpdateEvent, SubmissionUpdateEvent } from "@noctf/api/events";
 import { ServiceCradle } from "../../index.ts";
 
 type Props = Pick<
@@ -25,7 +25,7 @@ export const ScoreboardCalculatorWorker = async (
   await c.eventBusService.subscribe<SubmissionUpdateEvent>(
     signal,
     "ScoreboardWorker",
-    [SubmissionUpdateEvent.$id!],
+    [SubmissionUpdateEvent.$id!, ChallengeUpdateEvent.$id!],
     {
       concurrency: 1,
       handler: async (data) => {

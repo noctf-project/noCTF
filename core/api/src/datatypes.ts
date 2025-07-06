@@ -229,7 +229,6 @@ export const PublicChallengeSummary = Type.Omit(ChallengeSummary, [
   "created_at",
   "updated_at",
   "visible_at",
-  "hidden",
   "version",
 ]);
 export type PublicChallengeSummary = Static<typeof PublicChallengeSummary>;
