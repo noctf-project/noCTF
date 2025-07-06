@@ -23,6 +23,14 @@ const CREATE_ERROR_CONFIG: PostgresErrorConfig = {
   },
 };
 
+const ASSIGN_ERROR_CONFIG: PostgresErrorConfig = {
+  [PostgresErrorCode.Duplicate]: {
+    team_name_key: () => new ConflictError("The team name already exists"),
+    default: (e) =>
+      new ConflictError("A duplicate entry was detected", { cause: e }),
+  },
+};
+
 export type MinimalTeamInfo = {
   id: number;
   division_id: number;
@@ -195,23 +203,30 @@ export class TeamDAO {
     team_id: number;
     role?: TeamMemberRole;
   }) {
-    const { numInsertedOrUpdatedRows } = await this.db
-      .insertInto("team_member")
-      .values({
-        user_id,
-        team_id,
-        role,
-      })
-      .onConflict((b) =>
-        b
-          .column("user_id")
-          .doUpdateSet({ role })
-          .where("team_member.team_id", "=", team_id)
-          .where("team_member.role", "!=", role),
-      )
-      .executeTakeFirst();
-    if (!numInsertedOrUpdatedRows) {
-      throw new ConflictError("User has already joined a team.");
+    try {
+      const { numInsertedOrUpdatedRows } = await this.db
+        .insertInto("team_member")
+        .values({
+          user_id,
+          team_id,
+          role,
+        })
+        .onConflict((b) =>
+          b
+            .column("user_id")
+            .doUpdateSet({ role })
+            .where("team_member.team_id", "=", team_id)
+            .where("team_member.role", "!=", role),
+        )
+        .executeTakeFirst();
+
+      if (!numInsertedOrUpdatedRows) {
+        throw new ConflictError("User has already joined a team.");
+      }
+    } catch (e) {
+      const pgerror = TryPGConstraintError(e, ASSIGN_ERROR_CONFIG);
+      if (pgerror) throw pgerror;
+      throw e;
     }
   }
 
@@ -276,7 +291,7 @@ export class TeamDAO {
   async listMembers(id: number, count?: false): Promise<TeamMember[]>;
   async listMembers(id: number, count = false): Promise<TeamMember[] | number> {
     const query = this.db.selectFrom("team_member").where("team_id", "=", id);
-    if (count) {
+    if (!count) {
       return query.select(["user_id", "role"]).execute() as Promise<
         TeamMember[]
       >;

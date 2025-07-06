@@ -138,36 +138,39 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const role = request.body.role;
-      if (role === "none") {
-        await teamService.unassignMember(
-          {
-            team_id: request.params.id,
-            user_id: request.body.user_id,
-          },
-          {
-            actor: {
-              type: ActorType.USER,
-              id: request.user.id,
+      switch (role) {
+        case "none":
+          await teamService.unassignMember(
+            {
+              team_id: request.params.id,
+              user_id: request.body.user_id,
             },
-            message: "Member removed by admin",
-          },
-        );
-        return {};
+            {
+              actor: {
+                type: ActorType.USER,
+                id: request.user.id,
+              },
+              message: "Member removed by admin",
+            },
+          );
+          break;
+        case "member":
+        case "owner":
+          await teamService.assignMember(
+            {
+              team_id: request.params.id,
+              user_id: request.body.user_id,
+              role,
+            },
+            {
+              actor: {
+                type: ActorType.USER,
+                id: request.user.id,
+              },
+              message: `Member assigned role ${role} by admin`,
+            },
+          );
       }
-      await teamService.assignMember(
-        {
-          team_id: request.params.id,
-          user_id: request.body.user_id,
-          role: role,
-        },
-        {
-          actor: {
-            type: ActorType.USER,
-            id: request.user.id,
-          },
-          message: `Member assigned role ${role} by admin`,
-        },
-      );
 
       return {};
     },
