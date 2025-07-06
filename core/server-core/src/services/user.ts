@@ -130,4 +130,14 @@ export class UserService {
     });
     return id;
   }
+
+  async delete(id: number, { actor, message }: AuditParams = {}) {
+    await this.userDAO.delete(id);
+    await this.auditLogService.log({
+      actor,
+      operation: "user.delete",
+      entities: [`${ActorType.TEAM}:${id}`],
+      data: message,
+    });
+  }
 }

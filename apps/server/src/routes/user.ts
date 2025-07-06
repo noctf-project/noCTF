@@ -117,7 +117,7 @@ export async function routes(fastify: FastifyInstance) {
             type: ActorType.USER,
             id: request.user.id,
           },
-          message: `Properties ${changed.join(", ")} were updated.`,
+          message: `Properties ${changed.join(", ")} were updated`,
         },
       );
       return {};
