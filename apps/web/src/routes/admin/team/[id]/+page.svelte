@@ -697,7 +697,9 @@
                     {/each}
 
                     {#each customFlags as flagName}
-                      <div class="btn btn-sm badge-warning text-white pop relative group">
+                      <div
+                        class="btn btn-sm badge-warning text-white pop relative group"
+                      >
                         {flagName}
                         <button
                           type="button"
@@ -713,7 +715,9 @@
 
                   <!-- Add Custom Flag Input -->
                   <div class="mt-2">
-                    <div class="text-sm font-medium mb-2 opacity-70">Add Custom Flag</div>
+                    <div class="text-sm font-medium mb-2 opacity-70">
+                      Add Custom Flag
+                    </div>
                     <div class="flex gap-2">
                       <input
                         type="text"
@@ -721,7 +725,7 @@
                         placeholder="Enter custom flag name"
                         class="input input-bordered h-8 flex-1 focus:outline-none focus:ring-0 focus:ring-offset-0"
                         onkeydown={(e) => {
-                          if (e.key === 'Enter') {
+                          if (e.key === "Enter") {
                             e.preventDefault();
                             addCustomFlag();
                           }
@@ -731,7 +735,8 @@
                         type="button"
                         class="btn btn-primary btn-sm pop hover:pop h-8 min-h-8"
                         onclick={addCustomFlag}
-                        disabled={!customFlagInput.trim() || editForm.flags.includes(customFlagInput.trim())}
+                        disabled={!customFlagInput.trim() ||
+                          editForm.flags.includes(customFlagInput.trim())}
                       >
                         <Icon icon="material-symbols:add" class="text-sm" />
                         Add
@@ -753,7 +758,8 @@
                     {#if teamData.flags && teamData.flags.length > 0}
                       {#each teamData.flags as flagName}
                         {@const flagConfig = getFlagConfig(flagName)}
-                        {@const isCustomFlag = !predefinedFlagNames.includes(flagName)}
+                        {@const isCustomFlag =
+                          !predefinedFlagNames.includes(flagName)}
                         <div
                           class="btn btn-sm {flagConfig.color} text-white pop pointer-events-none"
                         >
@@ -762,7 +768,8 @@
                           {/if}
                           {flagName}
                           {#if isCustomFlag}
-                            <span class="ml-1 opacity-60 text-xs">(custom)</span>
+                            <span class="ml-1 opacity-60 text-xs">(custom)</span
+                            >
                           {/if}
                         </div>
                       {/each}
@@ -834,7 +841,7 @@
                         ? 'badge-primary'
                         : 'badge-secondary'}"
                     >
-                      {#if member.role === 'owner'}
+                      {#if member.role === "owner"}
                         <Icon icon="material-symbols:crown" class="text-xs" />
                       {:else}
                         <Icon icon="material-symbols:person" class="text-xs" />
@@ -856,9 +863,14 @@
                         <button
                           class="btn btn-primary btn-xs pop hover:pop"
                           onclick={() => {
-                            UserQueryService.get(member.user_id).then((user) => {
-                              transferOwnership(member.user_id, user?.name || `User ${member.user_id}`);
-                            });
+                            UserQueryService.get(member.user_id).then(
+                              (user) => {
+                                transferOwnership(
+                                  member.user_id,
+                                  user?.name || `User ${member.user_id}`,
+                                );
+                              },
+                            );
                           }}
                         >
                           <Icon icon="material-symbols:crown" />
@@ -869,7 +881,10 @@
                         class="btn btn-error btn-xs pop hover:pop"
                         onclick={() => {
                           UserQueryService.get(member.user_id).then((user) => {
-                            removeMember(member.user_id, user?.name || `User ${member.user_id}`);
+                            removeMember(
+                              member.user_id,
+                              user?.name || `User ${member.user_id}`,
+                            );
                           });
                         }}
                       >
