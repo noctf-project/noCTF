@@ -5,8 +5,7 @@ import { TokenProvider } from "./token_provider.ts";
 import { ForbiddenError } from "@noctf/server-core/errors";
 
 export default async function (fastify: FastifyInstance) {
-  const { identityService, cacheService } =
-    fastify.container.cradle;
+  const { identityService, cacheService } = fastify.container.cradle;
   const tokenProvider = new TokenProvider({ cacheService });
 
   fastify.post<{

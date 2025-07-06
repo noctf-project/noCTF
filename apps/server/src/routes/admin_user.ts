@@ -4,12 +4,19 @@ import {
   AdminUpdateUserRequest,
 } from "@noctf/api/requests";
 import { AdminListUsersResponse, BaseResponse } from "@noctf/api/responses";
-import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+} from "@noctf/server-core/errors";
 import { ActorType } from "@noctf/server-core/types/enums";
+import { Policy } from "@noctf/server-core/util/policy";
 import { RunInParallelWithLimit } from "@noctf/server-core/util/semaphore";
 import { FastifyInstance } from "fastify";
 
 export const PAGE_SIZE = 60;
+
+const PRIVILEGED_POLICY: Policy = ["admin.policy.update"];
 
 export async function routes(fastify: FastifyInstance) {
   const { userService, policyService, identityService } =
@@ -65,8 +72,12 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.put<{ Body: AdminUpdateUserRequest; Params: IdParams; Reply: BaseResponse }>(
-    "/admin/user/:id",
+  fastify.put<{
+    Body: AdminUpdateUserRequest;
+    Params: IdParams;
+    Reply: BaseResponse;
+  }>(
+    "/admin/users/:id",
     {
       schema: {
         security: [{ bearer: [] }],
@@ -95,12 +106,13 @@ export async function routes(fastify: FastifyInstance) {
         sRoles.symmetricDifference(new Set(ex.roles)).size > 0 && "roles",
         sFlags.symmetricDifference(new Set(ex.flags)).size > 0 && "flags",
       ].filter((x) => x);
-      
+
       if (changed.length === 0) return {};
       if (changed.includes("roles")) {
-        const allowed = await policyService.evaluate(request.user.id, [
-          "admin.policy.update",
-        ]);
+        const allowed = await policyService.evaluate(
+          request.user.id,
+          PRIVILEGED_POLICY,
+        );
         if (!allowed) throw new ForbiddenError("Not allowed to update roles");
       }
 
@@ -117,9 +129,54 @@ export async function routes(fastify: FastifyInstance) {
             type: ActorType.USER,
             id: request.user.id,
           },
-          message: `Properties ${changed.join(", ")} were updated.`,
+          message: `Properties ${changed.join(", ")} were updated by admin`,
         },
       );
+      return {};
+    },
+  );
+
+  fastify.delete<{
+    Reply: BaseResponse;
+    Params: IdParams;
+  }>(
+    "/admin/users/:id",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["admin"],
+        response: {
+          200: BaseResponse,
+        },
+        params: IdParams,
+        auth: {
+          require: true,
+          policy: ["admin.user.delete"],
+        },
+      },
+    },
+    async (request) => {
+      if (request.user.id === request.params.id)
+        throw new BadRequestError("You cannot delete yourself");
+      const me = await policyService.evaluate(
+        request.user.id,
+        PRIVILEGED_POLICY,
+      );
+      const test = await policyService.evaluate(
+        request.params.id,
+        PRIVILEGED_POLICY,
+      );
+      if (test && !me)
+        throw new ForbiddenError(
+          "Not allowed to delete a user with higher privilege",
+        );
+      await userService.delete(request.params.id, {
+        actor: {
+          type: ActorType.USER,
+          id: request.user.id,
+        },
+        message: "User deleted by admin",
+      });
       return {};
     },
   );
