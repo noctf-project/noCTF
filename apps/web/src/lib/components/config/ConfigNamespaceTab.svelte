@@ -4,6 +4,7 @@
   import api from "$lib/api/index.svelte";
   import Icon from "@iconify/svelte";
   import SchemaForm from "./SchemaForm.svelte";
+  import JsonConfigEditor from "./JsonConfigEditor.svelte";
 
   type ConfigNamespace = {
     namespace: string;
@@ -24,6 +25,7 @@
   let originalData = $state<Record<string, any>>({});
   let editData = $state<Record<string, any>>({});
   let version = $state<number>(0);
+  let editorMode = $state<"visual" | "json">("visual");
 
   $effect(() => {
     loadConfigData();
@@ -33,7 +35,6 @@
     const initialized =
       typeof data === "object" && data !== null ? { ...data } : {};
 
-    // Initialize nested objects based on schema
     if (schema?.properties) {
       for (const [key, property] of Object.entries(schema.properties)) {
         if (property && typeof property === "object") {
@@ -193,8 +194,7 @@
       <span class="loading loading-spinner loading-lg"></span>
     </div>
   {:else}
-    <!-- Header with edit controls -->
-    <div class="flex justify-between items-start">
+    <div class="flex justify-between items-center">
       <div>
         <h2 class="text-2xl font-bold">{namespace.namespace}</h2>
         {#if schema.description}
@@ -202,8 +202,31 @@
         {/if}
       </div>
 
-      <div class="flex gap-2">
+      <div class="flex items-center gap-2">
         {#if isEditing}
+          <div class="join pop hover:pop">
+            <button
+              class="btn btn-sm join-item {editorMode === 'visual'
+                ? 'btn-active'
+                : 'btn-ghost'}"
+              onclick={() => (editorMode = "visual")}
+              disabled={isSaving}
+            >
+              <Icon icon="material-symbols:view-module" />
+              Visual
+            </button>
+            <button
+              class="btn btn-sm join-item {editorMode === 'json'
+                ? 'btn-active'
+                : 'btn-ghost'}"
+              onclick={() => (editorMode = "json")}
+              disabled={isSaving}
+            >
+              <Icon icon="material-symbols:code" />
+              JSON
+            </button>
+          </div>
+
           <button
             class="btn btn-primary pop hover:pop"
             onclick={saveConfig}
@@ -235,9 +258,13 @@
     </div>
 
     <div class="card bg-base-100 shadow-sm border border-base-300 pop">
-      <div class="card-body">
+      <div class="card-body {isEditing && editorMode === 'json' ? 'p-2' : ''}">
         {#if isEditing}
-          <SchemaForm {schema} bind:data={editData} disabled={false} />
+          {#if editorMode === "visual"}
+            <SchemaForm {schema} bind:data={editData} disabled={false} />
+          {:else}
+            <JsonConfigEditor {schema} bind:data={editData} disabled={false} />
+          {/if}
         {:else}
           <SchemaForm {schema} bind:data={originalData} disabled={true} />
         {/if}
