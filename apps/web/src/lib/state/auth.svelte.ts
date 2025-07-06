@@ -1,7 +1,6 @@
 import { goto } from "$app/navigation";
 import api, { SESSION_TOKEN_KEY } from "$lib/api/index.svelte";
 import { toasts } from "$lib/stores/toast";
-import loginState from "../../routes/auth/auth.svelte";
 
 interface User {
   id: number;
@@ -106,7 +105,7 @@ class AuthState {
       localStorage.removeItem(USER_DATA_KEY);
       this.user = undefined;
     }
-    goto("/");
+    await goto("/");
     window.location.reload();
   }
 }

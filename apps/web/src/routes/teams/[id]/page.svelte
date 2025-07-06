@@ -46,8 +46,23 @@
   };
 
   let { teamId }: Props = $props();
-  let teamLoader = wrapLoadable(TeamQueryService.get(teamId));
-  let team = $derived(teamLoader.r);
+
+  let teamLoader = $derived.by(() => {
+    if (!authState.isLoading) {
+      if (authState.user?.team_id === teamId) {
+        // Use /team endpoint for own team
+        return wrapLoadable(
+          api.GET("/team").then((response) => response.data?.data || null),
+        );
+      } else {
+        // Use query endpoint for other teams
+        return wrapLoadable(TeamQueryService.get(teamId));
+      }
+    }
+  });
+
+  let team = $derived(teamLoader?.r);
+
   let showEditButton = $derived(
     team &&
       team.id === authState.user?.team_id &&
@@ -103,7 +118,7 @@
   );
 
   let membersLoading = $derived(
-    teamLoader.loading ||
+    teamLoader?.loading ||
       scoreboardLoader.loading ||
       !memberLoaders ||
       memberLoaders.some((loader) => loader.loading),
@@ -327,12 +342,40 @@
   </div>
 {/snippet}
 
-{#if teamLoader.loading}
+{#snippet teamNotFound(icon: string, iconClass: string)}
+  <div class="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-16">
+    <div class="card bg-base-100 pop rounded-lg">
+      <div class="card-body text-center">
+        <div class="flex flex-col items-center gap-4">
+          <Icon {icon} class="text-6xl {iconClass}" />
+          <h1 class="text-3xl font-bold">Team Not Found</h1>
+          <p class="text-base-content/70 text-lg">
+            The team you're looking for doesn't exist or may be hidden
+          </p>
+          <div class="flex gap-2 mt-4">
+            <a href="/teams" class="btn btn-primary pop hover:pop">
+              <Icon icon="material-symbols:groups" class="text-lg" />
+              Browse Teams
+            </a>
+            <a href="/" class="btn btn-ghost pop hover:pop">
+              <Icon icon="material-symbols:home" class="text-lg" />
+              Go Home
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{/snippet}
+
+{#if teamLoader?.loading}
   <div class="flex flex-col items-center gap-4 mt-16">
     <div class="loading loading-spinner loading-lg text-primary"></div>
     <p class="text-center">Loading...</p>
   </div>
-{:else if !teamLoader.loading && team != null}
+{:else if teamLoader?.error}
+  {@render teamNotFound("material-symbols:error-outline", "text-error")}
+{:else if !teamLoader?.loading && team != null}
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex flex-col gap-4">
       <div class="flex flex-col gap-4 items-center">

@@ -8,7 +8,7 @@ export const availableFlags: TeamFlag[] = [
   { name: "blocked", color: "badge-error", icon: "material-symbols:block" },
   {
     name: "hidden",
-    color: "badge-neutral",
+    color: "bg-gray-500",
     icon: "material-symbols:visibility-off",
   },
   { name: "frozen", color: "badge-info", icon: "material-symbols:ac-unit" },
@@ -19,7 +19,7 @@ export function getFlagConfig(flagName: string): TeamFlag {
     availableFlags.find((f) => f.name === flagName) || {
       name: flagName,
       color: "badge-warning",
-      icon: "material-symbols:flag",
+      icon: "",
     }
   );
 }
