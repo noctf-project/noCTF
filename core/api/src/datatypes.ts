@@ -71,11 +71,7 @@ export type Team = Static<typeof Team>;
 
 export const User = Type.Object({
   id: Type.Number(),
-  name: Type.String({
-    minLength: 1,
-    maxLength: 64,
-    pattern: NoInvalidWhitespace,
-  }),
+  name: Name,
   bio: Type.String({ maxLength: 256 }),
   flags: Type.Array(Type.String()),
   roles: Type.Array(Type.String()),
