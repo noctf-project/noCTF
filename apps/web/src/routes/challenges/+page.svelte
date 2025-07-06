@@ -170,7 +170,7 @@
     >
       <Icon
         icon={isEmailView
-          ? "material-symbols:view-list"
+          ? "material-symbols:background-dot-small"
           : "material-symbols:mail"}
       />
       {isEmailView ? "Grid View" : "Inbox View"}

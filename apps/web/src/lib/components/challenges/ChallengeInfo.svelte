@@ -34,6 +34,7 @@
   import DifficultyChip from "./DifficultyChip.svelte";
   import authState from "$lib/state/auth.svelte";
   import { goto } from "$app/navigation";
+  import { EMAIL_SOUNDS } from "$lib/constants/emailSounds";
 
   let { challData, challDetails, loading, onSolve }: ChallengeInfoProps =
     $props();
@@ -51,6 +52,7 @@
   let showHash = $state(false);
   let scoresData: ScoreEntry[] | undefined = $state(undefined);
   let scoreModalRef: HTMLElement | undefined = $state();
+  let showIncorrectAnimation = $state(false);
 
   let knowsSolvesClick = localStorage.getItem("knowsSolvesClick") == "1";
   let showHint = $state(!knowsSolvesClick);
@@ -67,8 +69,8 @@
     easing: cubicInOut,
   });
 
-  async function playEmailSentSound() {
-    const audio = new Audio("/sounds/mail-sent.mp3");
+  async function playEmailSentSound(sound: keyof typeof EMAIL_SOUNDS) {
+    const audio = new Audio(EMAIL_SOUNDS[sound]);
     audio.play();
   }
 
@@ -81,7 +83,7 @@
 
     flagSubmitStatus = "submitting";
 
-    playEmailSentSound();
+    playEmailSentSound("flag-submitted");
     // TODO: better progress and error handling
     const r = await api.POST("/challenges/{id}/solves", {
       params: { path: { id: challData!.id } },
@@ -101,6 +103,11 @@
         correctAnim.set(1);
         onSolve();
       } else {
+        playEmailSentSound("flag-incorrect");
+        showIncorrectAnimation = true;
+        setTimeout(() => {
+          showIncorrectAnimation = false;
+        }, 2000);
         setTimeout(() => {
           flagSubmitStatus = "waiting";
         }, 2000);
@@ -135,7 +142,7 @@
         <div class="pb-4 border-b border-base-200">
           <div class="flex justify-between items-start">
             <div>
-              <h2 class="text-2xl font-semibold">Re: {challData?.title}</h2>
+              <h2 class="text-2xl font-semibold">RE: {challData?.title}</h2>
             </div>
             <div class="flex flex-row items-center gap-4 text-gray-500 text-sm">
               <div class="flex items-center gap-1">
@@ -221,6 +228,17 @@
         </div>
       </div>
       <div>
+        <div
+          class="relative right-0 transform -translate-y-1/2 z-50 pointer-events-none"
+          in:fly={{ x: 200, duration: 600, easing: cubicInOut }}
+          out:fly={{ x: 200, duration: 600, easing: cubicInOut }}
+        >
+          <img
+            src="/images/incorrect-dog.png"
+            alt="Incorrect dog"
+            class="w-32 h-32 object-contain incorrect-animation"
+          />
+        </div>
         <!-- Attachments -->
         {#if !loading && challDetails!.files.length > 0}
           <div class="border-t border-base-200 py-2">
@@ -243,12 +261,13 @@
                     href={file.url.startsWith("http")
                       ? file.url
                       : `${API_BASE_URL}/${file.url}`}
-                    class="link text-primary font-semibold"
+                    class="link text-blue-500 font-semibold"
                     title={`${file.filename} - ${formatFileSize(file.size)}`}
                     >{file.filename}</a
                   >
                   {#if showHash}
-                    <pre class="text-xs text-gray-500 mt-1">{file.hash}</pre>
+                    <pre
+                      class="text-xs text-base-content mt-1">{file.hash}</pre>
                   {/if}
                 </li>
               {/each}
@@ -288,7 +307,7 @@
                 }}
                 type="text"
                 disabled={["correct", "submitting"].includes(flagSubmitStatus)}
-                placeholder={"noCTF{...}"}
+                placeholder={"DUCTF{...}"}
                 required
                 class={"w-full input input-bordered flex-grow pop duration-200 transition-colors focus:outline-none focus:pop focus:ring-0 focus:ring-offset-0 " +
                   (flagSubmitStatus == "incorrect"
@@ -333,15 +352,20 @@
             <button
               type="submit"
               onclick={submitFlag}
-              class="btn pop hover:pop btn-primary"
-              disabled={!authState.isPartOfTeam}
+              class="btn pop hover:pop btn-primary bg-blue-500"
+              disabled={!authState.isPartOfTeam || flagInput.length == 0}
               >Reply
               <Icon icon="material-symbols:send" class="text-xl" /></button
             >
           </form>
         {/if}
       </div>
+      <!-- Incorrect Animation Image -->
+      <!-- {#if showIncorrectAnimation} -->
+
+      <!-- {/if} -->
     </div>
+
     {#if scoreModalVisible}
       <div
         class="bg-base-200 rounded-lg pop w-full md:max-w-80 p-6 px-3 max-h-[46vh] overflow-hidden"
@@ -435,6 +459,29 @@
     40%,
     60% {
       transform: translate3d(2px, 0, 0);
+    }
+  }
+
+  .incorrect-animation {
+    animation: rotateInOut 2s ease-in-out;
+  }
+
+  @keyframes rotateInOut {
+    0% {
+      transform: translateX(100%) rotate(0deg);
+      opacity: 0;
+    }
+    25% {
+      transform: translateX(0%) rotate(90deg);
+      opacity: 1;
+    }
+    75% {
+      transform: translateX(0%) rotate(270deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(100%) rotate(360deg);
+      opacity: 0;
     }
   }
 </style>

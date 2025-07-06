@@ -99,7 +99,10 @@
     class:dark:hover:bg-gray-800={!selected}
     onclick={() => setFilter(category)}
   >
-    <Icon icon={categoryToIcon(category)} class="w-5 h-5 mr-3 text-gray-400" />
+    <Icon
+      icon={categoryToIcon(category)}
+      class={`w-5 h-5 mr-3 ${selected ? "text-blue-700" : "text-base-content"}`}
+    />
     <span class="flex-grow truncate">{displayName}</span>
     {@render countSnippet(solved, total, selected)}
   </button>
@@ -126,7 +129,7 @@
 {/snippet}
 
 <div class="flex flex-col gap-1 w-full p-2">
-  <div class="px-2 pt-2 pb-1 text-sm font-bold text-gray-500">
+  <div class="px-2 pt-2 pb-1 text-sm font-bold text-base-content">
     {generateEmail()}
   </div>
   <div class="pl-5">
@@ -147,7 +150,7 @@
     )}
   </div>
 
-  <div class="px-2 pt-2 pb-1 text-sm font-bold text-gray-500">FILTERS</div>
+  <div class="px-2 pt-2 pb-1 text-sm font-bold text-base-content">FILTERS</div>
   <div class="pl-5">
     {#each categories as cat}
       {@const counts = getCategoryCounts(cat)}
