@@ -106,7 +106,7 @@ class AuthState {
       localStorage.removeItem(USER_DATA_KEY);
       this.user = undefined;
     }
-    goto("/");
+    await goto("/");
     window.location.reload();
   }
 }
