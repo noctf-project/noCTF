@@ -6,7 +6,7 @@
 </script>
 
 <div
-  class={`badge badge-xs py-2 font-semibold ${difficultyToBgColour(difficulty)}`}
+  class={`badge badge-xs py-2 font-semibold pop ${difficultyToBgColour(difficulty)}`}
 >
   {difficulty}
 </div>

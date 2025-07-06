@@ -230,10 +230,10 @@
     {:else if !authState.isPartOfTeam}
       <div class="flex justify-center">
         <button
-          class="btn btn-primary"
+          class="btn btn-primary pop hover:pop"
           onclick={() => {
             goto("/team");
-          }}>Join or Create a Team</button
+          }}>Join or create a team to submit flags</button
         >
       </div>
     {:else}
