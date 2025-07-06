@@ -346,12 +346,21 @@
           {/if}
         </button>
         <button
-          class="btn btn-ghost pop hover:pop"
+          class="btn bg-base-100 pop hover:pop"
           onclick={() => (editMode = false)}
         >
           Cancel
         </button>
       {:else}
+        <a
+          href="/teams/{teamId}"
+          class="btn bg-base-100 pop hover:pop"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Icon icon="material-symbols:open-in-new" class="text-lg" />
+          View Public Profile
+        </a>
         <button
           class="btn btn-primary pop hover:pop"
           onclick={() => (editMode = true)}
@@ -854,7 +863,7 @@
                     <div class="flex gap-2 justify-end">
                       <a
                         href="/admin/user/{member.user_id}"
-                        class="btn btn-ghost btn-xs pop hover:pop"
+                        class="btn bg-base-100 btn-xs pop hover:pop"
                       >
                         <Icon icon="material-symbols:open-in-new" />
                         View User

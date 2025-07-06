@@ -214,7 +214,7 @@
           {/if}
         </button>
         <button
-          class="btn btn-ghost pop hover:pop"
+          class="btn bg-base-100 pop hover:pop"
           onclick={() => (editMode = false)}
         >
           Cancel
@@ -369,7 +369,7 @@
                       />
                       <a
                         href="/admin/team/{userData.team_id}"
-                        class="btn btn-outline btn-sm pop hover:pop"
+                        class="btn bg-base-100 btn-sm pop hover:pop"
                       >
                         <Icon icon="material-symbols:open-in-new" />
                         View Team
@@ -432,7 +432,7 @@
                     {flag}
                     {#if editMode}
                       <button
-                        class="btn btn-ghost btn-xs"
+                        class="btn bg-base-100 btn-xs"
                         onclick={() => removeFlag(flag)}
                       >
                         <Icon icon="material-symbols:close" class="text-xs" />
@@ -482,7 +482,7 @@
                     {role}
                     {#if editMode}
                       <button
-                        class="btn btn-ghost btn-xs"
+                        class="btn bg-base-100 btn-xs"
                         onclick={() => removeRole(role)}
                       >
                         <Icon icon="material-symbols:close" class="text-xs" />
