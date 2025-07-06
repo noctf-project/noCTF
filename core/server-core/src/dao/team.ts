@@ -1,4 +1,4 @@
-import type { Insertable, Updateable } from "kysely";
+import type { Insertable, SelectQueryBuilder, Updateable } from "kysely";
 import type { DBType } from "../clients/database.ts";
 import type { Team, TeamSummary } from "@noctf/api/datatypes";
 import type { DB, TeamMemberRole } from "@noctf/schema";
@@ -20,6 +20,14 @@ const CREATE_ERROR_CONFIG: PostgresErrorConfig = {
   [PostgresErrorCode.ForeignKeyViolation]: {
     team_division_id_fkey: () =>
       new BadRequestError("Division ID does not exist"),
+  },
+};
+
+const ASSIGN_ERROR_CONFIG: PostgresErrorConfig = {
+  [PostgresErrorCode.Duplicate]: {
+    team_name_key: () => new ConflictError("The team name already exists"),
+    default: (e) =>
+      new ConflictError("A duplicate entry was detected", { cause: e }),
   },
 };
 
@@ -89,27 +97,8 @@ export class TeamDAO {
     return result;
   }
 
-  async get(id: number): Promise<Team> {
-    const result = await this.db
-      .selectFrom("team")
-      .select([
-        "id",
-        "name",
-        "bio",
-        "country",
-        "join_code",
-        "division_id",
-        "flags",
-        "created_at",
-        sql<number[]>`
-          COALESCE(
-            (SELECT json_agg(ttm.tag_id) 
-            FROM team_tag_member ttm 
-            WHERE ttm.team_id = team.id),
-            '[]'::json
-          )
-        `.as("tag_ids"),
-      ])
+  async get(id: number): Promise<TeamSummary> {
+    const result = await this.select(this.db.selectFrom("team"))
       .where("id", "=", id)
       .executeTakeFirst();
     if (!result) {
@@ -122,31 +111,7 @@ export class TeamDAO {
     params?: Parameters<TeamDAO["listQuery"]>[0],
     limit?: Parameters<TeamDAO["listQuery"]>[1],
   ): Promise<TeamSummary[]> {
-    const query = this.listQuery(params, limit)
-      .select([
-        "team.id",
-        "team.name",
-        "team.bio",
-        "team.country",
-        "team.division_id",
-        "team.created_at",
-        "team.flags",
-        jsonArrayFrom(
-          this.db
-            .selectFrom("team_member as tm")
-            .select(["tm.user_id as user_id", "tm.role as role"])
-            .whereRef("tm.team_id", "=", sql`team.id`),
-        ).as("members"),
-        sql<number[]>`
-          COALESCE(
-            (SELECT json_agg(ttm.tag_id) 
-            FROM team_tag_member ttm 
-            WHERE ttm.team_id = team.id),
-            '[]'::json
-          )
-        `.as("tag_ids"),
-      ])
-      .orderBy("id");
+    const query = this.select(this.listQuery(params, limit)).orderBy("id");
     return query.execute() as Promise<TeamSummary[]>;
   }
 
@@ -238,23 +203,30 @@ export class TeamDAO {
     team_id: number;
     role?: TeamMemberRole;
   }) {
-    const { numInsertedOrUpdatedRows } = await this.db
-      .insertInto("team_member")
-      .values({
-        user_id,
-        team_id,
-        role,
-      })
-      .onConflict((b) =>
-        b
-          .column("user_id")
-          .doUpdateSet({ role })
-          .where("team_member.team_id", "=", team_id)
-          .where("team_member.role", "!=", role),
-      )
-      .executeTakeFirst();
-    if (!numInsertedOrUpdatedRows) {
-      throw new ConflictError("User has already joined a team.");
+    try {
+      const { numInsertedOrUpdatedRows } = await this.db
+        .insertInto("team_member")
+        .values({
+          user_id,
+          team_id,
+          role,
+        })
+        .onConflict((b) =>
+          b
+            .column("user_id")
+            .doUpdateSet({ role })
+            .where("team_member.team_id", "=", team_id)
+            .where("team_member.role", "!=", role),
+        )
+        .executeTakeFirst();
+
+      if (!numInsertedOrUpdatedRows) {
+        throw new ConflictError("User has already joined a team.");
+      }
+    } catch (e) {
+      const pgerror = TryPGConstraintError(e, ASSIGN_ERROR_CONFIG);
+      if (pgerror) throw pgerror;
+      throw e;
     }
   }
 
@@ -319,7 +291,7 @@ export class TeamDAO {
   async listMembers(id: number, count?: false): Promise<TeamMember[]>;
   async listMembers(id: number, count = false): Promise<TeamMember[] | number> {
     const query = this.db.selectFrom("team_member").where("team_id", "=", id);
-    if (count) {
+    if (!count) {
       return query.select(["user_id", "role"]).execute() as Promise<
         TeamMember[]
       >;
@@ -376,5 +348,32 @@ export class TeamDAO {
       query = query.offset(limit.offset);
     }
     return query;
+  }
+
+  private select<S, T extends SelectQueryBuilder<DB, "team", S>>(db: T) {
+    return db.select([
+      "team.id",
+      "team.name",
+      "team.bio",
+      "team.country",
+      "team.division_id",
+      "team.created_at",
+      "team.join_code",
+      "team.flags",
+      jsonArrayFrom(
+        this.db
+          .selectFrom("team_member as tm")
+          .select(["tm.user_id as user_id", "tm.role as role"])
+          .whereRef("tm.team_id", "=", sql`team.id`),
+      ).as("members"),
+      sql<number[]>`
+        COALESCE(
+          (SELECT json_agg(ttm.tag_id) 
+          FROM team_tag_member ttm 
+          WHERE ttm.team_id = team.id),
+          '[]'::json
+        )
+      `.as("tag_ids"),
+    ]);
   }
 }

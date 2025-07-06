@@ -10,3 +10,10 @@ export type Serializable =
 export type SerializableMap = {
   [key: string]: Serializable;
 };
+
+export enum CaptchaHTTPMethod {
+  POST = "POST",
+  PUT = "PUT",
+  DELETE = "DELETE",
+  PATCH = "PATCH",
+}

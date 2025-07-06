@@ -291,7 +291,7 @@ export const ScoreboardEntry = Type.Object({
 export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 
 export const TeamSummary = Type.Composite([
-  Type.Omit(Team, ["join_code"]),
+  Team,
   Type.Object({
     members: Type.Array(
       Type.Object({
@@ -376,3 +376,10 @@ export const App = Type.Object({
   updated_at: TypeDate,
 });
 export type App = Static<typeof App>;
+
+export const TeamMemberType = Type.Union([
+  Type.Literal("owner"),
+  Type.Literal("member"),
+  Type.Literal("none"),
+]);
+export type TeamMemberType = Static<typeof TeamMemberType>;

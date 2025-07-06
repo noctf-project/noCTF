@@ -154,7 +154,10 @@ export async function routes(fastify: FastifyInstance) {
         },
       );
       return reply.status(201).send({
-        data: team,
+        data: {
+          ...team,
+          members: [{ user_id: request.user.id, role: "owner" }],
+        },
       });
     },
   );

@@ -10,14 +10,19 @@ export interface CaptchaProvider {
   ): Promise<number>;
 }
 
-export class HCaptchaProvider implements CaptchaProvider {
+export abstract class BaseSiteVerifyCaptchaProvider implements CaptchaProvider {
+  constructor(
+    private readonly _id: string,
+    private readonly verifyURL: string,
+  ) {}
+
   async validate(
     privateKey: string,
     response: string,
     clientIp: string,
   ): Promise<number> {
     const result = await ky
-      .post("https://api.hcaptcha.com/siteverify", {
+      .post(this.verifyURL, {
         body: new URLSearchParams({
           response,
           remoteip: clientIp,
@@ -32,6 +37,21 @@ export class HCaptchaProvider implements CaptchaProvider {
   }
 
   id() {
-    return "hcaptcha";
+    return this._id;
+  }
+}
+
+export class HCaptchaProvider extends BaseSiteVerifyCaptchaProvider {
+  constructor() {
+    super("hcaptcha", "https://api.hcaptcha.com/siteverify");
+  }
+}
+
+export class CloudflareCaptchaProvider extends BaseSiteVerifyCaptchaProvider {
+  constructor() {
+    super(
+      "cloudflare",
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    );
   }
 }
