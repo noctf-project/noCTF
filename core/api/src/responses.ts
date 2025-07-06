@@ -365,3 +365,17 @@ export const OAuthConfigurationResponse = Type.Object({
 export type OAuthConfigurationResponse = Static<
   typeof OAuthConfigurationResponse
 >;
+
+export const AdminListTeamTagsResponse = Type.Object({
+  data: Type.Object({
+    tags: Type.Array(TeamTag),
+  }),
+});
+export type AdminListTeamTagsResponse = Static<
+  typeof AdminListTeamTagsResponse
+>;
+
+export const AdminTeamTagResponse = Type.Object({
+  data: TeamTag,
+});
+export type AdminTeamTagResponse = Static<typeof AdminTeamTagResponse>;

@@ -50,6 +50,44 @@ export class TeamService {
     return this.teamTagDAO.list();
   }
 
+  async createTag(
+    v: Parameters<TeamTagDAO["create"]>[0],
+    { actor, message }: AuditParams = {},
+  ) {
+    const tag = await this.teamTagDAO.create(v);
+    await this.auditLogService.log({
+      operation: "team_tag.create",
+      actor,
+      data: message,
+      entities: [`${ActorType.TEAM_TAG}:${tag.id}`],
+    });
+    return tag;
+  }
+
+  async updateTag(
+    tagId: number,
+    v: Parameters<TeamTagDAO["update"]>[1],
+    { actor, message }: AuditParams = {},
+  ) {
+    await this.teamTagDAO.update(tagId, v);
+    await this.auditLogService.log({
+      operation: "team_tag.update",
+      actor,
+      data: message,
+      entities: [`${ActorType.TEAM_TAG}:${tagId}`],
+    });
+  }
+
+  async deleteTag(tagId: number, { actor, message }: AuditParams = {}) {
+    await this.teamTagDAO.delete(tagId);
+    await this.auditLogService.log({
+      operation: "team_tag.delete",
+      actor,
+      data: message,
+      entities: [`${ActorType.TEAM_TAG}:${tagId}`],
+    });
+  }
+
   private async validateTags(tag_ids?: number[]) {
     if (tag_ids && tag_ids.length) {
       tag_ids = Array.from(new Set(tag_ids));
