@@ -102,6 +102,8 @@ export async function routes(fastify: FastifyInstance) {
         sRoles.symmetricDifference(new Set(x.roles)).size > 0 && "roles",
         sFlags.symmetricDifference(new Set(x.flags)).size > 0 && "flags",
       ].filter((x) => x);
+      
+      if (changed.length === 0) return {};
       if (changed.includes("roles")) {
         const allowed = await policyService.evaluate(request.user.id, [
           "admin.policy.update",

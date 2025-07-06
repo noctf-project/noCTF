@@ -104,7 +104,7 @@ export async function routes(fastify: FastifyInstance) {
         name !== x.name && "name",
         bio !== x.bio && "bio",
       ].filter((x) => x);
-      if (changed.length === 0) return [];
+      if (changed.length === 0) return {};
 
       await userService.update(
         request.user.id,
