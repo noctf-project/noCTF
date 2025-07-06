@@ -29,6 +29,7 @@ declare module "fastify" {
 
   interface FastifyRequest {
     user?: {
+      app?: number;
       id: number;
       token: string;
       membership: PromiseLike<

@@ -7,7 +7,7 @@ import { DISABLE_RATE_LIMIT } from "../config.ts";
 const DEFAULT_CONFIG = (r: FastifyRequest) => ({
   key:
     r.routeOptions.url &&
-    `all:${r.user ? "u" + r.user.id : "i" + NormalizeIPPrefix(r.ip)}`,
+    `all:${r.user ? "u" + r.user.id + (r.user.app ? "a" + r.user.app : "") : "i" + NormalizeIPPrefix(r.ip)}`,
   limit: r.user ? 200 : 500,
   windowSeconds: 60,
 });

@@ -27,7 +27,9 @@ export const AuthnHook = async (request: FastifyRequest) => {
     tokenData = await identityService.validateToken(token);
 
     const id = +tokenData.sub;
+    const app = tokenData.app ? +tokenData.app : undefined;
     request.user = {
+      app,
       id,
       token,
       membership: CreateThenable(() => teamService.getMembershipForUser(id)),

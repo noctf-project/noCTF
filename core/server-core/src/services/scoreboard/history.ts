@@ -27,10 +27,17 @@ export class ScoreboardHistory {
   }
 
   async saveIteration(division: number, scoreboard: ScoreboardEntry[]) {
+    const hidden = new Set<number>(
+      scoreboard.filter((x) => x.hidden).map((x) => x.team_id),
+    );
     const minimal = GetMinimalScoreboard(scoreboard);
     const last = await this.getLastData(division);
     const diff = GetChangedTeamScores(last, minimal);
-    await this.scoreHistoryDAO.add(diff.map(({ updated_at, ...rest }) => rest));
+    await this.scoreHistoryDAO.add(
+      diff
+        .filter((x) => !hidden.has(x.team_id))
+        .map(({ updated_at, ...rest }) => rest),
+    );
     const encoded = await Compress(encode(minimal));
     const multi = (await this.redisClientFactory.getClient()).multi();
     multi.set(`${CACHE_NAMESPACE}:calc:${division}`, encoded as Buffer, {
