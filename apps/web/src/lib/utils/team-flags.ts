@@ -8,7 +8,7 @@ export const availableFlags: TeamFlag[] = [
   { name: "blocked", color: "badge-error", icon: "material-symbols:block" },
   {
     name: "hidden",
-    color: "bg-base-400 text-base-content",
+    color: "bg-gray-500",
     icon: "material-symbols:visibility-off",
   },
   { name: "frozen", color: "badge-info", icon: "material-symbols:ac-unit" },
