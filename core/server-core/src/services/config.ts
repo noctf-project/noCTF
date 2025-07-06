@@ -21,7 +21,7 @@ export type ConfigValue<T extends SerializableMap> = {
   value: T;
 };
 
-const EXPIRY_MS = 2000;
+const EXPIRY_MS = 3000;
 
 export class ConfigService {
   // A simple map-based cache is good enough, we want low latency and don't really need

@@ -20,7 +20,7 @@ import {
 } from "./datatypes.ts";
 import { AuthTokenType } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
-import { SetupConfig } from "./config.ts";
+import { CaptchaConfig, SetupConfig } from "./config.ts";
 
 export const BaseResponse = Type.Object({
   error: Type.Optional(Type.String()),
@@ -35,11 +35,7 @@ export type SuccessResponse = Static<typeof SuccessResponse>;
 
 export const GetCaptchaConfigResponse = Type.Object({
   data: Type.Optional(
-    Type.Object({
-      provider: Type.String(),
-      public_key: Type.String(),
-      routes: Type.Array(Type.String()),
-    }),
+    Type.Pick(CaptchaConfig, ["provider", "public_key", "routes"]),
   ),
 });
 export type GetCaptchaConfigResponse = Static<typeof GetCaptchaConfigResponse>;

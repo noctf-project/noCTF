@@ -1,14 +1,18 @@
 import { GetCaptchaConfigResponse } from "@noctf/api/responses";
 import { CaptchaService } from "./service.ts";
 import { ValidationError } from "@noctf/server-core/errors";
-import { HCaptchaProvider } from "./provider.ts";
-import type { FastifyInstance } from "fastify";
+import { CloudflareCaptchaProvider, HCaptchaProvider } from "./provider.ts";
+import type { FastifyInstance, HTTPMethods } from "fastify";
+import { CaptchaHTTPMethod } from "@noctf/api/types";
 
-export const RESTRICTED_METHODS = new Set(["POST", "PUT", "DELETE"]);
+const VALID_METHODS = new Set(
+  Object.values(CaptchaHTTPMethod),
+) as Set<HTTPMethods>;
 
 export async function initServer(fastify: FastifyInstance) {
   const service = new CaptchaService(fastify.container.cradle);
   service.register(new HCaptchaProvider());
+  service.register(new CloudflareCaptchaProvider());
 
   fastify.get<{ Reply: GetCaptchaConfigResponse }>(
     "/captcha",
@@ -40,7 +44,10 @@ export async function initServer(fastify: FastifyInstance) {
       "x-noctf-captcha": string;
     };
   }>("preHandler", async (request) => {
-    if (!RESTRICTED_METHODS.has(request.method)) {
+    const path = request.routeOptions.url;
+    const method = request.routeOptions.method as HTTPMethods;
+    // short circuit to make less expensive, we don't particularly care about GET or OPTIONS
+    if (!VALID_METHODS.has(method)) {
       return;
     }
     const { provider, public_key, private_key, routes } =
@@ -50,7 +57,7 @@ export async function initServer(fastify: FastifyInstance) {
       !public_key ||
       !private_key ||
       !routes ||
-      !routes.includes(request.routeOptions.url)
+      !routes.some((x) => method === x.method && path === x.path)
     ) {
       return;
     }
