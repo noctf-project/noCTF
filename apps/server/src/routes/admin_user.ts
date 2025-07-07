@@ -171,14 +171,10 @@ export async function routes(fastify: FastifyInstance) {
     async (request) => {
       if (request.user.id === request.params.id)
         throw new BadRequestError("You cannot delete yourself");
-      const me = await policyService.evaluate(
-        request.user.id,
-        PRIVILEGED_POLICY,
-      );
-      const test = await policyService.evaluate(
-        request.params.id,
-        PRIVILEGED_POLICY,
-      );
+      const [me, test] = await Promise.all([
+        policyService.evaluate(request.user.id, PRIVILEGED_POLICY),
+        policyService.evaluate(request.params.id, PRIVILEGED_POLICY),
+      ]);
       if (test && !me)
         throw new ForbiddenError(
           "Not allowed to delete a user with higher privilege",
