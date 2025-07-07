@@ -55,10 +55,7 @@
   import { Parser } from "expr-eval";
 
   import api, { SESSION_TOKEN_KEY, wrapLoadable } from "$lib/api/index.svelte";
-  import {
-    categoryToIcon,
-    slugify,
-  } from "$lib/utils/challenges";
+  import { categoryToIcon, slugify } from "$lib/utils/challenges";
   import { CATEGORIES } from "$lib/constants/categories";
 
   const { mode, challData }: Props = $props();
