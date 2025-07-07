@@ -425,3 +425,10 @@ export const AdminListPolicyResponse = Type.Object({
   data: Type.Array(PolicyDocument),
 });
 export type AdminListPolicyResponse = Static<typeof AdminListPolicyResponse>;
+
+export const AdminResetPasswordResponse = Type.Object({
+  data: Type.String({ format: "uri" }),
+});
+export type AdminResetPasswordResponse = Static<
+  typeof AdminResetPasswordResponse
+>;

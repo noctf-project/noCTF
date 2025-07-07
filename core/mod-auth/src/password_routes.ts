@@ -8,7 +8,11 @@ import {
 import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
 import { PasswordProvider } from "./password_provider.ts";
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { UserFlag } from "@noctf/server-core/types/enums";
+import {
+  ActorType,
+  EntityType,
+  UserFlag,
+} from "@noctf/server-core/types/enums";
 import { UserNotFoundError } from "./error.ts";
 import {
   EMAIL_CHANGE_TEMPLATE,
@@ -40,6 +44,7 @@ export default async function (fastify: FastifyInstance) {
     tokenService,
     emailService,
     lockService,
+    auditLogService,
   } = fastify.container.cradle;
   const passwordProvider = new PasswordProvider(fastify.container.cradle);
 
@@ -199,6 +204,14 @@ export default async function (fastify: FastifyInstance) {
           token,
         }),
       });
+      await auditLogService.log({
+        operation: "user.reset_password.init",
+        actor: {
+          type: ActorType.ANONYMOUS,
+        },
+        data: "Self-service reset password via email",
+        entities: [`${EntityType.USER}:${identity.user_id}`],
+      });
       return {};
     },
   );
@@ -244,6 +257,15 @@ export default async function (fastify: FastifyInstance) {
           return identity.user_id;
         },
       );
+      await auditLogService.log({
+        operation: "user.reset_password.finish",
+        actor: {
+          type: ActorType.USER,
+          id,
+        },
+        data: "Password reset using token",
+        entities: [`${EntityType.USER}:${id}`],
+      });
       const sessionToken = await identityService.createSession({
         user_id: id,
         ip: request.ip,
