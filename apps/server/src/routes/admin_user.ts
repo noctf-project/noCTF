@@ -18,6 +18,7 @@ import {
   NotFoundError,
 } from "@noctf/server-core/errors";
 import { ActorType, EntityType } from "@noctf/server-core/types/enums";
+import { Paginate } from "@noctf/server-core/util/paginator";
 import { Policy } from "@noctf/server-core/util/policy";
 import { RunInParallelWithLimit } from "@noctf/server-core/util/semaphore";
 import { FastifyInstance } from "fastify";
@@ -53,21 +54,16 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const page = request.body.page || 1;
-      const page_size = request.body.page_size ?? PAGE_SIZE;
       const canViewIdentity = await policyService.evaluate(request.user.id, [
         "admin.identity.get",
       ]);
 
-      const query = request.body;
-      const [entries, total] = await Promise.all([
-        userService.listSummary(query, {
-          limit: page_size,
-          offset: (page - 1) * page_size,
-        }),
-        !(query.ids && query.ids.length) ? userService.getCount(query) : 0,
-      ]);
-
+      const { page, page_size, ...query } = request.body;
+      const { entries, page_size: actual_page_size } = await Paginate(
+        query,
+        { page, page_size },
+        (q, l) => userService.listSummary(q, l),
+      );
       const results = await RunInParallelWithLimit(entries, 8, async (e) => ({
         ...e,
         derived_roles: [...(await policyService.computeRolesForUser(e))],
@@ -88,8 +84,11 @@ export async function routes(fastify: FastifyInstance) {
       return {
         data: {
           entries: derivedEntries,
-          page_size,
-          total: total || entries.length,
+          page_size: actual_page_size,
+          total:
+            query.ids && query.ids.length
+              ? await userService.getCount(query)
+              : entries.length,
         },
       };
     },

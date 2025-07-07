@@ -10,6 +10,7 @@ import type { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
 import type { Policy } from "@noctf/server-core/util/policy";
 import { ActorType } from "@noctf/server-core/types/enums";
+import { Paginate } from "@noctf/server-core/util/paginator";
 
 export const PAGE_SIZE = 60;
 
@@ -41,19 +42,15 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const page = request.body.page || 1;
-      const page_size = request.body.page_size ?? PAGE_SIZE;
-      const query = request.body;
-      const [entries, total] = await Promise.all([
-        submissionService.listSummary(query, {
-          limit: page_size,
-          offset: (page - 1) * page_size,
-        }),
-        submissionService.getCount(query),
-      ]);
-
+      const { page, page_size, ...query } = request.body;
+      const result = await Paginate(query, { page, page_size }, (q, l) =>
+        submissionService.listSummary(q, l),
+      );
       return {
-        data: { entries, page_size, total },
+        data: {
+          ...result,
+          total: await submissionService.getCount(query),
+        },
       };
     },
   );

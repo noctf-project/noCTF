@@ -7,7 +7,7 @@ import {
   ScoreboardTeamResponse,
 } from "@noctf/api/responses";
 import { IdParams } from "@noctf/api/params";
-import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
+import { NotFoundError } from "@noctf/server-core/errors";
 import { ScoreboardQuery, ScoreboardTagsQuery } from "@noctf/api/query";
 import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";

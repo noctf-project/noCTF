@@ -24,8 +24,7 @@ import {
 import { ActorType, TeamFlag } from "@noctf/server-core/types/enums";
 import { Policy } from "@noctf/server-core/util/policy";
 import SingleValueCache from "@noctf/server-core/util/single_value_cache";
-
-export const PAGE_SIZE = 60;
+import { Paginate } from "@noctf/server-core/util/paginator";
 
 export async function routes(fastify: FastifyInstance) {
   const adminPolicy: Policy = ["admin.team.get"];
@@ -304,28 +303,23 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const admin = await policyService.evaluate(request.user?.id, adminPolicy);
-
-      const page = request.body.page || 1;
-      const page_size =
-        (admin
-          ? request.body.page_size
-          : Math.min(PAGE_SIZE, request.body.page_size)) || PAGE_SIZE;
-      const query = {
-        flags: admin ? [] : ["!hidden"],
-        division_id: request.body.division_id,
-        name_prefix: request.body.name_prefix,
-        ids: request.body.ids,
-      };
-      const [entries, total] = await Promise.all([
-        teamService.listSummary(query, {
-          limit: page_size,
-          offset: (page - 1) * page_size,
-        }),
-        !(query.ids && query.ids.length) ? teamService.getCount(query) : 0,
-      ]);
-
+      const { page, page_size, ...query } = request.body;
+      const result = await Paginate(
+        {
+          ...query,
+          flags: admin ? [] : ["!hidden"],
+        },
+        { page, page_size },
+        (q, l) => teamService.listSummary(q, l),
+      );
       return {
-        data: { entries, page_size, total: total || entries.length },
+        data: {
+          ...result,
+          total:
+            query.ids && query.ids.length
+              ? await teamService.getCount(query)
+              : result.entries.length,
+        },
       };
     },
   );
