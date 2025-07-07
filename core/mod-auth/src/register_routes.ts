@@ -9,6 +9,7 @@ import {
   RegisterAuthTokenResponse,
 } from "./api_schema.ts";
 import { TokenService } from "@noctf/server-core/services/token";
+import { ActorType } from "@noctf/server-core/types/enums";
 
 export default async function (fastify: FastifyInstance) {
   const { identityService, userService, lockService, tokenService } =
@@ -86,22 +87,28 @@ export default async function (fastify: FastifyInstance) {
             user_id: 0,
           }));
 
-          const id = await userService.create({
-            name,
-            identities: identity.concat(
-              tokenEmail
-                ? []
-                : [
-                    {
-                      provider: "email",
-                      provider_id: request.body.email,
-                      user_id: 0,
-                    },
-                  ],
-            ),
-            roles,
-            flags,
-          });
+          const id = await userService.create(
+            {
+              name,
+              identities: identity.concat(
+                tokenEmail
+                  ? []
+                  : [
+                      {
+                        provider: "email",
+                        provider_id: request.body.email,
+                        user_id: 0,
+                      },
+                    ],
+              ),
+              roles,
+              flags,
+            },
+            {
+              actor: { type: ActorType.ANONYMOUS },
+              message: "Self-service user creation",
+            },
+          );
 
           await tokenService.invalidate("register", token);
           return id;

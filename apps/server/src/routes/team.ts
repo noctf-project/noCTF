@@ -142,7 +142,7 @@ export async function routes(fastify: FastifyInstance) {
         },
         {
           actor,
-          message: "Created a team using self-service.",
+          message: "Self-service team created",
         },
       );
       await teamService.assignMember(
@@ -156,7 +156,7 @@ export async function routes(fastify: FastifyInstance) {
             type: ActorType.USER,
             id: request.user.id,
           },
-          message: "Assigned owner permissions to the team's creator.",
+          message: "Assigned owner permissions to the team's creator",
         },
       );
       return reply.status(201).send({
