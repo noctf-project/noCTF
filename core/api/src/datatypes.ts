@@ -392,3 +392,23 @@ export const TeamMemberType = Type.Union([
   Type.Literal("none"),
 ]);
 export type TeamMemberType = Static<typeof TeamMemberType>;
+
+export const Session = Type.Object({
+  id: Type.Integer(),
+  ip: Type.Union([Type.String(), Type.Null()]),
+  app_id: Type.Union([Type.Integer(), Type.Null()]),
+  user_id: Type.Integer(),
+  expires_at: Type.Union([TypeDate, Type.Null()]),
+  revoked_at: Type.Union([TypeDate, Type.Null()]),
+  scopes: Type.Union([
+    Type.Array(Type.String({ minLength: 1, maxLength: 256 }), {
+      uniqueItems: true,
+      minItems: 64,
+      maxItems: 64,
+    }),
+    Type.Null(),
+  ]),
+  created_at: TypeDate,
+  refreshed_at: TypeDate,
+});
+export type Session = Static<typeof Session>;

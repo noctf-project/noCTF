@@ -260,6 +260,10 @@ export class IdentityService {
     return this.identityDAO.listProvidersForUser(id);
   }
 
+  async listSessionsForUser(...args: Parameters<SessionDAO["listByUserId"]>) {
+    return this.sessionDAO.listByUserId(...args);
+  }
+
   async getProviderForUser(user_id: number, provider: string) {
     return this.identityDAO.getIdentityForUser(user_id, provider);
   }
