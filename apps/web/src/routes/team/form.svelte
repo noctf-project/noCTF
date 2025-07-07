@@ -222,7 +222,7 @@
               class="w-full input input-bordered focus:outline-none focus:ring-0 focus:ring-offset-0"
             />
 
-            {#if divisions.length > 1}
+            {#if divisions.length > 1 || (divisions.length === 1 && divisions[0]?.is_password)}
               <label class="label" for="division">
                 <span class="label-text">Division</span>
               </label>
