@@ -18,6 +18,7 @@ import {
   UserIdentity,
   Session,
   PolicyDocument,
+  Team,
 } from "./datatypes.ts";
 import { AuthTokenType } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
@@ -89,18 +90,21 @@ export const QueryAuditLogResponse = Type.Object({
 export type QueryAuditLogResponse = Static<typeof QueryAuditLogResponse>;
 
 export const MeTeamResponse = Type.Object({
-  data: Type.Composite([Type.Omit(TeamSummary, ["flags", "join_code"])]),
+  data: Type.Composite([Type.Omit(TeamSummary, ["flags"])]),
 });
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
 
 export const CreateTeamResponse = Type.Object({
-  data: Type.Composite([Type.Omit(TeamSummary, ["flags"])]),
+  data: Type.Composite([
+    Type.Omit(TeamSummary, ["flags"]),
+    Type.Pick(Team, ["join_code"]),
+  ]),
 });
 export type CreateTeamResponse = Static<typeof CreateTeamResponse>;
 
 export const ListTeamsResponse = Type.Object({
   data: Type.Object({
-    entries: Type.Array(Type.Omit(TeamSummary, ["flags", "join_code"])),
+    entries: Type.Array(Type.Omit(TeamSummary, ["flags"])),
     page_size: Type.Integer(),
     total: Type.Integer(),
   }),
@@ -109,7 +113,7 @@ export type ListTeamsResponse = Static<typeof ListTeamsResponse>;
 
 export const AdminListTeamsResponse = Type.Object({
   data: Type.Object({
-    entries: Type.Array(Type.Omit(TeamSummary, ["join_code"])),
+    entries: Type.Array(TeamSummary),
     page_size: Type.Integer(),
     total: Type.Integer(),
   }),
@@ -281,9 +285,7 @@ export const ScoreboardResponse = Type.Object({
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
 
 export const UpdateTeamResponse = Type.Object({
-  data: Type.Object({
-    join_code: Type.Optional(Type.String()),
-  }),
+  data: Type.Partial(Type.Pick(Team, ["join_code"])),
 });
 export type UpdateTeamResponse = Static<typeof UpdateTeamResponse>;
 

@@ -358,7 +358,6 @@ export class TeamDAO {
       "team.country",
       "team.division_id",
       "team.created_at",
-      "team.join_code",
       "team.flags",
       jsonArrayFrom(
         this.db

@@ -300,7 +300,7 @@ export const ScoreboardEntry = Type.Object({
 export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 
 export const TeamSummary = Type.Composite([
-  Team,
+  Type.Omit(Team, ["join_code"]),
   Type.Object({
     members: Type.Array(
       Type.Object({
