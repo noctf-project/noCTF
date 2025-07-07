@@ -11,14 +11,13 @@ import { NormalizeName } from "../util/string.ts";
 export class UserDAO {
   constructor(private readonly db: DBType) {}
 
-  async checkNameExists(name: string) {
+  async getIdForName(name: string) {
     const result = await this.db
       .selectFrom("user")
-      .select(this.db.fn.countAll().as("count"))
+      .select(["id"])
       .where("name", "=", name)
-      .executeTakeFirstOrThrow();
-    const count = result.count as unknown as string | number;
-    return count != 0 && count != "0";
+      .executeTakeFirst();
+    return result?.id;
   }
 
   async get(id: number): Promise<User | undefined> {
@@ -165,5 +164,15 @@ export class UserDAO {
       query = query.offset(limit.offset);
     }
     return query;
+  }
+
+  async delete(id: number) {
+    const { numDeletedRows } = await this.db
+      .deleteFrom("user")
+      .where("id", "=", id)
+      .executeTakeFirst();
+    if (!numDeletedRows) {
+      throw new NotFoundError("User not found");
+    }
   }
 }

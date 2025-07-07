@@ -6,6 +6,7 @@ import {
 import { AdminListUsersResponse, BaseResponse } from "@noctf/api/responses";
 import {
   BadRequestError,
+  ConflictError,
   ForbiddenError,
   NotFoundError,
 } from "@noctf/server-core/errors";
@@ -87,6 +88,7 @@ export async function routes(fastify: FastifyInstance) {
           policy: ["admin.user.update"],
         },
         body: AdminUpdateUserRequest,
+        params: IdParams,
         response: {
           200: BaseResponse,
         },
@@ -116,11 +118,17 @@ export async function routes(fastify: FastifyInstance) {
         if (!allowed) throw new ForbiddenError("Not allowed to update roles");
       }
 
+      if (changed.includes("name")) {
+        const id = await userService.getIdForName(name);
+        if (id && id !== request.user.id)
+          throw new ConflictError("A user already exists with this name");
+      }
+
       await userService.update(
-        request.user.id,
+        request.params.id,
         {
-          name: request.body.name,
-          bio: request.body.bio,
+          name,
+          bio,
           flags: [...sFlags],
           roles: [...sRoles],
         },

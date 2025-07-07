@@ -66,10 +66,6 @@ export class UserService {
     },
     { actor, message }: AuditParams = {},
   ) {
-    if (name && (await this.userDAO.checkNameExists(name))) {
-      throw new ConflictError("A user already exists with this name");
-    }
-
     await this.userDAO.update(id, {
       name,
       bio,
@@ -106,7 +102,7 @@ export class UserService {
       );
     }
 
-    if (await this.userDAO.checkNameExists(name)) {
+    if (await this.userDAO.getIdForName(name)) {
       throw new ConflictError("A user already exists with this name");
     }
 
@@ -129,6 +125,10 @@ export class UserService {
       entities: [`${ActorType.USER}:${id}`],
     });
     return id;
+  }
+
+  async getIdForName(name: string) {
+    return this.userDAO.getIdForName(name);
   }
 
   async delete(id: number, { actor, message }: AuditParams = {}) {

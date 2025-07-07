@@ -9,7 +9,7 @@ import {
   ListUsersResponse,
   MeUserResponse,
 } from "@noctf/api/responses";
-import { NotFoundError } from "@noctf/server-core/errors";
+import { ConflictError, NotFoundError } from "@noctf/server-core/errors";
 import { Policy } from "@noctf/server-core/util/policy";
 
 export const PAGE_SIZE = 60;
@@ -105,12 +105,17 @@ export async function routes(fastify: FastifyInstance) {
         bio !== ex.bio && "bio",
       ].filter((x) => x);
       if (changed.length === 0) return {};
+      if (changed.includes("name")) {
+        const id = await userService.getIdForName(name);
+        if (id && id !== request.user.id)
+          throw new ConflictError("A user already exists with this name");
+      }
 
       await userService.update(
         request.user.id,
         {
-          name: request.body.name,
-          bio: request.body.bio,
+          name,
+          bio,
         },
         {
           actor: {
