@@ -23,6 +23,7 @@ import type { EmailService } from "./services/email/index.ts";
 import type { AppService } from "./services/app.ts";
 import type { KeyService } from "./services/key.ts";
 import type { DivisionService } from "./services/division.ts";
+import { TokenService } from "./services/token.ts";
 
 export type ServiceCradle = {
   logger: Logger;
@@ -47,6 +48,7 @@ export type ServiceCradle = {
   scoreboardService: ScoreboardService;
   submissionService: SubmissionService;
   teamService: TeamService;
+  tokenService: TokenService;
   userService: UserService;
   lockService: LockService;
 };

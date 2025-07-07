@@ -4,17 +4,15 @@ import { BadRequestError } from "@noctf/server-core/errors";
 import type { FastifyInstance } from "fastify";
 import { Generate } from "./hash_util.ts";
 import type { AssociateIdentity } from "@noctf/server-core/services/identity";
-import { TokenProvider } from "./token_provider.ts";
 import {
   RegisterAuthTokenRequest,
   RegisterAuthTokenResponse,
 } from "./api_schema.ts";
+import { TokenService } from "@noctf/server-core/services/token";
 
 export default async function (fastify: FastifyInstance) {
-  const { identityService, userService, lockService, cacheService } =
+  const { identityService, userService, lockService, tokenService } =
     fastify.container.cradle;
-
-  const tokenProvider = new TokenProvider({ cacheService });
 
   fastify.post<{
     Body: RegisterAuthTokenRequest;
@@ -33,7 +31,7 @@ export default async function (fastify: FastifyInstance) {
     },
     async (request) => {
       return {
-        data: await tokenProvider.lookup("register", request.body.token),
+        data: await tokenService.lookup("register", request.body.token),
       };
     },
   );
@@ -55,9 +53,9 @@ export default async function (fastify: FastifyInstance) {
     },
     async (request) => {
       const { password, name, token } = request.body;
-      const data = await tokenProvider.lookup("register", token);
+      const data = await tokenService.lookup("register", token);
       const id = await lockService.withLease(
-        `token:register:${TokenProvider.hash(token)}`,
+        `token:${TokenService.hash("register", token)}`,
         async () => {
           const { flags, roles } = data;
           let identity = data.identity as AssociateIdentity[];
@@ -105,7 +103,7 @@ export default async function (fastify: FastifyInstance) {
             flags,
           });
 
-          await tokenProvider.invalidate("register", token);
+          await tokenService.invalidate("register", token);
           return id;
         },
       );

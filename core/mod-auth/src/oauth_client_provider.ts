@@ -7,7 +7,7 @@ import type { ServiceCradle } from "@noctf/server-core";
 import type { IdentityProvider } from "@noctf/server-core/services/identity";
 import { UserNotFoundError } from "./error.ts";
 import { FinishAuthResponse } from "@noctf/api/responses";
-import { TokenProvider } from "./token_provider.ts";
+import { TokenService } from "@noctf/server-core/services/token";
 
 export class OAuthConfigProvider {
   constructor(
@@ -88,7 +88,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
   constructor(
     private readonly configProvider: OAuthConfigProvider,
     private readonly identityService: ServiceCradle["identityService"],
-    private readonly tokenProvider: TokenProvider,
+    private readonly tokenService: TokenService,
   ) {}
 
   async listMethods(): Promise<AuthMethod[]> {
@@ -101,19 +101,19 @@ export class OAuthIdentityProvider implements IdentityProvider {
     code: string,
     redirect_uri: string,
   ): Promise<FinishAuthResponse["data"]> {
-    const data = await this.tokenProvider.lookup("state", state);
+    const data = await this.tokenService.lookup("state", state);
     const method = await this.configProvider.getMethod(data.name);
     const id = await this.getExternalId(method, code, redirect_uri);
     const identity = await this.identityService.getIdentityForProvider(
       `${this.id()}:${data.name}`,
       id,
     );
-    await this.tokenProvider.invalidate("state", state);
+    await this.tokenService.invalidate("state", state);
     if (!identity) {
       if (method.is_registration_enabled) {
         return {
           type: "register",
-          token: await this.tokenProvider.create("register", {
+          token: await this.tokenService.create("register", {
             identity: [
               {
                 provider: `${this.id()}:${data.name}`,
@@ -143,7 +143,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
     code: string,
     redirect_uri: string,
   ) {
-    const data = await this.tokenProvider.lookup("state", state);
+    const data = await this.tokenService.lookup("state", state);
     const method = await this.configProvider.getMethod(data.name);
     const provider_id = await this.getExternalId(method, code, redirect_uri);
     await this.identityService.associateIdentities([
@@ -159,7 +159,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
   async generateAuthoriseUrl(name: string) {
     const { authorize_url, client_id } =
       await this.configProvider.getMethod(name);
-    const state = await this.tokenProvider.create("state", {
+    const state = await this.tokenService.create("state", {
       name,
     });
     const url = new URL(authorize_url);

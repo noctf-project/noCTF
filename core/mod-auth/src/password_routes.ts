@@ -9,7 +9,6 @@ import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
 import { PasswordProvider } from "./password_provider.ts";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { UserFlag } from "@noctf/server-core/types/enums";
-import { TokenProvider } from "./token_provider.ts";
 import { UserNotFoundError } from "./error.ts";
 import {
   EMAIL_CHANGE_TEMPLATE,
@@ -32,17 +31,17 @@ import {
   GetRouteUserIPKey,
   NormalizeIPPrefix,
 } from "@noctf/server-core/util/limit_keys";
+import { TokenService } from "@noctf/server-core/services/token";
 
 export default async function (fastify: FastifyInstance) {
   const {
     identityService,
     configService,
-    cacheService,
+    tokenService,
     emailService,
     lockService,
   } = fastify.container.cradle;
   const passwordProvider = new PasswordProvider(fastify.container.cradle);
-  const tokenProvider = new TokenProvider({ cacheService });
 
   fastify.post<{
     Body: InitAuthEmailRequest;
@@ -100,7 +99,7 @@ export default async function (fastify: FastifyInstance) {
           "Registration is only open to specific domains",
         );
       }
-      const token = await tokenProvider.create("register", {
+      const token = await tokenService.create("register", {
         identity: [
           {
             provider: "email",
@@ -184,7 +183,7 @@ export default async function (fastify: FastifyInstance) {
       if (!identity) {
         throw new UserNotFoundError();
       }
-      const token = await tokenProvider.create("reset_password", {
+      const token = await tokenService.create("reset_password", {
         user_id: identity.user_id,
         created_at: new Date(),
       });
@@ -221,9 +220,9 @@ export default async function (fastify: FastifyInstance) {
     },
     async (request) => {
       const { token, password } = request.body;
-      const data = await tokenProvider.lookup("reset_password", token);
+      const data = await tokenService.lookup("reset_password", token);
       const id = await lockService.withLease(
-        `token:reset_password:${TokenProvider.hash(token)}`,
+        `token:${TokenService.hash("reset_password", token)}`,
         async () => {
           const identity = await identityService.getProviderForUser(
             data.user_id,
@@ -241,7 +240,7 @@ export default async function (fastify: FastifyInstance) {
             },
           ]);
           await identityService.revokeUserSessions(identity.user_id);
-          await tokenProvider.invalidate("reset_password", token);
+          await tokenService.invalidate("reset_password", token);
           return identity.user_id;
         },
       );
@@ -361,7 +360,7 @@ export default async function (fastify: FastifyInstance) {
         }
 
         if (validate_email) {
-          const token = await tokenProvider.create("associate", {
+          const token = await tokenService.create("associate", {
             identity: [
               {
                 provider: "email",
