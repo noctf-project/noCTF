@@ -82,7 +82,7 @@
         body: updateData,
       });
 
-      if (result.data?.data) {
+      if (result.response.status === 200) {
         success = "Team updated successfully!";
         refreshJoinCode = false;
         const data = await api.GET("/team");
