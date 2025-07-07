@@ -24,7 +24,7 @@ class LoginState {
     });
 
     if (checkEmailRes.error) {
-      if (checkEmailRes.error.error === "EmailVerificationRequired") {
+      if (checkEmailRes.error.error === "NotFoundError") {
         goto("/auth/verify" + window.location.search);
         return;
       }
@@ -47,15 +47,18 @@ class LoginState {
   }
 
   async verifyEmail() {
-    const { error } = await api.POST("/auth/email/init", {
-      body: { email: loginState.email, verify: true },
+    const { error, data } = await api.POST("/auth/email/verify", {
+      body: { email: loginState.email },
     });
+    if (data?.data.token) {
+      this.registrationToken = data.data.token;
+      goto("/auth/register" + window.location.search);
+    }
     if (error) {
-      toasts.error(
+      throw new Error(
         error.message ??
           "An unexpected error occurred when validating email. Please try again later.",
       );
-      return;
     }
   }
 

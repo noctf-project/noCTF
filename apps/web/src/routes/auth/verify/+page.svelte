@@ -22,8 +22,12 @@
       await loginState.verifyEmail();
       verificationSent = true;
     } catch (e) {
-      console.error("Error during email verification:", e);
-      toasts.error("An error occurred while verifying your email.");
+      if (e instanceof Error) {
+        toasts.error(`Error: ${e.message}`);
+        return;
+      }
+      toasts.error("An unknown error occurred");
+      console.error("Error occured during verification", e);
     } finally {
       isLoading = false;
     }

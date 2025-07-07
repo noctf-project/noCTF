@@ -244,7 +244,7 @@ export class TeamService {
    * @param code
    */
   async join(user_id: number, code: string) {
-    const result = await this.teamDAO.findUsingJoinCode(code);
+    const result = await this.teamDAO.findUsingJoinCode(code.toUpperCase());
     if (
       result.flags.includes(TeamFlag.FROZEN) ||
       result.flags.includes(TeamFlag.BLOCKED)

@@ -50,7 +50,7 @@ export default async function (fastify: FastifyInstance) {
 
   fastify.post<{
     Body: InitAuthEmailRequest;
-    Reply: FinishAuthResponse | BaseResponse;
+    Reply: BaseResponse;
   }>(
     "/auth/email/init",
     {
@@ -62,10 +62,40 @@ export default async function (fastify: FastifyInstance) {
         rateLimit: (r: FastifyRequest<{ Body: InitAuthEmailRequest }>) => [
           {
             key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
-            limit: 12,
+            limit: 10,
             windowSeconds: 60,
           },
-          r.body.verify && {
+        ],
+        response: {
+          200: BaseResponse,
+        },
+      },
+    },
+    async (request) => {
+      const email = request.body.email.toLowerCase();
+      await passwordProvider.authPreCheck(email);
+      return {};
+    },
+  );
+
+  fastify.post<{
+    Body: InitAuthEmailRequest;
+    Reply: FinishAuthResponse | BaseResponse;
+  }>(
+    "/auth/email/verify",
+    {
+      schema: {
+        tags: ["auth"],
+        description:
+          "Checks if an email exists, returning a message or registration token if not",
+        body: InitAuthEmailRequest,
+        rateLimit: (r: FastifyRequest<{ Body: InitAuthEmailRequest }>) => [
+          {
+            key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
+            limit: 10,
+            windowSeconds: 60,
+          },
+          {
             key: `${GetRouteKey(r)}:e:${NormalizeEmail(r.body.email)}`,
             limit: 2,
             windowSeconds: 60,
@@ -83,15 +113,15 @@ export default async function (fastify: FastifyInstance) {
         enable_register_password,
         allowed_email_domains,
       } = await passwordProvider.getConfig();
+      if (!enable_register_password) {
+        throw new NotFoundError("The requested auth provider cannot be found");
+      }
       const email = request.body.email.toLowerCase();
       try {
         await passwordProvider.authPreCheck(email);
-        return {};
+        throw new ForbiddenError("A user exists with this email");
       } catch (e) {
         if (!(e instanceof UserNotFoundError)) throw e;
-      }
-      if (!enable_register_password) {
-        throw new NotFoundError("The requested auth provider cannot be found");
       }
       if (
         allowed_email_domains &&
@@ -102,12 +132,6 @@ export default async function (fastify: FastifyInstance) {
       ) {
         throw new ForbiddenError(
           "Registration is only open to specific domains",
-        );
-      }
-      if (validate_email && !request.body.verify) {
-        throw new BadRequestError(
-          "EmailVerificationRequired",
-          "Email Verification Required",
         );
       }
       const token = await tokenService.create("register", {

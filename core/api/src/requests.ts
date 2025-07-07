@@ -49,7 +49,6 @@ export type FinishAuthOauthRequest = Static<typeof FinishAuthOauthRequest>;
 export const InitAuthEmailRequest = Type.Object(
   {
     email: Type.String({ format: "email" }),
-    verify: Type.Optional(Type.Boolean()),
   },
   { additionalProperties: false },
 );

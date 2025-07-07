@@ -252,8 +252,8 @@ export type FileMetadata = Static<typeof FileMetadata>;
 
 export const ScoringStrategy = Type.Object(
   {
-    expr: Type.String({ maxLength: 512 }),
-    description: Type.String({ maxLength: 256 }),
+    expr: Type.String({ maxLength: 512, title: "Math Expression" }),
+    description: Type.String({ maxLength: 256, title: "Help text" }),
     source: Type.Optional(Type.String()),
   },
   { additionalProperties: false },
