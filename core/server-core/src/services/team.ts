@@ -8,7 +8,7 @@ import { TeamConfig } from "@noctf/api/config";
 import { TeamDAO } from "../dao/team.ts";
 import { DivisionDAO } from "../dao/division.ts";
 import { LocalCache } from "../util/local_cache.ts";
-import { TeamMembership } from "@noctf/api/datatypes";
+import { Division, TeamMembership } from "@noctf/api/datatypes";
 import { TeamTagDAO } from "../dao/team_tag.ts";
 
 type Props = Pick<
@@ -30,6 +30,10 @@ export class TeamService {
   >({
     max: 10000,
     ttl: 10000,
+  });
+  private readonly divisionCache = new LocalCache<number, Division | null>({
+    max: 1000,
+    ttl: 2000,
   });
 
   constructor({ configService, databaseClient, auditLogService }: Props) {
@@ -107,8 +111,13 @@ export class TeamService {
     return this.divisionDAO.list();
   }
 
-  async getDivision(id: number) {
-    return this.divisionDAO.get(id);
+  async getDivision(id: number, cached = true): Promise<Division | null> {
+    if (cached)
+      return this.divisionCache.load(
+        id,
+        async () => (await this.divisionDAO.get(id)) || null,
+      );
+    return (await this.divisionDAO.get(id)) || null;
   }
 
   async validateJoinDivision(id: number, password?: string) {

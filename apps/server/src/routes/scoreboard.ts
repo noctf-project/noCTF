@@ -1,5 +1,5 @@
 import type { ServiceCradle } from "@noctf/server-core";
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import "@noctf/server-core/types/fastify";
 import {
   ScoreboardGraphsResponse,
@@ -7,7 +7,7 @@ import {
   ScoreboardTeamResponse,
 } from "@noctf/api/responses";
 import { IdParams } from "@noctf/api/params";
-import { NotFoundError } from "@noctf/server-core/errors";
+import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
 import { ScoreboardQuery, ScoreboardTagsQuery } from "@noctf/api/query";
 import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
@@ -47,6 +47,12 @@ export async function routes(fastify: FastifyInstance) {
         Date.now(),
         request.user?.id,
       );
+      const id = request.params.id;
+      if (!admin && id !== (await request.user?.membership)?.division_id) {
+        const division = await teamService.getDivision(id);
+        if (!division?.is_visible)
+          throw new NotFoundError("Division not found");
+      }
 
       const page = request.query.page || 1;
       const page_size =
@@ -55,7 +61,7 @@ export async function routes(fastify: FastifyInstance) {
           : Math.min(SCOREBOARD_PAGE_SIZE, request.query.page_size)) ||
         SCOREBOARD_PAGE_SIZE;
       const scoreboard = await scoreboardService.getScoreboard(
-        request.params.id,
+        id,
         (page - 1) * page_size,
         page * page_size - 1,
         request.query.tags,
@@ -91,7 +97,17 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      await gateStartTime(adminPolicy, Date.now(), request.user?.id);
+      const admin = await gateStartTime(
+        adminPolicy,
+        Date.now(),
+        request.user?.id,
+      );
+      const id = request.params.id;
+      if (!admin && id !== (await request.user?.membership)?.division_id) {
+        const division = await teamService.getDivision(id);
+        if (!division?.is_visible)
+          throw new NotFoundError("Division not found");
+      }
       const graphs = await scoreboardService.getTopScoreHistory(
         request.params.id,
         10,
@@ -125,13 +141,17 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      const isAdmin = await gateStartTime(adminPolicy, ctime, request.user?.id);
+      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
 
       const team = await teamService.get(request.params.id);
       const membership = await request.user?.membership;
-      const showHidden = membership?.team_id === request.params.id || isAdmin;
+      const showHidden = membership?.team_id === request.params.id || admin;
       if (!team || (team.flags.includes("hidden") && !showHidden)) {
         throw new NotFoundError("Team not found");
+      }
+      if (!showHidden) {
+        const division = await teamService.getDivision(team.division_id);
+        if (!division?.is_visible) throw new NotFoundError("Team not found");
       }
       const entry = await scoreboardService.getTeam(team.division_id, team.id);
       if (!entry) {
