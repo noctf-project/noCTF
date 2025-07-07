@@ -17,7 +17,7 @@
       const { data, error } = await api.GET("/admin/challenges/{id}", {
         params: {
           path: {
-            id: Number(page.params.id),
+            id: page.params.id!.toString(),
           },
         },
       });
@@ -79,7 +79,7 @@
     categories: getCategoriesFromTags(tags),
     score,
     flags: flag as Flag[] ?? [],
-    files: challData.r.files.map(({ id, filename }) => ({ id, filename })),
+    files: challData.r.files.map(({ id, filename }) => ({ id, filename, is_attachment: true })),
     version,
   }}
   <ChallengeCreateEdit mode="edit" challData={editChallData} />

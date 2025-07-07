@@ -25,3 +25,24 @@
   border-radius: 0.3rem;
   color: var(--fallback-p, oklch(var(--p) / var(--tw-text-opacity, 1)));
 }
+
+.carta-editor {
+  @apply text-base-content;
+}
+
+.carta-editor .carta-input {
+  @apply text-base-content;
+}
+
+.carta-editor .carta-input textarea {
+  @apply text-base-content;
+  color: inherit !important;
+}
+
+.carta-editor .carta-renderer {
+  @apply text-base-content;
+}
+
+.carta-editor .carta-renderer * {
+  @apply text-base-content;
+}
