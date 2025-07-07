@@ -217,17 +217,24 @@ export async function routes(fastify: FastifyInstance) {
     async (request) => {
       const page = request.query.page || 1;
       const page_size = request.query.page_size ?? PAGE_SIZE;
-      const entries = await identityService.listSessionsForUser(
-        request.params.id,
-        request.query.active,
-        {
-          limit: page_size,
-          offset: (page - 1) * page_size,
-        },
-      );
+      const [entries, total] = await Promise.all([
+        identityService.listSessionsForUser(
+          request.params.id,
+          request.query.active,
+          {
+            limit: page_size,
+            offset: (page - 1) * page_size,
+          },
+        ),
+        identityService.countSessionsForUser(
+          request.params.id,
+          request.query.active,
+        ),
+      ]);
       return {
         data: {
           page_size,
+          total,
           entries,
         },
       };

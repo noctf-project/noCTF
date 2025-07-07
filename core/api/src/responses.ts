@@ -398,6 +398,7 @@ export const ListSessionsResponse = Type.Object({
   data: Type.Object({
     entries: Type.Array(Session),
     page_size: Type.Integer(),
+    total: Type.Integer(),
   }),
 });
 export type ListSessionsResponse = Static<typeof ListSessionsResponse>;

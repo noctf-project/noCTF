@@ -71,6 +71,11 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("expires_at", "timestamptz")
     .execute();
   await schema
+    .createIndex("session_idx_user_id_created_at")
+    .on("session")
+    .columns(["created_at", "user_id"])
+    .execute();
+  await schema
     .createIndex("session_idx_user_id_app_id_revoked_at")
     .on("session")
     .columns(["user_id", "app_id", "revoked_at"])

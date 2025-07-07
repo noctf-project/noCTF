@@ -264,6 +264,12 @@ export class IdentityService {
     return this.sessionDAO.listByUserId(...args);
   }
 
+  async countSessionsForUser(
+    ...args: Parameters<SessionDAO["getCountByUserId"]>
+  ) {
+    return this.sessionDAO.getCountByUserId(...args);
+  }
+
   async getProviderForUser(user_id: number, provider: string) {
     return this.identityDAO.getIdentityForUser(user_id, provider);
   }

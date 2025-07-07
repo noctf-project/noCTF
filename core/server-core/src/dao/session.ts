@@ -109,11 +109,27 @@ export class SessionDAO {
     active?: boolean,
     limit?: { limit?: number; offset?: number },
   ) {
-    let query = this.db
-      .selectFrom("session")
+    let query = this.buildUserIdQuery(user_id, active)
       .select(LISTABLE_FIELDS)
-      .where("user_id", "=", user_id)
       .orderBy("created_at", "desc");
+    if (limit?.limit) {
+      query = query.limit(limit.limit);
+    }
+    if (limit?.offset) {
+      query = query.offset(limit.offset);
+    }
+    return query.execute();
+  }
+
+  async getCountByUserId(user_id: number, active?: boolean) {
+    const result = await this.buildUserIdQuery(user_id, active)
+      .select(this.db.fn.countAll().as("count"))
+      .executeTakeFirstOrThrow();
+    return Number(result.count);
+  }
+
+  private buildUserIdQuery(user_id: number, active?: boolean) {
+    let query = this.db.selectFrom("session").where("user_id", "=", user_id);
 
     if (active) {
       query = query
@@ -127,13 +143,6 @@ export class SessionDAO {
         ]),
       );
     }
-
-    if (limit?.limit) {
-      query = query.limit(limit.limit);
-    }
-    if (limit?.offset) {
-      query = query.offset(limit.offset);
-    }
-    return query.execute();
+    return query;
   }
 }
