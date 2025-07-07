@@ -47,6 +47,9 @@ export async function routes(fastify: FastifyInstance) {
     async (request) => {
       const page = request.body.page || 1;
       const page_size = request.body.page_size ?? PAGE_SIZE;
+      const canViewIdentity = await policyService.evaluate(request.user.id, [
+        "admin.identity.get",
+      ]);
 
       const query = request.body;
       const [entries, total] = await Promise.all([
@@ -66,6 +69,12 @@ export async function routes(fastify: FastifyInstance) {
       for (const r of results) {
         if (r.status !== "fulfilled") throw r.reason;
         derivedEntries.push(r.value);
+        if (!canViewIdentity && r.value.id !== request.user.id) {
+          r.value.identities = r.value.identities.map((x) => ({
+            ...x,
+            provider_id: "<hidden>",
+          }));
+        }
       }
 
       return {
