@@ -22,7 +22,7 @@ import { FastifyInstance } from "fastify";
 
 export const PAGE_SIZE = 60;
 
-const PRIVILEGED_POLICY: Policy = ["admin.policy.update"];
+const PRIVILEGED_POLICY: Policy = ["admin.policy.manage"];
 
 export async function routes(fastify: FastifyInstance) {
   const { userService, policyService, identityService } =

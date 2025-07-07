@@ -5,6 +5,7 @@ import {
   Challenge,
   Division,
   Name,
+  PolicyDocument,
   Team,
   TeamMemberType,
   TeamTag,
@@ -381,11 +382,9 @@ export type AdminUpdateTeamTagRequest = Static<
   typeof AdminUpdateTeamTagRequest
 >;
 
-export const AdminCreateDivisionRequest = Type.Pick(
-  Division,
-  ["name", "is_joinable", "is_visible", "slug", "description", "password"],
-  { additionalProperties: false },
-);
+export const AdminCreateDivisionRequest = Type.Omit(Division, ["id"], {
+  additionalProperties: false,
+});
 export type AdminCreateDivisionRequest = Static<
   typeof AdminCreateDivisionRequest
 >;
@@ -394,3 +393,11 @@ export const AdminUpdateDivisionRequest = AdminCreateDivisionRequest;
 export type AdminUpdateDivisionRequest = Static<
   typeof AdminUpdateDivisionRequest
 >;
+
+export const AdminCreatePolicyRequest = Type.Omit(PolicyDocument, ["id"], {
+  additionalProperties: false,
+});
+export type AdminCreatePolicyRequest = Static<typeof AdminCreatePolicyRequest>;
+
+export const AdminUpdatePolicyRequest = AdminCreatePolicyRequest;
+export type AdminUpdatePolicyRequest = Static<typeof AdminUpdatePolicyRequest>;
