@@ -27,7 +27,7 @@
 
 <!-- class:bg-blue-500/5={!data.isSolved} -->
 <button
-  class={`min-w-80 text-left p-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150 bg-base-100`}
+  class={`w-80 text-left p-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150 bg-base-100`}
   class:opacity-40={data.hidden}
   onclick={() => onclick(data)}
 >
@@ -52,9 +52,9 @@
 
   <!-- Main Content -->
   <div class="flex-1 min-w-0">
-    <!-- From / Points -->
-    <div class="flex justify-between items-baseline">
-      <div class="flex items-center gap-2">
+    <!-- Challenge Title / Points -->
+    <div class="flex justify-between items-baseline gap-2">
+      <div class="flex items-center gap-2 min-w-0 flex-1">
         <p
           class="text-sm leading-tight truncate"
           class:font-semibold={!data.isSolved}
@@ -63,7 +63,10 @@
           {data.title}
         </p>
         {#if data.hidden}
-          <div class="tooltip tooltip-top" data-tip="Challenge Hidden">
+          <div
+            class="tooltip tooltip-top flex-shrink-0"
+            data-tip="Challenge Hidden"
+          >
             <Icon
               icon="material-symbols:visibility-off"
               class="text-lg text-gray-500"
@@ -71,12 +74,10 @@
           </div>
         {/if}
       </div>
-      <p class="text-xs text-gray-500 pl-2 whitespace-nowrap">
+      <p class="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">
         {data.points} pts
       </p>
     </div>
-
-    <!-- Subject -->
 
     <!-- Preview / Solves & Difficulty -->
     <div class="flex justify-between items-center text-sm text-gray-500 mt-0.5">

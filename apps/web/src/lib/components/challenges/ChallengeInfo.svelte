@@ -77,6 +77,8 @@
       showCorrectAnimation = challData.isSolved;
       // Reset show hash
       showHash = false;
+      scoreModalVisible = false;
+      scoresData = undefined;
       // Reset correct animation
       correctAnim.set(0);
     }
@@ -184,7 +186,7 @@
                   ></div>
                 {/if}
                 <button
-                  class="flex items-center gap-1 hover:text-primary"
+                  class="flex tooltip items-center gap-1 hover:text-primary"
                   data-tip={scoreModalVisible ? "Hide solvers" : "Show solvers"}
                   onclick={() => {
                     if (!knowsSolvesClick) {
@@ -380,7 +382,7 @@
 
     {#if scoreModalVisible}
       <div
-        class="bg-base-200 rounded-lg pop w-full md:max-w-80 p-6 px-3 max-h-[46vh] overflow-hidden"
+        class="bg-base-200 rounded-lg pop w-full md:max-w-80 p-6 px-3 h-full overflow-hidden"
         bind:this={scoreModalRef}
       >
         <h2 class="text-center text-xl font-semibold">Solves</h2>
