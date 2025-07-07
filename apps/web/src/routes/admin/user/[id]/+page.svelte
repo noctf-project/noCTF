@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { goto } from "$app/navigation";
   import Icon from "@iconify/svelte";
   import api, { wrapLoadable } from "$lib/api/index.svelte";
   import TeamQueryService from "$lib/state/team_query.svelte";
@@ -83,20 +84,28 @@
     success = "";
 
     try {
-      // TODO: Replace with actual API call when endpoint exists
-
-      success = "User updated successfully! (placeholder)";
-      editMode = false;
-
-      if (user.r?.data?.data.entries?.[0]) {
-        user.r.data.data.entries[0] = {
-          ...user.r.data.data.entries[0],
+      const result = await api.PUT("/admin/users/{id}", {
+        params: { path: { id: userId } },
+        body: {
           name: editForm.name,
           bio: editForm.bio,
-          flags: [...editForm.flags],
-          roles: [...editForm.roles],
-        };
+          flags: editForm.flags,
+          roles: editForm.roles,
+        },
+      });
+
+      if (result.error) {
+        error = result.error?.message || "Failed to update user";
+        return;
       }
+
+      success = "User updated successfully!";
+      editMode = false;
+
+      const refreshedData = await api.POST("/admin/users/query", {
+        body: { ids: [userId] },
+      });
+      user.r = refreshedData;
     } catch (e) {
       error = "An error occurred while updating the user";
       console.error(e);
@@ -179,6 +188,36 @@
     );
   }
 
+  async function deleteUser() {
+    const confirmed = confirm(
+      `Are you sure you want to delete this user? This action cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    loading = true;
+    error = "";
+    success = "";
+
+    try {
+      const result = await api.DELETE("/admin/users/{id}", {
+        params: { path: { id: userId } },
+      });
+
+      if (result.error) {
+        error = result.error?.message || "Failed to delete user";
+        return;
+      }
+
+      goto("/admin/users");
+    } catch (e) {
+      error = "An error occurred while deleting the user";
+      console.error(e);
+    } finally {
+      loading = false;
+    }
+  }
+
   async function toggleSubmissionVisibility(
     submissionId: number,
     currentlyHidden: boolean,
@@ -256,6 +295,19 @@
         >
           <Icon icon="material-symbols:edit" class="text-lg" />
           Edit
+        </button>
+        <button
+          class="btn btn-error pop hover:pop"
+          onclick={deleteUser}
+          disabled={loading}
+        >
+          {#if loading}
+            <div class="loading loading-spinner loading-xs"></div>
+            Deleting...
+          {:else}
+            <Icon icon="material-symbols:delete" class="text-lg" />
+            Delete
+          {/if}
         </button>
       {/if}
     </div>
