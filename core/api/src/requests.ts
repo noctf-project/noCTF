@@ -382,9 +382,13 @@ export type AdminUpdateTeamTagRequest = Static<
   typeof AdminUpdateTeamTagRequest
 >;
 
-export const AdminCreateDivisionRequest = Type.Omit(Division, ["id"], {
-  additionalProperties: false,
-});
+export const AdminCreateDivisionRequest = Type.Omit(
+  Division,
+  ["id", "created_at"],
+  {
+    additionalProperties: false,
+  },
+);
 export type AdminCreateDivisionRequest = Static<
   typeof AdminCreateDivisionRequest
 >;
