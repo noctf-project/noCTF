@@ -63,7 +63,6 @@
       <span class="label-text">Username</span>
     </label>
     <input
-      autofocus
       id="name"
       type="text"
       placeholder="Your name"

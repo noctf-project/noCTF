@@ -104,6 +104,12 @@ export default async function (fastify: FastifyInstance) {
           "Registration is only open to specific domains",
         );
       }
+      if (validate_email && !request.body.verify) {
+        throw new BadRequestError(
+          "EmailVerificationRequired",
+          "Email Verification Required",
+        );
+      }
       const token = await tokenService.create("register", {
         identity: [
           {
@@ -114,12 +120,6 @@ export default async function (fastify: FastifyInstance) {
         flags: validate_email ? [UserFlag.VALID_EMAIL] : [],
       });
       if (validate_email) {
-        if (!request.body.verify) {
-          throw new BadRequestError(
-            "EmailVerificationRequired",
-            "Email Verification Required",
-          );
-        }
         const { root_url, name: ctf_name } = (
           await configService.get(SetupConfig)
         ).value;

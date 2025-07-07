@@ -37,6 +37,7 @@
   let loading = $state(false);
   let error = $state("");
   let success = $state("");
+  let join_code: string | null = $state("");
 
   $effect(() => {
     if (team) {
@@ -93,7 +94,7 @@
         success = "Team updated successfully!";
         refreshJoinCode = false;
         const data = await api.GET("/team");
-        data.data!.data!.join_code = result.data.data.join_code || null;
+        join_code = result.data.data.join_code || null;
         teamLoader.r = data;
       }
     } catch (e) {
@@ -260,10 +261,10 @@
                 </label>
 
                 <div class="flex flex-col gap-4">
-                  {#if team.join_code}
+                  {#if join_code}
                     <div class="flex items-center gap-4">
                       <div class="bg-base-300 p-1.5 px-3 rounded-md font-mono">
-                        {team.join_code}
+                        {join_code}
                       </div>
                       <div class="text-warning font-medium">
                         This will only be shown once.
