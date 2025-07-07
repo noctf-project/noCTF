@@ -15,7 +15,7 @@ import { Policy } from "@noctf/server-core/util/policy";
 export const SCOREBOARD_PAGE_SIZE = 50;
 
 export async function routes(fastify: FastifyInstance) {
-  const { scoreboardService, teamService } = fastify.container
+  const { scoreboardService, teamService, divisionService } = fastify.container
     .cradle as ServiceCradle;
 
   const { gateStartTime } = GetUtils(fastify.container.cradle);
@@ -49,7 +49,7 @@ export async function routes(fastify: FastifyInstance) {
       );
       const id = request.params.id;
       if (!admin && id !== (await request.user?.membership)?.division_id) {
-        const division = await teamService.getDivision(id);
+        const division = await divisionService.get(id);
         if (!division?.is_visible)
           throw new NotFoundError("Division not found");
       }
@@ -104,7 +104,7 @@ export async function routes(fastify: FastifyInstance) {
       );
       const id = request.params.id;
       if (!admin && id !== (await request.user?.membership)?.division_id) {
-        const division = await teamService.getDivision(id);
+        const division = await divisionService.get(id);
         if (!division?.is_visible)
           throw new NotFoundError("Division not found");
       }
@@ -150,7 +150,7 @@ export async function routes(fastify: FastifyInstance) {
         throw new NotFoundError("Team not found");
       }
       if (!showHidden) {
-        const division = await teamService.getDivision(team.division_id);
+        const division = await divisionService.get(team.division_id);
         if (!division?.is_visible) throw new NotFoundError("Team not found");
       }
       const entry = await scoreboardService.getTeam(team.division_id, team.id);

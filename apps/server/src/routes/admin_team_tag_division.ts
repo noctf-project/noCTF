@@ -18,7 +18,7 @@ import { FastifyInstance } from "fastify";
 export const PAGE_SIZE = 60;
 
 export async function routes(fastify: FastifyInstance) {
-  const { teamService } = fastify.container.cradle;
+  const { teamService, divisionService } = fastify.container.cradle;
 
   fastify.get<{ Reply: AdminListTeamTagsResponse }>(
     "/admin/team_tags",
@@ -155,7 +155,7 @@ export async function routes(fastify: FastifyInstance) {
     async () => {
       return {
         data: {
-          tags: await teamService.listDivisions(),
+          tags: await divisionService.list(),
         },
       };
     },
@@ -182,7 +182,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       return {
-        data: await teamService.createDivision(request.body, {
+        data: await divisionService.create(request.body, {
           actor: {
             type: ActorType.USER,
             id: request.user.id,
@@ -215,7 +215,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      await teamService.updateDivision(request.params.id, request.body, {
+      await divisionService.update(request.params.id, request.body, {
         actor: {
           type: ActorType.USER,
           id: request.user.id,
@@ -243,7 +243,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      await teamService.deleteDivision(request.params.id, {
+      await divisionService.delete(request.params.id, {
         actor: {
           type: ActorType.USER,
           id: request.user.id,

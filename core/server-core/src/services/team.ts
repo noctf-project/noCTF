@@ -21,7 +21,6 @@ export class TeamService {
   private readonly databaseClient;
   private readonly configService;
 
-  private readonly divisionDAO;
   private readonly teamDAO;
   private readonly teamTagDAO;
   private readonly membershipCache = new LocalCache<
@@ -31,16 +30,11 @@ export class TeamService {
     max: 10000,
     ttl: 10000,
   });
-  private readonly divisionCache = new LocalCache<number, Division | null>({
-    max: 1000,
-    ttl: 2000,
-  });
 
   constructor({ configService, databaseClient, auditLogService }: Props) {
     this.databaseClient = databaseClient;
     this.auditLogService = auditLogService;
     this.configService = configService;
-    this.divisionDAO = new DivisionDAO(databaseClient.get());
     this.teamDAO = new TeamDAO(databaseClient.get());
     this.teamTagDAO = new TeamTagDAO(databaseClient.get());
     void this.init();
@@ -105,76 +99,6 @@ export class TeamService {
       }
     }
     return tag_ids;
-  }
-
-  async listDivisions() {
-    return this.divisionDAO.list();
-  }
-
-  async getDivision(id: number, cached = true): Promise<Division | null> {
-    if (cached)
-      return this.divisionCache.load(
-        id,
-        async () => (await this.divisionDAO.get(id)) || null,
-      );
-    return (await this.divisionDAO.get(id)) || null;
-  }
-
-  async updateDivision(
-    id: number,
-    v: Parameters<DivisionDAO["update"]>[1],
-    { actor, message }: AuditParams = {},
-  ) {
-    await this.divisionDAO.update(id, v);
-    this.divisionCache.delete(id);
-    await this.auditLogService.log({
-      operation: "division.update",
-      actor,
-      data: message,
-      entities: [`${EntityType.DIVISION}:${id}`],
-    });
-  }
-
-  async createDivision(
-    v: Parameters<DivisionDAO["create"]>[0],
-    { actor, message }: AuditParams = {},
-  ) {
-    const division = await this.divisionDAO.create(v);
-    this.divisionCache.delete(division.id);
-    await this.auditLogService.log({
-      operation: "division.create",
-      actor,
-      data: message,
-      entities: [`${EntityType.DIVISION}:${division.id}`],
-    });
-    return division;
-  }
-
-  async deleteDivision(id: number, { actor, message }: AuditParams = {}) {
-    await this.teamTagDAO.delete(id);
-    await this.auditLogService.log({
-      operation: "division.delete",
-      actor,
-      data: message,
-      entities: [`${EntityType.DIVISION}:${id}`],
-    });
-  }
-
-  async validateJoinDivision(id: number, password?: string) {
-    const division = await this.divisionDAO.get(id);
-    if (!division) {
-      throw new NotFoundError("Division not found");
-    }
-    if (!division.is_joinable) {
-      throw new ForbiddenError("Division is currently not joinable");
-    }
-    if (division.password && division.password !== password) {
-      throw new ForbiddenError(
-        password
-          ? "Incorrect division password"
-          : "Division requires a password",
-      );
-    }
   }
 
   async create(
