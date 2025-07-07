@@ -55,11 +55,7 @@
   import { Parser } from "expr-eval";
 
   import api, { SESSION_TOKEN_KEY, wrapLoadable } from "$lib/api/index.svelte";
-  import {
-    categoryToIcon,
-    difficultyToBgColour,
-    slugify,
-  } from "$lib/utils/challenges";
+  import { categoryToIcon, slugify } from "$lib/utils/challenges";
   import { CATEGORIES } from "$lib/constants/categories";
 
   const { mode, challData }: Props = $props();
@@ -297,326 +293,411 @@
   }
 </script>
 
-<div class="container mx-auto p-6 max-w-4xl">
-  {#if mode == "create"}
-    <h1 class="text-4xl font-bold mb-6">New Challenge</h1>
-  {:else}
-    <h1 class="text-4xl font-bold mb-6">Edit {challData.title}</h1>
-  {/if}
-
-  <form
-    onsubmit={handleSubmit}
-    class="space-y-6"
-    aria-label="Challenge creation form"
+<div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
+  <div
+    class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"
   >
-    <div class="form-control">
-      <label for="challenge-name" class="label">
-        <span class="label-text">Challenge Name</span>
-      </label>
-      <input
-        type="text"
-        id="challenge-name"
-        bind:value={challengeName}
-        class="input input-bordered w-full"
-        required
-        aria-required="true"
-      />
-      <div class="text-sm text-base-content/40 mt-2">{slug}</div>
-    </div>
-
-    <div class="flex flex-col">
-      <span class="label-text p-2">Description</span>
-      <div class="rounded-lg bg-base-100">
-        <MarkdownEditor {carta} bind:value={description} mode="tabs" />
-      </div>
-    </div>
-
-    <div class="flex gap-6">
-      <div class="form-control">
-        <div class="flex flex-row gap-0 items-center">
-          <label for="hidden-toggle" class="label cursor-pointer">
-            <span class="label-text mr-4">Hidden</span>
-          </label>
-          <div
-            class="tooltip"
-            data-tip="If hidden is set to true, the challenge will NOT be publicly visible even after the 'Visible At' time"
-          >
-            <Icon icon="material-symbols:help-rounded" />
-          </div>
-        </div>
-        <input
-          type="checkbox"
-          id="hidden-toggle"
-          bind:checked={isHidden}
-          class="toggle toggle-primary mt-3"
-          aria-label="Toggle challenge visibility"
-        />
-      </div>
-
-      <div class="form-control flex-1">
-        <label for="visible-at" class="label">
-          <span class="label-text">Visible At</span>
-        </label>
-        <input
-          type="datetime-local"
-          id="visible-at"
-          bind:value={visibleAt}
-          class="input input-bordered"
-          aria-label="Challenge visibility start date and time"
-        />
-      </div>
-    </div>
-
-    <div class="flex flex-row gap-4">
-      <div class="form-control md:w-1/4">
-        <label for="difficulty" class="label">
-          <span class="label-text">Difficulty</span>
-        </label>
-        <select
-          id="difficulty"
-          bind:value={difficulty}
-          class={"select select-bordered w-full " +
-            (difficulty === "" ? "" : difficultyToBgColour(difficulty))}
-        >
-          <option value="">-</option>
-          <option value="beginner">Beginner</option>
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
-        </select>
-      </div>
-
-      <div class="form-control flex-grow">
-        <label for="cat-input" class="label flex flex-row">
-          <span class="label-text">Categories (Press Enter to add)</span>
-          <div class="flex-grow"></div>
-          <span class="label-text flex flex-row gap-1">
-            {#each CATEGORIES as cat}
-              {@const has = hasCat(cat)}
-              <button
-                onclick={(e) => {
-                  e.preventDefault();
-                  return has ? removeCatS(cat) : addCat(cat);
-                }}
-                class="tooltip"
-                data-tip={cat}
-              >
-                <Icon
-                  icon={categoryToIcon(cat)}
-                  class={"text-lg " +
-                    (has ? "text-primary" : "text-neutral-500")}
-                />
-              </button>
-            {/each}
-          </span>
-        </label>
-        <input
-          type="text"
-          id="cat-input"
-          bind:value={catInput}
-          onkeydown={handleCatInput}
-          class="input input-bordered"
-          placeholder="Add categories..."
-          aria-label="Add challenge categories"
-        />
-        <div
-          class="flex flex-wrap gap-2 mt-4"
-          role="list"
-          aria-label="Challenge categories"
-        >
-          {#each categories as cat, index}
-            <div
-              class="badge badge-primary badge-lg rounded-md gap-2"
-              role="listitem"
-            >
-              <Icon icon={categoryToIcon(cat)} />
-              {cat}
-              <button
-                type="button"
-                onclick={() => removeCat(index)}
-                aria-label={`Remove ${cat} category`}>✕</button
-              >
-            </div>
-          {/each}
-        </div>
-      </div>
-    </div>
-
-    <div>
-      <h2 class="text-lg mb-4 font-semibold">Scoring Configuration</h2>
-      {#if scoringStrategies.loading}
-        Loading...
+    <div class="flex items-center gap-4">
+      <a href="/admin/challenges" class="btn btn-sm bg-base-100 pop hover:pop">
+        <Icon icon="material-symbols:arrow-back" class="text-lg" />
+        Back to Challenges
+      </a>
+      {#if mode == "create"}
+        <h1 class="text-2xl font-bold">New Challenge</h1>
       {:else}
-        <div class="flex flex-col gap-4">
-          <div class="flex flex-row justify-between">
-            <div class="form-control md:w-1/4">
-              <label for="scoring-type" class="label">
-                <span class="label-text">Scoring Algorithm</span>
-              </label>
-              <select
-                id="scoring-type"
-                bind:value={scoringType}
-                onchange={resetScoringParams}
-                required
-                class="select select-bordered w-full"
+        <h1 class="text-2xl font-bold">Edit Challenge</h1>
+      {/if}
+    </div>
+  </div>
+
+  <div class="card bg-base-100 pop rounded-lg w-full">
+    <div class="card-body">
+      <form
+        onsubmit={handleSubmit}
+        class="space-y-6"
+        aria-label="Challenge creation form"
+      >
+        <div class="form-control w-full">
+          <label for="challenge-name" class="label">
+            <span class="label-text">Challenge Name</span>
+          </label>
+          <input
+            type="text"
+            id="challenge-name"
+            bind:value={challengeName}
+            class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+            placeholder="Enter challenge name"
+            required
+            aria-required="true"
+          />
+          <div class="label">
+            <span class="label-text-alt">Slug: {slug}</span>
+          </div>
+        </div>
+
+        <div class="form-control w-full">
+          <label for="description-editor" class="label">
+            <span class="label-text">Description</span>
+          </label>
+          <div class="rounded-lg bg-base-200 border border-base-300">
+            <MarkdownEditor {carta} bind:value={description} mode="tabs" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="form-control w-full">
+            <label for="hidden-toggle" class="label cursor-pointer">
+              <span class="label-text">Hidden</span>
+              <div
+                class="tooltip"
+                data-tip="If hidden is set to true, the challenge will NOT be publicly visible even after the 'Visible At' time"
               >
-                {#each Object.keys(scoringStrategies.r.data!.data!) as strategy}
-                  <option value={strategy}>{strategy}</option>
-                {/each}
-              </select>
-            </div>
-            <div class="p-4 w-8/12 text-sm self-center">
-              {scoringStrategies.r.data!.data[scoringType]?.description}
-            </div>
+                <Icon icon="material-symbols:help" class="text-sm opacity-60" />
+              </div>
+            </label>
+            <input
+              type="checkbox"
+              id="hidden-toggle"
+              bind:checked={isHidden}
+              class="toggle toggle-primary"
+              aria-label="Toggle challenge visibility"
+            />
           </div>
 
-          {#if scoringType}
-            <div class="flex flex-row gap-2">
-              {#each paramsFromStrategy(scoringType) as p}
-                <div class="form-control flex flex-col">
-                  <label for={p} class="label">
-                    <span class="label-text">{p}</span>
-                  </label>
-                  <input
-                    type="number"
-                    id={p}
-                    required
-                    bind:value={scoringParams[p]}
-                    class="input input-bordered w-full"
-                    min="0"
-                    aria-label={p}
-                  />
+          <div class="form-control w-full">
+            <label for="visible-at" class="label">
+              <span class="label-text">Visible At</span>
+            </label>
+            <input
+              type="datetime-local"
+              id="visible-at"
+              bind:value={visibleAt}
+              class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+              aria-label="Challenge visibility start date and time"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="form-control w-full">
+            <label for="difficulty" class="label">
+              <span class="label-text">Difficulty</span>
+            </label>
+            <select
+              id="difficulty"
+              bind:value={difficulty}
+              class="select select-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+            >
+              <option value="">Select difficulty</option>
+              <option value="beginner">Beginner</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+
+          <div class="form-control w-full lg:col-span-2">
+            <label for="cat-input" class="label">
+              <span class="label-text">Categories</span>
+              <span class="label-text-alt">Press Enter to add</span>
+            </label>
+            <div class="flex flex-wrap gap-2 mb-2">
+              {#each CATEGORIES as cat}
+                {@const has = hasCat(cat)}
+                <button
+                  onclick={(e) => {
+                    e.preventDefault();
+                    return has ? removeCatS(cat) : addCat(cat);
+                  }}
+                  class="tooltip btn btn-xs {has
+                    ? 'btn-primary'
+                    : 'btn-outline'} pop hover:pop"
+                  data-tip={cat}
+                >
+                  <Icon icon={categoryToIcon(cat)} class="text-sm" />
+                </button>
+              {/each}
+            </div>
+            <input
+              type="text"
+              id="cat-input"
+              bind:value={catInput}
+              onkeydown={handleCatInput}
+              class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+              placeholder="Add categories..."
+              aria-label="Add challenge categories"
+            />
+            <div
+              class="flex flex-wrap gap-2 mt-2"
+              role="list"
+              aria-label="Challenge categories"
+            >
+              {#each categories as cat, index}
+                <div
+                  class="badge badge-primary badge-sm gap-2 pop"
+                  role="listitem"
+                >
+                  <Icon icon={categoryToIcon(cat)} class="text-xs" />
+                  {cat}
+                  <button
+                    type="button"
+                    onclick={() => removeCat(index)}
+                    class="opacity-60 hover:opacity-100"
+                    aria-label={`Remove ${cat} category`}
+                  >
+                    <Icon icon="material-symbols:close" class="text-xs" />
+                  </button>
                 </div>
               {/each}
             </div>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <h2 class="text-lg font-semibold">Scoring Configuration</h2>
+          {#if scoringStrategies.loading}
+            <div class="flex items-center justify-center py-8">
+              <div class="loading loading-spinner loading-md"></div>
+              <span class="ml-2">Loading scoring strategies...</span>
+            </div>
+          {:else}
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="form-control w-full">
+                  <label for="scoring-type" class="label">
+                    <span class="label-text">Scoring Algorithm</span>
+                  </label>
+                  <select
+                    id="scoring-type"
+                    bind:value={scoringType}
+                    onchange={resetScoringParams}
+                    required
+                    class="select select-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+                  >
+                    {#each Object.keys(scoringStrategies.r.data!.data!) as strategy}
+                      <option value={strategy}>{strategy}</option>
+                    {/each}
+                  </select>
+                </div>
+                <div class="lg:col-span-2 flex items-center">
+                  <div
+                    class="text-sm text-base-content/70 bg-base-200 rounded-lg p-4"
+                  >
+                    {scoringStrategies.r.data!.data[scoringType]?.description}
+                  </div>
+                </div>
+              </div>
+
+              {#if scoringType}
+                <div
+                  class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+                >
+                  {#each paramsFromStrategy(scoringType) as p}
+                    <div class="form-control w-full">
+                      <label for={p} class="label">
+                        <span class="label-text">{p}</span>
+                      </label>
+                      <input
+                        type="number"
+                        id={p}
+                        required
+                        bind:value={scoringParams[p]}
+                        class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+                        min="0"
+                        aria-label={p}
+                      />
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+            </div>
           {/if}
         </div>
-      {/if}
-    </div>
 
-    <div>
-      <h2 class="text-lg mb-4 font-semibold">Flags</h2>
-      <div role="list" aria-label="Challenge flags">
-        {#each flags as flag, index}
-          <div class="form-control flex flex-row gap-4 mb-4" role="listitem">
-            <label for={`flag-type-${index}`} class="sr-only">Flag type</label>
-            <select
-              id={`flag-type-${index}`}
-              bind:value={flag.strategy}
-              class="select select-bordered w-32"
-              aria-label={`Flag ${index + 1} type`}
-            >
-              <option value="case_sensitive">Static (case sensitive)</option>
-              <option value="case_insensitive">Static (case insensitive)</option
+        <div class="space-y-6">
+          <h2 class="text-lg font-semibold">Flags</h2>
+          <div role="list" aria-label="Challenge flags" class="space-y-4">
+            {#each flags as flag, index}
+              <div
+                class="flex flex-col sm:flex-row gap-4 p-4 bg-base-200 rounded-lg"
+                role="listitem"
               >
-              <option value="regex_sensitive">Regex (case sensitive)</option>
-              <option value="regex_insensitive">Regex (case insensitive)</option
-              >
-            </select>
+                <div class="form-control w-full sm:w-48">
+                  <label for={`flag-type-${index}`} class="label">
+                    <span class="label-text">Type</span>
+                  </label>
+                  <select
+                    id={`flag-type-${index}`}
+                    bind:value={flag.strategy}
+                    class="select select-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+                    aria-label={`Flag ${index + 1} type`}
+                  >
+                    <option value="case_sensitive"
+                      >Static (case sensitive)</option
+                    >
+                    <option value="case_insensitive"
+                      >Static (case insensitive)</option
+                    >
+                    <option value="regex_sensitive"
+                      >Regex (case sensitive)</option
+                    >
+                    <option value="regex_insensitive"
+                      >Regex (case insensitive)</option
+                    >
+                  </select>
+                </div>
 
-            <label for={`flag-value-${index}`} class="sr-only">Flag value</label
-            >
+                <div class="form-control flex-1">
+                  <label for={`flag-value-${index}`} class="label">
+                    <span class="label-text">Flag Value</span>
+                  </label>
+                  <input
+                    type="text"
+                    id={`flag-value-${index}`}
+                    bind:value={flag.data}
+                    class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+                    placeholder="Enter flag..."
+                    aria-label={`Flag ${index + 1} value`}
+                  />
+                </div>
+
+                <div class="flex justify-end items-end pb-2">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-error pop hover:pop"
+                    onclick={() => removeFlag(index)}
+                    aria-label={`Remove flag ${index + 1}`}
+                  >
+                    <Icon icon="material-symbols:delete" class="text-lg" />
+                  </button>
+                </div>
+              </div>
+            {/each}
+          </div>
+          <button
+            type="button"
+            class="btn btn-outline btn-sm pop hover:pop"
+            onclick={addFlag}
+            aria-label="Add new flag"
+          >
+            <Icon icon="material-symbols:add" class="text-lg" />
+            Add Flag
+          </button>
+        </div>
+
+        <div class="space-y-6">
+          <div
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+          >
+            <h2 class="text-lg font-semibold">Challenge Files</h2>
+            {#if mode == "edit"}
+              <div class="flex flex-wrap gap-2 items-center text-sm">
+                <span class="badge badge-secondary badge-sm gap-2">
+                  <Icon icon="material-symbols:folder" class="text-xs" />
+                  existing file
+                </span>
+                <span class="badge badge-primary badge-sm gap-2">
+                  <Icon icon="material-symbols:upload" class="text-xs" />
+                  replaced/new file
+                </span>
+                <div
+                  class="tooltip"
+                  data-tip="All replaced/new files will be (re)uploaded"
+                >
+                  <Icon
+                    icon="material-symbols:help"
+                    class="text-sm opacity-60"
+                  />
+                </div>
+              </div>
+            {/if}
+          </div>
+
+          <div class="form-control w-full">
+            <label for="file-upload" class="label">
+              <span class="label-text">Upload Files</span>
+            </label>
             <input
-              type="text"
-              id={`flag-value-${index}`}
-              bind:value={flag.data}
-              class="input input-bordered flex-1"
-              placeholder="Enter flag..."
-              aria-label={`Flag ${index + 1} value`}
+              type="file"
+              id="file-upload"
+              onchange={handleFileSelect}
+              class="file-input file-input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+              multiple
+              aria-label="Upload challenge files"
             />
-            <button
-              type="button"
-              class="btn btn-square btn-ghost"
-              onclick={() => removeFlag(index)}
-              aria-label={`Remove flag ${index + 1}`}>✕</button
-            >
           </div>
-        {/each}
-      </div>
-      <button
-        type="button"
-        class="btn btn-outline btn-sm"
-        onclick={addFlag}
-        aria-label="Add new flag">Add Flag</button
-      >
-    </div>
 
-    <div class="form-control">
-      <div class="flex flex-row">
-        <label for="file-upload" class="label">
-          <span class="label-text">Challenge Files</span>
-        </label>
-        <div class="flex-grow"></div>
-        {#if mode == "edit"}
-          <div class="flex flex-row gap-4 items-center">
-            <span class="badge badge-secondary rounded-md flex flex-row gap-2">
-              existing file
-            </span>
-            <span class="badge badge-primary rounded-md flex flex-row gap-2">
-              replaced/new file
-            </span>
-            <div
-              class="tooltip"
-              data-tip="All replaced/new files will be (re)uploaded"
-            >
-              <Icon icon="material-symbols:help-rounded" />
+          {#if existingFiles.length > 0 || files.length > 0}
+            <div class="space-y-2">
+              <h3 class="text-sm font-medium text-base-content/70">
+                Attached Files
+              </h3>
+              <div
+                class="flex flex-wrap gap-2"
+                role="list"
+                aria-label="Uploaded files"
+              >
+                {#each existingFiles as file, index}
+                  <div class="flex items-center gap-2" role="listitem">
+                    <span class="badge badge-secondary badge-lg gap-2 pop">
+                      <Icon icon="material-symbols:folder" class="text-sm" />
+                      {file.filename}
+                      <button
+                        type="button"
+                        onclick={() => removeExistingFile(index)}
+                        class="opacity-60 hover:opacity-100"
+                        aria-label={`Remove ${file.filename}`}
+                      >
+                        <Icon icon="material-symbols:close" class="text-xs" />
+                      </button>
+                    </span>
+                  </div>
+                {/each}
+                {#each files as file, index}
+                  <div class="flex items-center gap-2" role="listitem">
+                    <span class="badge badge-primary badge-lg gap-2 pop">
+                      <Icon icon="material-symbols:upload" class="text-sm" />
+                      {file.name}
+                      <button
+                        type="button"
+                        onclick={() => removeFile(index)}
+                        class="opacity-60 hover:opacity-100"
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        <Icon icon="material-symbols:close" class="text-xs" />
+                      </button>
+                    </span>
+                  </div>
+                {/each}
+              </div>
             </div>
-          </div>
-        {/if}
-      </div>
-      <input
-        type="file"
-        id="file-upload"
-        onchange={handleFileSelect}
-        class="file-input file-input-bordered w-full"
-        multiple
-        aria-label="Upload challenge files"
-      />
-      <div
-        class="mt-2 flex flex-row gap-2"
-        role="list"
-        aria-label="Uploaded files"
-      >
-        {#each existingFiles as file, index}
-          <div class="flex items-center gap-2 mb-2" role="listitem">
-            <span class="badge badge-secondary rounded-md flex flex-row gap-2">
-              {file.filename}
-              <button
-                type="button"
-                onclick={() => removeExistingFile(index)}
-                aria-label={`Remove ${file.filename}`}>✕</button
-              >
-            </span>
-          </div>
-        {/each}
-        {#each files as file, index}
-          <div class="flex items-center gap-2 mb-2" role="listitem">
-            <span class="badge badge-primary rounded-md flex flex-row gap-2">
-              {file.name}
-              <button
-                type="button"
-                onclick={() => removeFile(index)}
-                aria-label={`Remove ${file.name}`}>✕</button
-              >
-            </span>
-          </div>
-        {/each}
-      </div>
-    </div>
+          {/if}
+        </div>
 
-    <div class="flex flex-row gap-4 justify-end">
-      <a href="/admin/challenges" class="btn btn-error text-error-content pop">
-        Cancel
-      </a>
-      <button
-        type="submit"
-        class="btn btn-primary border pop"
-        aria-label={(mode == "create" ? "Create" : "Edit") + " challenge"}
-      >
-        {mode == "create" ? "Create" : "Edit"} challenge
-      </button>
+        <div
+          class="flex flex-col sm:flex-row gap-4 justify-end pt-6 border-t border-base-300"
+        >
+          <a href="/admin/challenges" class="btn btn-outline pop hover:pop">
+            <Icon icon="material-symbols:cancel" class="text-lg" />
+            Cancel
+          </a>
+          <button
+            type="submit"
+            class="btn btn-primary pop hover:pop"
+            aria-label={(mode == "create" ? "Create" : "Edit") + " challenge"}
+          >
+            <Icon
+              icon={mode == "create"
+                ? "material-symbols:add"
+                : "material-symbols:edit"}
+              class="text-lg"
+            />
+            {mode == "create" ? "Create" : "Update"} Challenge
+          </button>
+        </div>
+      </form>
     </div>
-  </form>
+  </div>
 
   {#if isCreating}
     <div class="modal modal-open">
@@ -624,22 +705,28 @@
         <h3 class="font-bold text-lg mb-4">Creating {challengeName}</h3>
 
         {#if creationError}
-          <div class="alert alert-error mb-4">
+          <div class="alert alert-error mb-4 pop">
             <Icon icon="material-symbols:error" class="text-xl" />
             <span>{creationError}</span>
           </div>
           <div class="modal-action">
-            <button class="btn btn-error" onclick={() => (isCreating = false)}>
+            <button
+              class="btn btn-error pop hover:pop"
+              onclick={() => (isCreating = false)}
+            >
               Close
             </button>
           </div>
         {:else if creationStep === "Done"}
-          <div class="alert alert-success mb-4">
+          <div class="alert alert-success mb-4 pop">
             <Icon icon="material-symbols:success" class="text-xl" />
             <span>Challenge {mode == "create" ? "created" : "edited"}!</span>
           </div>
           <div class="modal-action">
-            <button class="btn" onclick={() => (isCreating = false)}>
+            <button
+              class="btn pop hover:pop"
+              onclick={() => (isCreating = false)}
+            >
               Close
             </button>
           </div>

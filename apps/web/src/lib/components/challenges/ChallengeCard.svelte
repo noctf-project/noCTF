@@ -7,6 +7,7 @@
     points: number;
     isSolved: boolean;
     difficulty?: string;
+    hidden: boolean;
   }
 
   export interface ChallengeCardProps {
@@ -24,15 +25,21 @@
   const { data, onclick }: ChallengeCardProps = $props();
   // Cannot destructure data here, breaks reactivity https://svelte.dev/docs/svelte/$state#Deep-state
   // const { title, categories, solves, points, isSolved, difficulty } = data;
+  console.log(data.title, data.hidden);
 </script>
 
 <button
-  class={`text-left card w-60 h-32 pop ${data.isSolved ? "bg-primary text-primary-content" : "bg-base-100"} rounded-lg shadow-black`}
+  class={`text-left card w-60 h-32 pop ${data.isSolved ? "bg-primary text-primary-content" : "bg-base-100"} rounded-lg shadow-black ${data.hidden ? "opacity-40" : ""}`}
   onclick={() => onclick(data)}
 >
   <div class="card-body p-3 flex flex-col">
-    <div class="card-title line-clamp-1 font-black">
-      {data.title}
+    <div class="flex flex-row justify-between items-center">
+      <div class="card-title line-clamp-1 font-black">
+        {data.title}
+      </div>
+      {#if data.hidden}
+        <Icon class="text-lg" icon="material-symbols:visibility-off" />
+      {/if}
     </div>
     <div class="flex flex-row items-center gap-3">
       {#if data.difficulty}

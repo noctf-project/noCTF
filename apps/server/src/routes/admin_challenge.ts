@@ -8,6 +8,7 @@ import {
   AdminListChallengesResponse,
   AdminUpdateChallengeResponse,
   AnyResponse,
+  BaseResponse,
 } from "@noctf/api/responses";
 import { FilterChallengesQuery } from "@noctf/api/query";
 import { ActorType } from "@noctf/server-core/types/enums";
@@ -176,6 +177,9 @@ export async function routes(fastify: FastifyInstance) {
           policy: ["admin.challenge.delete"],
         },
         params: IdParams,
+        response: {
+          200: BaseResponse,
+        },
       },
     },
     async (request) => {
