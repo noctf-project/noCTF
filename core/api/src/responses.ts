@@ -17,6 +17,7 @@ import {
   UserSummary,
   UserIdentity,
   Session,
+  PolicyDocument,
 } from "./datatypes.ts";
 import { AuthTokenType } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
@@ -402,3 +403,13 @@ export const ListSessionsResponse = Type.Object({
   }),
 });
 export type ListSessionsResponse = Static<typeof ListSessionsResponse>;
+
+export const AdminPolicyResponse = Type.Object({
+  data: PolicyDocument,
+});
+export type AdminPolicyResponse = Static<typeof AdminPolicyResponse>;
+
+export const AdminListPolicyResponse = Type.Object({
+  data: Type.Array(PolicyDocument),
+});
+export type AdminListPolicyResponse = Static<typeof AdminListPolicyResponse>;
