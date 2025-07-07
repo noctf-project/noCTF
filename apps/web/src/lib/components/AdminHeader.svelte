@@ -52,6 +52,11 @@
           >
         </li>
         <li>
+          <a href="/admin/divisions" class={isActive("/admin/divisions")}
+            >Divisions</a
+          >
+        </li>
+        <li>
           <a href="/admin/submissions" class={isActive("/admin/submissions")}
             >Submissions</a
           >
@@ -92,6 +97,11 @@
         <li>
           <a href="/admin/team_tags" class={isActive("/admin/team_tags")}
             >Team Tags</a
+          >
+        </li>
+        <li>
+          <a href="/admin/divisions" class={isActive("/admin/divisions")}
+            >Divisions</a
           >
         </li>
         <li>
