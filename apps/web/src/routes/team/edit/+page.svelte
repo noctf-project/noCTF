@@ -82,18 +82,18 @@
         body: updateData,
       });
 
-      if (result.response.status === 200) {
-        success = "Team updated successfully!";
-        refreshJoinCode = false;
-        const data = await api.GET("/team");
-        teamLoader.r = data;
-      } else {
+      if (result.error) {
         const message = result.error?.message
           ?.toString()
           ?.includes("must match pattern")
           ? "Name contains invalid characters"
           : result.error?.message;
         error = message || "Failed to update team";
+      } else {
+        success = "Team updated successfully!";
+        refreshJoinCode = false;
+        const data = await api.GET("/team");
+        teamLoader.r = data;
       }
     } catch (e) {
       error = "An error occurred while updating the team";
