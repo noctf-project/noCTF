@@ -1,4 +1,6 @@
 <script lang="ts">
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+
   import Icon from "@iconify/svelte";
   import api, { wrapLoadable } from "$lib/api/index.svelte";
   import UserQueryService from "$lib/state/user_query.svelte";
@@ -6,7 +8,6 @@
   import Pagination from "$lib/components/Pagination.svelte";
   import SubmissionsTable from "$lib/components/SubmissionsTable.svelte";
 
-  let searchQuery = $state("");
   let currentPage = $state(0);
   let statusFilter = $state<string[]>([]);
   let hiddenFilter = $state<boolean | undefined>(undefined);
@@ -18,8 +19,8 @@
 
   const submissions = $derived.by(() => {
     const filters: any = {
-      limit: pageSize,
-      offset: currentPage * pageSize,
+      page_size: pageSize,
+      page: currentPage + 1,
     };
 
     if (statusFilter.length > 0) {
@@ -73,7 +74,6 @@
 
   const challenges = wrapLoadable(api.GET("/challenges"));
 
-  // Create a lookup map for challenge names
   const challengeMap = $derived.by(() => {
     if (!challenges.r?.data?.data?.challenges) return new Map();
     const map = new Map();
@@ -83,20 +83,15 @@
     return map;
   });
 
-  // Preload user and team data for submissions
   $effect(() => {
     if (submissions.r?.data?.data?.entries) {
       const submissionData = submissions.r.data.data.entries;
       submissionData.forEach((submission) => {
         if (submission.user_id) {
-          UserQueryService.get(submission.user_id).catch(() => {
-            // Ignore errors for preloading
-          });
+          UserQueryService.get(submission.user_id).catch(() => {});
         }
         if (submission.team_id) {
-          TeamQueryService.get(submission.team_id).catch(() => {
-            // Ignore errors for preloading
-          });
+          TeamQueryService.get(submission.team_id).catch(() => {});
         }
       });
     }
@@ -104,10 +99,6 @@
 
   function handleSearch() {
     currentPage = 0;
-  }
-
-  function formatDateTime(dateString: string) {
-    return new Date(dateString).toLocaleString();
   }
 
   function getSubmissionStatusBadgeClass(status: string) {
@@ -162,9 +153,6 @@
         alert(`Failed to ${action} submission`);
         return;
       }
-
-      // Refresh submissions data by triggering a reactive update
-      currentPage = currentPage; // This will trigger the derived reactive
     } catch (e) {
       alert(`An error occurred while trying to ${action} the submission`);
       console.error(e);
@@ -185,7 +173,7 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         <!-- Status Filter -->
         <div class="form-control">
-          <label class="label">
+          <label class="label" for="status">
             <span class="label-text">Status</span>
           </label>
           <div class="flex flex-wrap gap-2">
@@ -212,7 +200,7 @@
 
         <!-- Hidden Filter -->
         <div class="form-control">
-          <label class="label">
+          <label class="label" for="visibility">
             <span class="label-text">Visibility</span>
           </label>
           <select
@@ -228,7 +216,7 @@
 
         <!-- User ID Filter -->
         <div class="form-control">
-          <label class="label">
+          <label class="label" for="user-id">
             <span class="label-text">User IDs (comma-separated)</span>
           </label>
           <input
@@ -242,7 +230,7 @@
 
         <!-- Team ID Filter -->
         <div class="form-control">
-          <label class="label">
+          <label class="label" for="team-id">
             <span class="label-text">Team IDs (comma-separated)</span>
           </label>
           <input
@@ -256,7 +244,7 @@
 
         <!-- Challenge ID Filter -->
         <div class="form-control">
-          <label class="label">
+          <label class="label" for="challenge-id">
             <span class="label-text">Challenge IDs (comma-separated)</span>
           </label>
           <input
@@ -270,7 +258,7 @@
 
         <!-- Data Filter -->
         <div class="form-control">
-          <label class="label">
+          <label class="label" for="data">
             <span class="label-text">Data contains</span>
           </label>
           <input
