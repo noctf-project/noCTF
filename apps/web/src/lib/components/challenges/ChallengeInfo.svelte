@@ -32,6 +32,7 @@
   import TeamNamesService from "$lib/state/team_query.svelte";
   import { toasts } from "$lib/stores/toast";
   import DifficultyChip from "./DifficultyChip.svelte";
+  import DogAnimation from "./DogAnimation.svelte";
   import authState from "$lib/state/auth.svelte";
   import { goto } from "$app/navigation";
   import { EMAIL_SOUNDS } from "$lib/constants/emailSounds";
@@ -53,12 +54,33 @@
   let scoresData: ScoreEntry[] | undefined = $state(undefined);
   let scoreModalRef: HTMLElement | undefined = $state();
   let showIncorrectAnimation = $state(false);
+  let showCorrectAnimation = $state(false);
+
+  $inspect(showCorrectAnimation);
+  $inspect(showIncorrectAnimation);
 
   let knowsSolvesClick = localStorage.getItem("knowsSolvesClick") == "1";
   let showHint = $state(!knowsSolvesClick);
   setTimeout(() => {
     showHint = false;
   }, 2500);
+
+  // Reset values when challenge data changes
+  $effect(() => {
+    if (challData) {
+      // Reset flag input
+      flagInput = "";
+      // Reset flag submit status
+      flagSubmitStatus = "waiting";
+      // Reset animations
+      showIncorrectAnimation = false;
+      showCorrectAnimation = challData.isSolved;
+      // Reset show hash
+      showHash = false;
+      // Reset correct animation
+      correctAnim.set(0);
+    }
+  });
 
   const carta = new Carta({
     sanitizer: DOMPurify.sanitize,
@@ -83,7 +105,6 @@
 
     flagSubmitStatus = "submitting";
 
-    playEmailSentSound("flag-submitted");
     // TODO: better progress and error handling
     const r = await api.POST("/challenges/{id}/solves", {
       params: { path: { id: challData!.id } },
@@ -101,6 +122,8 @@
       flagSubmitStatus = r.data.data;
       if (flagSubmitStatus == "correct") {
         correctAnim.set(1);
+        showCorrectAnimation = true;
+        playEmailSentSound("flag-correct");
         onSolve();
       } else {
         playEmailSentSound("flag-incorrect");
@@ -135,7 +158,7 @@
 <div class="flex flex-row gap-4 w-full justify-center h-full">
   {#if challData}
     <div
-      class="bg-base-100 p-4 rounded-lg justify-between shadow-xl w-full flex flex-col gap-4"
+      class="bg-base-100 p-4 relative rounded-lg justify-between shadow-xl w-full flex flex-col gap-4"
     >
       <div>
         <!-- Email Header -->
@@ -227,18 +250,11 @@
           {/if}
         </div>
       </div>
-      <div>
-        <div
-          class="relative right-0 transform -translate-y-1/2 z-50 pointer-events-none"
-          in:fly={{ x: 200, duration: 600, easing: cubicInOut }}
-          out:fly={{ x: 200, duration: 600, easing: cubicInOut }}
-        >
-          <img
-            src="/images/incorrect-dog.png"
-            alt="Incorrect dog"
-            class="w-32 h-32 object-contain incorrect-animation"
-          />
+      <div class="relative">
+        <div class="absolute right-0 -top-40">
+          <DogAnimation {showIncorrectAnimation} {showCorrectAnimation} />
         </div>
+
         <!-- Attachments -->
         {#if !loading && challDetails!.files.length > 0}
           <div class="border-t border-base-200 py-2">
@@ -360,10 +376,6 @@
           </form>
         {/if}
       </div>
-      <!-- Incorrect Animation Image -->
-      <!-- {#if showIncorrectAnimation} -->
-
-      <!-- {/if} -->
     </div>
 
     {#if scoreModalVisible}
@@ -459,29 +471,6 @@
     40%,
     60% {
       transform: translate3d(2px, 0, 0);
-    }
-  }
-
-  .incorrect-animation {
-    animation: rotateInOut 2s ease-in-out;
-  }
-
-  @keyframes rotateInOut {
-    0% {
-      transform: translateX(100%) rotate(0deg);
-      opacity: 0;
-    }
-    25% {
-      transform: translateX(0%) rotate(90deg);
-      opacity: 1;
-    }
-    75% {
-      transform: translateX(0%) rotate(270deg);
-      opacity: 1;
-    }
-    100% {
-      transform: translateX(100%) rotate(360deg);
-      opacity: 0;
     }
   }
 </style>

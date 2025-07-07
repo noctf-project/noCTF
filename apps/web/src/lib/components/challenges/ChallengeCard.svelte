@@ -63,10 +63,12 @@
           {data.title}
         </p>
         {#if data.hidden}
-          <Icon
-            icon="material-symbols:visibility-off"
-            class="text-lg text-gray-500"
-          />
+          <div class="tooltip tooltip-top" data-tip="Challenge Hidden">
+            <Icon
+              icon="material-symbols:visibility-off"
+              class="text-lg text-gray-500"
+            />
+          </div>
         {/if}
       </div>
       <p class="text-xs text-gray-500 pl-2 whitespace-nowrap">
