@@ -200,6 +200,9 @@ export class TeamService {
       data: message,
       entities: [`${ActorType.TEAM}:${id}`],
     });
+    return {
+      join_code: j,
+    };
   }
 
   async get(id: number) {

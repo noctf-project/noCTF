@@ -4,7 +4,11 @@ import {
   AdminUpdateTeamMemberRequest,
   AdminUpdateTeamRequest,
 } from "@noctf/api/requests";
-import { AdminListTeamsResponse, BaseResponse } from "@noctf/api/responses";
+import {
+  AdminListTeamsResponse,
+  BaseResponse,
+  UpdateTeamResponse,
+} from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
 import { FastifyInstance } from "fastify";
 
@@ -53,7 +57,7 @@ export async function routes(fastify: FastifyInstance) {
   );
 
   fastify.put<{
-    Reply: BaseResponse;
+    Reply: UpdateTeamResponse;
     Body: AdminUpdateTeamRequest;
     Params: IdParams;
   }>(
@@ -63,7 +67,7 @@ export async function routes(fastify: FastifyInstance) {
         security: [{ bearer: [] }],
         tags: ["admin"],
         response: {
-          200: BaseResponse,
+          200: UpdateTeamResponse,
         },
         body: AdminUpdateTeamRequest,
         params: IdParams,
@@ -74,13 +78,21 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      await teamService.update(request.params.id, request.body, {
-        actor: {
-          type: ActorType.USER,
-          id: request.user.id,
+      const { join_code } = await teamService.update(
+        request.params.id,
+        request.body,
+        {
+          actor: {
+            type: ActorType.USER,
+            id: request.user.id,
+          },
         },
-      });
-      return {};
+      );
+      return {
+        data: {
+          join_code,
+        },
+      };
     },
   );
 

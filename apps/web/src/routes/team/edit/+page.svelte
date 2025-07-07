@@ -93,6 +93,7 @@
         success = "Team updated successfully!";
         refreshJoinCode = false;
         const data = await api.GET("/team");
+        data.data!.data!.join_code = result.data.data.join_code || null;
         teamLoader.r = data;
       }
     } catch (e) {
@@ -264,6 +265,9 @@
                       <div class="bg-base-300 p-1.5 px-3 rounded-md font-mono">
                         {team.join_code}
                       </div>
+                      <div class="text-warning font-medium">
+                        This will only be shown once.
+                      </div>
                       <button
                         id="refresh-join-code"
                         type="button"
@@ -275,8 +279,16 @@
                       </button>
                     </div>
                   {:else}
-                    <div class="text-error font-medium">
-                      No join code available
+                    <div class="flex items-center gap-4">
+                      <button
+                        id="refresh-join-code"
+                        type="button"
+                        class="btn bg-base-100 btn-xs pop hover:pop"
+                        onclick={() => (refreshJoinCode = true)}
+                      >
+                        <Icon icon="material-symbols:refresh" class="text-lg" />
+                        Refresh Code
+                      </button>
                     </div>
                   {/if}
 
