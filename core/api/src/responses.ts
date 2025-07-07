@@ -89,9 +89,14 @@ export const QueryAuditLogResponse = Type.Object({
 export type QueryAuditLogResponse = Static<typeof QueryAuditLogResponse>;
 
 export const MeTeamResponse = Type.Object({
-  data: Type.Composite([Type.Omit(TeamSummary, ["flags"])]),
+  data: Type.Composite([Type.Omit(TeamSummary, ["flags", "join_code"])]),
 });
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
+
+export const CreateTeamResponse = Type.Object({
+  data: Type.Composite([Type.Omit(TeamSummary, ["flags"])]),
+});
+export type CreateTeamResponse = Static<typeof CreateTeamResponse>;
 
 export const ListTeamsResponse = Type.Object({
   data: Type.Object({
@@ -104,7 +109,7 @@ export type ListTeamsResponse = Static<typeof ListTeamsResponse>;
 
 export const AdminListTeamsResponse = Type.Object({
   data: Type.Object({
-    entries: Type.Array(TeamSummary),
+    entries: Type.Array(Type.Omit(TeamSummary, ["join_code"])),
     page_size: Type.Integer(),
     total: Type.Integer(),
   }),
@@ -274,6 +279,13 @@ export const ScoreboardResponse = Type.Object({
   }),
 });
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
+
+export const UpdateTeamResponse = Type.Object({
+  data: Type.Object({
+    join_code: Type.Optional(Type.String()),
+  }),
+});
+export type UpdateTeamResponse = Static<typeof UpdateTeamResponse>;
 
 export const ScoreboardGraphsResponse = Type.Object({
   data: Type.Array(
