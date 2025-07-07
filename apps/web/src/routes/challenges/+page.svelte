@@ -8,7 +8,7 @@
   } from "$lib/utils/challenges";
   import ChallengeCard from "$lib/components/challenges/ChallengeCard.svelte";
   import ChallengeModal from "$lib/components/challenges/ChallengeModal.svelte";
-  import type { ChallDetails } from "$lib/components/challenges/ChallengeInfo.svelte";
+  import { type ChallDetails } from "$lib/components/challenges/ChallengeInfo.svelte";
   import { onMount } from "svelte";
   import { toasts } from "$lib/stores/toast";
   import Icon from "@iconify/svelte";
@@ -60,6 +60,7 @@
           points: c.value || 0,
           isSolved: c.solved_by_me,
           difficulty: getDifficultyFromTags(c.tags),
+          hidden: c.hidden,
         }))
       : undefined,
   );

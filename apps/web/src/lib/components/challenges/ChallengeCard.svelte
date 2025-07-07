@@ -7,6 +7,7 @@
     points: number;
     isSolved: boolean;
     difficulty?: string;
+    hidden: boolean;
   }
 
   export interface ChallengeCardProps {
@@ -27,6 +28,7 @@
 <!-- class:bg-blue-500/5={!data.isSolved} -->
 <button
   class={`min-w-80 text-left p-2 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150 bg-base-100`}
+  class:opacity-40={data.hidden}
   onclick={() => onclick(data)}
 >
   <!-- Blue bar for unsolved challenges -->
@@ -43,7 +45,7 @@
     >
       <Icon
         icon={categoryToIcon(data.categories[0] ?? "misc")}
-        class="text-2xl text-gray-600"
+        class="text-2xl text-gray-600 tooltip"
       />
     </div>
   </div>
@@ -52,13 +54,21 @@
   <div class="flex-1 min-w-0">
     <!-- From / Points -->
     <div class="flex justify-between items-baseline">
-      <p
-        class="text-sm leading-tight truncate"
-        class:font-semibold={!data.isSolved}
-        class:text-blue-400={!data.isSolved}
-      >
-        {data.title}
-      </p>
+      <div class="flex items-center gap-2">
+        <p
+          class="text-sm leading-tight truncate"
+          class:font-semibold={!data.isSolved}
+          class:text-blue-400={!data.isSolved}
+        >
+          {data.title}
+        </p>
+        {#if data.hidden}
+          <Icon
+            icon="material-symbols:visibility-off"
+            class="text-lg text-gray-500"
+          />
+        {/if}
+      </div>
       <p class="text-xs text-gray-500 pl-2 whitespace-nowrap">
         {data.points} pts
       </p>

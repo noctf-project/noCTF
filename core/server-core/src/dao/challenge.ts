@@ -137,7 +137,7 @@ export class ChallengeDAO {
       .updateTable("challenge")
       .set(FilterUndefined(values))
       .set((eb) => ({ version: eb("version", "+", 1) }))
-      .returning(["id", "version"])
+      .returning(["version", "updated_at", "slug", "hidden"])
       .where("id", "=", id);
     if (v.version || v.version === 0) {
       query = query.where("version", "=", v.version);

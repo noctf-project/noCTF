@@ -1,6 +1,6 @@
 import { BadRequestError, ConflictError, NotFoundError } from "../errors.ts";
 import type { ServiceCradle } from "../index.ts";
-import type { AuditLogActor } from "../types/audit_log.ts";
+import type { AuditLogActor, AuditParams } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 import { UserDAO } from "../dao/user.ts";
 import { UserIdentityDAO } from "../dao/user_identity.ts";
@@ -64,30 +64,20 @@ export class UserService {
       flags?: string[];
       roles?: string[];
     },
-    actor?: AuditLogActor,
+    { actor, message }: AuditParams = {},
   ) {
-    if (name && (await this.userDAO.checkNameExists(name))) {
-      throw new ConflictError("A user already exists with this name");
-    }
-
     await this.userDAO.update(id, {
       name,
       bio,
       flags,
       roles,
     });
-    const changed = [
-      name && "name",
-      bio && "bio",
-      flags && "flags",
-      roles && "roles",
-    ].filter((x) => x);
 
     await this.auditLogService.log({
       operation: "user.update",
       actor,
       entities: [`${ActorType.USER}:${id}`],
-      data: `Properties ${changed.join(", ")} were updated.`,
+      data: message,
     });
   }
 
@@ -112,7 +102,7 @@ export class UserService {
       );
     }
 
-    if (await this.userDAO.checkNameExists(name)) {
+    if (await this.userDAO.getIdForName(name)) {
       throw new ConflictError("A user already exists with this name");
     }
 
@@ -135,5 +125,19 @@ export class UserService {
       entities: [`${ActorType.USER}:${id}`],
     });
     return id;
+  }
+
+  async getIdForName(name: string) {
+    return this.userDAO.getIdForName(name);
+  }
+
+  async delete(id: number, { actor, message }: AuditParams = {}) {
+    await this.userDAO.delete(id);
+    await this.auditLogService.log({
+      actor,
+      operation: "user.delete",
+      entities: [`${ActorType.TEAM}:${id}`],
+      data: message,
+    });
   }
 }

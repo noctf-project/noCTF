@@ -21,7 +21,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("ref", "varchar", (col) => col.notNull())
     .addColumn("filename", "varchar(255)", (col) => col.notNull())
     .addColumn("provider", "varchar(64)", (col) => col.notNull())
-    .addColumn("mime", "varchar(64)", (col) => col.notNull())
+    .addColumn("mime", "varchar(255)", (col) => col.notNull())
     .addColumn("size", "bigint", (col) => col.notNull())
     .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
@@ -69,6 +69,11 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.defaultTo(sql`now()`).notNull(),
     )
     .addColumn("expires_at", "timestamptz")
+    .execute();
+  await schema
+    .createIndex("session_idx_user_id_created_at")
+    .on("session")
+    .columns(["created_at", "user_id"])
     .execute();
   await schema
     .createIndex("session_idx_user_id_app_id_revoked_at")

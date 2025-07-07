@@ -1,27 +1,26 @@
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors.ts";
-import { TeamFlag } from "../types/enums.ts";
+import { EntityType, TeamFlag } from "../types/enums.ts";
 import type { ServiceCradle } from "../index.ts";
-import { nanoid } from "nanoid";
+import { customAlphabet } from "nanoid";
 import type { AuditParams } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 import { TeamConfig } from "@noctf/api/config";
 import { TeamDAO } from "../dao/team.ts";
-import { DivisionDAO } from "../dao/division.ts";
 import { LocalCache } from "../util/local_cache.ts";
 import { TeamMembership } from "@noctf/api/datatypes";
 import { TeamTagDAO } from "../dao/team_tag.ts";
-
 type Props = Pick<
   ServiceCradle,
   "configService" | "databaseClient" | "auditLogService"
 >;
+
+const GenerateJoinCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 16);
 
 export class TeamService {
   private readonly auditLogService;
   private readonly databaseClient;
   private readonly configService;
 
-  private readonly divisionDAO;
   private readonly teamDAO;
   private readonly teamTagDAO;
   private readonly membershipCache = new LocalCache<
@@ -36,7 +35,6 @@ export class TeamService {
     this.databaseClient = databaseClient;
     this.auditLogService = auditLogService;
     this.configService = configService;
-    this.divisionDAO = new DivisionDAO(databaseClient.get());
     this.teamDAO = new TeamDAO(databaseClient.get());
     this.teamTagDAO = new TeamTagDAO(databaseClient.get());
     void this.init();
@@ -59,7 +57,7 @@ export class TeamService {
       operation: "team_tag.create",
       actor,
       data: message,
-      entities: [`${ActorType.TEAM_TAG}:${tag.id}`],
+      entities: [`${EntityType.TEAM_TAG}:${tag.id}`],
     });
     return tag;
   }
@@ -74,17 +72,17 @@ export class TeamService {
       operation: "team_tag.update",
       actor,
       data: message,
-      entities: [`${ActorType.TEAM_TAG}:${tagId}`],
+      entities: [`${EntityType.TEAM_TAG}:${tagId}`],
     });
   }
 
-  async deleteTag(tagId: number, { actor, message }: AuditParams = {}) {
-    await this.teamTagDAO.delete(tagId);
+  async deleteTag(id: number, { actor, message }: AuditParams = {}) {
+    await this.teamTagDAO.delete(id);
     await this.auditLogService.log({
       operation: "team_tag.delete",
       actor,
       data: message,
-      entities: [`${ActorType.TEAM_TAG}:${tagId}`],
+      entities: [`${EntityType.TEAM_TAG}:${id}`],
     });
   }
 
@@ -101,31 +99,6 @@ export class TeamService {
       }
     }
     return tag_ids;
-  }
-
-  async listDivisions() {
-    return this.divisionDAO.list();
-  }
-
-  async getDivision(id: number) {
-    return this.divisionDAO.get(id);
-  }
-
-  async validateJoinDivision(id: number, password?: string) {
-    const division = await this.divisionDAO.get(id);
-    if (!division) {
-      throw new NotFoundError("Division not found");
-    }
-    if (!division.is_joinable) {
-      throw new ForbiddenError("Division is currently not joinable");
-    }
-    if (division.password && division.password !== password) {
-      throw new ForbiddenError(
-        password
-          ? "Incorrect division password"
-          : "Division requires a password",
-      );
-    }
   }
 
   async create(
@@ -147,7 +120,7 @@ export class TeamService {
   ) {
     tag_ids = await this.validateTags(tag_ids);
 
-    const join_code = generate_join_code ? nanoid() : null;
+    const join_code = generate_join_code ? GenerateJoinCode() : null;
     const team = await this.databaseClient.transaction(async (tx) => {
       const teamDAO = new TeamDAO(tx);
       const teamTagDAO = new TeamTagDAO(tx);
@@ -197,7 +170,7 @@ export class TeamService {
 
     let j: string | null | undefined;
     if (join_code === "refresh") {
-      j = nanoid();
+      j = GenerateJoinCode();
     } else if (join_code === "remove") {
       j = null;
     }

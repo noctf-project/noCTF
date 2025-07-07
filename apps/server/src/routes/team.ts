@@ -14,11 +14,11 @@ import {
   UpdateTeamRequest,
 } from "@noctf/api/requests";
 import {
+  BaseResponse,
   ListDivisionsResponse,
   ListTeamsResponse,
   ListTeamTagsResponse,
   MeTeamResponse,
-  SuccessResponse,
 } from "@noctf/api/responses";
 import { ActorType, TeamFlag } from "@noctf/server-core/types/enums";
 import { Policy } from "@noctf/server-core/util/policy";
@@ -28,11 +28,11 @@ export const PAGE_SIZE = 60;
 
 export async function routes(fastify: FastifyInstance) {
   const adminPolicy: Policy = ["admin.team.get"];
-  const { teamService, policyService } = fastify.container
+  const { teamService, policyService, divisionService } = fastify.container
     .cradle as ServiceCradle;
 
   const divisionsGetter = new SingleValueCache(
-    () => teamService.listDivisions(),
+    () => divisionService.list(),
     2000,
   );
   const tagsGetter = new SingleValueCache(() => teamService.listTags(), 3000);
@@ -61,7 +61,7 @@ export async function routes(fastify: FastifyInstance) {
       const membership = await request.user?.membership;
       if (!canList) {
         if (!membership) return { data: [] };
-        const division = await teamService.getDivision(membership.division_id);
+        const division = await divisionService.get(membership.division_id);
         if (!division) return { data: [] };
         return { data: [{ ...division, is_password: !!division.password }] };
       }
@@ -123,7 +123,7 @@ export async function routes(fastify: FastifyInstance) {
         type: ActorType.USER,
         id: request.user.id,
       };
-      await teamService.validateJoinDivision(
+      await divisionService.validateJoinable(
         request.body.division_id,
         request.body.division_password,
       );
@@ -233,7 +233,7 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.put<{ Body: UpdateTeamRequest; Reply: SuccessResponse }>(
+  fastify.put<{ Body: UpdateTeamRequest; Reply: BaseResponse }>(
     "/team",
     {
       schema: {
@@ -245,7 +245,7 @@ export async function routes(fastify: FastifyInstance) {
         },
         body: UpdateTeamRequest,
         response: {
-          200: SuccessResponse,
+          200: BaseResponse,
         },
       },
     },
@@ -269,9 +269,7 @@ export async function routes(fastify: FastifyInstance) {
           id: request.user.id,
         },
       });
-      return {
-        data: true,
-      };
+      return {};
     },
   );
 

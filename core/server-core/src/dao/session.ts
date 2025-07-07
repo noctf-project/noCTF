@@ -3,6 +3,18 @@ import { DBType } from "../clients/database.ts";
 import { Insertable, sql } from "kysely";
 import { NotFoundError } from "../errors.ts";
 
+const LISTABLE_FIELDS = [
+  "id",
+  "ip",
+  "app_id",
+  "user_id",
+  "created_at",
+  "refreshed_at",
+  "expires_at",
+  "revoked_at",
+  "scopes",
+] as const;
+
 export class SessionDAO {
   constructor(private readonly db: DBType) {}
 
@@ -37,7 +49,7 @@ export class SessionDAO {
     const result = await this.db
       .selectFrom("session")
       .where("refresh_token_hash", "=", hash)
-      .select(["id", "user_id", "expires_at", "revoked_at", "scopes"])
+      .select(LISTABLE_FIELDS)
       .executeTakeFirst();
     if (!result) {
       throw new NotFoundError("Refresh token not found");
@@ -90,5 +102,47 @@ export class SessionDAO {
       .where("revoked_at", "is", null)
       .returning(["id", "expires_at"])
       .execute();
+  }
+
+  async listByUserId(
+    user_id: number,
+    active?: boolean,
+    limit?: { limit?: number; offset?: number },
+  ) {
+    let query = this.buildUserIdQuery(user_id, active)
+      .select(LISTABLE_FIELDS)
+      .orderBy("created_at", "desc");
+    if (limit?.limit) {
+      query = query.limit(limit.limit);
+    }
+    if (limit?.offset) {
+      query = query.offset(limit.offset);
+    }
+    return query.execute();
+  }
+
+  async getCountByUserId(user_id: number, active?: boolean) {
+    const result = await this.buildUserIdQuery(user_id, active)
+      .select(this.db.fn.countAll().as("count"))
+      .executeTakeFirstOrThrow();
+    return Number(result.count);
+  }
+
+  private buildUserIdQuery(user_id: number, active?: boolean) {
+    let query = this.db.selectFrom("session").where("user_id", "=", user_id);
+
+    if (active) {
+      query = query
+        .where("revoked_at", "is", null)
+        .where("expires_at", ">", sql<Date>`CURRENT_TIMESTAMP`);
+    } else if (active === false) {
+      query = query.where((eb) =>
+        eb.or([
+          eb("revoked_at", "is not", null),
+          eb("expires_at", "<", sql<Date>`CURRENT_TIMESTAMP`),
+        ]),
+      );
+    }
+    return query;
   }
 }

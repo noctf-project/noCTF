@@ -12,10 +12,15 @@ import { SolveChallengeRequest } from "@noctf/api/requests";
 import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
 import { SetupConfig } from "@noctf/api/config";
+import { SolveQuery } from "@noctf/api/query";
 
 export async function routes(fastify: FastifyInstance) {
-  const { challengeService, scoreboardService, configService } =
-    fastify.container.cradle;
+  const {
+    challengeService,
+    scoreboardService,
+    configService,
+    divisionService,
+  } = fastify.container.cradle;
 
   const { gateStartTime } = GetUtils(fastify.container.cradle);
   const adminPolicy: Policy = ["admin.challenge.get"];
@@ -78,8 +83,9 @@ export async function routes(fastify: FastifyInstance) {
 
       const visible = new Set(
         challenges
-          .filter(({ visible_at }) =>
-            visible_at ? ctime > visible_at.getTime() : true,
+          .filter(
+            ({ visible_at }) =>
+              admin || (visible_at ? ctime > visible_at.getTime() : true),
           )
           .map(({ id }) => id),
       );
@@ -87,7 +93,11 @@ export async function routes(fastify: FastifyInstance) {
         data: {
           challenges: challenges
             .filter(({ id }) => visible.has(id))
-            .map((c) => ({ ...c, ...values[c.id] })),
+            .map((c) => ({
+              ...c,
+              ...values[c.id],
+              hidden: c.hidden || c.visible_at?.getTime() > ctime,
+            })),
         },
       };
     },
@@ -133,6 +143,7 @@ export async function routes(fastify: FastifyInstance) {
 
   fastify.get<{
     Params: IdParams;
+    Querystring: SolveQuery;
     Reply: GetChallengeSolvesResponse;
   }>(
     "/challenges/:id/solves",
@@ -141,9 +152,10 @@ export async function routes(fastify: FastifyInstance) {
         tags: ["challenge"],
         security: [{ bearer: [] }],
         auth: {
-          policy: ["OR", "challenge.solves.get", "admin.challenge.get"],
+          policy: ["OR", "scoreboard.get", "admin.challenge.get"],
         },
         params: IdParams,
+        querystring: SolveQuery,
         response: {
           200: GetChallengeSolvesResponse,
         },
@@ -164,16 +176,24 @@ export async function routes(fastify: FastifyInstance) {
       ) {
         throw new NotFoundError("Challenge not found");
       }
-      // TODO: fix up all division ids, currently everything
-      // is requesting division ID=1
       const membership = await request.user?.membership;
+      let divisionId = request.query.division_id;
+      if (!divisionId) {
+        divisionId = membership?.division_id;
+      }
+      if (!divisionId) {
+        divisionId =
+          (await configService.get(SetupConfig)).value.default_division_id || 1;
+      }
+      if (divisionId !== membership?.division_id && !admin) {
+        const division = await divisionService.get(divisionId);
+        if (!division?.is_visible)
+          throw new NotFoundError("Division not found");
+      }
 
       return {
         data: (
-          await scoreboardService.getChallengeSolves(
-            membership?.division_id || 1,
-            id,
-          )
+          await scoreboardService.getChallengeSolves(divisionId, id)
         ).filter(({ hidden }) => !hidden),
       };
     },

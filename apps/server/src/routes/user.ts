@@ -4,12 +4,12 @@ import "@noctf/server-core/types/fastify";
 import { ActorType } from "@noctf/server-core/types/enums";
 import { QueryUsersRequest, UpdateUserRequest } from "@noctf/api/requests";
 import {
+  BaseResponse,
   ListUserIdentitiesResponse,
   ListUsersResponse,
   MeUserResponse,
-  SuccessResponse,
 } from "@noctf/api/responses";
-import { NotFoundError } from "@noctf/server-core/errors";
+import { ConflictError, NotFoundError } from "@noctf/server-core/errors";
 import { Policy } from "@noctf/server-core/util/policy";
 
 export const PAGE_SIZE = 60;
@@ -80,7 +80,7 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.put<{ Body: UpdateUserRequest; Reply: SuccessResponse }>(
+  fastify.put<{ Body: UpdateUserRequest; Reply: BaseResponse }>(
     "/user/me",
     {
       schema: {
@@ -92,25 +92,40 @@ export async function routes(fastify: FastifyInstance) {
         },
         body: UpdateUserRequest,
         response: {
-          200: SuccessResponse,
+          200: BaseResponse,
         },
       },
     },
     async (request) => {
+      const { name, bio } = request.body;
+      const ex = await userService.get(request.user.id);
+      if (!ex) throw new NotFoundError("User not found");
+      const changed = [
+        name !== ex.name && "name",
+        bio !== ex.bio && "bio",
+      ].filter((x) => x);
+      if (changed.length === 0) return {};
+      if (changed.includes("name")) {
+        const id = await userService.getIdForName(name);
+        if (id && id !== request.user.id)
+          throw new ConflictError("A user already exists with this name");
+      }
+
       await userService.update(
         request.user.id,
         {
-          name: request.body.name,
-          bio: request.body.bio,
+          name,
+          bio,
         },
         {
-          type: ActorType.USER,
-          id: request.user.id,
+          actor: {
+            type: ActorType.USER,
+            id: request.user.id,
+          },
+          message: `Properties ${changed.join(", ")} were updated`,
         },
       );
-      return {
-        data: true,
-      };
+      return {};
     },
   );
 

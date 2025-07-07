@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { goto } from "$app/navigation";
   import Icon from "@iconify/svelte";
   import api, { wrapLoadable } from "$lib/api/index.svelte";
   import TeamQueryService from "$lib/state/team_query.svelte";
@@ -24,7 +25,6 @@
 
   const challenges = wrapLoadable(api.GET("/challenges"));
 
-  // Create a lookup map for challenge names
   const challengeMap = $derived.by(() => {
     if (!challenges.r?.data?.data?.challenges) return new Map();
     const map = new Map();
@@ -46,8 +46,25 @@
     roles: [] as string[],
   });
 
-  let newFlag = $state("");
-  let newRole = $state("");
+  const availableFlags = [
+    { name: "blocked", color: "btn-error", icon: "material-symbols:block" },
+    {
+      name: "hidden",
+      color: "btn-neutral",
+      icon: "material-symbols:visibility-off",
+    },
+  ];
+
+  const availableRoles = [
+    {
+      name: "admin",
+      color: "btn-error",
+      icon: "material-symbols:admin-panel-settings",
+    },
+  ];
+
+  let customFlagInput = $state("");
+  let customRoleInput = $state("");
 
   $effect(() => {
     if (user.r?.data?.data.entries?.[0]) {
@@ -67,23 +84,24 @@
     success = "";
 
     try {
-      const result = await api.PUT("/users/{id}", {
+      const result = await api.PUT("/admin/users/{id}", {
         params: { path: { id: userId } },
         body: {
           name: editForm.name,
           bio: editForm.bio,
+          flags: editForm.flags,
+          roles: editForm.roles,
         },
       });
 
       if (result.error) {
-        error = "Failed to update user";
+        error = result.error?.message || "Failed to update user";
         return;
       }
 
       success = "User updated successfully!";
       editMode = false;
 
-      // Refresh user data
       const refreshedData = await api.POST("/admin/users/query", {
         body: { ids: [userId] },
       });
@@ -96,56 +114,108 @@
     }
   }
 
-  function addFlag() {
-    if (newFlag.trim() && !editForm.flags.includes(newFlag.trim())) {
-      editForm.flags = [...editForm.flags, newFlag.trim()];
-      newFlag = "";
+  function toggleFlagSelection(flagName: string) {
+    if (editForm.flags.includes(flagName)) {
+      editForm.flags = editForm.flags.filter((flag) => flag !== flagName);
+    } else {
+      editForm.flags = [...editForm.flags, flagName];
     }
   }
 
-  function removeFlag(flag: string) {
-    editForm.flags = editForm.flags.filter((f) => f !== flag);
-  }
-
-  function addRole() {
-    if (newRole.trim() && !editForm.roles.includes(newRole.trim())) {
-      editForm.roles = [...editForm.roles, newRole.trim()];
-      newRole = "";
+  function toggleRoleSelection(roleName: string) {
+    if (editForm.roles.includes(roleName)) {
+      editForm.roles = editForm.roles.filter((role) => role !== roleName);
+    } else {
+      editForm.roles = [...editForm.roles, roleName];
     }
   }
 
-  function removeRole(role: string) {
-    editForm.roles = editForm.roles.filter((r) => r !== role);
+  function addCustomFlag() {
+    const flagName = customFlagInput.trim();
+    if (flagName && !editForm.flags.includes(flagName)) {
+      editForm.flags = [...editForm.flags, flagName];
+      customFlagInput = "";
+    }
   }
 
-  function getFlagBadgeClass(flag: string) {
-    if (flag === "blocked") return "badge-error";
-    if (flag === "hidden") return "badge-neutral";
-    return "badge-warning";
+  function addCustomRole() {
+    const roleName = customRoleInput.trim();
+    if (roleName && !editForm.roles.includes(roleName)) {
+      editForm.roles = [...editForm.roles, roleName];
+      customRoleInput = "";
+    }
   }
 
-  function getRoleBadgeClass(role: string) {
-    const roleColors = {
-      admin: "badge-error",
-      moderator: "badge-warning",
-      user: "badge-info",
-      judge: "badge-success",
+  function removeCustomFlag(flagName: string) {
+    editForm.flags = editForm.flags.filter((flag) => flag !== flagName);
+  }
+
+  function removeCustomRole(roleName: string) {
+    editForm.roles = editForm.roles.filter((role) => role !== roleName);
+  }
+
+  const predefinedFlagNames = $derived(availableFlags.map((f) => f.name));
+  const predefinedRoleNames = $derived(availableRoles.map((r) => r.name));
+  const customFlags = $derived(
+    editForm.flags.filter((flag) => !predefinedFlagNames.includes(flag)),
+  );
+  const customRoles = $derived(
+    editForm.roles.filter((role) => !predefinedRoleNames.includes(role)),
+  );
+
+  function getFlagConfig(flagName: string) {
+    const predefinedFlag = availableFlags.find((f) => f.name === flagName);
+    return (
+      predefinedFlag || { name: flagName, color: "badge-warning", icon: null }
+    );
+  }
+
+  function getRoleConfig(roleName: string) {
+    const predefinedRole = availableRoles.find((r) => r.name === roleName);
+    return (
+      predefinedRole || { name: roleName, color: "badge-primary", icon: null }
+    );
+  }
+
+  function getProviderIcon(provider: string) {
+    const providerIcons = {
+      email: "material-symbols:alternate-email",
+      discord: "mdi:discord",
     };
-    return roleColors[role as keyof typeof roleColors] || "badge-primary";
+    return (
+      providerIcons[provider as keyof typeof providerIcons] ||
+      "material-symbols:account-circle"
+    );
   }
 
-  function getSubmissionStatusBadgeClass(status: string) {
-    const statusColors = {
-      correct: "badge-success",
-      incorrect: "badge-error",
-      queued: "badge-warning",
-      invalid: "badge-neutral",
-    };
-    return statusColors[status as keyof typeof statusColors] || "badge-info";
-  }
+  async function deleteUser() {
+    const confirmed = confirm(
+      `Are you sure you want to delete this user? This action cannot be undone.`,
+    );
 
-  function formatDateTime(dateString: string) {
-    return new Date(dateString).toLocaleString();
+    if (!confirmed) return;
+
+    loading = true;
+    error = "";
+    success = "";
+
+    try {
+      const result = await api.DELETE("/admin/users/{id}", {
+        params: { path: { id: userId } },
+      });
+
+      if (result.error) {
+        error = result.error?.message || "Failed to delete user";
+        return;
+      }
+
+      goto("/admin/users");
+    } catch (e) {
+      error = "An error occurred while deleting the user";
+      console.error(e);
+    } finally {
+      loading = false;
+    }
   }
 
   async function toggleSubmissionVisibility(
@@ -172,7 +242,6 @@
         return;
       }
 
-      // Refresh submissions data
       const refreshedData = await api.POST("/admin/submissions/query", {
         body: {
           user_id: [userId],
@@ -227,6 +296,19 @@
           <Icon icon="material-symbols:edit" class="text-lg" />
           Edit
         </button>
+        <button
+          class="btn btn-error pop hover:pop"
+          onclick={deleteUser}
+          disabled={loading}
+        >
+          {#if loading}
+            <div class="loading loading-spinner loading-xs"></div>
+            Deleting...
+          {:else}
+            <Icon icon="material-symbols:delete" class="text-lg" />
+            Delete
+          {/if}
+        </button>
       {/if}
     </div>
   </div>
@@ -265,23 +347,7 @@
           {/if}
 
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Basic Information -->
             <div class="space-y-4">
-              <h2 class="text-xl font-bold">Basic Information</h2>
-
-              <div class="form-control w-full">
-                <label for="user-id" class="label">
-                  <span class="label-text">User ID</span>
-                </label>
-                <input
-                  id="user-id"
-                  type="text"
-                  value={userData.id}
-                  class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70"
-                  readonly
-                />
-              </div>
-
               <div class="form-control w-full">
                 <label for="user-name" class="label">
                   <span class="label-text">Name</span>
@@ -339,11 +405,6 @@
                   readonly
                 />
               </div>
-            </div>
-
-            <!-- Team Information -->
-            <div class="space-y-4">
-              <h2 class="text-xl font-bold">Team Information</h2>
 
               <div class="form-control w-full">
                 <label for="user-team" class="label">
@@ -359,7 +420,7 @@
                       readonly
                     />
                   {:then team}
-                    <div class="flex gap-2">
+                    <div class="flex items-center gap-2">
                       <input
                         id="user-team"
                         type="text"
@@ -372,7 +433,6 @@
                         class="btn bg-base-100 btn-sm pop hover:pop"
                       >
                         <Icon icon="material-symbols:open-in-new" />
-                        View Team
                       </a>
                     </div>
                   {:catch}
@@ -395,105 +455,269 @@
                 {/if}
               </div>
             </div>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- User Flags -->
             <div class="space-y-4">
-              <h2 class="text-xl font-bold">User Flags</h2>
-
-              {#if editMode}
-                <div class="form-control w-full">
-                  <label for="new-flag" class="label">
-                    <span class="label-text">Add Flag</span>
-                  </label>
-                  <div class="flex gap-2">
-                    <input
-                      id="new-flag"
-                      type="text"
-                      bind:value={newFlag}
-                      class="input input-bordered flex-1 focus:outline-none focus:ring-0 focus:ring-offset-0"
-                      placeholder="Enter flag name"
-                      onkeydown={(e) => e.key === "Enter" && addFlag()}
-                    />
-                    <button
-                      class="btn btn-primary btn-sm pop hover:pop"
-                      onclick={addFlag}>Add</button
+              <div class="form-control w-full">
+                <label for="user-identities" class="label">
+                  <span class="label-text">Identities</span>
+                </label>
+                <div
+                  class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg"
+                >
+                  {#if userData.identities && userData.identities.length > 0}
+                    {#each userData.identities as identity}
+                      <div class="badge badge-info gap-2 pop">
+                        <Icon
+                          icon={getProviderIcon(identity.provider)}
+                          class="text-sm"
+                        />
+                        <span class="font-medium">{identity.provider}</span>
+                        <span class="opacity-70">•</span>
+                        <span class="font-mono text-xs"
+                          >{identity.provider_id}</span
+                        >
+                      </div>
+                    {/each}
+                  {:else}
+                    <span class="text-base-content/60 w-full text-center"
+                      >No identities</span
                     >
-                  </div>
+                  {/if}
                 </div>
-              {/if}
-
-              <div
-                class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg"
-              >
-                {#each editMode ? editForm.flags : userData.flags as flag}
-                  <div class="badge {getFlagBadgeClass(flag)} gap-2">
-                    {flag}
-                    {#if editMode}
-                      <button
-                        class="btn bg-base-100 btn-xs"
-                        onclick={() => removeFlag(flag)}
-                      >
-                        <Icon icon="material-symbols:close" class="text-xs" />
-                      </button>
-                    {/if}
+                {#if userData.identities && userData.identities.length > 0}
+                  <div class="text-xs opacity-70 mt-1">
+                    {userData.identities.length}
+                    {userData.identities.length === 1
+                      ? "identity"
+                      : "identities"}
                   </div>
-                {/each}
-                {#if (editMode ? editForm.flags : userData.flags).length === 0}
-                  <span class="text-base-content/60 w-full text-center"
-                    >No flags</span
-                  >
                 {/if}
               </div>
-            </div>
 
-            <!-- Roles -->
-            <div class="space-y-4">
-              <h2 class="text-xl font-bold">Roles</h2>
+              <div class="form-control w-full">
+                <label class="label" for="user-flags">
+                  <span class="label-text">User Flags</span>
+                </label>
 
-              {#if editMode}
-                <div class="form-control w-full">
-                  <label for="new-role" class="label">
-                    <span class="label-text">Add Role</span>
-                  </label>
-                  <div class="flex gap-2">
-                    <input
-                      id="new-role"
-                      type="text"
-                      bind:value={newRole}
-                      class="input input-bordered flex-1 focus:outline-none focus:ring-0 focus:ring-offset-0"
-                      placeholder="Enter role name"
-                      onkeydown={(e) => e.key === "Enter" && addRole()}
-                    />
-                    <button
-                      class="btn btn-primary btn-sm pop hover:pop"
-                      onclick={addRole}>Add</button
-                    >
-                  </div>
-                </div>
-              {/if}
+                {#if editMode}
+                  <div
+                    class="flex flex-wrap gap-2 p-3 bg-base-200 rounded-lg min-h-[60px]"
+                  >
+                    {#each availableFlags as flag}
+                      {@const isSelected = editForm.flags.includes(flag.name)}
+                      <label class="cursor-pointer">
+                        <input
+                          type="checkbox"
+                          class="sr-only"
+                          checked={isSelected}
+                          onchange={() => toggleFlagSelection(flag.name)}
+                        />
+                        <div
+                          class={`btn btn-sm ${isSelected ? `${flag.color} text-white` : "btn-outline bg-base-100"} pop hover:pop`}
+                        >
+                          {#if isSelected}
+                            <Icon icon={flag.icon} class="text-sm" />
+                          {/if}
+                          {flag.name}
+                        </div>
+                      </label>
+                    {/each}
 
-              <div
-                class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg"
-              >
-                {#each editMode ? editForm.roles : userData.roles as role}
-                  <div class="badge {getRoleBadgeClass(role)} gap-2">
-                    {role}
-                    {#if editMode}
-                      <button
-                        class="btn bg-base-100 btn-xs"
-                        onclick={() => removeRole(role)}
+                    {#each customFlags as flagName}
+                      <div
+                        class="btn btn-sm badge-warning text-white pop relative group"
                       >
-                        <Icon icon="material-symbols:close" class="text-xs" />
+                        {flagName}
+                        <button
+                          type="button"
+                          class="ml-1 opacity-60 hover:opacity-100"
+                          onclick={() => removeCustomFlag(flagName)}
+                          title="Remove custom flag"
+                        >
+                          <Icon icon="material-symbols:close" class="text-xs" />
+                        </button>
+                      </div>
+                    {/each}
+                  </div>
+
+                  <div class="mt-2">
+                    <div class="text-sm font-medium mb-2 opacity-70">
+                      Add Custom Flag
+                    </div>
+                    <div class="flex gap-2">
+                      <input
+                        type="text"
+                        bind:value={customFlagInput}
+                        placeholder="Enter custom flag name"
+                        class="input input-bordered h-8 flex-1 focus:outline-none focus:ring-0 focus:ring-offset-0"
+                        onkeydown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addCustomFlag();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        class="btn btn-primary btn-sm pop hover:pop h-8 min-h-8"
+                        onclick={addCustomFlag}
+                        disabled={!customFlagInput.trim() ||
+                          editForm.flags.includes(customFlagInput.trim())}
+                      >
+                        <Icon icon="material-symbols:add" class="text-sm" />
+                        Add
                       </button>
+                    </div>
+                  </div>
+
+                  <div class="text-xs opacity-70 mt-1 h-2">
+                    {#if editForm.flags.length > 0}
+                      {editForm.flags.length} flag{editForm.flags.length !== 1
+                        ? "s"
+                        : ""} selected
                     {/if}
                   </div>
-                {/each}
-                {#if (editMode ? editForm.roles : userData.roles).length === 0}
-                  <span class="text-base-content/60 w-full text-center"
-                    >No roles</span
+                {:else}
+                  <div
+                    class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg"
                   >
+                    {#if userData.flags && userData.flags.length > 0}
+                      {#each userData.flags as flagName}
+                        {@const flagConfig = getFlagConfig(flagName)}
+                        {@const isCustomFlag =
+                          !predefinedFlagNames.includes(flagName)}
+                        <div
+                          class="btn btn-sm {flagConfig.color} text-white pop pointer-events-none"
+                        >
+                          {#if flagConfig.icon}
+                            <Icon icon={flagConfig.icon} class="text-sm" />
+                          {/if}
+                          {flagName}
+                          {#if isCustomFlag}
+                            <span class="ml-1 opacity-60 text-xs">(custom)</span
+                            >
+                          {/if}
+                        </div>
+                      {/each}
+                    {:else}
+                      <span class="text-base-content/60 w-full text-center"
+                        >No flags</span
+                      >
+                    {/if}
+                  </div>
+                {/if}
+              </div>
+
+              <div class="form-control w-full">
+                <label class="label" for="roles">
+                  <span class="label-text">Roles</span>
+                </label>
+
+                {#if editMode}
+                  <div
+                    class="flex flex-wrap gap-2 p-3 bg-base-200 rounded-lg min-h-[60px]"
+                  >
+                    {#each availableRoles as role}
+                      {@const isSelected = editForm.roles.includes(role.name)}
+                      <label class="cursor-pointer">
+                        <input
+                          type="checkbox"
+                          class="sr-only"
+                          checked={isSelected}
+                          onchange={() => toggleRoleSelection(role.name)}
+                        />
+                        <div
+                          class={`btn btn-sm ${isSelected ? `${role.color} text-white` : "btn-outline bg-base-100"} pop hover:pop`}
+                        >
+                          {#if isSelected}
+                            <Icon icon={role.icon} class="text-sm" />
+                          {/if}
+                          {role.name}
+                        </div>
+                      </label>
+                    {/each}
+
+                    {#each customRoles as roleName}
+                      <div
+                        class="btn btn-sm badge-primary text-white pop relative group"
+                      >
+                        {roleName}
+                        <button
+                          type="button"
+                          class="ml-1 opacity-60 hover:opacity-100"
+                          onclick={() => removeCustomRole(roleName)}
+                          title="Remove custom role"
+                        >
+                          <Icon icon="material-symbols:close" class="text-xs" />
+                        </button>
+                      </div>
+                    {/each}
+                  </div>
+
+                  <div class="mt-2">
+                    <div class="text-sm font-medium mb-2 opacity-70">
+                      Add Custom Role
+                    </div>
+                    <div class="flex gap-2">
+                      <input
+                        type="text"
+                        bind:value={customRoleInput}
+                        placeholder="Enter custom role name"
+                        class="input input-bordered h-8 flex-1 focus:outline-none focus:ring-0 focus:ring-offset-0"
+                        onkeydown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addCustomRole();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        class="btn btn-primary btn-sm pop hover:pop h-8 min-h-8"
+                        onclick={addCustomRole}
+                        disabled={!customRoleInput.trim() ||
+                          editForm.roles.includes(customRoleInput.trim())}
+                      >
+                        <Icon icon="material-symbols:add" class="text-sm" />
+                        Add
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="text-xs opacity-70 mt-1 h-2">
+                    {#if editForm.roles.length > 0}
+                      {editForm.roles.length} role{editForm.roles.length !== 1
+                        ? "s"
+                        : ""} selected
+                    {/if}
+                  </div>
+                {:else}
+                  <div
+                    class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg"
+                  >
+                    {#if userData.roles && userData.roles.length > 0}
+                      {#each userData.roles as roleName}
+                        {@const roleConfig = getRoleConfig(roleName)}
+                        {@const isCustomRole =
+                          !predefinedRoleNames.includes(roleName)}
+                        <div
+                          class="btn btn-sm {roleConfig.color} text-white pop pointer-events-none"
+                        >
+                          {#if roleConfig.icon}
+                            <Icon icon={roleConfig.icon} class="text-sm" />
+                          {/if}
+                          {roleName}
+                          {#if isCustomRole}
+                            <span class="ml-1 opacity-60 text-xs">(custom)</span
+                            >
+                          {/if}
+                        </div>
+                      {/each}
+                    {:else}
+                      <span class="text-base-content/60 w-full text-center"
+                        >No roles</span
+                      >
+                    {/if}
+                  </div>
                 {/if}
               </div>
             </div>
@@ -502,7 +726,6 @@
       </div>
     </div>
 
-    <!-- Submissions Section -->
     <div class="space-y-4 mt-6">
       <h2 class="text-xl font-bold">Submissions</h2>
 
