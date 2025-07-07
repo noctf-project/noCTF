@@ -1,20 +1,20 @@
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors.ts";
 import { EntityType, TeamFlag } from "../types/enums.ts";
 import type { ServiceCradle } from "../index.ts";
-import { nanoid } from "nanoid";
+import { customAlphabet } from "nanoid";
 import type { AuditParams } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 import { TeamConfig } from "@noctf/api/config";
 import { TeamDAO } from "../dao/team.ts";
-import { DivisionDAO } from "../dao/division.ts";
 import { LocalCache } from "../util/local_cache.ts";
-import { Division, TeamMembership } from "@noctf/api/datatypes";
+import { TeamMembership } from "@noctf/api/datatypes";
 import { TeamTagDAO } from "../dao/team_tag.ts";
-
 type Props = Pick<
   ServiceCradle,
   "configService" | "databaseClient" | "auditLogService"
 >;
+
+const GenerateJoinCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 16);
 
 export class TeamService {
   private readonly auditLogService;
@@ -120,7 +120,7 @@ export class TeamService {
   ) {
     tag_ids = await this.validateTags(tag_ids);
 
-    const join_code = generate_join_code ? nanoid() : null;
+    const join_code = generate_join_code ? GenerateJoinCode() : null;
     const team = await this.databaseClient.transaction(async (tx) => {
       const teamDAO = new TeamDAO(tx);
       const teamTagDAO = new TeamTagDAO(tx);
@@ -170,7 +170,7 @@ export class TeamService {
 
     let j: string | null | undefined;
     if (join_code === "refresh") {
-      j = nanoid();
+      j = GenerateJoinCode();
     } else if (join_code === "remove") {
       j = null;
     }
