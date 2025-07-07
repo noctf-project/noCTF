@@ -1,5 +1,5 @@
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors.ts";
-import { TeamFlag } from "../types/enums.ts";
+import { EntityType, TeamFlag } from "../types/enums.ts";
 import type { ServiceCradle } from "../index.ts";
 import { nanoid } from "nanoid";
 import type { AuditParams } from "../types/audit_log.ts";
@@ -63,7 +63,7 @@ export class TeamService {
       operation: "team_tag.create",
       actor,
       data: message,
-      entities: [`${ActorType.TEAM_TAG}:${tag.id}`],
+      entities: [`${EntityType.TEAM_TAG}:${tag.id}`],
     });
     return tag;
   }
@@ -78,17 +78,17 @@ export class TeamService {
       operation: "team_tag.update",
       actor,
       data: message,
-      entities: [`${ActorType.TEAM_TAG}:${tagId}`],
+      entities: [`${EntityType.TEAM_TAG}:${tagId}`],
     });
   }
 
-  async deleteTag(tagId: number, { actor, message }: AuditParams = {}) {
-    await this.teamTagDAO.delete(tagId);
+  async deleteTag(id: number, { actor, message }: AuditParams = {}) {
+    await this.teamTagDAO.delete(id);
     await this.auditLogService.log({
       operation: "team_tag.delete",
       actor,
       data: message,
-      entities: [`${ActorType.TEAM_TAG}:${tagId}`],
+      entities: [`${EntityType.TEAM_TAG}:${id}`],
     });
   }
 
@@ -118,6 +118,46 @@ export class TeamService {
         async () => (await this.divisionDAO.get(id)) || null,
       );
     return (await this.divisionDAO.get(id)) || null;
+  }
+
+  async updateDivision(
+    id: number,
+    v: Parameters<DivisionDAO["update"]>[1],
+    { actor, message }: AuditParams = {},
+  ) {
+    await this.divisionDAO.update(id, v);
+    this.divisionCache.delete(id);
+    await this.auditLogService.log({
+      operation: "division.update",
+      actor,
+      data: message,
+      entities: [`${EntityType.DIVISION}:${id}`],
+    });
+  }
+
+  async createDivision(
+    v: Parameters<DivisionDAO["create"]>[0],
+    { actor, message }: AuditParams = {},
+  ) {
+    const division = await this.divisionDAO.create(v);
+    this.divisionCache.delete(division.id);
+    await this.auditLogService.log({
+      operation: "division.create",
+      actor,
+      data: message,
+      entities: [`${EntityType.DIVISION}:${division.id}`],
+    });
+    return division;
+  }
+
+  async deleteDivision(id: number, { actor, message }: AuditParams = {}) {
+    await this.teamTagDAO.delete(id);
+    await this.auditLogService.log({
+      operation: "division.delete",
+      actor,
+      data: message,
+      entities: [`${EntityType.DIVISION}:${id}`],
+    });
   }
 
   async validateJoinDivision(id: number, password?: string) {

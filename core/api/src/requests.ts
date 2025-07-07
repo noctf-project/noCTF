@@ -3,6 +3,7 @@ import { Type } from "@sinclair/typebox";
 import {
   CaptchaValidationString,
   Challenge,
+  Division,
   Name,
   Team,
   TeamMemberType,
@@ -375,11 +376,21 @@ export type AdminCreateTeamTagRequest = Static<
   typeof AdminCreateTeamTagRequest
 >;
 
-export const AdminUpdateTeamTagRequest = Type.Pick(
-  TeamTag,
-  ["name", "is_joinable"],
-  { additionalProperties: false },
-);
+export const AdminUpdateTeamTagRequest = AdminCreateTeamTagRequest;
 export type AdminUpdateTeamTagRequest = Static<
   typeof AdminUpdateTeamTagRequest
+>;
+
+export const AdminCreateDivisionRequest = Type.Pick(
+  Division,
+  ["name", "is_joinable", "is_visible", "slug", "description", "password"],
+  { additionalProperties: false },
+);
+export type AdminCreateDivisionRequest = Static<
+  typeof AdminCreateDivisionRequest
+>;
+
+export const AdminUpdateDivisionRequest = AdminCreateDivisionRequest;
+export type AdminUpdateDivisionRequest = Static<
+  typeof AdminUpdateDivisionRequest
 >;

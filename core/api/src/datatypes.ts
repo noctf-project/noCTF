@@ -347,7 +347,7 @@ export const Division = Type.Object({
   description: Type.String({ maxLength: 512 }),
   is_visible: Type.Boolean(),
   is_joinable: Type.Boolean(),
-  password: Type.String({ maxLength: 64 }),
+  password: Type.Optional(Type.String({ maxLength: 64 })),
   created_at: TypeDate,
 });
 export type Division = Static<typeof Division>;
