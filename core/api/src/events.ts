@@ -16,6 +16,18 @@ export const SubmissionUpdateEvent = Type.Object(
 );
 export type SubmissionUpdateEvent = Static<typeof SubmissionUpdateEvent>;
 
+export const ChallengeUpdateEvent = Type.Object(
+  {
+    id: Type.Integer(),
+    slug: Type.String(),
+    hidden: Type.Boolean(),
+    version: Type.Integer(),
+    updated_at: TypeDate,
+  },
+  { $id: "events.challenge.update" },
+);
+export type ChallengeUpdateEvent = Static<typeof ChallengeUpdateEvent>;
+
 export const EmailQueueEvent = Type.Object(
   {
     to: Type.Optional(Type.Array(EmailAddressOrUserId)),

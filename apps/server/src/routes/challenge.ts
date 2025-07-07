@@ -79,8 +79,9 @@ export async function routes(fastify: FastifyInstance) {
 
       const visible = new Set(
         challenges
-          .filter(({ visible_at }) =>
-            visible_at ? ctime > visible_at.getTime() : true,
+          .filter(
+            ({ visible_at }) =>
+              admin || (visible_at ? ctime > visible_at.getTime() : true),
           )
           .map(({ id }) => id),
       );
@@ -88,7 +89,11 @@ export async function routes(fastify: FastifyInstance) {
         data: {
           challenges: challenges
             .filter(({ id }) => visible.has(id))
-            .map((c) => ({ ...c, ...values[c.id] })),
+            .map((c) => ({
+              ...c,
+              ...values[c.id],
+              hidden: c.hidden || c.visible_at?.getTime() > ctime,
+            })),
         },
       };
     },
