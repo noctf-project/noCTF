@@ -403,7 +403,7 @@ export const Session = Type.Object({
   scopes: Type.Union([
     Type.Array(Type.String({ minLength: 1, maxLength: 256 }), {
       uniqueItems: true,
-      minItems: 64,
+      minItems: 1,
       maxItems: 64,
     }),
     Type.Null(),

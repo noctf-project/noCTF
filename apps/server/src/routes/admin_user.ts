@@ -209,6 +209,7 @@ export async function routes(fastify: FastifyInstance) {
           policy: ["admin.session.get"],
         },
         params: IdParams,
+        querystring: SessionQuery,
         response: {
           200: ListSessionsResponse,
         },
