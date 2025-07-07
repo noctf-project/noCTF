@@ -1,9 +1,14 @@
 import { IdParams } from "@noctf/api/params";
+import { SessionQuery } from "@noctf/api/query";
 import {
   AdminQueryUsersRequest,
   AdminUpdateUserRequest,
 } from "@noctf/api/requests";
-import { AdminListUsersResponse, BaseResponse } from "@noctf/api/responses";
+import {
+  AdminListUsersResponse,
+  BaseResponse,
+  ListSessionsResponse,
+} from "@noctf/api/responses";
 import {
   BadRequestError,
   ConflictError,
@@ -186,6 +191,53 @@ export async function routes(fastify: FastifyInstance) {
         message: "User deleted by admin",
       });
       return {};
+    },
+  );
+
+  fastify.get<{
+    Querystring: SessionQuery;
+    Params: IdParams;
+    Reply: ListSessionsResponse;
+  }>(
+    "/admin/users/:id/sessions",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["admin"],
+        auth: {
+          require: true,
+          policy: ["admin.session.get"],
+        },
+        params: IdParams,
+        response: {
+          200: ListSessionsResponse,
+        },
+      },
+    },
+    async (request) => {
+      const page = request.query.page || 1;
+      const page_size = request.query.page_size ?? PAGE_SIZE;
+      const [entries, total] = await Promise.all([
+        identityService.listSessionsForUser(
+          request.params.id,
+          request.query.active,
+          {
+            limit: page_size,
+            offset: (page - 1) * page_size,
+          },
+        ),
+        identityService.countSessionsForUser(
+          request.params.id,
+          request.query.active,
+        ),
+      ]);
+      return {
+        data: {
+          page_size,
+          total,
+          entries,
+        },
+      };
     },
   );
 }

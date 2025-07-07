@@ -6,11 +6,24 @@ export const FilterChallengesQuery = Type.Partial(
 );
 export type FilterChallengesQuery = Static<typeof FilterChallengesQuery>;
 
-export const ScoreboardQuery = Type.Object({
-  page: Type.Optional(Type.Integer({ minimum: 1 })),
-  page_size: Type.Optional(Type.Integer()),
-  tags: Type.Optional(Type.Array(Type.Number(), { maxItems: 10 })),
-});
+export const PaginatedQuery = Type.Object(
+  {
+    page: Type.Optional(Type.Integer({ minimum: 1 })),
+    page_size: Type.Optional(Type.Integer()),
+  },
+  { additionalProperties: false },
+);
+export type PaginatedQuery = Static<typeof PaginatedQuery>;
+
+export const ScoreboardQuery = Type.Composite(
+  [
+    PaginatedQuery,
+    Type.Object({
+      tags: Type.Optional(Type.Array(Type.Number(), { maxItems: 10 })),
+    }),
+  ],
+  { additionalProperties: false },
+);
 export type ScoreboardQuery = Static<typeof ScoreboardQuery>;
 
 export const ScoreboardTagsQuery = Type.Pick(ScoreboardQuery, ["tags"]);
@@ -32,3 +45,14 @@ export const SolveQuery = Type.Object(
   { additionalProperties: false },
 );
 export type SolveQuery = Static<typeof SolveQuery>;
+
+export const SessionQuery = Type.Composite(
+  [
+    PaginatedQuery,
+    Type.Object({
+      active: Type.Optional(Type.Boolean()),
+    }),
+  ],
+  { additionalProperties: false },
+);
+export type SessionQuery = Static<typeof SessionQuery>;

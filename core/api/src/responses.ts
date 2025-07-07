@@ -7,7 +7,6 @@ import {
   FileMetadata,
   PublicChallenge,
   PublicChallengeSummary,
-  Team,
   ScoringStrategy,
   ScoreboardEntry,
   TeamSummary,
@@ -17,6 +16,7 @@ import {
   TeamTag,
   UserSummary,
   UserIdentity,
+  Session,
 } from "./datatypes.ts";
 import { AuthTokenType } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
@@ -393,3 +393,12 @@ export const AdminDivisionResponse = Type.Object({
   data: Division,
 });
 export type AdminDivisionResponse = Static<typeof AdminDivisionResponse>;
+
+export const ListSessionsResponse = Type.Object({
+  data: Type.Object({
+    entries: Type.Array(Session),
+    page_size: Type.Integer(),
+    total: Type.Integer(),
+  }),
+});
+export type ListSessionsResponse = Static<typeof ListSessionsResponse>;
