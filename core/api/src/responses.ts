@@ -334,7 +334,7 @@ export const ListDivisionsResponse = Type.Object({
   data: Type.Array(
     Type.Composite(
       [
-        Type.Omit(Division, ["password", "is_visible"]),
+        Type.Omit(Division, ["password"]),
         Type.Object({
           is_password: Type.Boolean(),
         }),
