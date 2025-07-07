@@ -67,7 +67,7 @@
           description: createForm.description.trim(),
           is_visible: createForm.is_visible,
           is_joinable: createForm.is_joinable,
-          password: createForm.password.trim() || undefined,
+          password: createForm.password.trim(),
         },
       });
 
@@ -132,7 +132,7 @@
           description: editForm.description.trim(),
           is_visible: editForm.is_visible,
           is_joinable: editForm.is_joinable,
-          password: editForm.password.trim() || undefined,
+          password: editForm.password.trim(),
         },
       });
 
