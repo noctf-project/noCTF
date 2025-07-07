@@ -16,10 +16,17 @@ export enum TeamFlag {
   HIDDEN = "hidden",
   FROZEN = "frozen",
 }
+
 export enum ActorType {
   USER = "user",
-  ROLE = "role",
   SYSTEM = "sys",
   TEAM = "team",
+}
+
+export enum EntityType {
   TEAM_TAG = "team_tag",
+  DIVISION = "division",
+  USER = "user",
+  ROLE = "role",
+  TEAM = "team",
 }
