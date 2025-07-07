@@ -15,8 +15,12 @@ import { SetupConfig } from "@noctf/api/config";
 import { SolveQuery } from "@noctf/api/query";
 
 export async function routes(fastify: FastifyInstance) {
-  const { challengeService, scoreboardService, configService, teamService } =
-    fastify.container.cradle;
+  const {
+    challengeService,
+    scoreboardService,
+    configService,
+    divisionService,
+  } = fastify.container.cradle;
 
   const { gateStartTime } = GetUtils(fastify.container.cradle);
   const adminPolicy: Policy = ["admin.challenge.get"];
@@ -182,7 +186,7 @@ export async function routes(fastify: FastifyInstance) {
           (await configService.get(SetupConfig)).value.default_division_id || 1;
       }
       if (divisionId !== membership?.division_id && !admin) {
-        const division = await teamService.getDivision(divisionId);
+        const division = await divisionService.get(divisionId);
         if (!division?.is_visible)
           throw new NotFoundError("Division not found");
       }

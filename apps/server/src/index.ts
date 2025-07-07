@@ -50,6 +50,7 @@ import { BaseResponse } from "@noctf/api/responses";
 import { AppService } from "@noctf/server-core/services/app";
 import { AsMutable } from "@noctf/server-core/types/primitives";
 import { KeyService } from "@noctf/server-core/services/key";
+import { DivisionService } from "@noctf/server-core/services/division";
 
 export const server = fastify({
   logger: {
@@ -100,6 +101,7 @@ server.register(async () => {
     eventBusService: asClass(EventBusService).singleton(),
     fileService: asClass(FileService).singleton(),
     configService: asClass(ConfigService).singleton(),
+    divisionService: asClass(DivisionService).singleton(),
     identityService: asClass(IdentityService).singleton(),
     keyService: asValue(keyService),
     policyService: asClass(PolicyService).singleton(),

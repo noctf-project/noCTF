@@ -22,6 +22,7 @@ import type { RateLimitService } from "./services/rate_limit.ts";
 import type { EmailService } from "./services/email/index.ts";
 import type { AppService } from "./services/app.ts";
 import type { KeyService } from "./services/key.ts";
+import type { DivisionService } from "./services/division.ts";
 
 export type ServiceCradle = {
   logger: Logger;
@@ -38,6 +39,7 @@ export type ServiceCradle = {
   fileService: FileService;
   keyService: KeyService;
   configService: ConfigService;
+  divisionService: DivisionService;
   identityService: IdentityService;
   policyService: PolicyService;
   rateLimitService: RateLimitService;
