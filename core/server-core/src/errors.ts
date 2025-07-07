@@ -49,6 +49,17 @@ export class AuthenticationError extends ApplicationError {
   }
 }
 
+export class UnauthorizedError extends ApplicationError {
+  constructor(message?: string, options?: ErrorOptions) {
+    super(
+      401,
+      "UnauthorizedError",
+      message || "Please log in to continue",
+      options,
+    );
+  }
+}
+
 export class ForbiddenError extends ApplicationError {
   constructor(message?: string, options?: ErrorOptions) {
     super(403, "ForbiddenError", message || "Forbidden", options);
