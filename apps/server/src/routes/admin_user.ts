@@ -59,11 +59,13 @@ export async function routes(fastify: FastifyInstance) {
       ]);
 
       const { page, page_size, ...query } = request.body;
-      const { entries, page_size: actual_page_size } = await Paginate(
-        query,
-        { page, page_size },
-        (q, l) => userService.listSummary(q, l),
-      );
+      const [{ entries, page_size: actual_page_size }, total] =
+        await Promise.all([
+          Paginate(query, { page, page_size }, (q, l) =>
+            userService.listSummary(q, l),
+          ),
+          query.ids && query.ids.length ? userService.getCount(query) : 0,
+        ]);
       const results = await RunInParallelWithLimit(entries, 8, async (e) => ({
         ...e,
         derived_roles: [...(await policyService.computeRolesForUser(e))],
@@ -85,10 +87,7 @@ export async function routes(fastify: FastifyInstance) {
         data: {
           entries: derivedEntries,
           page_size: actual_page_size,
-          total:
-            query.ids && query.ids.length
-              ? await userService.getCount(query)
-              : entries.length,
+          total: total || derivedEntries.length,
         },
       };
     },

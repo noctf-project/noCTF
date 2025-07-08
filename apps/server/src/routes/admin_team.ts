@@ -36,16 +36,16 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const { page, page_size, ...query } = request.body;
-      const result = await Paginate(query, { page, page_size }, (q, l) =>
-        teamService.listSummary(q, l),
-      );
+      const [result, total] = await Promise.all([
+        Paginate(query, { page, page_size }, (q, l) =>
+          teamService.listSummary(q, l),
+        ),
+        query.ids && query.ids.length ? teamService.getCount(query) : 0,
+      ]);
       return {
         data: {
           ...result,
-          total:
-            query.ids && query.ids.length
-              ? await teamService.getCount(query)
-              : result.entries.length,
+          total: total || result.entries.length,
         },
       };
     },
