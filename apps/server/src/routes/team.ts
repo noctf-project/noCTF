@@ -54,7 +54,9 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const canList = policyService.evaluate(request.user?.id, [
+        "OR",
         "division.get",
+        "admin.division.get",
       ]);
       if (!canList && !request.user) {
         return { data: [] };
@@ -66,11 +68,14 @@ export async function routes(fastify: FastifyInstance) {
         if (!division) return { data: [] };
         return { data: [{ ...division, is_password: !!division.password }] };
       }
+      const admin = await policyService.evaluate(request.user?.id, [
+        "admin.division.get",
+      ]);
       return {
         data: (await divisionsGetter.get())
           .filter(
             ({ is_visible, id }) =>
-              is_visible || membership?.division_id === id,
+              admin || is_visible || membership?.division_id === id,
           )
           .map((x) => ({ ...x, is_password: !!x.password })),
       };
@@ -137,7 +142,7 @@ export async function routes(fastify: FastifyInstance) {
         },
         {
           actor,
-          message: "Created a team using self-service.",
+          message: "Self-service team created",
         },
       );
       await teamService.assignMember(
@@ -151,7 +156,7 @@ export async function routes(fastify: FastifyInstance) {
             type: ActorType.USER,
             id: request.user.id,
           },
-          message: "Assigned owner permissions to the team's creator.",
+          message: "Assigned owner permissions to the team's creator",
         },
       );
       return reply.status(201).send({

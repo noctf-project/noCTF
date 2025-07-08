@@ -170,7 +170,7 @@ export class ConfigService {
       actor,
       operation: "config.update",
       entities: [namespace],
-      data: JSON.stringify(value),
+      data: `Updated to version ${updated}`,
     });
     const promise = Promise.resolve({
       version: updated,

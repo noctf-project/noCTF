@@ -18,7 +18,6 @@ import {
   OAuthIdentityProvider,
 } from "./oauth_client_provider.ts";
 import type { FastifyInstance } from "fastify";
-import { TokenProvider } from "./token_provider.ts";
 import { BadRequestError, NotFoundError } from "@noctf/server-core/errors";
 import { SetupConfig } from "@noctf/api/config";
 import fastifyFormbody from "@fastify/formbody";
@@ -35,6 +34,7 @@ export default async function (fastify: FastifyInstance) {
     databaseClient,
     userService,
     keyService,
+    tokenService,
     teamService,
   } = fastify.container.cradle;
   const configProvider = new OAuthConfigProvider(
@@ -45,7 +45,7 @@ export default async function (fastify: FastifyInstance) {
   const provider = new OAuthIdentityProvider(
     configProvider,
     identityService,
-    new TokenProvider({ cacheService }),
+    tokenService,
   );
   const jwksStore = new JWKSStore(keyService);
 
