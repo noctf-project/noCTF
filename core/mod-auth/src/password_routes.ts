@@ -108,7 +108,7 @@ export default async function (fastify: FastifyInstance) {
           },
           {
             key: `${GetRouteKey(r)}:e:${NormalizeEmail(r.body.email)}`,
-            limit: 2,
+            limit: 5,
             windowSeconds: 60,
           },
         ],
@@ -196,12 +196,12 @@ export default async function (fastify: FastifyInstance) {
         ) => [
           {
             key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
-            limit: 8,
+            limit: 10,
             windowSeconds: 60,
           },
           {
             key: `${GetRouteKey(r)}:e:${NormalizeEmail(r.body.email)}`,
-            limit: 2,
+            limit: 5,
             windowSeconds: 60,
           },
         ],
@@ -383,7 +383,7 @@ export default async function (fastify: FastifyInstance) {
         ],
         body: ChangeAuthEmailRequest,
         response: {
-          200: Type.Composite([BaseResponse, FinishAuthResponse]),
+          200: Type.Union([BaseResponse, FinishAuthResponse]),
         },
       },
     },
