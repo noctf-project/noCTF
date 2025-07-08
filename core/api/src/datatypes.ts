@@ -252,8 +252,8 @@ export type FileMetadata = Static<typeof FileMetadata>;
 
 export const ScoringStrategy = Type.Object(
   {
-    expr: Type.String({ maxLength: 512 }),
-    description: Type.String({ maxLength: 256 }),
+    expr: Type.String({ maxLength: 512, title: "Math Expression" }),
+    description: Type.String({ maxLength: 256, title: "Help text" }),
     source: Type.Optional(Type.String()),
   },
   { additionalProperties: false },
@@ -300,7 +300,7 @@ export const ScoreboardEntry = Type.Object({
 export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 
 export const TeamSummary = Type.Composite([
-  Team,
+  Type.Omit(Team, ["join_code"]),
   Type.Object({
     members: Type.Array(
       Type.Object({
@@ -403,7 +403,7 @@ export const Session = Type.Object({
   scopes: Type.Union([
     Type.Array(Type.String({ minLength: 1, maxLength: 256 }), {
       uniqueItems: true,
-      minItems: 64,
+      minItems: 1,
       maxItems: 64,
     }),
     Type.Null(),

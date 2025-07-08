@@ -51,6 +51,7 @@ import { AppService } from "@noctf/server-core/services/app";
 import { AsMutable } from "@noctf/server-core/types/primitives";
 import { KeyService } from "@noctf/server-core/services/key";
 import { DivisionService } from "@noctf/server-core/services/division";
+import { TokenService } from "@noctf/server-core/services/token";
 
 export const server = fastify({
   logger: {
@@ -107,6 +108,7 @@ server.register(async () => {
     policyService: asClass(PolicyService).singleton(),
     rateLimitService: asClass(RateLimitService).singleton(),
     teamService: asClass(TeamService).singleton(),
+    tokenService: asClass(TokenService).singleton(),
     scoreService: asClass(ScoreService).singleton(),
     scoreboardService: asClass(ScoreboardService).singleton(),
     submissionService: asClass(SubmissionService).singleton(),

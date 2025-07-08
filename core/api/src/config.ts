@@ -34,6 +34,7 @@ export const AuthConfig = Type.Object(
         Type.String({
           format: "hostname",
         }),
+        { title: "Allowed email domains" },
       ),
     ),
   },
@@ -67,6 +68,10 @@ export const CaptchaConfig = Type.Object(
         },
         { additionalProperties: false },
       ),
+      {
+        title: "Routes",
+        description: "Routes as defined in the OpenAPI Schema",
+      },
     ),
   },
   { $id: "core.captcha", additionalProperties: false },
@@ -107,9 +112,12 @@ export type SetupConfig = Static<typeof SetupConfig>;
 export const FileConfig = Type.Object(
   {
     upload: Type.String({
-      title: "File Upload Provider",
+      title: "Selected Provider Instance",
+      description: "New uploads will use this provider instance",
     }),
-    instances: Type.Record(Type.String(), Type.Any()),
+    instances: Type.Record(Type.String(), Type.Any(), {
+      title: "Provider Instances",
+    }),
   },
   { $id: "core.file", additionalProperties: false },
 );
@@ -117,7 +125,11 @@ export type FileConfig = Static<typeof FileConfig>;
 
 export const ScoreConfig = Type.Object(
   {
-    strategies: Type.Record(Type.String(), ScoringStrategy),
+    strategies: Type.Record(
+      Type.String(),
+      Type.Omit(ScoringStrategy, ["source"]),
+      { title: "Scoring Strategies" },
+    ),
   },
   { $id: "core.score", additionalProperties: false },
 );

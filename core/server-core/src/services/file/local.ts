@@ -138,7 +138,9 @@ export class LocalFileProviderInstance implements FileProviderInstance {
         LocalFileProviderInstance.CLOCK_SKEW_WINDOW <
       now
     ) {
-      throw new ForbiddenError("Signature expired");
+      throw new ForbiddenError(
+        "Signature expired, please refresh the page to get the new link",
+      );
     }
   }
 

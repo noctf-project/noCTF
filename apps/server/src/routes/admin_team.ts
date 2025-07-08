@@ -4,8 +4,13 @@ import {
   AdminUpdateTeamMemberRequest,
   AdminUpdateTeamRequest,
 } from "@noctf/api/requests";
-import { AdminListTeamsResponse, BaseResponse } from "@noctf/api/responses";
+import {
+  AdminListTeamsResponse,
+  BaseResponse,
+  UpdateTeamResponse,
+} from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
+import { Paginate } from "@noctf/server-core/util/paginator";
 import { FastifyInstance } from "fastify";
 
 export const PAGE_SIZE = 60;
@@ -30,30 +35,24 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const page = request.body.page || 1;
-      const page_size = request.body.page_size ?? PAGE_SIZE;
-
-      const query = request.body;
-      const [entries, total] = await Promise.all([
-        teamService.listSummary(query, {
-          limit: page_size,
-          offset: (page - 1) * page_size,
-        }),
-        !(query.ids && query.ids.length) ? teamService.getCount(query) : 0,
+      const { page, page_size, ...query } = request.body;
+      const [result, total] = await Promise.all([
+        Paginate(query, { page, page_size }, (q, l) =>
+          teamService.listSummary(q, l),
+        ),
+        query.ids && query.ids.length ? teamService.getCount(query) : 0,
       ]);
-
       return {
         data: {
-          entries,
-          page_size,
-          total: total || entries.length,
+          ...result,
+          total: total || result.entries.length,
         },
       };
     },
   );
 
   fastify.put<{
-    Reply: BaseResponse;
+    Reply: UpdateTeamResponse;
     Body: AdminUpdateTeamRequest;
     Params: IdParams;
   }>(
@@ -63,7 +62,7 @@ export async function routes(fastify: FastifyInstance) {
         security: [{ bearer: [] }],
         tags: ["admin"],
         response: {
-          200: BaseResponse,
+          200: UpdateTeamResponse,
         },
         body: AdminUpdateTeamRequest,
         params: IdParams,
@@ -74,13 +73,21 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      await teamService.update(request.params.id, request.body, {
-        actor: {
-          type: ActorType.USER,
-          id: request.user.id,
+      const { join_code } = await teamService.update(
+        request.params.id,
+        request.body,
+        {
+          actor: {
+            type: ActorType.USER,
+            id: request.user.id,
+          },
         },
-      });
-      return {};
+      );
+      return {
+        data: {
+          join_code,
+        },
+      };
     },
   );
 

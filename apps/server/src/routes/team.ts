@@ -14,17 +14,17 @@ import {
   UpdateTeamRequest,
 } from "@noctf/api/requests";
 import {
-  BaseResponse,
+  CreateTeamResponse,
   ListDivisionsResponse,
   ListTeamsResponse,
   ListTeamTagsResponse,
   MeTeamResponse,
+  UpdateTeamResponse,
 } from "@noctf/api/responses";
 import { ActorType, TeamFlag } from "@noctf/server-core/types/enums";
 import { Policy } from "@noctf/server-core/util/policy";
 import SingleValueCache from "@noctf/server-core/util/single_value_cache";
-
-export const PAGE_SIZE = 60;
+import { Paginate } from "@noctf/server-core/util/paginator";
 
 export async function routes(fastify: FastifyInstance) {
   const adminPolicy: Policy = ["admin.team.get"];
@@ -53,7 +53,9 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const canList = policyService.evaluate(request.user?.id, [
+        "OR",
         "division.get",
+        "admin.division.get",
       ]);
       if (!canList && !request.user) {
         return { data: [] };
@@ -65,11 +67,14 @@ export async function routes(fastify: FastifyInstance) {
         if (!division) return { data: [] };
         return { data: [{ ...division, is_password: !!division.password }] };
       }
+      const admin = await policyService.evaluate(request.user?.id, [
+        "admin.division.get",
+      ]);
       return {
         data: (await divisionsGetter.get())
           .filter(
             ({ is_visible, id }) =>
-              is_visible || membership?.division_id === id,
+              admin || is_visible || membership?.division_id === id,
           )
           .map((x) => ({ ...x, is_password: !!x.password })),
       };
@@ -99,7 +104,7 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{ Body: CreateTeamRequest; Reply: MeTeamResponse }>(
+  fastify.post<{ Body: CreateTeamRequest; Reply: CreateTeamResponse }>(
     "/teams",
     {
       schema: {
@@ -111,7 +116,7 @@ export async function routes(fastify: FastifyInstance) {
         },
         body: CreateTeamRequest,
         response: {
-          201: MeTeamResponse,
+          201: CreateTeamResponse,
         },
       },
     },
@@ -136,7 +141,7 @@ export async function routes(fastify: FastifyInstance) {
         },
         {
           actor,
-          message: "Created a team using self-service.",
+          message: "Self-service team created",
         },
       );
       await teamService.assignMember(
@@ -150,7 +155,7 @@ export async function routes(fastify: FastifyInstance) {
             type: ActorType.USER,
             id: request.user.id,
           },
-          message: "Assigned owner permissions to the team's creator.",
+          message: "Assigned owner permissions to the team's creator",
         },
       );
       return reply.status(201).send({
@@ -233,7 +238,7 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.put<{ Body: UpdateTeamRequest; Reply: BaseResponse }>(
+  fastify.put<{ Body: UpdateTeamRequest; Reply: UpdateTeamResponse }>(
     "/team",
     {
       schema: {
@@ -245,7 +250,7 @@ export async function routes(fastify: FastifyInstance) {
         },
         body: UpdateTeamRequest,
         response: {
-          200: BaseResponse,
+          200: UpdateTeamResponse,
         },
       },
     },
@@ -263,13 +268,21 @@ export async function routes(fastify: FastifyInstance) {
       if (team.flags.includes(TeamFlag.FROZEN)) {
         throw new ForbiddenError("An admin has locked changes to your team.");
       }
-      await teamService.update(membership.team_id, request.body, {
-        actor: {
-          type: ActorType.USER,
-          id: request.user.id,
+      const { join_code } = await teamService.update(
+        membership.team_id,
+        request.body,
+        {
+          actor: {
+            type: ActorType.USER,
+            id: request.user.id,
+          },
         },
-      });
-      return {};
+      );
+      return {
+        data: {
+          join_code,
+        },
+      };
     },
   );
 
@@ -290,28 +303,23 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const admin = await policyService.evaluate(request.user?.id, adminPolicy);
-
-      const page = request.body.page || 1;
-      const page_size =
-        (admin
-          ? request.body.page_size
-          : Math.min(PAGE_SIZE, request.body.page_size)) || PAGE_SIZE;
-      const query = {
-        flags: admin ? [] : ["!hidden"],
-        division_id: request.body.division_id,
-        name_prefix: request.body.name_prefix,
-        ids: request.body.ids,
-      };
-      const [entries, total] = await Promise.all([
-        teamService.listSummary(query, {
-          limit: page_size,
-          offset: (page - 1) * page_size,
-        }),
-        !(query.ids && query.ids.length) ? teamService.getCount(query) : 0,
+      const { page, page_size, ...query } = request.body;
+      const [result, total] = await Promise.all([
+        Paginate(
+          {
+            ...query,
+            flags: admin ? [] : ["!hidden"],
+          },
+          { page, page_size },
+          (q, l) => teamService.listSummary(q, l),
+        ),
+        query.ids && query.ids.length ? teamService.getCount(query) : 0,
       ]);
-
       return {
-        data: { entries, page_size, total: total || entries.length },
+        data: {
+          ...result,
+          total: total || result.entries.length,
+        },
       };
     },
   );

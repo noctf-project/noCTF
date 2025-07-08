@@ -93,7 +93,7 @@ export class UserService {
       roles?: string[];
       flags?: string[];
     },
-    actor?: AuditLogActor,
+    { actor, message }: AuditParams = {},
   ) {
     if (!identities || !identities.length) {
       throw new BadRequestError(
@@ -122,6 +122,7 @@ export class UserService {
         type: ActorType.USER,
         id: id,
       },
+      data: message,
       entities: [`${ActorType.USER}:${id}`],
     });
     return id;

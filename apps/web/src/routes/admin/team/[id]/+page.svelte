@@ -24,14 +24,13 @@
     api.POST("/admin/submissions/query", {
       body: {
         team_id: [teamId],
-        offset: 0,
+        page_size: 100,
       },
     }),
   );
 
   const challenges = wrapLoadable(api.GET("/challenges"));
 
-  // Create a lookup map for challenge names
   const challengeMap = $derived.by(() => {
     if (!challenges.r?.data?.data?.challenges) return new Map();
     const map = new Map();
@@ -41,27 +40,21 @@
     return map;
   });
 
-  // Preload user data for team members
   $effect(() => {
     if (team.r?.data?.data.entries?.[0]?.members) {
       const teamData = team.r.data.data.entries[0];
       teamData.members.forEach((member) => {
-        UserQueryService.get(member.user_id).catch(() => {
-          // Ignore errors for preloading
-        });
+        UserQueryService.get(member.user_id).catch(() => {});
       });
     }
   });
 
-  // Preload user data for submission authors
   $effect(() => {
     if (submissions.r?.data?.data) {
       const submissionData = submissions.r.data.data.entries;
       submissionData.forEach((submission) => {
         if (submission.user_id) {
-          UserQueryService.get(submission.user_id).catch(() => {
-            // Ignore errors for preloading
-          });
+          UserQueryService.get(submission.user_id).catch(() => {});
         }
       });
     }
@@ -133,7 +126,6 @@
       success = "Team updated successfully!";
       editMode = false;
 
-      // Refresh team data
       const refreshedData = await api.POST("/admin/teams/query", {
         body: { ids: [teamId] },
       });
@@ -180,7 +172,6 @@
     editForm.flags = editForm.flags.filter((flag) => flag !== flagName);
   }
 
-  // Get predefined flag names for filtering
   const predefinedFlagNames = $derived(availableFlags.map((f) => f.name));
   const customFlags = $derived(
     editForm.flags.filter((flag) => !predefinedFlagNames.includes(flag)),
@@ -240,11 +231,10 @@
         return;
       }
 
-      // Refresh submissions data
       const refreshedData = await api.POST("/admin/submissions/query", {
         body: {
           team_id: [teamId],
-          offset: 0,
+          page_size: 100,
         },
       });
       submissions.r = refreshedData;
@@ -275,7 +265,6 @@
         return;
       }
 
-      // Refresh team data
       const refreshedData = await api.POST("/admin/teams/query", {
         body: { ids: [teamId] },
       });

@@ -25,7 +25,10 @@ export async function routes(fastify: FastifyInstance) {
       if (request.headers.range) {
         const matches = request.headers.range.match(/bytes=(\d*)-(\d*)/);
         if (!matches) {
-          throw new Error("Invalid Range format");
+          throw new BadRequestError(
+            "InvalidRangeError",
+            "Invalid Range format",
+          );
         }
         const start = matches[1] ? parseInt(matches[1], 10) : null;
         const end = matches[2] ? parseInt(matches[2], 10) : null;
