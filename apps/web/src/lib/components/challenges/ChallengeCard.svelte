@@ -23,8 +23,6 @@
   import DifficultyChip from "./DifficultyChip.svelte";
 
   const { data, onclick }: ChallengeCardProps = $props();
-  // Cannot destructure data here, breaks reactivity https://svelte.dev/docs/svelte/$state#Deep-state
-  // const { title, categories, solves, points, isSolved, difficulty } = data;
 </script>
 
 <button
