@@ -1,6 +1,56 @@
 export type Policy = [string] | ["OR" | "AND", ...(string | Policy)[]];
 
 const REPLACE_REGEX = /\.*[^.]+$/;
+
+/**
+ * Preprocess permissions to remove positive permissions that are matched by negative permissions
+ * @param permissions Array of permission strings
+ * @returns Filtered array with redundant positive permissions removed
+ */
+export const PreprocessPermissions = (permissions: string[]): string[] => {
+  const negative: string[] = [];
+  const positive: string[] = [];
+
+  for (const perm of permissions) {
+    if (perm.startsWith("!")) {
+      negative.push(perm.substring(1));
+    } else {
+      positive.push(perm);
+    }
+  }
+
+  // Early return if global wildcard exists - no positive permissions survive
+  if (negative.includes("*")) {
+    return negative.map((p) => "!" + p).sort();
+  }
+
+  // Sort both arrays for binary search
+  negative.sort();
+  positive.sort();
+
+  // Filter out positive permissions that match negative patterns
+  const filteredPositive = positive.filter((positivePerm) => {
+    const exactIdx = BisectLeft(positivePerm, negative);
+    if (exactIdx < negative.length && negative[exactIdx] === positivePerm) {
+      return false;
+    }
+
+    for (const negativePattern of negative) {
+      if (negativePattern.endsWith(".*")) {
+        const prefix = negativePattern.substring(0, negativePattern.length - 2);
+        if (positivePerm.startsWith(prefix)) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  });
+
+  // Both arrays are already sorted, just combine them
+  return [...negative.map((p) => "!" + p), ...filteredPositive];
+};
+
 /**
  * Evaluate a policy expression
  * @param policy
@@ -8,22 +58,53 @@ const REPLACE_REGEX = /\.*[^.]+$/;
  * @param _ttl safeguard to make sure policy won't evaluate forever
  */
 export const Evaluate = (policy: Policy, permissions: string[], _ttl = 64) => {
+  return RecursiveEvaluation(policy, permissions, EvaluateScalar, _ttl);
+};
+
+/**
+ * Evaluate a logical construction of prefixes against permissions
+ * @param policy Logical construction: ["OR", "admin", "user"] or ["AND", "admin", ["OR", "team", "user"]]
+ * @param permissions Array of permission strings
+ * @param _ttl safeguard to prevent infinite recursion
+ * @returns True if the prefix logic matches the permissions
+ */
+export const EvaluatePrefix = (
+  policy: Policy,
+  permissions: string[],
+  _ttl = 64,
+): boolean => {
+  return RecursiveEvaluation(policy, permissions, EvaluatePrefixScalar, _ttl);
+};
+
+const RecursiveEvaluation = (
+  policy: Policy,
+  permissions: string[],
+  scalar: (expr: string, permissions: string[]) => boolean,
+  _ttl = 64,
+) => {
   if (_ttl === 0) {
     return false;
   }
   const [op, ...expressions] = policy;
-  const sortedPermissions = [...permissions].sort();
-  const evaluate = (expr: string | Policy) =>
-    (Array.isArray(expr) && Evaluate(expr, permissions, _ttl - 1)) ||
-    (typeof expr === "string" && EvaluateScalar(expr, sortedPermissions));
+  const preprocessed = PreprocessPermissions(permissions);
+
+  const evaluate = (expr: string | Policy): boolean => {
+    if (Array.isArray(expr)) {
+      return RecursiveEvaluation(expr, permissions, scalar, _ttl - 1);
+    } else {
+      return scalar(expr, preprocessed);
+    }
+  };
+
   if (policy.length === 1) {
-    return EvaluateScalar(op, sortedPermissions);
+    return evaluate(op);
   } else if (op.toUpperCase() === "OR") {
     for (const expr of expressions) {
       if (evaluate(expr)) {
         return true;
       }
     }
+    return false;
   } else if (op.toUpperCase() === "AND") {
     let count = 0;
     for (const expr of expressions) {
@@ -37,6 +118,62 @@ export const Evaluate = (policy: Policy, permissions: string[], _ttl = 64) => {
   } else {
     throw new Error("Invalid policy expression");
   }
+};
+
+/**
+ * Evaluate if user has any positive permission matching the given prefix
+ * @param prefix The permission prefix to check (e.g., "admin")
+ * @param preprocessed Already preprocessed permissions array
+ * @returns True if user has any positive permission matching the prefix
+ */
+const EvaluatePrefixScalar = (
+  prefix: string,
+  preprocessed: string[],
+): boolean => {
+  // Check if this prefix is explicitly denied
+  const negatedPrefix = "!" + prefix;
+  const negatedPrefixIdx = BisectLeft(negatedPrefix, preprocessed);
+  if (
+    negatedPrefixIdx < preprocessed.length &&
+    preprocessed[negatedPrefixIdx] === negatedPrefix
+  ) {
+    return false;
+  }
+
+  // Check if this prefix is denied by wildcard
+  const negatedWildcard = "!" + prefix + ".*";
+  const negatedWildcardIdx = BisectLeft(negatedWildcard, preprocessed);
+  if (
+    negatedWildcardIdx < preprocessed.length &&
+    preprocessed[negatedWildcardIdx] === negatedWildcard
+  ) {
+    return false;
+  }
+
+  // Check for global wildcard
+  const wildcardIdx = BisectLeft("*", preprocessed);
+  if (wildcardIdx < preprocessed.length && preprocessed[wildcardIdx] === "*") {
+    return true;
+  }
+
+  // Check for exact match
+  const exactIdx = BisectLeft(prefix, preprocessed);
+  if (exactIdx < preprocessed.length && preprocessed[exactIdx] === prefix) {
+    return true;
+  }
+
+  // Check for prefix matches (prefix.anything)
+  const prefixWithDot = prefix + ".";
+  const prefixIdx = BisectLeft(prefixWithDot, preprocessed);
+
+  // Check if the permission at this index starts with our prefix
+  if (prefixIdx < preprocessed.length) {
+    const perm = preprocessed[prefixIdx];
+    if (!perm.startsWith("!") && perm.startsWith(prefixWithDot)) {
+      return true;
+    }
+  }
+
   return false;
 };
 
