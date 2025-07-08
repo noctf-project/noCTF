@@ -370,7 +370,7 @@
             <button
               type="submit"
               onclick={submitFlag}
-              class="btn pop hover:pop btn-primary bg-blue-500"
+              class="btn pop hover:pop hover:bg-blue-600 btn-primary bg-blue-500"
               disabled={!authState.isPartOfTeam || flagInput.length == 0}
               >Reply
               <Icon icon="material-symbols:send" class="text-xl" /></button
