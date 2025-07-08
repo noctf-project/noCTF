@@ -77,13 +77,11 @@ export default async function (fastify: FastifyInstance) {
       try {
         await passwordProvider.authPreCheck(email);
       } catch (e) {
-        if (e instanceof UserNotFoundError) {
-          if (validate_email) {
-            throw new BadRequestError(
-              "EmailVerificationRequired",
-              "Email Verification Required",
-            );
-          }
+        if (e instanceof UserNotFoundError && validate_email) {
+          throw new BadRequestError(
+            "EmailVerificationRequired",
+            "Email Verification Required",
+          );
         }
         throw e;
       }
