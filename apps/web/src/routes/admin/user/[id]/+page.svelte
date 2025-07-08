@@ -18,8 +18,14 @@
     api.POST("/admin/submissions/query", {
       body: {
         user_id: [userId],
-        offset: 0,
+        page_size: 100,
       },
+    }),
+  );
+
+  const sessions = wrapLoadable(
+    api.GET("/admin/users/{id}/sessions", {
+      params: { path: { id: userId }, query: { page_size: 100 } },
     }),
   );
 
@@ -245,7 +251,7 @@
       const refreshedData = await api.POST("/admin/submissions/query", {
         body: {
           user_id: [userId],
-          offset: 0,
+          page_size: 100,
         },
       });
       submissions.r = refreshedData;
@@ -724,6 +730,115 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="space-y-4 mt-6">
+      <h2 class="text-xl font-bold">Sessions</h2>
+
+      {#if sessions.loading}
+        <div class="flex justify-center items-center py-8">
+          <span class="loading loading-spinner loading-lg"></span>
+        </div>
+      {:else if sessions.error}
+        <div class="alert alert-error">
+          <Icon icon="material-symbols:error" />
+          <span>Failed to load sessions</span>
+        </div>
+      {:else if sessions.r?.data?.data}
+        {@const sessionData = sessions.r.data.data.entries}
+
+        {#if sessionData.length > 0}
+          <div class="overflow-x-auto pop rounded-lg">
+            <table class="table bg-base-100 w-full" aria-label="Sessions list">
+              <thead>
+                <tr class="border-y border-base-300 bg-base-200">
+                  <th
+                    scope="col"
+                    class="border-y border-base-300 py-2 px-3 text-center font-bold"
+                  >
+                    ID
+                  </th>
+                  <th
+                    scope="col"
+                    class="border-y border-base-300 py-2 px-3 text-left font-bold"
+                  >
+                    IP
+                  </th>
+                  <th
+                    scope="col"
+                    class="border-y border-base-300 py-2 px-3 text-left font-bold"
+                  >
+                    App ID
+                  </th>
+                  <th
+                    scope="col"
+                    class="border-y border-base-300 py-2 px-3 text-left font-bold"
+                  >
+                    Scopes
+                  </th>
+                  <th
+                    scope="col"
+                    class="border-y border-base-300 py-2 px-3 text-left font-bold"
+                  >
+                    Revoked
+                  </th>
+                  <th
+                    scope="col"
+                    class="border-y border-base-300 py-2 px-3 text-left font-bold"
+                  >
+                    Expires
+                  </th>
+                  <th
+                    scope="col"
+                    class="border-y border-base-300 py-2 px-3 text-left font-bold"
+                  >
+                    Created
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each sessionData as session}
+                  <tr class="bg-base-100 hover:bg-base-300/30">
+                    <td class="border-y border-base-300 py-2 px-3 text-center">
+                      {session.id}
+                    </td>
+                    <td class="border-y border-base-300 py-2 px-3 text-left">
+                      {session.ip || "Unknown"}
+                    </td>
+                    <td class="border-y border-base-300 py-2 px-3 text-left">
+                      {session.app_id || "-"}
+                    </td>
+                    <td class="border-y border-base-300 py-2 px-3 text-left">
+                      {session.scopes?.join(", ") || "-"}
+                    </td>
+                    <td class="border-y border-base-300 py-2 px-3 text-left">
+                      {session.revoked_at
+                        ? new Date(session.revoked_at).toLocaleString()
+                        : "-"}
+                    </td>
+                    <td class="border-y border-base-300 py-2 px-3 text-left">
+                      {session.expires_at
+                        ? new Date(session.expires_at).toLocaleString()
+                        : "-"}
+                    </td>
+                    <td class="border-y border-base-300 py-2 px-3 text-left">
+                      {new Date(session.created_at).toLocaleString()}
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {:else}
+          <div
+            class="flex flex-col items-center justify-center py-8 text-base-content/70"
+          >
+            <Icon icon="material-symbols:login" class="text-5xl mb-2" />
+            <p class="text-lg font-medium">No sessions</p>
+            <p class="text-sm">This user hasn't had any sessions</p>
+          </div>
+        {/if}
+      {/if}
     </div>
 
     <div class="space-y-4 mt-6">

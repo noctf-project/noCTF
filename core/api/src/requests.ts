@@ -5,6 +5,7 @@ import {
   Challenge,
   Division,
   Name,
+  PolicyDocument,
   Team,
   TeamMemberType,
   TeamTag,
@@ -48,7 +49,6 @@ export type FinishAuthOauthRequest = Static<typeof FinishAuthOauthRequest>;
 export const InitAuthEmailRequest = Type.Object(
   {
     email: Type.String({ format: "email" }),
-    verify: Type.Optional(Type.Boolean()),
   },
   { additionalProperties: false },
 );
@@ -381,10 +381,12 @@ export type AdminUpdateTeamTagRequest = Static<
   typeof AdminUpdateTeamTagRequest
 >;
 
-export const AdminCreateDivisionRequest = Type.Pick(
+export const AdminCreateDivisionRequest = Type.Omit(
   Division,
-  ["name", "is_joinable", "is_visible", "slug", "description", "password"],
-  { additionalProperties: false },
+  ["id", "created_at"],
+  {
+    additionalProperties: false,
+  },
 );
 export type AdminCreateDivisionRequest = Static<
   typeof AdminCreateDivisionRequest
@@ -394,3 +396,11 @@ export const AdminUpdateDivisionRequest = AdminCreateDivisionRequest;
 export type AdminUpdateDivisionRequest = Static<
   typeof AdminUpdateDivisionRequest
 >;
+
+export const AdminCreatePolicyRequest = Type.Omit(PolicyDocument, ["id"], {
+  additionalProperties: false,
+});
+export type AdminCreatePolicyRequest = Static<typeof AdminCreatePolicyRequest>;
+
+export const AdminUpdatePolicyRequest = AdminCreatePolicyRequest;
+export type AdminUpdatePolicyRequest = Static<typeof AdminUpdatePolicyRequest>;

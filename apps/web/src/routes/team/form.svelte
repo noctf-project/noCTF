@@ -222,7 +222,7 @@
               class="w-full input input-bordered focus:outline-none focus:ring-0 focus:ring-offset-0"
             />
 
-            {#if divisions.length > 1}
+            {#if divisions.length > 1 || (divisions.length === 1 && divisions[0]?.is_password)}
               <label class="label" for="division">
                 <span class="label-text">Division</span>
               </label>
@@ -347,7 +347,8 @@
             </div>
             <p class="text-sm text-neutral-500 mt-4">
               Share this code with your teammates so they can join your team.
-              You can also find it in your team page.
+              This will only be shown once, however you can reset it on your
+              team page.
             </p>
           </div>
 

@@ -101,12 +101,12 @@ describe(PolicyService, () => {
         team_id: null,
       });
 
-      mockPolicyDAO.listPolicies.mockResolvedValue(mockPolicies);
+      mockPolicyDAO.list.mockResolvedValue(mockPolicies);
 
       const result = await policyService.getPoliciesForUser(userId);
 
       expect(mockUserDAO.getFlagsAndRoles).toHaveBeenCalledWith(userId);
-      expect(mockPolicyDAO.listPolicies).toHaveBeenCalledWith({
+      expect(mockPolicyDAO.list).toHaveBeenCalledWith({
         is_enabled: true,
       });
 
@@ -247,13 +247,13 @@ describe(PolicyService, () => {
       ];
 
       // Setup mocks
-      mockPolicyDAO.listPolicies.mockResolvedValue(mockPolicyDocuments);
+      mockPolicyDAO.list.mockResolvedValue(mockPolicyDocuments);
 
       // Execute
       const result = await policyService.getPoliciesForPublic();
 
       // Verify
-      expect(mockPolicyDAO.listPolicies).toHaveBeenCalledWith({
+      expect(mockPolicyDAO.list).toHaveBeenCalledWith({
         is_enabled: true,
       });
       expect(result).toHaveLength(2);
@@ -289,7 +289,7 @@ describe(PolicyService, () => {
       ];
 
       vi.mocked(Evaluate).mockReturnValueOnce(false).mockReturnValueOnce(true);
-      mockPolicyDAO.listPolicies.mockResolvedValue(mockUserPolicies);
+      mockPolicyDAO.list.mockResolvedValue(mockUserPolicies);
 
       const result = await policyService.evaluate(userId, ["OR", "dummy"]);
 
@@ -323,7 +323,7 @@ describe(PolicyService, () => {
       ];
 
       vi.mocked(Evaluate).mockReturnValue(false);
-      mockPolicyDAO.listPolicies.mockResolvedValue(mockUserPolicies);
+      mockPolicyDAO.list.mockResolvedValue(mockUserPolicies);
 
       const result = await policyService.evaluate(userId, ["OR", "dummy"]);
 
@@ -356,7 +356,7 @@ describe(PolicyService, () => {
       ];
 
       vi.mocked(Evaluate).mockReturnValue(true);
-      mockPolicyDAO.listPolicies.mockResolvedValue(mockPolicies);
+      mockPolicyDAO.list.mockResolvedValue(mockPolicies);
 
       const result = await policyService.evaluate(0, ["dummy"]);
 

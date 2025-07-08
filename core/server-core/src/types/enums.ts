@@ -21,10 +21,12 @@ export enum ActorType {
   USER = "user",
   SYSTEM = "sys",
   TEAM = "team",
+  ANONYMOUS = "anonymous",
 }
 
 export enum EntityType {
   TEAM_TAG = "team_tag",
+  POLICY = "policy",
   DIVISION = "division",
   USER = "user",
   ROLE = "role",

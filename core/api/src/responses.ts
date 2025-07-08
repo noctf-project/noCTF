@@ -17,6 +17,8 @@ import {
   UserSummary,
   UserIdentity,
   Session,
+  PolicyDocument,
+  Team,
 } from "./datatypes.ts";
 import { AuthTokenType } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
@@ -92,9 +94,17 @@ export const MeTeamResponse = Type.Object({
 });
 export type MeTeamResponse = Static<typeof MeTeamResponse>;
 
+export const CreateTeamResponse = Type.Object({
+  data: Type.Composite([
+    Type.Omit(TeamSummary, ["flags"]),
+    Type.Pick(Team, ["join_code"]),
+  ]),
+});
+export type CreateTeamResponse = Static<typeof CreateTeamResponse>;
+
 export const ListTeamsResponse = Type.Object({
   data: Type.Object({
-    entries: Type.Array(Type.Omit(TeamSummary, ["flags", "join_code"])),
+    entries: Type.Array(Type.Omit(TeamSummary, ["flags"])),
     page_size: Type.Integer(),
     total: Type.Integer(),
   }),
@@ -274,6 +284,11 @@ export const ScoreboardResponse = Type.Object({
 });
 export type ScoreboardResponse = Static<typeof ScoreboardResponse>;
 
+export const UpdateTeamResponse = Type.Object({
+  data: Type.Partial(Type.Pick(Team, ["join_code"])),
+});
+export type UpdateTeamResponse = Static<typeof UpdateTeamResponse>;
+
 export const ScoreboardGraphsResponse = Type.Object({
   data: Type.Array(
     Type.Object({
@@ -321,7 +336,7 @@ export const ListDivisionsResponse = Type.Object({
   data: Type.Array(
     Type.Composite(
       [
-        Type.Omit(Division, ["password", "is_visible"]),
+        Type.Omit(Division, ["password"]),
         Type.Object({
           is_password: Type.Boolean(),
         }),
@@ -402,3 +417,20 @@ export const ListSessionsResponse = Type.Object({
   }),
 });
 export type ListSessionsResponse = Static<typeof ListSessionsResponse>;
+
+export const AdminPolicyResponse = Type.Object({
+  data: PolicyDocument,
+});
+export type AdminPolicyResponse = Static<typeof AdminPolicyResponse>;
+
+export const AdminListPolicyResponse = Type.Object({
+  data: Type.Array(PolicyDocument),
+});
+export type AdminListPolicyResponse = Static<typeof AdminListPolicyResponse>;
+
+export const AdminResetPasswordResponse = Type.Object({
+  data: Type.String({ format: "uri" }),
+});
+export type AdminResetPasswordResponse = Static<
+  typeof AdminResetPasswordResponse
+>;

@@ -1,12 +1,10 @@
 import { AssociateRequest } from "@noctf/api/requests";
-import { BaseResponse, SuccessResponse } from "@noctf/api/responses";
+import { SuccessResponse } from "@noctf/api/responses";
 import { FastifyInstance } from "fastify";
-import { TokenProvider } from "./token_provider.ts";
 import { ForbiddenError } from "@noctf/server-core/errors";
 
 export default async function (fastify: FastifyInstance) {
-  const { identityService, cacheService } = fastify.container.cradle;
-  const tokenProvider = new TokenProvider({ cacheService });
+  const { identityService, tokenService } = fastify.container.cradle;
 
   fastify.post<{
     Body: AssociateRequest;
@@ -29,7 +27,7 @@ export default async function (fastify: FastifyInstance) {
     },
     async (request) => {
       const { token } = request.body;
-      const data = await tokenProvider.lookup("associate", token);
+      const data = await tokenService.lookup("associate", token);
       if (request.user.id !== data.user_id) {
         throw new ForbiddenError("Invalid token");
       }
@@ -40,7 +38,7 @@ export default async function (fastify: FastifyInstance) {
         })),
       );
       // TODO: commit flags and roles in tx
-      await tokenProvider.invalidate("associate", token);
+      await tokenService.invalidate("associate", token);
       return { data: true as const }; // wtf ts
     },
   );
