@@ -14,8 +14,6 @@
 
   let { children } = $props();
 
-  let captchaSiteKey: string | null = $state("");
-
   onMount(() => {
     const storedTheme = localStorage.getItem("theme");
     document.documentElement.setAttribute(

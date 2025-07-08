@@ -54,6 +54,7 @@ const captchaMiddleware: Middleware = {
   async onRequest({ request, schemaPath }) {
     const path = schemaPath.replace(/{([a-zA-Z0-9_-]+)}/g, ":$1");
     if (
+      captchaState.config?.routes &&
       captchaState.config?.routes.some(
         (x) => x.method === request.method && x.path === path,
       )
