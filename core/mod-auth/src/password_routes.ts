@@ -72,8 +72,21 @@ export default async function (fastify: FastifyInstance) {
       },
     },
     async (request) => {
+      const { validate_email } = await passwordProvider.getConfig();
       const email = request.body.email.toLowerCase();
-      await passwordProvider.authPreCheck(email);
+      try {
+        await passwordProvider.authPreCheck(email);
+      } catch (e) {
+        if (e instanceof UserNotFoundError) {
+          if (validate_email) {
+            throw new BadRequestError(
+              "EmailVerificationRequired",
+              "Email Verification Required",
+            );
+          }
+        }
+        throw e;
+      }
       return {};
     },
   );

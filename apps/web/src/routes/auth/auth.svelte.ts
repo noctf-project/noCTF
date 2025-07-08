@@ -24,41 +24,38 @@ class LoginState {
     });
 
     if (checkEmailRes.error) {
-      if (checkEmailRes.error.error === "NotFoundError") {
+      if (checkEmailRes.error.error === "EmailVerificationRequired") {
         goto("/auth/verify" + window.location.search);
+        return;
+      } else if (checkEmailRes.error.error === "NotFoundError") {
+        goto("/auth/register" + window.location.search);
         return;
       }
       toasts.error(
         checkEmailRes.error.message ??
           "An unexpected error occurred when validating email. Please try again later.",
       );
+
       return;
     }
 
-    // Handle different responses based on if email exists
-    if (checkEmailRes.data?.data?.token) {
-      this.registrationToken = checkEmailRes.data.data.token;
-      goto("/auth/register" + window.location.search);
-    } else if (checkEmailRes.error) {
-      toasts.error("Unexpected response from server");
-    } else {
-      goto("/auth/login" + window.location.search);
-    }
+    goto("/auth/login" + window.location.search);
   }
 
   async verifyEmail() {
-    const { error, data } = await api.POST("/auth/email/verify", {
+    const res = await api.POST("/auth/email/verify", {
       body: { email: loginState.email },
     });
-    if (data?.data.token) {
-      this.registrationToken = data.data.token;
-      goto("/auth/register" + window.location.search);
-    }
-    if (error) {
+    if (res.error) {
       throw new Error(
-        error.message ??
+        res.error.message ??
           "An unexpected error occurred when validating email. Please try again later.",
       );
+    } else {
+      if (res.data?.data?.token) {
+        this.registrationToken = res.data.data.token;
+        goto("/auth/register" + window.location.search);
+      }
     }
   }
 
@@ -94,6 +91,22 @@ class LoginState {
     if (!this.username.trim()) {
       toasts.error("Please enter a username");
       return;
+    }
+
+    // if there is no registration token, request one from the server
+    if (!this.registrationToken) {
+      const verifyRes = await api.POST("/auth/email/verify", {
+        body: { email: loginState.email },
+      });
+      // it is fatal if we don't get a token here since it is needed to register
+      if (!verifyRes.data?.data?.token) {
+        toasts.error(
+          "An error occured during registration. Please try again later.",
+        );
+        return;
+      }
+
+      this.registrationToken = verifyRes.data.data.token;
     }
 
     const registerRes = await api.POST("/auth/register/finish", {

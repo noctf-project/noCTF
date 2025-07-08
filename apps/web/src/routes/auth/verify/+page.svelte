@@ -5,7 +5,6 @@
   import { header } from "../+layout.svelte";
   import { onMount } from "svelte";
   import { toasts } from "$lib/stores/toast";
-  let isLoading = $state(false);
 
   let verificationSent = $state(false);
 
@@ -18,18 +17,11 @@
   async function handleVerifyRequired() {
     if (!loginState.email) return;
     try {
-      isLoading = true;
       await loginState.verifyEmail();
       verificationSent = true;
     } catch (e) {
-      if (e instanceof Error) {
-        toasts.error(`Error: ${e.message}`);
-        return;
-      }
-      toasts.error("An unknown error occurred");
+      toasts.error("An unknown error occurred: " + e);
       console.error("Error occured during verification", e);
-    } finally {
-      isLoading = false;
     }
   }
 </script>
