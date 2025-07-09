@@ -10,10 +10,78 @@ import {
 } from "./api_schema.ts";
 import { TokenService } from "@noctf/server-core/services/token";
 import { ActorType } from "@noctf/server-core/types/enums";
+import { SetupConfig } from "@noctf/api/config";
 
 export default async function (fastify: FastifyInstance) {
-  const { identityService, userService, lockService, tokenService } =
-    fastify.container.cradle;
+  const {
+    identityService,
+    userService,
+    lockService,
+    tokenService,
+    configService,
+  } = fastify.container.cradle;
+
+  const TryInitializeInitialAdminUser = async (
+    id: number,
+    roles: string[] = [],
+  ) => {
+    let cfg = await configService.get(SetupConfig);
+
+    // if the site has not been initialised, make the user an admin
+    if (cfg.value.initialized) {
+      return;
+    }
+
+    const actor = { type: ActorType.SYSTEM, id: "oobe" };
+    try {
+      cfg = await configService.update({
+        namespace: SetupConfig.$id!,
+        value: { ...cfg.value, initialized: true },
+        version: cfg.version,
+        noValidate: true,
+        actor,
+      });
+    } catch (error) {
+      fastify.log.warn(
+        { error },
+        "Could not update flag to initialise CTF, perhaps something raced",
+      );
+      return;
+    }
+
+    fastify.log.info({ u: id }, "Setting user to admin as part of OOBE");
+    try {
+      await userService.update(
+        id,
+        { roles: [...new Set([...roles, "admin"])] },
+        {
+          actor,
+          message: "Promoting initial user to admin",
+        },
+      );
+    } catch (error) {
+      fastify.log.warn(
+        { u: id, error },
+        "Error updating user roles to admin as part of OOBE",
+      );
+
+      // rollback config since there is no admin user
+      try {
+        await configService.update({
+          namespace: SetupConfig.$id!,
+          value: { ...cfg.value, initialized: false },
+          version: cfg.version,
+          noValidate: true,
+          actor,
+        });
+      } catch (e) {
+        fastify.log.warn(
+          e,
+          "Failed to rollback configuration, database edit for admin is required",
+        );
+      }
+    }
+  };
 
   fastify.post<{
     Body: RegisterAuthTokenRequest;
@@ -114,6 +182,7 @@ export default async function (fastify: FastifyInstance) {
           return id;
         },
       );
+      await TryInitializeInitialAdminUser(id, data.roles);
       const sessionToken = await identityService.createSession({
         user_id: id,
         ip: request.ip,
