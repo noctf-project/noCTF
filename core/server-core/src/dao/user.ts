@@ -148,7 +148,7 @@ export class UserDAO {
     }
     if (params?.name_prefix) {
       query = query.where(
-        sql`LOWER(immutable_unaccent(${sql.ref("name")}))`,
+        "name_normalized",
         "^@",
         NormalizeName(params.name_prefix),
       );
