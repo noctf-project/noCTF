@@ -287,7 +287,7 @@
                       {category}
                     </h1>
                     <div
-                      class="flex flex-wrap md:justify-start justify-center pt-2 gap-4 min-w-[150px]"
+                      class="flex flex-col flex-wrap md:justify-start justify-center pt-2 gap-4 min-w-[150px]"
                     >
                       {#each categoryChallenges as challenge (challenge.id)}
                         <ChallengeCard
