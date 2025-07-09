@@ -10,6 +10,7 @@ interface User {
   team_id: number | null;
   division_id: number | null;
   team_name: string | null;
+  is_admin: boolean;
 }
 
 const USER_DATA_KEY = "noctf-user";
@@ -18,7 +19,7 @@ class AuthState {
   isInitialised: boolean = $state(false);
   isLoading: boolean = $state(true);
   isAuthenticated: boolean = $derived(!!this.user?.id);
-  isAdmin: boolean = $derived(!!this.user?.roles?.includes("admin"));
+  isAdmin: boolean = $derived(!!this.user?.is_admin);
   isPartOfTeam: boolean = $derived(!!this.user?.team_id);
 
   constructor() {
