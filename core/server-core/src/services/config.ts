@@ -7,6 +7,7 @@ import { Ajv } from "ajv";
 import { default as AddFormats } from "ajv-formats";
 import { ConfigDAO } from "../dao/config.ts";
 import type { SerializableMap } from "@noctf/api/types";
+import { ConfigUpdateEvent } from "@noctf/api/events";
 
 type Validator<T> = (kv: T) => Promise<void> | void;
 
@@ -14,14 +15,18 @@ const nullValidator = () => {};
 
 type Props = Pick<
   ServiceCradle,
-  "logger" | "cacheService" | "databaseClient" | "auditLogService"
+  | "logger"
+  | "cacheService"
+  | "databaseClient"
+  | "auditLogService"
+  | "eventBusService"
 >;
 export type ConfigValue<T extends SerializableMap> = {
   version: number;
   value: T;
 };
 
-const EXPIRY_MS = 3000;
+const EXPIRY_MS = 10000;
 
 export class ConfigService {
   // A simple map-based cache is good enough, we want low latency and don't really need
@@ -30,6 +35,7 @@ export class ConfigService {
   private readonly dao;
   private readonly logger;
   private readonly auditLogService;
+  private readonly eventBusService;
   private readonly validators: Map<
     string,
     [TSchema, ValidateFunction, Validator<unknown>]
@@ -38,13 +44,20 @@ export class ConfigService {
   private cache: Map<string, [Promise<ConfigValue<SerializableMap>>, number]> =
     new Map();
 
-  constructor({ logger, databaseClient, auditLogService }: Props) {
+  constructor({
+    logger,
+    databaseClient,
+    auditLogService,
+    eventBusService,
+  }: Props) {
     // This is cursed but ajv types are currently broken
     // https://github.com/ajv-validator/ajv-formats/issues/85
     (AddFormats as unknown as (a: Ajv) => void)(this.ajv);
     this.logger = logger;
     this.auditLogService = auditLogService;
+    this.eventBusService = eventBusService;
     this.dao = new ConfigDAO(databaseClient.get());
+    void this.subscribeConfigUpdate();
   }
 
   /**
@@ -52,6 +65,27 @@ export class ConfigService {
    */
   clearCache() {
     this.cache = new Map();
+  }
+
+  /**
+   * Listen for config update messages
+   */
+  private async subscribeConfigUpdate() {
+    await this.eventBusService.subscribe<ConfigUpdateEvent>(
+      new AbortController().signal,
+      undefined,
+      [ConfigUpdateEvent.$id!],
+      {
+        concurrency: 1,
+        handler: async ({ data: { namespace, version } }) => {
+          this.logger.debug(
+            { namespace, version },
+            "Invalidating config entry for namespace",
+          );
+          this.cache.delete(namespace);
+        },
+      },
+    );
   }
 
   /**
@@ -166,18 +200,24 @@ export class ConfigService {
     }
 
     const updated = await this.dao.update(namespace, value, version);
-    await this.auditLogService.log({
-      actor,
-      operation: "config.update",
-      entities: [namespace],
-      data: `Updated to version ${updated}`,
-    });
-    const promise = Promise.resolve({
-      version: updated,
+    this.cache.delete(namespace);
+    await Promise.all([
+      this.auditLogService.log({
+        actor,
+        operation: "config.update",
+        entities: [namespace],
+        data: `Updated to version ${updated.version}`,
+      }),
+      this.eventBusService.publish(ConfigUpdateEvent, {
+        namespace,
+        version: updated.version,
+        updated_at: updated.updated_at,
+      }),
+    ]);
+    return {
+      version: updated.version,
       value,
-    });
-    this.cache.set(namespace, [promise, performance.now() + EXPIRY_MS]);
-    return promise;
+    };
   }
 
   /**

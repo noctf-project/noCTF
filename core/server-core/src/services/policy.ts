@@ -31,7 +31,7 @@ export class PolicyService {
   });
   private readonly policyGetter = new SingleValueCache(
     () => this.policyDAO.list({ is_enabled: true }),
-    3000,
+    POLICY_EXPIRATION,
   );
 
   constructor({
