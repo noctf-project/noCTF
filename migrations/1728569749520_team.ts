@@ -39,6 +39,12 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
     .addColumn("name", "varchar(64)", (col) => col.notNull())
+    .addColumn("name_normalized", "varchar(64)", (col) =>
+      col
+        .generatedAlwaysAs(sql`LOWER(immutable_unaccent(name))`)
+        .stored()
+        .unique(),
+    )
     .addColumn("bio", "varchar", (col) => col.notNull().defaultTo(""))
     .addColumn("country", "char(2)")
     .addColumn("join_code", "varchar", (col) => col.unique())
@@ -51,10 +57,10 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .execute();
   await schema
-    .createIndex("team_uidx_name")
+    .createIndex("team_idx_trgm_name_normalized")
     .on("team")
-    .unique()
-    .expression(sql`LOWER(immutable_unaccent(${sql.ref("name")}))`)
+    .using("gin")
+    .expression(sql`name_normalized gin_trgm_ops`)
     .execute();
 
   await schema

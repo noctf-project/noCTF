@@ -39,13 +39,13 @@ export class TeamQueryService {
   async queryTeams({
     page = 1,
     page_size = 60,
-    name_prefix = undefined,
+    name = undefined,
     division_id = undefined,
     ids = undefined,
   }: {
     page?: number;
     page_size?: number;
-    name_prefix?: string;
+    name?: string;
     division_id?: number;
     ids?: number[];
   }): Promise<{ teams: Team[]; total: number }> {
@@ -54,7 +54,7 @@ export class TeamQueryService {
         body: {
           page,
           page_size,
-          name_prefix,
+          name,
           division_id,
           ids,
         },

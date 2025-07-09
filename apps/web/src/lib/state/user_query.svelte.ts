@@ -37,13 +37,13 @@ export class UserQueryService {
   async queryUsers({
     page = 1,
     page_size = 60,
-    name_prefix = undefined,
+    name = undefined,
     division_id = undefined,
     ids = undefined,
   }: {
     page?: number;
     page_size?: number;
-    name_prefix?: string;
+    name?: string;
     division_id?: number;
     ids?: number[];
   }): Promise<{ users: User[]; total: number }> {
@@ -52,7 +52,7 @@ export class UserQueryService {
         body: {
           page,
           page_size,
-          name_prefix,
+          name,
           division_id,
           ids,
         },

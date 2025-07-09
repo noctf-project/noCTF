@@ -36,7 +36,7 @@ export class UserService {
     params?: {
       flags?: string[];
       ids?: number[];
-      name_prefix?: string;
+      name?: string;
     },
     limit?: { limit?: number; offset?: number },
   ) {

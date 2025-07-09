@@ -135,7 +135,8 @@ export class SubmissionDAO {
     }
 
     if (params?.data) {
-      query = query.where("data", "like", params.data);
+      const escaped = params.data.replace(/[_%]/g, "\\$&");
+      query = query.where("data", "like", `%${escaped}%`);
     }
 
     if (limit?.limit) {

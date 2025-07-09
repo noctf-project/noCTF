@@ -93,7 +93,7 @@ export class EventBusService {
    */
   async subscribe<T>(
     signal: AbortSignal,
-    consumer: string,
+    consumer: string | undefined,
     subjects: string[],
     options: EventSubscribeOptions<T>,
   ) {
@@ -107,11 +107,15 @@ export class EventBusService {
     ) {
       throw new Error("cannot listen on both queue and events, or none");
     }
+    if (types.has(StreamType.Queue) && !consumer) {
+      throw new Error("Cannot listen to queue using an unnamed consumer");
+    }
     const type: StreamType = Array.from(
       types.values(),
     )[0] as unknown as StreamType;
 
-    const manager = await this.natsClient.jetstream().jetstreamManager();
+    const js = await this.natsClient.jetstream();
+    const manager = await js.jetstreamManager();
     const stream = STREAMS[type];
     const updateable: Partial<ConsumerConfig> = {
       filter_subjects: subjects,
@@ -123,15 +127,19 @@ export class EventBusService {
       { consumer, stream: stream.name },
       "Upserting eventbus consumer",
     );
+    let name: string;
     try {
-      await manager.consumers.add(stream.name, {
+      const cons = await manager.consumers.add(stream.name, {
         durable_name: consumer,
         ack_policy: AckPolicy.Explicit,
         deliver_policy: DELIVER_POLICIES[type],
         max_deliver: 5,
         ...updateable,
       });
+      name = cons.name;
     } catch (e) {
+      if (!consumer) throw e;
+      name = consumer;
       if (e instanceof NatsError) {
         const c = await manager.consumers.info(stream.name, consumer);
         const config = { ...c.config, ...updateable };
@@ -139,7 +147,7 @@ export class EventBusService {
       }
     }
 
-    await this.listen(signal, type, consumer, options);
+    await this.listen(signal, type, name, { ...options, ephemeral: !consumer });
   }
 
   async publish<T extends TSchema | string>(
@@ -159,15 +167,16 @@ export class EventBusService {
     signal: AbortSignal,
     streamType: StreamType,
     name: string,
-    options: EventSubscribeOptions<T>,
+    options: EventSubscribeOptions<T> & { ephemeral: boolean },
   ) {
     const rl = new SimpleMutex(options.concurrency || 1);
     const jetstream = this.natsClient.jetstream();
     const stream = STREAMS[streamType];
     const q = await jetstream.consumers.get(stream.name, name);
+    const logName = options.ephemeral ? `ephemeral-${name}` : name;
     while (!signal.aborted) {
       this.logger.info(
-        { consumer: name, stream: stream.name },
+        { consumer: logName, stream: stream.name },
         "Waiting for messages",
       );
       const messages = await q.consume({
@@ -178,7 +187,7 @@ export class EventBusService {
         void this.consume(m, options)
           .catch((err) =>
             this.logger.error(
-              { consumer: name, stack: err.stack },
+              { consumer: logName, stack: err.stack },
               "Failed to consume",
             ),
           )

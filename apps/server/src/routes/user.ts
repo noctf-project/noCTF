@@ -44,7 +44,8 @@ export async function routes(fastify: FastifyInstance) {
       return {
         data: {
           ...user,
-          is_admin: await policyService.evaluatePrefixes(user.id, ["admin"]),
+          is_admin: !!(await policyService.evaluatePrefixes(user.id, ["admin"]))
+            .length,
           team_id: membership?.team_id || null,
           division_id: teamDetails?.division_id || null,
           team_name: teamDetails?.name || null,
@@ -157,7 +158,7 @@ export async function routes(fastify: FastifyInstance) {
           { page, page_size },
           (q, l) => userService.listSummary(q, l),
         ),
-        query.ids && query.ids.length ? userService.getCount(query) : 0,
+        query.ids && query.ids.length ? 0 : userService.getCount(query),
       ]);
       return {
         data: {

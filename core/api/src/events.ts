@@ -28,6 +28,16 @@ export const ChallengeUpdateEvent = Type.Object(
 );
 export type ChallengeUpdateEvent = Static<typeof ChallengeUpdateEvent>;
 
+export const ConfigUpdateEvent = Type.Object(
+  {
+    namespace: Type.String(),
+    version: Type.Integer(),
+    updated_at: TypeDate,
+  },
+  { $id: "events.config.update" },
+);
+export type ConfigUpdateEvent = Static<typeof ConfigUpdateEvent>;
+
 export const EmailQueueEvent = Type.Object(
   {
     to: Type.Optional(Type.Array(EmailAddressOrUserId)),
