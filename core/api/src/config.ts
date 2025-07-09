@@ -162,10 +162,10 @@ export const NotificationConfig = Type.Object(
           division_ids: Type.Optional(
             Type.Array(Type.Number(), { title: "Division Filter" }),
           ),
-          all: Type.Boolean({
-            title: "All Solves?",
-            description:
-              "Set to true to notify for all solves. Otherwise first blood only.",
+          max_seq: Type.Integer({
+            title: "Maximum solve count",
+            minimum: 0,
+            description: "Only notify up to a certain solve count. Set to 0 for unlimited",
           }),
           enabled: Type.Boolean({ title: "Enabled" }),
         }),

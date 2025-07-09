@@ -58,6 +58,9 @@ export class SubmissionService {
         actor: audit?.actor,
         data: audit?.message,
       });
+
+    // The DB returns the same seq if we update multiple records for the
+    // same challenge to correct at the same time.
     updates.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
     const seqMap = new Map<number, number>();
     for (const {
@@ -87,6 +90,7 @@ export class SubmissionService {
         hidden,
         seq: status === "correct" ? seq + vSeq : 0,
         is_update: true,
+        comments: rest.comments || "",
       });
     }
     return updates.map(({ id }) => id);

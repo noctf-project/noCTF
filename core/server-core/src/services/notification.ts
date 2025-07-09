@@ -1,7 +1,6 @@
 import { NotificationConfig } from "@noctf/api/config";
 import { ServiceCradle } from "../index.ts";
 import {
-  NotificationQueueDiscordEvent,
   NotificationQueueWebhookEvent,
   SubmissionUpdateEvent,
 } from "@noctf/api/events";
@@ -10,6 +9,7 @@ import { TeamFlag } from "../types/enums.ts";
 import ky from "ky";
 import Handlebars from "handlebars";
 import TTLCache from "@isaacs/ttlcache";
+import { OutgoingSolveWebhookGeneric } from "@noctf/api/datatypes";
 
 type Props = Pick<
   ServiceCradle,
@@ -66,15 +66,10 @@ export class NotificationService {
           handler: (data) => this.handleBlood(data),
         },
       ),
-      this.eventBusService.subscribe<
-        NotificationQueueDiscordEvent | NotificationQueueWebhookEvent
-      >(
+      this.eventBusService.subscribe<NotificationQueueWebhookEvent>(
         signal,
         "NotificationQueueWebhookWorker",
-        [
-          NotificationQueueDiscordEvent.$id!,
-          NotificationQueueWebhookEvent.$id!,
-        ],
+        [NotificationQueueWebhookEvent.$id!],
         {
           concurrency: 2,
           handler: (data) => this.sendWebhook(data),
@@ -88,7 +83,7 @@ export class NotificationService {
     if (event.hidden || event.status !== "correct") return;
     const { blood } = (await this.configService.get(NotificationConfig))?.value;
     const enabled = blood?.filter(
-      (b) => b.enabled && (b.all || event.seq === 1),
+      (b) => b.enabled && (!b.max_seq || event.seq <= b.max_seq),
     );
     if (!enabled?.length) return;
 
@@ -106,7 +101,6 @@ export class NotificationService {
 
     for (const cfg of enabled) {
       if (!cfg.enabled) continue;
-      if (!cfg.all && event.seq !== 1) continue;
       if (
         cfg.division_ids &&
         cfg.division_ids.length &&
@@ -123,7 +117,7 @@ export class NotificationService {
             challenge,
             event,
           });
-          await this.eventBusService.publish(NotificationQueueDiscordEvent, {
+          await this.eventBusService.publish(NotificationQueueWebhookEvent, {
             url: cfg.url,
             payload: { content },
           });
@@ -140,7 +134,7 @@ export class NotificationService {
               user_name: user?.name || "",
               submission_id: event.id,
               submission_created_at: event.created_at,
-            },
+            } as OutgoingSolveWebhookGeneric,
           });
           break;
       }

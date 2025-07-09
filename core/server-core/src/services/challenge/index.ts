@@ -244,6 +244,7 @@ export class ChallengeService {
         seq: solved ? seq + 1 : 0,
         hidden: false,
         is_update: false,
+        comments: state.comment || "",
       });
       return state.status;
       // TODO: queueing, currently it is just marked as queued. probably emit
