@@ -62,7 +62,7 @@
     }
 
     if (dataFilter.trim()) {
-      filters.data = `%${dataFilter.trim()}%`;
+      filters.data = dataFilter.trim();
     }
 
     return wrapLoadable(
