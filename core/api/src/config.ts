@@ -162,6 +162,11 @@ export const NotificationConfig = Type.Object(
           division_ids: Type.Optional(
             Type.Array(Type.Number(), { title: "Division Filter" }),
           ),
+          all: Type.Boolean({
+            title: "All Solves?",
+            description:
+              "Set to true to notify for all solves. Otherwise first blood only.",
+          }),
           enabled: Type.Boolean({ title: "Enabled" }),
         }),
         { title: "First Blood Settings" },

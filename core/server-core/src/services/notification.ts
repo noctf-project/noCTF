@@ -85,9 +85,13 @@ export class NotificationService {
 
   private async handleBlood(data: EventItem<SubmissionUpdateEvent>) {
     const event = data.data;
-    if (event.hidden || event.status !== "correct" || event.seq !== 1) return;
+    if (event.hidden || event.status !== "correct") return;
     const { blood } = (await this.configService.get(NotificationConfig))?.value;
-    if (!blood?.length) return;
+    const enabled = blood?.filter(
+      (b) => b.enabled && (b.all || event.seq === 1),
+    );
+    if (!enabled?.length) return;
+
     const [team, user, challenge] = await Promise.all([
       this.teamService.get(event.team_id),
       event.user_id ? this.userService.get(event.user_id) : undefined,
@@ -100,8 +104,9 @@ export class NotificationService {
     )
       return;
 
-    for (const cfg of blood) {
+    for (const cfg of enabled) {
       if (!cfg.enabled) continue;
+      if (!cfg.all && event.seq !== 1) continue;
       if (
         cfg.division_ids &&
         cfg.division_ids.length &&
@@ -116,6 +121,7 @@ export class NotificationService {
             user,
             team,
             challenge,
+            event,
           });
           await this.eventBusService.publish(NotificationQueueDiscordEvent, {
             url: cfg.url,
