@@ -63,7 +63,7 @@ export class NotificationService {
         [SubmissionUpdateEvent.$id!],
         {
           concurrency: 2,
-          handler: (data) => this.handleBlood(data),
+          handler: (data) => this.handleSubmission(data),
         },
       ),
       this.eventBusService.subscribe<NotificationQueueWebhookEvent>(
@@ -78,12 +78,16 @@ export class NotificationService {
     ]);
   }
 
-  private async handleBlood(data: EventItem<SubmissionUpdateEvent>) {
+  private async handleSubmission(data: EventItem<SubmissionUpdateEvent>) {
     const event = data.data;
-    if (event.hidden || event.status !== "correct") return;
-    const { blood } = (await this.configService.get(NotificationConfig))?.value;
-    const enabled = blood?.filter(
-      (b) => b.enabled && (!b.max_seq || event.seq <= b.max_seq),
+    if (event.hidden) return;
+    const { submission } = (await this.configService.get(NotificationConfig))
+      ?.value;
+    const enabled = submission?.filter(
+      (b) =>
+        b.enabled &&
+        (!b.max_seq || event.seq <= b.max_seq) &&
+        (!b.status_filter?.length || b.status_filter.includes(event.status)),
     );
     if (!enabled?.length) return;
 
