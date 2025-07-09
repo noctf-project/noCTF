@@ -10,6 +10,9 @@
     challDetails?: ChallDetails;
     loading: boolean;
     onSolve: () => void;
+    onToggleSolves?: () => void;
+    hideHeader?: boolean;
+    hideScores?: boolean;
   }
 
   interface ScoreEntry {
@@ -37,8 +40,15 @@
   import { goto } from "$app/navigation";
   import { EMAIL_SOUNDS } from "$lib/constants/emailSounds";
 
-  let { challData, challDetails, loading, onSolve }: ChallengeInfoProps =
-    $props();
+  let {
+    challData,
+    challDetails,
+    loading,
+    onSolve,
+    hideHeader = false,
+    hideScores = false,
+    onToggleSolves = _onToggleSolves,
+  }: ChallengeInfoProps = $props();
 
   let flagInput = $state("");
   let flagSubmitStatus:
@@ -140,7 +150,7 @@
     }
   }
 
-  async function toggleScores() {
+  async function _onToggleSolves() {
     scoreModalVisible = !scoreModalVisible;
     if (scoreModalVisible && !scoresLoading && !scoresData && challData) {
       const r = await api.GET("/challenges/{id}/solves", {
@@ -160,99 +170,104 @@
 <div class="flex flex-row gap-4 w-full justify-center h-full">
   {#if challData}
     <div
-      class="bg-base-100 p-4 relative rounded-lg justify-between shadow-xl w-full flex flex-col gap-4"
+      class="bg-base-100 p-4 relative rounded-lg h-full w-full flex flex-col gap-4"
     >
-      <div>
-        <!-- Email Header -->
-        <div class="pb-4 border-b border-base-200">
-          <div class="flex justify-between items-start">
-            <div>
-              <h2 class="text-2xl font-semibold">RE: {challData?.title}</h2>
-            </div>
-            <div class="flex flex-row items-center gap-4 text-gray-500 text-sm">
-              <div class="flex items-center gap-1">
-                <Icon
-                  icon="material-symbols:stars-outline-rounded"
-                  class="text-xl"
-                />
-                <span>{challData?.points} pts</span>
+      {#if !hideHeader}
+        <div class="flex-shrink-0">
+          <!-- Email Header -->
+          <div class="pb-4 border-b border-base-200">
+            <div class="flex justify-between items-start">
+              <div>
+                <h2 class="text-2xl font-semibold">RE: {challData?.title}</h2>
               </div>
-              <div class="relative">
-                {#if showHint}
-                  <div
-                    transition:fade
-                    class="tooltip absolute -top-2 left-8 before:!opacity-100 after:!opacity-100"
-                    data-tip="Click to show solvers"
-                  ></div>
-                {/if}
-                <button
-                  class="flex tooltip items-center gap-1 hover:text-primary"
-                  data-tip={scoreModalVisible ? "Hide solvers" : "Show solvers"}
-                  onclick={() => {
-                    if (!knowsSolvesClick) {
-                      localStorage.setItem("knowsSolvesClick", "1");
-                    }
-                    toggleScores();
-                  }}
-                >
-                  <Icon icon="material-symbols:flag" class="text-xl" />
-                  <span>{challData?.solves} solves</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          <div class="mt-4 flex items-center gap-3">
-            <div
-              class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-600"
-            >
-              <Icon
-                icon={categoryToIcon(challData?.categories[0] ?? "misc")}
-                class="text-2xl"
-              />
-            </div>
-            <div>
-              <p class="font-semibold text-sm">
-                To: {authState.user?.name}@{authState.user?.team_name
-                  ?.replaceAll(" ", "_")
-                  .toLowerCase()}.duc.tf
-              </p>
-              <!-- <p class="text-xs text-gray-500">From: challenges@noctf.local</p> -->
-            </div>
-            <div class="flex-grow"></div>
-            {#if challData?.difficulty}
-              <DifficultyChip
-                difficulty={challData?.difficulty as Difficulty}
-              />
-            {/if}
-          </div>
-        </div>
-
-        <!-- Email Body -->
-        <div class="flex">
-          {#if loading}
-            <div class="flex flex-col gap-4">
               <div
-                class="loading loading-spinner loading-lg text-primary"
-              ></div>
-              <p class="text-center">Loading challenge details...</p>
+                class="flex flex-row items-center gap-4 text-gray-500 text-sm"
+              >
+                <div class="flex items-center gap-1">
+                  <Icon
+                    icon="material-symbols:stars-outline-rounded"
+                    class="text-xl"
+                  />
+                  <span>{challData?.points} pts</span>
+                </div>
+                <div class="relative">
+                  {#if showHint}
+                    <div
+                      transition:fade
+                      class="tooltip absolute -top-2 left-8 before:!opacity-100 after:!opacity-100"
+                      data-tip="Click to show solvers"
+                    ></div>
+                  {/if}
+                  <button
+                    class="flex tooltip items-center gap-1 hover:text-primary"
+                    data-tip={scoreModalVisible
+                      ? "Hide solvers"
+                      : "Show solvers"}
+                    onclick={() => {
+                      if (!knowsSolvesClick) {
+                        localStorage.setItem("knowsSolvesClick", "1");
+                      }
+                      onToggleSolves();
+                    }}
+                  >
+                    <Icon icon="material-symbols:flag" class="text-xl" />
+                    <span>{challData?.solves} solves</span>
+                  </button>
+                </div>
+              </div>
             </div>
-          {:else}
-            <!-- I'm not sure why this is needed since svelte isn't re-rendering the component -->
-            {#key challDetails?.description}
-              <div class="prose w-full">
-                <Markdown
-                  {carta}
-                  value={"Dear " +
-                    authState.user?.name +
-                    ",\n\n" +
-                    challDetails!.description}
+            <div class="mt-4 flex items-center gap-3">
+              <div
+                class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-600"
+              >
+                <Icon
+                  icon={categoryToIcon(challData?.categories[0] ?? "misc")}
+                  class="text-2xl"
                 />
               </div>
-            {/key}
-          {/if}
+              <div>
+                <p class="font-semibold text-sm">
+                  To: {authState.user?.name}@{authState.user?.team_name
+                    ?.replaceAll(" ", "_")
+                    .toLowerCase()}.duc.tf
+                </p>
+                <!-- <p class="text-xs text-gray-500">From: challenges@noctf.local</p> -->
+              </div>
+              <div class="flex-grow"></div>
+              {#if challData?.difficulty}
+                <DifficultyChip
+                  difficulty={challData?.difficulty as Difficulty}
+                />
+              {/if}
+            </div>
+          </div>
         </div>
+      {/if}
+
+      <!-- Email Body -->
+      <div class="flex-1 overflow-y-auto min-h-0">
+        {#if loading}
+          <div class="flex flex-col gap-4 justify-center items-center h-full">
+            <div class="loading loading-spinner loading-lg text-primary"></div>
+            <p class="text-center">Loading challenge details...</p>
+          </div>
+        {:else}
+          <!-- I'm not sure why this is needed since svelte isn't re-rendering the component -->
+          {#key challDetails?.description}
+            <div class="prose w-full max-w-none">
+              <Markdown
+                {carta}
+                value={"Dear " +
+                  authState.user?.name +
+                  ",\n\n" +
+                  challDetails!.description}
+              />
+            </div>
+          {/key}
+        {/if}
       </div>
-      <div class="relative">
+
+      <div class="flex-shrink-0 relative">
         <div class="absolute right-0 -top-40">
           <DogAnimation {showIncorrectAnimation} {showCorrectAnimation} />
         </div>
@@ -380,12 +395,12 @@
       </div>
     </div>
 
-    {#if scoreModalVisible}
+    {#if !hideScores && scoreModalVisible}
       <div
-        class="bg-base-200 rounded-lg pop w-full md:max-w-80 p-6 px-3 h-full overflow-hidden"
+        class="bg-base-100 rounded-lg w-full md:max-w-80 p-6 px-3 h-full overflow-hidden flex-shrink-0 flex flex-col"
         bind:this={scoreModalRef}
       >
-        <h2 class="text-center text-xl font-semibold">Solves</h2>
+        <h2 class="text-center text-xl font-semibold flex-shrink-0">Solves</h2>
         {#if scoresLoading}
           <div class="flex flex-col items-center gap-4 my-16">
             <div class="loading loading-spinner loading-lg text-primary"></div>
@@ -396,7 +411,7 @@
             No solves yet, be the first!
           </div>
         {:else}
-          <div class="overflow-x-hidden overflow-y-auto h-full">
+          <div class="overflow-x-hidden overflow-y-auto flex-1 min-h-0">
             <table class="table table-fixed table-bordered">
               <thead class="h-4">
                 <tr>

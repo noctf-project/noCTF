@@ -55,14 +55,16 @@
       </div>
     {/if}
     <a href="/" class="text-xl font-bold hidden lg:block"
-      >{configState.siteConfig?.name || "noCTF"}</a
-    >
+      >
+    <img src="/images/DUCTF6-banner.png" alt="DUCTF6" class="w-52 top-6 left-20 absolute" />
+    </a>
   </div>
 
   <div class="navbar-center lg:hidden">
     <a href="/" class="text-xl font-bold"
-      >{configState.siteConfig?.name || "noCTF"}</a
-    >
+      >
+    <img src="/images/DUCTF6-banner.png" alt="DUCTF6" class="w-52" />
+    </a>
   </div>
 
   <div class="navbar-center hidden lg:block">

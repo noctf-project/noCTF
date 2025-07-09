@@ -31,7 +31,12 @@
   class="bg-[url(/images/background.png)] bg-center bg-cover opacity-40"
   style="height: 100vh; width: 100vw; z-index: -999; position: fixed;"
 ></div>
-<div class="flex flex-col min-h-screen h-auto opacity-100">
+<div
+  class="flex flex-col min-h-screen h-auto opacity-100 {page.url.pathname ===
+  '/'
+    ? ''
+    : 'backdrop-blur-sm'} transition"
+>
   {#if page.url.pathname.startsWith("/admin")}
     <AdminHeader />
   {:else}

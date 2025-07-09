@@ -157,26 +157,7 @@
   }
 </script>
 
-<div class="w-full mx-auto px-4 sm:px-6 lg:px-8 h-auto mt-8">
-  <!-- <div class="text-center text-4xl font-black pb-4">Inbox</div> -->
-  <div class="flex justify-center mb-6">
-    <button
-      class="btn btn-outline btn-sm gap-2"
-      onclick={() => {
-        isEmailView = !isEmailView;
-        modalChallData = undefined;
-        modalVisible = false;
-        localStorage.setItem("isEmailView", String(isEmailView));
-      }}
-    >
-      <Icon
-        icon={isEmailView
-          ? "material-symbols:background-dot-small"
-          : "material-symbols:mail"}
-      />
-      {isEmailView ? "Grid View" : "Inbox View"}
-    </button>
-  </div>
+<div class="w-full mx-auto px-4 sm:px-6 lg:px-8 h-auto mt-2">
   {#if apiChallenges.loading}
     <div class="flex flex-col items-center gap-4 mt-16">
       <div class="loading loading-spinner loading-lg text-primary"></div>
@@ -200,33 +181,57 @@
     </div>
   {:else}
     <div
-      class="flex min-h-screen flex-col p-2 rounded md:grid grid-cols-[min(25%,20rem)_1fr] gap-6 lg:gap-8 bg-base-300"
-      style="min-height: calc(100vh - 24rem);"
+      class="flex flex-col p-2 rounded md:grid grid-cols-[min(25%,20rem)_1fr] gap-6 lg:gap-8 bg-base-300 pop"
+      style="min-height: calc(100vh - 12rem);"
     >
-      <div class="md:sticky top-8 self-start mb-6 md:mb-0">
+      <div
+        class="flex flex-col justify-between items-center md:sticky top-8 self-start mb-6 md:mb-0 h-full"
+      >
         <ChallengeFilterer
           challenges={allChallenges || []}
           onFilter={(res) => (challenges = res)}
         />
+
+        <button
+          class="btn bg-base-100 btn-sm gap-2 w-1/2 mb-4"
+          onclick={() => {
+            isEmailView = !isEmailView;
+            modalChallData = undefined;
+            modalVisible = false;
+            localStorage.setItem("isEmailView", String(isEmailView));
+          }}
+        >
+          <Icon
+            icon={isEmailView
+              ? "material-symbols:background-dot-small"
+              : "material-symbols:mail"}
+          />
+          {isEmailView ? "Grid View" : "Inbox View"}
+        </button>
       </div>
 
-      <div class="flex flex-wrap gap-6 h-fit">
+      <div class="h-full" style="height: calc(100vh - 12rem)">
         {#if challenges !== undefined && Object.keys(challengesByCategory).length > 0}
           <!-- Email View -->
           {#if isEmailView}
-            <div class="flex w-full gap-5">
-              <div class="flex flex-col shadow-md border-base-400 rounded-md">
+            <div
+              class="flex w-full gap-5 h-full"
+              style="height: calc(100vh - 12rem)"
+            >
+              <div
+                class="flex flex-col border-base-400 rounded-md flex-shrink-0 h-full"
+              >
                 <div class="py-2 px-3 bg-base-100 rounded-t-md">
                   <h2 class="text-xl font-bold">Inbox</h2>
                 </div>
                 <div
-                  class="flex flex-col overflow-y-auto no-scrollbar"
-                  style="height: calc(100vh - 24rem); width: max-content; min-width: 320px;"
+                  class="flex flex-col overflow-y-auto no-scrollbar rounded-md flex-1"
+                  style="width: max-content; min-width: 320px;"
                 >
                   {#each Object.entries(challengesByCategory) as [category, categoryChallenges] (category)}
                     <div class="rounded-lg">
                       <button
-                        class="flex w-full items-center justify-between px-4 py-1 cursor-pointer select-none bg-base-300"
+                        class="flex w-full items-center justify-between px-4 py-1 cursor-pointer select-none bg-base-200"
                         onclick={() =>
                           (collapsedCategories = {
                             ...collapsedCategories,
@@ -261,7 +266,7 @@
                   {/each}
                 </div>
               </div>
-              <div class="flex-grow w-full">
+              <div class="flex-grow w-full h-full">
                 <ChallengeInfo
                   challData={modalChallData}
                   challDetails={modalChallDetails}
@@ -271,34 +276,43 @@
               </div>
             </div>
           {:else}
-            {#each Object.entries(challengesByCategory) as [category, categoryChallenges] (category)}
-              <div class="flex flex-col gap-2">
-                <h1
-                  class="text-2xl text-center w-full md:text-left p-3 rounded font-bold top-0 py-2 z-10"
-                >
-                  {category}
-                </h1>
-                <div
-                  class="flex flex-wrap md:justify-start justify-center pt-2 gap-4 min-w-[150px]"
-                >
-                  {#each categoryChallenges as challenge (challenge.id)}
-                    <ChallengeCard
-                      data={challenge}
-                      onclick={onChallengeClicked}
-                    />
-                  {/each}
-                </div>
+            <!-- Grid View -->
+            <div class="h-full overflow-y-auto">
+              <div class="flex flex-wrap gap-6 p-4">
+                {#each Object.entries(challengesByCategory) as [category, categoryChallenges] (category)}
+                  <div class="flex flex-col gap-2">
+                    <h1
+                      class="text-2xl text-center w-full md:text-left p-3 rounded font-bold top-0 py-2 z-10"
+                    >
+                      {category}
+                    </h1>
+                    <div
+                      class="flex flex-wrap md:justify-start justify-center pt-2 gap-4 min-w-[150px]"
+                    >
+                      {#each categoryChallenges as challenge (challenge.id)}
+                        <ChallengeCard
+                          data={challenge}
+                          onclick={onChallengeClicked}
+                        />
+                      {/each}
+                    </div>
+                  </div>
+                {/each}
               </div>
-            {/each}
+            </div>
           {/if}
         {:else if challenges !== undefined && challenges.length === 0}
-          <p class="w-full text-center text-neutral-500 py-10">
-            No challenges match the current filters.
-          </p>
+          <div class="h-full flex items-center justify-center">
+            <p class="text-center text-neutral-500">
+              No challenges match the current filters.
+            </p>
+          </div>
         {:else if challenges === undefined && !apiChallenges.loading}
-          <p class="w-full text-center text-neutral-500 py-10">
-            Waiting for challenges...
-          </p>
+          <div class="h-full flex items-center justify-center">
+            <p class="text-center text-neutral-500">
+              Waiting for challenges...
+            </p>
+          </div>
         {/if}
       </div>
     </div>
