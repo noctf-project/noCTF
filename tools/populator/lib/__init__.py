@@ -1,0 +1,1 @@
+# Common functionality for CTF challenge management 
