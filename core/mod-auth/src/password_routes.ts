@@ -37,6 +37,13 @@ import {
 } from "@noctf/server-core/util/limit_keys";
 import { TokenService } from "@noctf/server-core/services/token";
 
+const IsEmailAllowed = (allowedDomains: string[] | undefined, email: string) =>
+  !allowedDomains?.length ||
+  (allowedDomains.length &&
+    allowedDomains.includes(
+      (email.toLowerCase().split("@")[1] || "").replace(/\.$/, ""),
+    ));
+
 export default async function (fastify: FastifyInstance) {
   const {
     identityService,
@@ -72,16 +79,29 @@ export default async function (fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const { validate_email } = await passwordProvider.getConfig();
+      const {
+        validate_email,
+        allowed_email_domains,
+        enable_register_password,
+      } = await passwordProvider.getConfig();
       const email = request.body.email.toLowerCase();
       try {
         await passwordProvider.authPreCheck(email);
       } catch (e) {
-        if (e instanceof UserNotFoundError && validate_email) {
-          throw new BadRequestError(
-            "EmailVerificationRequired",
-            "Email Verification Required",
-          );
+        if (e instanceof UserNotFoundError) {
+          if (!enable_register_password) {
+            throw new ForbiddenError("Registration is currently not open");
+          }
+          if (!IsEmailAllowed(allowed_email_domains, email)) {
+            throw new ForbiddenError(
+              "Registration is only open to specific domains",
+            );
+          }
+          if (validate_email)
+            throw new BadRequestError(
+              "EmailVerificationRequired",
+              "Email Verification Required",
+            );
         }
         throw e;
       }
@@ -134,13 +154,7 @@ export default async function (fastify: FastifyInstance) {
       } catch (e) {
         if (!(e instanceof UserNotFoundError)) throw e;
       }
-      if (
-        allowed_email_domains &&
-        allowed_email_domains.length &&
-        !allowed_email_domains.includes(
-          email.toLowerCase().split("@")[1] || "".replace(/\.$/, ""),
-        )
-      ) {
+      if (!IsEmailAllowed(allowed_email_domains, email)) {
         throw new ForbiddenError(
           "Registration is only open to specific domains",
         );
