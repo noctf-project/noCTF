@@ -164,6 +164,7 @@ export const MeUserResponse = Type.Object({
     Type.Omit(UserSummary, ["flags"]),
     // TODO: deprecate this, we can get from /team
     Type.Object({
+      is_admin: Type.Boolean(),
       team_name: Type.Union([Type.String(), Type.Null()]),
       division_id: Type.Union([Type.Integer(), Type.Null()]),
     }),
