@@ -1,7 +1,7 @@
 import { PolicyDAO } from "../dao/policy.ts";
 import type { ServiceCradle } from "../index.ts";
 import type { Policy } from "../util/policy.ts";
-import { Evaluate, EvaluatePrefix } from "../util/policy.ts";
+import { Evaluate, EvaluatePrefixes } from "../util/policy.ts";
 import { LocalCache } from "../util/local_cache.ts";
 import { UserDAO } from "../dao/user.ts";
 import { AuthConfig } from "@noctf/api/config";
@@ -125,19 +125,17 @@ export class PolicyService {
     return false;
   }
 
-  async evaluatePrefix(userId: number, policy: Policy) {
+  async evaluatePrefixes(userId: number, prefixes: string[]) {
     const policies = await (userId
       ? this.getPoliciesForUser(userId)
       : this.getPoliciesForPublic());
+    const set = new Set(prefixes);
+    const pass: string[] = [];
     for (const { permissions, name } of policies) {
-      const result = EvaluatePrefix(policy, permissions);
-      this.logger.debug(
-        { policy_name: name, result },
-        "Prefix evaluation result",
-      );
-      if (result) return true;
+      const results = EvaluatePrefixes(set, permissions);
+      Array.prototype.push.apply(pass, results);
     }
-    return false;
+    return pass;
   }
 
   async getRolesForUser(id: number) {

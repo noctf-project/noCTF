@@ -12,16 +12,13 @@ export const PreprocessPermissions = (permissions: string[]): string[] => {
   const positive: string[] = [];
 
   for (const perm of permissions) {
+    // short circuit
+    if (perm === "!*") return ["!*"];
     if (perm.startsWith("!")) {
       negative.push(perm.substring(1));
     } else {
       positive.push(perm);
     }
-  }
-
-  // Early return if global wildcard exists - no positive permissions survive
-  if (negative.includes("*")) {
-    return negative.map((p) => "!" + p).sort();
   }
 
   // Sort both arrays for binary search
@@ -62,18 +59,27 @@ export const Evaluate = (policy: Policy, permissions: string[], _ttl = 64) => {
 };
 
 /**
- * Evaluate a logical construction of prefixes against permissions
- * @param policy Logical construction: ["OR", "admin", "user"] or ["AND", "admin", ["OR", "team", "user"]]
+ * Evaluate which prefixes from the set match the given permissions
+ * Removes matching prefixes from the original set and returns them
+ * @param prefixes Set of permission prefixes to check (mutated)
  * @param permissions Array of permission strings
- * @param _ttl safeguard to prevent infinite recursion
- * @returns True if the prefix logic matches the permissions
+ * @returns Array of prefixes that matched and were removed from the set
  */
-export const EvaluatePrefix = (
-  policy: Policy,
+export const EvaluatePrefixes = (
+  prefixes: Set<string>,
   permissions: string[],
-  _ttl = 64,
-): boolean => {
-  return RecursiveEvaluation(policy, permissions, EvaluatePrefixScalar, _ttl);
+): string[] => {
+  const preprocessed = PreprocessPermissions(permissions);
+  const matchingPrefixes: string[] = [];
+
+  for (const prefix of prefixes) {
+    if (EvaluatePrefixScalar(prefix, preprocessed)) {
+      matchingPrefixes.push(prefix);
+      prefixes.delete(prefix);
+    }
+  }
+
+  return matchingPrefixes;
 };
 
 const RecursiveEvaluation = (
