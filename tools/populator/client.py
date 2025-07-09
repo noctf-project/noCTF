@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import os
 import httpx
 import json
 import random
@@ -13,7 +14,7 @@ class CTFClient:
     def __init__(self, base_url: str):
         self.base_url = base_url
         self.token = None
-        self.client = httpx.AsyncClient(base_url=base_url, timeout=30.0)
+        self.client = httpx.AsyncClient(base_url=base_url, timeout=30.0 )
 
     async def close(self):
         await self.client.aclose()
@@ -119,6 +120,14 @@ class CTFClient:
             data={"data": flag}
         )
         return response.get("data", "")
+    
+    async def get_challenges_admin(self) -> List[Dict[str, Any]]:
+        response = await self._request("GET", "/admin/challenges")
+        return response.get("data", [])
+
+    async def get_challenge_admin(self, challenge_id: int) -> Dict[str, Any]:
+        response = await self._request("GET", f"/admin/challenges/{challenge_id}")
+        return response.get("data", {})
 
     async def create_challenge(self, challenge_data: Dict[str, Any]) -> Dict[str, Any]:
         response = await self._request(
@@ -133,6 +142,14 @@ class CTFClient:
             "POST",
             "/admin/files",
             files={"file": (file_name, file_data)}
+        )
+        return response.get("data", {})
+
+    async def update_challenge(self, challenge_id: int, challenge_data: Dict[str, Any]) -> Dict[str, Any]:
+        response = await self._request(
+            "PUT",
+            f"/admin/challenges/{challenge_id}",
+            data=challenge_data
         )
         return response.get("data", {})
 
@@ -158,9 +175,10 @@ class ChallengeConverter:
                     "source": "flag",
                     "flag": [
                         {
-                            "data": "flag",  # Hard-coded flag
+                            "data": flag_data,
                             "strategy": "case_sensitive"
                         }
+                        for flag_data in data.get("flags", [])
                     ],
                 },
                 "score": {
@@ -172,7 +190,7 @@ class ChallengeConverter:
                     "strategy": "core:quadratic",
                     "bonus": []
                 },
-                "files": []  # Ignoring files as requested
+                "files": []  
             }
         }
         
@@ -195,13 +213,14 @@ async def register_user_and_team(base_url: str, password: str = "Password123!") 
 async def upload_challenge_from_yaml(client: CTFClient, yaml_content: str, files: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
     challenge_data = ChallengeConverter.from_yaml(yaml_content)
     challenge_data["private_metadata"]["files"] = [{"id": file["id"], "is_attachment": True} for file in files] if files else []
+    print(challenge_data)
     return await client.create_challenge(challenge_data)
 
-async def upload_attachments_from_yaml(client: CTFClient, yaml_content: str) -> List[Dict[str, Any]]:
+async def upload_attachments_from_yaml(client: CTFClient, yaml_content: str, directory: str) -> List[Dict[str, Any]]:
     results = []
     attachments =  yaml.safe_load(yaml_content).get("files", [])
     for attachment in attachments:
-        file_data = open(attachment, "rb").read()
+        file_data = open(os.path.join(directory, attachment), "rb").read()
         result = await client.create_attachment(attachment, file_data)
         results.append(result)
     return results
