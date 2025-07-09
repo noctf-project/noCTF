@@ -7,9 +7,10 @@ import {
 import { EventItem } from "./event_bus.ts";
 import { TeamFlag } from "../types/enums.ts";
 import ky from "ky";
-import Handlebars, { logger } from "handlebars";
+import Handlebars from "handlebars";
 import TTLCache from "@isaacs/ttlcache";
 import { OutgoingSolveWebhookGeneric } from "@noctf/api/datatypes";
+import { ValidationError } from "../errors.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -56,7 +57,14 @@ export class NotificationService {
   }
 
   async init() {
-    await this.configService.register(NotificationConfig, {});
+    await this.configService.register(NotificationConfig, {}, (v) => {
+      if (!v.submission) return;
+      for (const item of v.submission) {
+        if (item.type === "discord" && typeof item.template !== "string") {
+          throw new ValidationError("Discord webhooks must have a template");
+        }
+      }
+    });
   }
 
   async worker(signal: AbortSignal) {
@@ -119,7 +127,9 @@ export class NotificationService {
       switch (cfg.type) {
         case "discord":
           if (!cfg.template) {
-            this.logger.warn("Could not send discord message, template is not defined");
+            this.logger.warn(
+              "Could not send discord message, template is not defined",
+            );
             continue;
           }
           const template = this.getTemplateFunction(cfg.template);

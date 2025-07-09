@@ -155,11 +155,13 @@ export const NotificationConfig = Type.Object(
           type: Type.Union([Type.Literal("discord"), Type.Literal("webhook")], {
             title: "Notification Type",
           }),
-          template: Type.Optional(Type.String({
-            title: "Message template",
-            description:
-              "Handlebars template for the message. Does not apply to the webhook notification type",
-          })),
+          template: Type.Optional(
+            Type.String({
+              title: "Message template",
+              description:
+                "Handlebars template for the message. Does not apply to the webhook notification type",
+            }),
+          ),
           division_ids: Type.Optional(
             Type.Array(Type.Number(), { title: "Division Filter" }),
           ),
