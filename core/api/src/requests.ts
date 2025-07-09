@@ -135,8 +135,8 @@ export const QueryAuditLogRequest = Type.Object(
     actor: Type.Optional(Type.Array(Type.String())),
     entities: Type.Optional(Type.Array(Type.String())),
     operation: Type.Optional(Type.Array(Type.String())),
-    offset: Type.Optional(Type.Number()),
-    limit: Type.Optional(Type.Number()),
+    page: Type.Optional(Type.Number()),
+    page_size: Type.Optional(Type.Number()),
   },
   { additionalProperties: false },
 );

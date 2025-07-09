@@ -23,14 +23,40 @@ export class AuditLogDAO {
   }
 
   async query(
-    {
-      created_at,
-      actor,
-      entities,
-      operation,
-    }: Omit<QueryAuditLogRequest, "limit|offset">,
+    params?: Parameters<AuditLogDAO["listQuery"]>[0],
     limit?: LimitOffset,
   ): Promise<AuditLogEntry[]> {
+    let query = this.listQuery(params);
+    if (limit?.limit) {
+      query = query.limit(limit.limit);
+    }
+    if (limit?.offset) {
+      query = query.offset(limit.offset);
+    }
+    return query
+      .orderBy("created_at desc")
+      .offset(limit?.offset || 0)
+      .execute();
+  }
+
+  async getCount(
+    params?: Parameters<AuditLogDAO["listQuery"]>[0],
+  ): Promise<number> {
+    return Number(
+      (
+        await this.listQuery(params)
+          .select(this.db.fn.countAll().as("count"))
+          .executeTakeFirstOrThrow()
+      ).count,
+    );
+  }
+
+  private listQuery({
+    created_at,
+    actor,
+    entities,
+    operation,
+  }: Omit<QueryAuditLogRequest, "limit|offset"> = {}) {
     let query = this.db
       .selectFrom("audit_log")
       .select(["actor", "operation", "entities", "data", "created_at"]);
@@ -53,13 +79,6 @@ export class AuditLogDAO {
     if (operation && operation.length) {
       query = query.where("operation", "in", operation);
     }
-    if (limit?.limit) {
-      query = query.limit(limit.limit);
-    }
-
-    return query
-      .orderBy("created_at desc")
-      .offset(limit?.offset || 0)
-      .execute();
+    return query;
   }
 }
