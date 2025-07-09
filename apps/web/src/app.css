@@ -10,6 +10,15 @@
   }
 }
 
+.carta-theme__default {
+  --border-color: var(--border-color-dark) !important;
+  --selection-color: var(--selection-color-dark) !important;
+  --focus-outline: var(--focus-outline-dark) !important;
+  --hover-color: var(--hover-color-dark) !important;
+  --caret-color: var(--caret-color-dark) !important;
+  --text-color: var(--text-color-dark) !important;
+}
+
 .markdown-body {
   @apply prose;
   max-width: 95%;
