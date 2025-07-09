@@ -330,11 +330,11 @@ export class TeamDAO {
       }
     }
     if (params?.name_prefix) {
-      query = query.where(
-        "name_normalized",
-        "^@",
-        NormalizeName(params.name_prefix),
+      const normalized = NormalizeName(params.name_prefix).replace(
+        /[_%]/g,
+        "\\$&",
       );
+      query = query.where("name_normalized", "ilike", `%${normalized}%`);
     }
     if (params?.division_id) {
       query = query.where("division_id", "=", params.division_id);

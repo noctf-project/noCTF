@@ -23,6 +23,12 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.defaultTo(sql`now()`).notNull(),
     )
     .execute();
+  await schema
+    .createIndex("user_idx_trgm_name_normalized")
+    .on("user")
+    .using("gin")
+    .expression(sql`name_normalized gin_trgm_ops`)
+    .execute();
 
   await schema
     .createTable("user_identity")

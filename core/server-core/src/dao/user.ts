@@ -147,11 +147,11 @@ export class UserDAO {
       }
     }
     if (params?.name_prefix) {
-      query = query.where(
-        "name_normalized",
-        "^@",
-        NormalizeName(params.name_prefix),
+      const normalized = NormalizeName(params.name_prefix).replace(
+        /[_%]/g,
+        "\\$&",
       );
+      query = query.where("name_normalized", "ilike", `%${normalized}%`);
     }
     if (params?.ids && params?.ids.length) {
       query = query.where("id", "in", params.ids);

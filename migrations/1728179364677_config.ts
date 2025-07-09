@@ -5,6 +5,7 @@ export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
 
   await sql`CREATE EXTENSION IF NOT EXISTS unaccent`.execute(db);
+  await sql`CREATE EXTENSION IF NOT EXISTS pg_trgm`.execute(db);
   await sql`CREATE OR REPLACE FUNCTION immutable_unaccent(text) RETURNS text
 AS $$
   SELECT public.unaccent('public.unaccent', $1);

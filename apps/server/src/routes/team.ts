@@ -313,7 +313,7 @@ export async function routes(fastify: FastifyInstance) {
           { page, page_size },
           (q, l) => teamService.listSummary(q, l),
         ),
-        query.ids && query.ids.length ? teamService.getCount(query) : 0,
+        query.ids && query.ids.length ? 0 : teamService.getCount(query),
       ]);
       return {
         data: {

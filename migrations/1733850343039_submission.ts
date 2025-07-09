@@ -39,6 +39,13 @@ export async function up(db: Kysely<any>): Promise<void> {
     .execute();
 
   await schema
+    .createIndex("submission_idx_trgm_data")
+    .on("submission")
+    .using("gin")
+    .expression(sql`data gin_trgm_ops`)
+    .execute();
+
+  await schema
     .createIndex("submission_idx_status_team_id")
     .on("submission")
     .columns(["status", "team_id"])

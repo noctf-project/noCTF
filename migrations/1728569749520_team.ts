@@ -56,6 +56,12 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.defaultTo(sql`now()`).notNull(),
     )
     .execute();
+  await schema
+    .createIndex("team_idx_trgm_name_normalized")
+    .on("team")
+    .using("gin")
+    .expression(sql`name_normalized gin_trgm_ops`)
+    .execute();
 
   await schema
     .createType("team_member_role")
