@@ -413,16 +413,25 @@ export const Session = Type.Object({
 });
 export type Session = Static<typeof Session>;
 
-export const OutgoingSolveWebhookGeneric = Type.Object({
-  submission_id: Type.Integer(),
-  submission_created_at: TypeDate,
-  team_id: Type.Integer(),
-  team_name: Type.String(),
-  user_id: Type.Integer(),
-  user_name: Type.String(),
-  challenge_id: Type.Integer(),
-  challenge_title: Type.String(),
-});
+export const OutgoingSolveWebhookGeneric = Type.Composite([
+  Type.Pick(Submission, [
+    "id",
+    "seq",
+    "status",
+    "comments",
+    "is_update",
+    "created_at",
+    "updated_at",
+  ]),
+  Type.Object({
+    team_id: Type.Integer(),
+    team_name: Type.String(),
+    user_id: Type.Integer(),
+    user_name: Type.String(),
+    challenge_id: Type.Integer(),
+    challenge_title: Type.String(),
+  }),
+]);
 export type OutgoingSolveWebhookGeneric = Static<
   typeof OutgoingSolveWebhookGeneric
 >;

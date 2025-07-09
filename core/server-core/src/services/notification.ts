@@ -7,12 +7,13 @@ import {
 import { EventItem } from "./event_bus.ts";
 import { TeamFlag } from "../types/enums.ts";
 import ky from "ky";
-import Handlebars from "handlebars";
+import Handlebars, { logger } from "handlebars";
 import TTLCache from "@isaacs/ttlcache";
 import { OutgoingSolveWebhookGeneric } from "@noctf/api/datatypes";
 
 type Props = Pick<
   ServiceCradle,
+  | "logger"
   | "challengeService"
   | "configService"
   | "eventBusService"
@@ -22,6 +23,7 @@ type Props = Pick<
 
 export class NotificationService {
   private readonly client;
+  private readonly logger;
   private readonly challengeService;
   private readonly configService;
   private readonly eventBusService;
@@ -37,6 +39,7 @@ export class NotificationService {
   });
 
   constructor({
+    logger,
     challengeService,
     configService,
     eventBusService,
@@ -44,6 +47,7 @@ export class NotificationService {
     userService,
   }: Props) {
     this.client = ky.create();
+    this.logger = logger;
     this.challengeService = challengeService;
     this.configService = configService;
     this.eventBusService = eventBusService;
@@ -114,6 +118,10 @@ export class NotificationService {
       }
       switch (cfg.type) {
         case "discord":
+          if (!cfg.template) {
+            this.logger.warn("Could not send discord message, template is not defined");
+            continue;
+          }
           const template = this.getTemplateFunction(cfg.template);
           const content = template({
             user,
@@ -136,8 +144,13 @@ export class NotificationService {
               team_name: team.name,
               user_id: user?.id || 0,
               user_name: user?.name || "",
-              submission_id: event.id,
-              submission_created_at: event.created_at,
+              id: event.id,
+              seq: event.seq,
+              comments: event.comments,
+              status: event.status,
+              is_update: event.is_update,
+              created_at: event.created_at,
+              updated_at: event.updated_at,
             } as OutgoingSolveWebhookGeneric,
           });
           break;

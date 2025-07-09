@@ -155,18 +155,19 @@ export const NotificationConfig = Type.Object(
           type: Type.Union([Type.Literal("discord"), Type.Literal("webhook")], {
             title: "Notification Type",
           }),
-          template: Type.String({
+          template: Type.Optional(Type.String({
             title: "Message template",
             description:
               "Handlebars template for the message. Does not apply to the webhook notification type",
-          }),
+          })),
           division_ids: Type.Optional(
             Type.Array(Type.Number(), { title: "Division Filter" }),
           ),
           status_filter: Type.Optional(
-            Type.Array(Type.Enum(SubmissionStatus), {
+            Type.Array(SubmissionStatus, {
               title: "Submission Status Filter",
-              description: "Only send notifications for these statuses if filter is defined.",
+              description:
+                "Only send notifications for these statuses if filter is defined",
               uniqueItems: true,
             }),
           ),
