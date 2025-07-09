@@ -118,11 +118,13 @@ export class TeamDAO {
   async getCount(
     params?: Parameters<TeamDAO["listQuery"]>[0],
   ): Promise<number> {
-    return (
-      await this.listQuery(params)
-        .select(this.db.fn.countAll().as("count"))
-        .executeTakeFirstOrThrow()
-    ).count as number;
+    return Number(
+      (
+        await this.listQuery(params)
+          .select(this.db.fn.countAll().as("count"))
+          .executeTakeFirstOrThrow()
+      ).count,
+    );
   }
 
   async queryNames(

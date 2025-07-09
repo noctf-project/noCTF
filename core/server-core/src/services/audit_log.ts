@@ -33,7 +33,14 @@ export class AuditLogService {
     });
   }
 
-  async query(q: QueryAuditLogRequest): Promise<AuditLogEntry[]> {
-    return this.dao.query(q, { limit: q.limit, offset: q.offset });
+  async query(
+    q: Omit<QueryAuditLogRequest, "page" | "page_size">,
+    limit?: { limit?: number; offset?: number },
+  ): Promise<AuditLogEntry[]> {
+    return this.dao.query(q, limit);
+  }
+
+  async getCount(q: Omit<QueryAuditLogRequest, "page" | "page_size">) {
+    return this.dao.getCount(q);
   }
 }
