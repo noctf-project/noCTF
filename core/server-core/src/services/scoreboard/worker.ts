@@ -22,7 +22,9 @@ export const ScoreboardCalculatorWorker = async (
   signal: AbortSignal,
   c: Props,
 ) => {
-  await c.eventBusService.subscribe<SubmissionUpdateEvent>(
+  await c.eventBusService.subscribe<
+    SubmissionUpdateEvent | ChallengeUpdateEvent
+  >(
     signal,
     "ScoreboardWorker",
     [SubmissionUpdateEvent.$id!, ChallengeUpdateEvent.$id!],

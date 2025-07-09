@@ -266,6 +266,7 @@ export class ScoreboardService {
 
     const solvesByChallenge = new Map<number, RawSolve[]>();
     solveList.forEach((x) => {
+      if (timestamp && x.created_at > timestamp) return;
       let solves = solvesByChallenge.get(x.challenge_id);
       if (!solves) {
         solves = [];
@@ -282,7 +283,9 @@ export class ScoreboardService {
       new Map(teams.map((x) => [x.id, x])),
       challenges,
       solvesByChallenge,
-      awardList,
+      timestamp
+        ? awardList.filter((x) => x.created_at <= timestamp)
+        : awardList,
     );
 
     await this.dataLoader.saveIndexed(
