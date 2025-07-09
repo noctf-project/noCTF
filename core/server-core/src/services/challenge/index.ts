@@ -221,28 +221,30 @@ export class ChallengeService {
         "Presolve plugin returned a valid result",
       );
       const solved = state.status === "correct";
-      const { id, updated_at } = await this.submissionDAO.create({
-        team_id: teamId,
-        user_id: userId,
-        challenge_id: challenge.id,
-        source: challenge.private_metadata.solve.source,
-        data,
-        status: state.status,
-        comments: state.comment,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        metadata: metadata as any,
-      });
-      if (solved) {
-        await this.eventBusService.publish(SubmissionUpdateEvent, {
-          id,
-          challenge_id: challenge.id,
-          status: state.status,
+      const { id, created_at, updated_at, seq } =
+        await this.submissionDAO.create({
           team_id: teamId,
           user_id: userId,
-          updated_at,
-          hidden: false,
+          challenge_id: challenge.id,
+          source: challenge.private_metadata.solve.source,
+          data,
+          status: state.status,
+          comments: state.comment,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          metadata: metadata as any,
         });
-      }
+      await this.eventBusService.publish(SubmissionUpdateEvent, {
+        id,
+        challenge_id: challenge.id,
+        status: state.status,
+        team_id: teamId,
+        user_id: userId,
+        updated_at,
+        created_at,
+        seq: solved ? seq + 1 : 0,
+        hidden: false,
+        is_update: false,
+      });
       return state.status;
       // TODO: queueing, currently it is just marked as queued. probably emit
       // TODO: to event bus

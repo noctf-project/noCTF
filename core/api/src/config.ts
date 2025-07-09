@@ -144,3 +144,30 @@ export const EmailConfig = Type.Object(
   { $id: "core.email", additionalProperties: false },
 );
 export type EmailConfig = Static<typeof EmailConfig>;
+
+export const NotificationConfig = Type.Object(
+  {
+    blood: Type.Optional(
+      Type.Array(
+        Type.Object({
+          url: Type.String({ format: "uri", title: "Webhook URL" }),
+          type: Type.Union([Type.Literal("discord"), Type.Literal("webhook")], {
+            title: "Notification Type",
+          }),
+          template: Type.String({
+            title: "Message template",
+            description:
+              "Handlebars template for the message. Does not apply to the webhook notification type",
+          }),
+          division_ids: Type.Optional(
+            Type.Array(Type.Number(), { title: "Division Filter" }),
+          ),
+          enabled: Type.Boolean({ title: "Enabled" }),
+        }),
+        { title: "First Blood Settings" },
+      ),
+    ),
+  },
+  { $id: "core.notification", additionalProperties: false },
+);
+export type NotificationConfig = Static<typeof NotificationConfig>;

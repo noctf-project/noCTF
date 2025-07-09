@@ -52,6 +52,7 @@ import { AsMutable } from "@noctf/server-core/types/primitives";
 import { KeyService } from "@noctf/server-core/services/key";
 import { DivisionService } from "@noctf/server-core/services/division";
 import { TokenService } from "@noctf/server-core/services/token";
+import { NotificationService } from "@noctf/server-core/services/notification";
 
 export const server = fastify({
   logger: {
@@ -107,6 +108,7 @@ server.register(async () => {
     keyService: asValue(keyService),
     policyService: asClass(PolicyService).singleton(),
     rateLimitService: asClass(RateLimitService).singleton(),
+    notificationService: asClass(NotificationService).singleton(),
     teamService: asClass(TeamService).singleton(),
     tokenService: asClass(TokenService).singleton(),
     scoreService: asClass(ScoreService).singleton(),
@@ -116,6 +118,7 @@ server.register(async () => {
     lockService: asClass(LockService).singleton(),
   });
   void server.container.cradle.metricsClient.init();
+  void server.container.cradle.notificationService.init();
 });
 
 if (ENABLE_SWAGGER) {

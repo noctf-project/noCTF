@@ -9,7 +9,8 @@ import {
 import { SingletonWorker } from "@noctf/server-core/worker/singleton";
 
 server.ready(async () => {
-  const { logger, emailService, lockService } = server.container.cradle;
+  const { logger, emailService, lockService, notificationService } =
+    server.container.cradle;
   const registry = new WorkerRegistry(server.container.cradle.logger);
 
   registry.register(
@@ -41,6 +42,14 @@ server.ready(async () => {
       name: "scoreboard_event",
       handler: (signal) =>
         ScoreboardCalculatorWorker(signal, server.container.cradle),
+      logger,
+    }),
+  );
+
+  registry.register(
+    new SignalledWorker({
+      name: "notification",
+      handler: (signal) => notificationService.worker(signal),
       logger,
     }),
   );

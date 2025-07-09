@@ -9,7 +9,10 @@ export const SubmissionUpdateEvent = Type.Object(
     user_id: Type.Optional(Type.Integer()),
     challenge_id: Type.Integer(),
     hidden: Type.Boolean(),
+    created_at: TypeDate,
     updated_at: TypeDate,
+    seq: Type.Integer(),
+    is_update: Type.Boolean(),
     status: SubmissionStatus,
   },
   { $id: "events.submission.update" },
@@ -49,3 +52,36 @@ export const EmailQueueEvent = Type.Object(
   { $id: "queue.email" },
 );
 export type EmailQueueEvent = Static<typeof EmailQueueEvent>;
+
+export const NotificationQueueDiscordEvent = Type.Object(
+  {
+    url: Type.String({ format: "uri" }),
+    payload: Type.Object({
+      content: Type.String(),
+    }),
+  },
+  { $id: "queue.notification.discord" },
+);
+export type NotificationQueueDiscordEvent = Static<
+  typeof NotificationQueueDiscordEvent
+>;
+
+export const NotificationQueueWebhookEvent = Type.Object(
+  {
+    url: Type.String({ format: "uri" }),
+    payload: Type.Object({
+      submission_id: Type.Integer(),
+      submission_created_at: TypeDate,
+      team_id: Type.Integer(),
+      team_name: Type.String(),
+      user_id: Type.Integer(),
+      user_name: Type.String(),
+      challenge_id: Type.Integer(),
+      challenge_title: Type.String(),
+    }),
+  },
+  { $id: "queue.notification.webhook" },
+);
+export type NotificationQueueWebhookEvent = Static<
+  typeof NotificationQueueWebhookEvent
+>;
