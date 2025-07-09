@@ -129,7 +129,7 @@ export class UserDAO {
     params?: {
       flags?: string[];
       ids?: number[];
-      name_prefix?: string;
+      name?: string;
     },
     limit?: { limit?: number; offset?: number },
   ) {
@@ -146,11 +146,8 @@ export class UserDAO {
         );
       }
     }
-    if (params?.name_prefix) {
-      const normalized = NormalizeName(params.name_prefix).replace(
-        /[_%]/g,
-        "\\$&",
-      );
+    if (params?.name) {
+      const normalized = NormalizeName(params.name).replace(/[_%]/g, "\\$&");
       query = query.where("name_normalized", "ilike", `%${normalized}%`);
     }
     if (params?.ids && params?.ids.length) {

@@ -20,6 +20,7 @@ describe(PolicyService, () => {
   const databaseClient = mockDeep<ServiceCradle["databaseClient"]>();
   const logger = mockDeep<ServiceCradle["logger"]>();
   const configService = mockDeep<ServiceCradle["configService"]>();
+  const auditLogService = mockDeep<ServiceCradle["auditLogService"]>();
 
   const mockPolicyDAO = mockDeep<PolicyDAO>();
   const mockUserDAO = mockDeep<UserDAO>();
@@ -40,6 +41,7 @@ describe(PolicyService, () => {
       databaseClient,
       logger,
       configService,
+      auditLogService,
     });
   });
 

@@ -298,7 +298,7 @@ export const QueryTeamsRequest = Type.Object(
     division_id: Type.Optional(Type.Integer()),
     page: Type.Optional(Type.Integer({ minimum: 1 })),
     page_size: Type.Optional(Type.Integer()),
-    name_prefix: Type.Optional(Type.String({ maxLength: 64 })),
+    name: Type.Optional(Type.String({ maxLength: 64 })),
     ids: Type.Optional(Type.Array(Type.Integer(), { maxItems: 50 })),
   },
   { additionalProperties: false },
@@ -321,7 +321,7 @@ export const QueryUsersRequest = Type.Object(
   {
     page: Type.Optional(Type.Integer({ minimum: 1 })),
     page_size: Type.Optional(Type.Integer()),
-    name_prefix: Type.Optional(Type.String({ maxLength: 64 })),
+    name: Type.Optional(Type.String({ maxLength: 64 })),
     ids: Type.Optional(Type.Array(Type.Integer(), { maxItems: 50 })),
   },
   { additionalProperties: false },

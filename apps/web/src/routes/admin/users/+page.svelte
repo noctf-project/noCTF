@@ -14,7 +14,7 @@
         body: {
           page: currentPage + 1,
           page_size: pageSize,
-          name_prefix: searchQuery || undefined,
+          name: searchQuery || undefined,
         },
       }),
     );

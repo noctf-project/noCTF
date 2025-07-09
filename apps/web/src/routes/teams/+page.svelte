@@ -51,7 +51,7 @@
       const result = await TeamQueryService.queryTeams({
         page: currentPage + 1,
         page_size: TEAMS_PER_PAGE,
-        name_prefix: debouncedSearchQuery,
+        name: debouncedSearchQuery,
       });
 
       teams = result.teams;

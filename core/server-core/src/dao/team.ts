@@ -311,7 +311,7 @@ export class TeamDAO {
     params?: {
       flags?: string[];
       ids?: number[];
-      name_prefix?: string;
+      name?: string;
       division_id?: number;
     },
     limit?: { limit?: number; offset?: number },
@@ -329,11 +329,8 @@ export class TeamDAO {
         );
       }
     }
-    if (params?.name_prefix) {
-      const normalized = NormalizeName(params.name_prefix).replace(
-        /[_%]/g,
-        "\\$&",
-      );
+    if (params?.name) {
+      const normalized = NormalizeName(params.name).replace(/[_%]/g, "\\$&");
       query = query.where("name_normalized", "ilike", `%${normalized}%`);
     }
     if (params?.division_id) {
