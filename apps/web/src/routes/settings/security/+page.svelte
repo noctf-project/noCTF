@@ -21,6 +21,11 @@
       return;
     }
 
+    if (securityForm.currentPassword === securityForm.newPassword) {
+      toasts.error("Your new password matches your current password.");
+      return;
+    }
+
     if (securityForm.newPassword !== securityForm.confirmPassword) {
       toasts.error("New passwords do not match.");
       return;
@@ -34,7 +39,7 @@
     try {
       isUpdatingPassword = true;
 
-      const response = await api.POST("/auth/email/change", {
+      const response = await api.POST("/auth/password/change", {
         body: {
           password: securityForm.currentPassword,
           newPassword: securityForm.newPassword,
