@@ -46,11 +46,11 @@
         },
       });
 
-      if (!response.data) {
-        throw new Error(response.error?.message || "Failed to change password");
+      if (response.error) {
+        throw new Error(response.error.message || "Failed to change password");
       }
 
-      if (response.data) {
+      if (response.data && response.data.data) {
         localStorage.setItem(SESSION_TOKEN_KEY, response.data.data.token);
         toasts.success("Password updated successfully!");
       }
