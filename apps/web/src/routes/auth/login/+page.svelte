@@ -64,16 +64,7 @@
   </div>
 
   <div class="flex justify-between items-center mt-2">
-    <div class="form-control">
-      <label class="cursor-pointer label justify-start py-1">
-        <input
-          type="checkbox"
-          class="checkbox checkbox-sm mr-2"
-          bind:checked={loginState.rememberMe}
-        />
-        <span class="label-text text-sm">Remember me</span>
-      </label>
-    </div>
+    <div></div>
     <button
       type="button"
       class="text-sm link link-hover self-end"

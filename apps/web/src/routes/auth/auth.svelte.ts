@@ -7,7 +7,6 @@ class LoginState {
   email: string = $state("");
   username: string = $state("");
   password: string = $state("");
-  rememberMe: boolean = $state(false);
   registrationToken: string = $state("");
 
   // OAuth params
@@ -64,7 +63,6 @@ class LoginState {
       body: {
         email: this.email,
         password: this.password,
-        remember: this.rememberMe,
       },
     });
 
