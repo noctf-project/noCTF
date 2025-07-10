@@ -6,6 +6,7 @@ import {
   AdminUpdateUserRequest,
 } from "@noctf/api/requests";
 import {
+  AdminListUserIdentitiesResponse,
   AdminListUsersResponse,
   AdminResetPasswordResponse,
   BaseResponse,
@@ -54,41 +55,42 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const canViewIdentity = await policyService.evaluate(request.user.id, [
-        "admin.identity.get",
-      ]);
-
       const { page, page_size, ...query } = request.body;
-      const [{ entries, page_size: actual_page_size }, total] =
-        await Promise.all([
-          Paginate(query, { page, page_size }, (q, l) =>
-            userService.listSummary(q, l),
-          ),
-          query.ids && query.ids.length ? 0 : userService.getCount(query),
-        ]);
-      const results = await RunInParallelWithLimit(entries, 8, async (e) => ({
-        ...e,
-        derived_roles: [...(await policyService.computeRolesForUser(e))],
-        identities: await identityService.listProvidersForUser(e.id),
-      }));
-      const derivedEntries: AdminListUsersResponse["data"]["entries"] = [];
-      for (const r of results) {
-        if (r.status !== "fulfilled") throw r.reason;
-        derivedEntries.push(r.value);
-        if (!canViewIdentity && r.value.id !== request.user.id) {
-          r.value.identities = r.value.identities.map((x) => ({
-            ...x,
-            provider_id: "<hidden>",
-          }));
-        }
-      }
+      const [results, total] = await Promise.all([
+        Paginate(query, { page, page_size }, (q, l) =>
+          userService.listSummary(q, l),
+        ),
+        query.ids && query.ids.length ? 0 : userService.getCount(query),
+      ]);
 
       return {
         data: {
-          entries: derivedEntries,
-          page_size: actual_page_size,
-          total: total || derivedEntries.length,
+          ...results,
+          total: total || results.entries.length,
         },
+      };
+    },
+  );
+
+  fastify.get<{ Reply: AdminListUserIdentitiesResponse; Params: IdParams }>(
+    "/admin/users/:id/identities",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["admin"],
+        auth: {
+          require: true,
+          policy: ["admin.identity.get"],
+        },
+        params: IdParams,
+        response: {
+          200: AdminListUserIdentitiesResponse,
+        },
+      },
+    },
+    async (request) => {
+      return {
+        data: await identityService.listProvidersForUser(request.params.id),
       };
     },
   );
