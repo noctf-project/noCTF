@@ -59,6 +59,11 @@
       color: "btn-neutral",
       icon: "material-symbols:visibility-off",
     },
+    {
+      name: "valid_email",
+      color: "btn-success",
+      icon: "material-symbols:mark-email-read-rounded",
+    },
   ];
 
   const availableRoles = [
@@ -489,14 +494,6 @@
                     >
                   {/if}
                 </div>
-                {#if userData.identities && userData.identities.length > 0}
-                  <div class="text-xs opacity-70 mt-1">
-                    {userData.identities.length}
-                    {userData.identities.length === 1
-                      ? "identity"
-                      : "identities"}
-                  </div>
-                {/if}
               </div>
 
               <div class="form-control w-full">
