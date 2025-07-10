@@ -67,7 +67,4 @@
     </div>
   {/if}
   <Toast />
-  <footer class="text-center pb-4 text-xs">
-    Powered by <a href="https://noctf.dev" class="text-primary">noCTF</a>
-  </footer>
 </div>
