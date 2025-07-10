@@ -88,11 +88,21 @@ export const ChangeAuthEmailRequest = Type.Object(
   {
     email: Type.Optional(Type.String({ format: "email" })),
     password: Type.String(),
-    newPassword: Type.Optional(Type.String({ minLength: 8, maxLength: 256 })),
   },
   { additionalProperties: false },
 );
 export type ChangeAuthEmailRequest = Static<typeof ChangeAuthEmailRequest>;
+
+export const ChangeAuthPasswordRequest = Type.Object(
+  {
+    password: Type.String(),
+    newPassword: Type.Optional(Type.String({ minLength: 8, maxLength: 256 })),
+  },
+  { additionalProperties: false },
+);
+export type ChangeAuthPasswordRequest = Static<
+  typeof ChangeAuthPasswordRequest
+>;
 
 export const AssociateRequest = Type.Object(
   {

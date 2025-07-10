@@ -102,15 +102,12 @@
         class="text-4xl text-success"
       />
     </div>
-    <p class="text-center mb-6">
-      Your password has been successfully updated. You can now log in with your
-      new password.
-    </p>
+    <p class="text-center mb-6">Your password has been successfully updated.</p>
     <button
       class="btn btn-primary w-full pop hover:pop"
-      onclick={() => goto("/auth/login")}
+      onclick={() => window.location.reload()}
     >
-      Continue to Login
+      Go Home
     </button>
   </div>
 {:else}
