@@ -14,14 +14,6 @@
     }),
   );
 
-  const identities = wrapLoadable(
-    api.GET("/admin/users/{id}/identities", {
-      params: {
-        path: { id: userId },
-      },
-    }),
-  );
-
   const submissions = wrapLoadable(
     api.POST("/admin/submissions/query", {
       body: {
@@ -477,8 +469,8 @@
                 <div
                   class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg"
                 >
-                  {#if identities.r?.data?.data && identities.r?.data?.data.length > 0}
-                    {#each identities.r.data.data as identity}
+                  {#if userData.identities && userData.identities.length > 0}
+                    {#each userData.identities as identity}
                       <div class="badge badge-info gap-2 pop">
                         <Icon
                           icon={getProviderIcon(identity.provider)}
@@ -497,6 +489,14 @@
                     >
                   {/if}
                 </div>
+                {#if userData.identities && userData.identities.length > 0}
+                  <div class="text-xs opacity-70 mt-1">
+                    {userData.identities.length}
+                    {userData.identities.length === 1
+                      ? "identity"
+                      : "identities"}
+                  </div>
+                {/if}
               </div>
 
               <div class="form-control w-full">

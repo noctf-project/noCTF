@@ -142,19 +142,21 @@ export type ListUsersResponse = Static<typeof ListUsersResponse>;
 
 export const AdminListUsersResponse = Type.Object({
   data: Type.Object({
-    entries: Type.Array(UserSummary),
+    entries: Type.Array(
+      Type.Composite([
+        UserSummary,
+        Type.Object({
+          identities: Type.Array(
+            Type.Pick(UserIdentity, ["provider", "provider_id"]),
+          ),
+        }),
+      ]),
+    ),
     page_size: Type.Integer(),
     total: Type.Integer(),
   }),
 });
 export type AdminListUsersResponse = Static<typeof AdminListUsersResponse>;
-
-export const AdminListUserIdentitiesResponse = Type.Object({
-  data: Type.Array(Type.Pick(UserIdentity, ["provider", "provider_id"])),
-});
-export type AdminListUserIdentitiesResponse = Static<
-  typeof AdminListUserIdentitiesResponse
->;
 
 export const MeUserResponse = Type.Object({
   data: Type.Composite([

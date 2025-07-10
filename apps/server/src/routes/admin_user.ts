@@ -1,4 +1,5 @@
 import { SetupConfig } from "@noctf/api/config";
+import { UserIdentity } from "@noctf/api/datatypes";
 import { IdParams } from "@noctf/api/params";
 import { SessionQuery } from "@noctf/api/query";
 import {
@@ -6,7 +7,6 @@ import {
   AdminUpdateUserRequest,
 } from "@noctf/api/requests";
 import {
-  AdminListUserIdentitiesResponse,
   AdminListUsersResponse,
   AdminResetPasswordResponse,
   BaseResponse,
@@ -55,42 +55,43 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const { page, page_size, ...query } = request.body;
-      const [results, total] = await Promise.all([
-        Paginate(query, { page, page_size }, (q, l) =>
-          userService.listSummary(q, l),
-        ),
-        query.ids && query.ids.length ? 0 : userService.getCount(query),
+      const canViewIdentity = await policyService.evaluate(request.user.id, [
+        "admin.identity.get",
       ]);
+
+      const { page, page_size, ...query } = request.body;
+      const [{ entries, page_size: actual_page_size }, total] =
+        await Promise.all([
+          Paginate(query, { page, page_size }, (q, l) =>
+            userService.listSummary(q, l),
+          ),
+          query.ids && query.ids.length ? 0 : userService.getCount(query),
+        ]);
+      const identities = await identityService.listProvidersForUser(
+        entries.map((x) => x.id),
+      );
+      const idMap = new Map<
+        number,
+        AdminListUsersResponse["data"]["entries"][number]["identities"]
+      >();
+      for (const id of identities) {
+        let matched = idMap.get(id.user_id);
+        if (!matched) {
+          matched = [];
+          idMap.set(id.user_id, matched);
+        }
+        matched.push(canViewIdentity ? id : { ...id, provider_id: "<hidden>" });
+      }
 
       return {
         data: {
-          ...results,
-          total: total || results.entries.length,
+          entries: entries.map((e) => ({
+            ...e,
+            identities: idMap.get(e.id) || [],
+          })),
+          page_size: actual_page_size,
+          total: total || entries.length,
         },
-      };
-    },
-  );
-
-  fastify.get<{ Reply: AdminListUserIdentitiesResponse; Params: IdParams }>(
-    "/admin/users/:id/identities",
-    {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        auth: {
-          require: true,
-          policy: ["admin.identity.get"],
-        },
-        params: IdParams,
-        response: {
-          200: AdminListUserIdentitiesResponse,
-        },
-      },
-    },
-    async (request) => {
-      return {
-        data: await identityService.listProvidersForUser(request.params.id),
       };
     },
   );
