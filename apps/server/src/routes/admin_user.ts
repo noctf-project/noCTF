@@ -1,4 +1,5 @@
 import { SetupConfig } from "@noctf/api/config";
+import { UserIdentity } from "@noctf/api/datatypes";
 import { IdParams } from "@noctf/api/params";
 import { SessionQuery } from "@noctf/api/query";
 import {
@@ -66,28 +67,30 @@ export async function routes(fastify: FastifyInstance) {
           ),
           query.ids && query.ids.length ? 0 : userService.getCount(query),
         ]);
-      const results = await RunInParallelWithLimit(entries, 8, async (e) => ({
-        ...e,
-        derived_roles: [...(await policyService.computeRolesForUser(e))],
-        identities: await identityService.listProvidersForUser(e.id),
-      }));
-      const derivedEntries: AdminListUsersResponse["data"]["entries"] = [];
-      for (const r of results) {
-        if (r.status !== "fulfilled") throw r.reason;
-        derivedEntries.push(r.value);
-        if (!canViewIdentity && r.value.id !== request.user.id) {
-          r.value.identities = r.value.identities.map((x) => ({
-            ...x,
-            provider_id: "<hidden>",
-          }));
+      const identities = await identityService.listProvidersForUser(
+        entries.map((x) => x.id),
+      );
+      const idMap = new Map<
+        number,
+        AdminListUsersResponse["data"]["entries"][number]["identities"]
+      >();
+      for (const id of identities) {
+        let matched = idMap.get(id.user_id);
+        if (!matched) {
+          matched = [];
+          idMap.set(id.user_id, matched);
         }
+        matched.push(canViewIdentity ? id : { ...id, provider_id: "<hidden>" });
       }
 
       return {
         data: {
-          entries: derivedEntries,
+          entries: entries.map((e) => ({
+            ...e,
+            identities: idMap.get(e.id) || [],
+          })),
           page_size: actual_page_size,
-          total: total || derivedEntries.length,
+          total: total || entries.length,
         },
       };
     },

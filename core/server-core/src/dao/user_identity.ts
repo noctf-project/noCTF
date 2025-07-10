@@ -1,4 +1,3 @@
-import pg from "pg";
 import { ConflictError } from "../errors.ts";
 import type { DBType } from "../clients/database.ts";
 import type { UserIdentity } from "@noctf/api/datatypes";
@@ -58,11 +57,29 @@ export class UserIdentityDAO {
       .executeTakeFirst();
   }
 
-  async listProvidersForUser(user_id: number) {
-    return await this.db
-      .selectFrom("user_identity")
-      .select(["provider", "provider_id"])
-      .where("user_id", "=", user_id)
+  async listProvidersForUser(
+    ids: number[],
+    withSecret: true,
+  ): Promise<UserIdentity[]>;
+  async listProvidersForUser(
+    ids: number[],
+    withSecret?: false | undefined,
+  ): Promise<Omit<UserIdentity, "secret_data">[]>;
+  async listProvidersForUser(ids: number[], withSecret?: boolean) {
+    let query = this.db.selectFrom("user_identity").where("user_id", "in", ids);
+    if (withSecret) {
+      return query
+        .select([
+          "user_id",
+          "provider",
+          "provider_id",
+          "secret_data",
+          "created_at",
+        ])
+        .execute();
+    }
+    return query
+      .select(["user_id", "provider", "provider_id", "created_at"])
       .execute();
   }
 
