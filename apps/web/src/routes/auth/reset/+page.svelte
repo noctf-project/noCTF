@@ -4,7 +4,7 @@
   import Icon from "@iconify/svelte";
   import { header } from "../+layout.svelte";
   import { page } from "$app/state";
-  import api from "$lib/api/index.svelte";
+  import api, { SESSION_TOKEN_KEY } from "$lib/api/index.svelte";
 
   let isLoading = $state(false);
   let password = $state("");
@@ -55,6 +55,7 @@
       }
 
       toasts.success("Password has been reset successfully");
+      localStorage.setItem(SESSION_TOKEN_KEY, response.data.data.token);
       currentStage = "success";
     } catch (error) {
       console.error("Password reset error:", error);

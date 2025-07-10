@@ -22,7 +22,9 @@ export const ScoreboardCalculatorWorker = async (
   signal: AbortSignal,
   c: Props,
 ) => {
-  await c.eventBusService.subscribe<SubmissionUpdateEvent>(
+  await c.eventBusService.subscribe<
+    SubmissionUpdateEvent | ChallengeUpdateEvent
+  >(
     signal,
     "ScoreboardWorker",
     [SubmissionUpdateEvent.$id!, ChallengeUpdateEvent.$id!],
@@ -31,6 +33,14 @@ export const ScoreboardCalculatorWorker = async (
       handler: async (data) => {
         let updated_at = new Date(data.timestamp);
         if (data.data.updated_at) updated_at = data.data.updated_at;
+        const sub = data.data as SubmissionUpdateEvent;
+        if (
+          data.subject === SubmissionUpdateEvent.$id! &&
+          !sub.is_update &&
+          sub.status !== "correct"
+        )
+          return;
+
         await RunLockedScoreboardCalculator(c, updated_at);
       },
     },

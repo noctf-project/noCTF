@@ -255,9 +255,18 @@ export class IdentityService {
       provider,
     });
   }
-
-  async listProvidersForUser(id: number) {
-    return this.identityDAO.listProvidersForUser(id);
+  async listProvidersForUser(ids: number | number[], withSecret: true);
+  async listProvidersForUser(
+    ids: number | number[],
+    withSecret?: false | undefined,
+  );
+  async listProvidersForUser(ids: number | number[], withSecret?: boolean) {
+    const q = typeof ids === "number" ? [ids] : ids;
+    if (withSecret === true) {
+      return this.identityDAO.listProvidersForUser(q, true);
+    } else {
+      return this.identityDAO.listProvidersForUser(q, false);
+    }
   }
 
   async listSessionsForUser(...args: Parameters<SessionDAO["listByUserId"]>) {

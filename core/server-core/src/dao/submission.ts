@@ -5,6 +5,7 @@ import { LimitOffset, Submission } from "@noctf/api/datatypes";
 import { SubmissionStatus } from "@noctf/api/enums";
 import { PostgresErrorCode, TryPGConstraintError } from "../util/pgerror.ts";
 import { ConflictError } from "../errors.ts";
+import { ExpressionBuilder } from "kysely";
 
 export type RawSolve = Pick<
   Submission,
@@ -18,15 +19,46 @@ export type RawSolve = Pick<
   | "value"
 >;
 
+const GetSeq = (eb: ExpressionBuilder<DB, "submission">) =>
+  eb
+    .case()
+    .when("status", "=", "correct")
+    .then(
+      eb
+        .selectFrom("submission as s")
+        .innerJoin("team as t", "t.id", "s.team_id")
+        .select(eb.fn.countAll().as("count"))
+        .where("challenge_id", "=", eb.ref("submission.challenge_id"))
+        .where("status", "=", "correct")
+        .where("s.hidden", "is", false)
+        .where((eb) => eb.not(eb("t.flags", "&&", sql.val(["hidden"]))))
+        .where(
+          "t.division_id",
+          "=",
+          eb
+            .selectFrom("team")
+            .select("division_id")
+            .where("id", "=", eb.ref("submission.team_id")),
+        ),
+    )
+    .else(0)
+    .end();
+
 export class SubmissionDAO {
   constructor(private readonly db: DBType) {}
 
   async create(v: Insertable<DB["submission"]>) {
-    return await this.db
+    const data = await this.db
       .insertInto("submission")
       .values(v)
-      .returning(["id", "updated_at"])
+      .returning((eb) => [
+        "id",
+        "created_at",
+        "updated_at",
+        GetSeq(eb).as("seq"),
+      ])
       .executeTakeFirstOrThrow();
+    return { ...data, seq: Number(data.seq) };
   }
 
   async getCurrentMetadata(challenge_id: number, team_id: number) {
@@ -52,14 +84,16 @@ export class SubmissionDAO {
       .updateTable("submission")
       .where("id", "in", ids)
       .set("updated_at", sql`CURRENT_TIMESTAMP`)
-      .returning([
+      .returning((eb) => [
         "id",
         "user_id",
         "team_id",
         "challenge_id",
         "hidden",
+        "created_at",
         "updated_at",
         "status",
+        GetSeq(eb).as("seq"),
       ]);
     if (typeof params.comments === "string") {
       query = query.set("comments", params.comments);
@@ -74,7 +108,7 @@ export class SubmissionDAO {
       query = query.set("status", params.status);
     }
     try {
-      return query.execute();
+      return (await query.execute()).map((x) => ({ ...x, seq: Number(x.seq) }));
     } catch (e) {
       const pgerror = TryPGConstraintError(e, {
         [PostgresErrorCode.Duplicate]: {
