@@ -2,6 +2,7 @@ import type { Static } from "@sinclair/typebox";
 import { Type } from "@sinclair/typebox";
 import { EmailAddress, ScoringStrategy } from "./datatypes.ts";
 import { CaptchaHTTPMethod } from "./types.ts";
+import { SubmissionStatus } from "./enums.ts";
 
 export const TeamConfig = Type.Object(
   {
@@ -144,3 +145,48 @@ export const EmailConfig = Type.Object(
   { $id: "core.email", additionalProperties: false },
 );
 export type EmailConfig = Static<typeof EmailConfig>;
+
+export const NotificationConfig = Type.Object(
+  {
+    submission: Type.Optional(
+      Type.Array(
+        Type.Object({
+          url: Type.String({ format: "uri", title: "Webhook URL" }),
+          type: Type.Union([Type.Literal("discord"), Type.Literal("webhook")], {
+            title: "Notification Type",
+          }),
+          template: Type.Optional(
+            Type.String({
+              title: "Message template",
+              description:
+                "Handlebars template for the message. Does not apply to the webhook notification type",
+            }),
+          ),
+          division_ids: Type.Optional(
+            Type.Array(Type.Number(), { title: "Division Filter" }),
+          ),
+          status_filter: Type.Optional(
+            Type.Array(SubmissionStatus, {
+              title: "Submission Status Filter",
+              description:
+                "Only send notifications for these statuses if filter is defined",
+              uniqueItems: true,
+            }),
+          ),
+          max_seq: Type.Optional(
+            Type.Integer({
+              title: "Maximum solve count",
+              minimum: 0,
+              description:
+                "Only notify up to a certain solve count. Set to 0 for unlimited",
+            }),
+          ),
+          enabled: Type.Boolean({ title: "Enabled" }),
+        }),
+        { title: "Submission Notifications" },
+      ),
+    ),
+  },
+  { $id: "core.notification", additionalProperties: false },
+);
+export type NotificationConfig = Static<typeof NotificationConfig>;

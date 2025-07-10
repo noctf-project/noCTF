@@ -58,6 +58,11 @@ export class SubmissionService {
         actor: audit?.actor,
         data: audit?.message,
       });
+
+    // The DB returns the same seq if we update multiple records for the
+    // same challenge to correct at the same time.
+    updates.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
+    const seqMap = new Map<number, number>();
     for (const {
       id,
       status,
@@ -65,16 +70,27 @@ export class SubmissionService {
       team_id,
       hidden,
       challenge_id,
+      created_at,
       updated_at,
+      seq,
     } of updates) {
+      let vSeq = seqMap.get(id);
+      if (!vSeq) {
+        vSeq = 1;
+        seqMap.set(id, vSeq);
+      }
       await this.eventBusService.publish(SubmissionUpdateEvent, {
         id,
         user_id: user_id || undefined,
         team_id,
         challenge_id,
         status,
+        created_at,
         updated_at,
         hidden,
+        seq: status === "correct" ? seq + vSeq : 0,
+        is_update: true,
+        comments: rest.comments || "",
       });
     }
     return updates.map(({ id }) => id);

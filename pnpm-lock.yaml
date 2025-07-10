@@ -469,7 +469,7 @@ importers:
         specifier: 'catalog:'
         version: 5.2.0
       handlebars:
-        specifier: ^4.7.8
+        specifier: 'catalog:'
         version: 4.7.8
       ip-address:
         specifier: ^10.0.1
@@ -477,6 +477,9 @@ importers:
       jose:
         specifier: ^6.0.11
         version: 6.0.11
+      ky:
+        specifier: 'catalog:'
+        version: 1.7.4
       kysely:
         specifier: 'catalog:'
         version: 0.27.5
