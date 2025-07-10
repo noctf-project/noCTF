@@ -7,6 +7,6 @@
   <!-- Welcome to {configState.siteConfig?.name || "noCTF"} -->
   <!-- </div> -->
   <div class="flex justify-center items-center">
-    <img src="/images/DUCTF6-banner.png" alt="DUCTF6" class="w-2/3" />
+    <img src="/images/DUCTF6-banner.webp" style="border-radius: 10%" alt="DUCTF6" class="w-2/3" />
   </div>
 </div>

@@ -23,7 +23,7 @@
     {@render speechBubble("Email could not be sent :(")}
     <div class="relative">
       <img
-        src="/images/incorrect-dog.png"
+        src="/images/incorrect-dog.webp"
         alt="Incorrect dog"
         class="w-32 h-32 object-contain incorrect-animation"
       />
@@ -36,7 +36,7 @@
     {@render speechBubble("Email Actioned! ")}
     <div class="relative">
       <img
-        src="/images/correct-dog.png"
+        src="/images/correct-dog.webp"
         alt="Correct dog"
         class="w-32 h-32 object-contain correct-animation"
         in:fade={{ duration: 1000, easing: cubicInOut }}
