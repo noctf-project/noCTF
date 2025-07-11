@@ -62,6 +62,11 @@
           >
         </li>
         <li>
+          <a href="/admin/policies" class={isActive("/admin/policies")}
+            >Policies</a
+          >
+        </li>
+        <li>
           <a href="/admin/audit_logs" class={isActive("/admin/audit_logs")}
             >Audit Logs</a
           >
@@ -112,6 +117,11 @@
         <li>
           <a href="/admin/submissions" class={isActive("/admin/submissions")}
             >Submissions</a
+          >
+        </li>
+        <li>
+          <a href="/admin/policies" class={isActive("/admin/policies")}
+            >Policies</a
           >
         </li>
         <li>
