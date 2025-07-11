@@ -1,12 +1,14 @@
 import { sql, type Kysely } from "kysely";
-import { CreateTriggerUpdatedAt } from "./util";
+import {
+  CreateTableWithDefaultTimestamps,
+  CreateTriggerUpdatedAt,
+} from "./util";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
 
-  await schema
-    .createTable("division")
+  await CreateTableWithDefaultTimestamps(schema, "division")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
@@ -18,12 +20,6 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.notNull().defaultTo(false),
     )
     .addColumn("password", "varchar(64)", (col) => col.notNull().defaultTo(""))
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
-    .addColumn("updated_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
     .execute();
   await CreateTriggerUpdatedAt("division").execute(db);
 
@@ -38,8 +34,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     })
     .execute();
 
-  await schema
-    .createTable("team")
+  await CreateTableWithDefaultTimestamps(schema, "team")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
@@ -57,15 +52,9 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("division_id", sql`integer`, (col) =>
       col.notNull().references("division.id"),
     )
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
-    .addColumn("updated_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
     .execute();
-
   await CreateTriggerUpdatedAt("team").execute(db);
+
   await schema
     .createIndex("team_idx_trgm_name_normalized")
     .on("team")

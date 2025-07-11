@@ -1,5 +1,8 @@
 import { sql, type Kysely } from "kysely";
-import { CreateTriggerUpdatedAt } from "./util";
+import {
+  CreateTableWithDefaultTimestamps,
+  CreateTriggerUpdatedAt,
+} from "./util";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
@@ -29,8 +32,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .execute();
 
-  await schema
-    .createTable("app")
+  await CreateTableWithDefaultTimestamps(schema, "app")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
@@ -42,18 +44,14 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .addColumn("scopes", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .addColumn("enabled", "boolean", (col) => col.notNull().defaultTo(false))
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
-    .addColumn("updated_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
     .execute();
 
   await CreateTriggerUpdatedAt("app").execute(db);
 
-  await schema
-    .createTable("session")
+  await CreateTableWithDefaultTimestamps(schema, "session", [
+    "created_at",
+    "refreshed_at",
+  ])
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
@@ -65,12 +63,6 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("ip", "varchar(64)")
     .addColumn("app_id", "integer", (col) => col.references("app.id"))
     .addColumn("revoked_at", "timestamptz")
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
-    .addColumn("refreshed_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
     .addColumn("expires_at", "timestamptz")
     .execute();
   await schema

@@ -1,12 +1,14 @@
 import { sql, type Kysely } from "kysely";
-import { CreateTriggerUpdatedAt } from "./util";
+import {
+  CreateTableWithDefaultTimestamps,
+  CreateTriggerUpdatedAt,
+} from "./util";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
 
-  await schema
-    .createTable("ticket")
+  await CreateTableWithDefaultTimestamps(schema, "ticket")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
@@ -19,17 +21,13 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("provider", "varchar(64)", (col) => col.notNull())
     .addColumn("provider_id", "varchar(64)")
     .addColumn("provider_metadata", "jsonb")
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
-    .addColumn("updated_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
     .addCheckConstraint(
       "ticket_chk_oneof_team_user",
       sql`(team_id IS NULL OR user_id IS NULL) AND NOT (team_id IS NULL AND user_id IS NULL)`,
     )
     .execute();
+  await CreateTriggerUpdatedAt("ticket").execute(db);
+
   await schema
     .createIndex("ticket_idx_team_id")
     .on("ticket")
@@ -54,32 +52,24 @@ export async function up(db: Kysely<any>): Promise<void> {
     .nullsNotDistinct()
     .execute();
 
-  await CreateTriggerUpdatedAt("ticket").execute(db);
-  await schema
-    .createTable("ticket_ban")
+  await CreateTableWithDefaultTimestamps(schema, "ticket_ban")
     .addColumn("team_id", "integer", (col) => col.references("team.id"))
     .addColumn("user_id", "integer", (col) => col.references("user.id"))
     .addColumn("until", "timestamptz")
     .addColumn("reason", "text", (col) => col.notNull())
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
     .addCheckConstraint(
       "ticket_ban_chk_oneof_team_user",
       sql`(team_id IS NULL OR user_id IS NULL) AND NOT (team_id IS NULL AND user_id IS NULL)`,
     )
     .execute();
+  await CreateTriggerUpdatedAt("ticket_ban").execute(db);
 
-  await schema
-    .createTable("ticket_event")
+  await CreateTableWithDefaultTimestamps(schema, "ticket_event", ["created_at"])
     .addColumn("ticket_id", "integer", (col) =>
       col.notNull().references("ticket.id").onDelete("cascade"),
     )
     .addColumn("operation", "varchar(64)", (col) => col.notNull())
     .addColumn("actor", "varchar(64)", (col) => col.notNull())
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
     .execute();
 }
 

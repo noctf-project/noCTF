@@ -1,5 +1,8 @@
 import { sql, type Kysely } from "kysely";
-import { CreateTriggerUpdatedAt } from "./util";
+import {
+  CreateTableWithDefaultTimestamps,
+  CreateTriggerUpdatedAt,
+} from "./util";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
@@ -22,20 +25,13 @@ export async function up(db: Kysely<any>): Promise<void> {
   END;
   $$ language 'plpgsql'`.execute(db);
 
-  await schema
-    .createTable("config")
+  await CreateTableWithDefaultTimestamps(schema, "config")
     .addColumn("namespace", "varchar", (col) => col.primaryKey())
     .addColumn("value", "jsonb", (col) => col.notNull().defaultTo("{}"))
     .addColumn("version", "integer", (col) => col.notNull().defaultTo(1))
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
-    .addColumn("updated_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
     .execute();
-
   await CreateTriggerUpdatedAt("config").execute(db);
+
   await schema
     .createTable("audit_log")
     .addColumn("actor", "varchar(64)", (col) => col.notNull())
