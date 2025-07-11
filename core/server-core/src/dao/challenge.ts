@@ -131,7 +131,6 @@ export class ChallengeDAO {
       tags: v.tags,
       hidden: v.hidden,
       visible_at: v.visible_at,
-      updated_at: new Date(),
     };
     let query = this.db
       .updateTable("challenge")

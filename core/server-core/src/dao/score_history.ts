@@ -19,14 +19,12 @@ export class ScoreHistoryDAO {
     for (let i = 0; i < entries.length; i += ADD_CHUNK_SIZE) {
       const values = entries
         .slice(i, i + ADD_CHUNK_SIZE)
-        .map(({ team_id, updated_at, score }) => ({
+        .map(({ team_id, score }) => ({
           team_id,
-          updated_at: updated_at || sql<Date>`CURRENT_TIMESTAMP::timestamp(1)`,
           score,
         }));
       await this.db
         .insertInto("score_history")
-        .values(values)
         .onConflict((o) =>
           o.columns(["team_id", "updated_at"]).doUpdateSet({
             score: (eb) => eb.ref("excluded.score"),

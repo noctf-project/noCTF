@@ -1,10 +1,13 @@
 import { sql, type Kysely } from "kysely";
+import {
+  CreateTableWithDefaultTimestamps,
+  CreateTriggerUpdatedAt,
+} from "./util";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
-  await schema
-    .createTable("team_tag")
+  await CreateTableWithDefaultTimestamps(schema, "team_tag")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
@@ -12,21 +15,18 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("is_joinable", "boolean", (col) =>
       col.notNull().defaultTo(false),
     )
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
     .execute();
 
-  await db.schema
-    .createTable("team_tag_member")
+  await CreateTriggerUpdatedAt("team_tag").execute(db);
+
+  await CreateTableWithDefaultTimestamps(schema, "team_tag_member", [
+    "created_at",
+  ])
     .addColumn("tag_id", "integer", (e) =>
       e.notNull().references("team_tag.id").onDelete("cascade"),
     )
     .addColumn("team_id", "integer", (e) =>
       e.notNull().references("team.id").onDelete("cascade"),
-    )
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
     )
     .addUniqueConstraint("team_tag_member_uidx_tag_id_team_id", [
       "tag_id",

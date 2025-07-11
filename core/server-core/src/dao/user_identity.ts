@@ -35,7 +35,6 @@ export class UserIdentityDAO {
             provider,
             provider_id,
             secret_data,
-            updated_at: sql`CURRENT_TIMESTAMP`,
           }),
         )
         .execute();
@@ -65,7 +64,10 @@ export class UserIdentityDAO {
     ids: number[],
     withSecret?: false | undefined,
   ): Promise<Omit<UserIdentity, "secret_data">[]>;
-  async listProvidersForUser(ids: number[], withSecret?: boolean) {
+  async listProvidersForUser(
+    ids: number[],
+    withSecret?: boolean,
+  ): Promise<any[]> {
     if (!ids.length) return [];
     let query = this.db.selectFrom("user_identity").where("user_id", "in", ids);
     if (withSecret) {

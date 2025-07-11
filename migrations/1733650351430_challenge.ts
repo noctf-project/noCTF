@@ -1,11 +1,14 @@
 import { sql, type Kysely } from "kysely";
+import {
+  CreateTableWithDefaultTimestamps,
+  CreateTriggerUpdatedAt,
+} from "./util";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
 
-  await schema
-    .createTable("challenge")
+  await CreateTableWithDefaultTimestamps(schema, "challenge")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
@@ -17,13 +20,8 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("hidden", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("version", "integer", (col) => col.notNull().defaultTo(1))
     .addColumn("visible_at", "timestamptz")
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
-    .addColumn("updated_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
     .execute();
+  await CreateTriggerUpdatedAt("challenge").execute(db);
 
   await schema
     .createIndex("challenge_idx_tags")
