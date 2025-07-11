@@ -13,47 +13,45 @@
 
 <div class="navbar py-4 lg:py-8 px-4 sm:px-6 lg:px-12 min-h-24 lg:min-h-32">
   <div class="navbar-start">
-    {#if authState.isAuthenticated}
-      <div class="dropdown">
-        <div
-          tabindex="0"
-          role="button"
-          class="btn bg-base-100 pop hover:pop hover:none lg:hidden"
-          aria-label="Open menu"
+    <div class="dropdown">
+      <div
+        tabindex="0"
+        role="button"
+        class="btn bg-base-100 pop hover:pop hover:none lg:hidden"
+        aria-label="Open menu"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 6h16M4 12h8m-8 6h16"
-            />
-          </svg>
-        </div>
-        <ul
-          class="menu menu-sm dropdown-content mt-3 z-[10] p-2 pop bg-base-100 rounded-box w-52"
-        >
-          <li>
-            <a href="/challenges" class={isActive("/challenges")}>Challenges</a>
-          </li>
-          <li>
-            <a href="/scoreboard" class={isActive("/scoreboard")}>Scoreboard</a>
-          </li>
-          <li>
-            <a href="/teams" class={isActive("/teams")}>Teams</a>
-          </li>
-          {#if authState.isAdmin}
-            <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
-          {/if}
-        </ul>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h8m-8 6h16"
+          />
+        </svg>
       </div>
-    {/if}
+      <ul
+        class="menu menu-sm dropdown-content mt-3 z-[10] p-2 pop bg-base-100 rounded-box w-52"
+      >
+        <li>
+          <a href="/challenges" class={isActive("/challenges")}>Challenges</a>
+        </li>
+        <li>
+          <a href="/scoreboard" class={isActive("/scoreboard")}>Scoreboard</a>
+        </li>
+        <li>
+          <a href="/teams" class={isActive("/teams")}>Teams</a>
+        </li>
+        {#if authState.isAdmin}
+          <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
+        {/if}
+      </ul>
+    </div>
     <a href="/" class="text-xl font-bold hidden lg:block">
       <div class="top-6 left-20 absolute flex flex-row gap-2 items-center">
         <img src="/images/ductf-logo-nobg.webp" alt="DUCTF6" class="w-20" />
@@ -73,24 +71,22 @@
   </div>
 
   <div class="navbar-center hidden lg:block">
-    {#if authState.isAuthenticated}
-      <ul
-        class="menu menu-horizontal pop p-1 bg-base-100 rounded-lg flex gap-2 items-center"
-      >
-        <li>
-          <a href="/challenges" class={isActive("/challenges")}>Challenges</a>
-        </li>
-        <li>
-          <a href="/scoreboard" class={isActive("/scoreboard")}>Scoreboard</a>
-        </li>
-        <li>
-          <a href="/teams" class={isActive("/teams")}>Teams</a>
-        </li>
-        {#if authState.isAdmin}
-          <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
-        {/if}
-      </ul>
-    {/if}
+    <ul
+      class="menu menu-horizontal pop p-1 bg-base-100 rounded-lg flex gap-2 items-center"
+    >
+      <li>
+        <a href="/challenges" class={isActive("/challenges")}>Challenges</a>
+      </li>
+      <li>
+        <a href="/scoreboard" class={isActive("/scoreboard")}>Scoreboard</a>
+      </li>
+      <li>
+        <a href="/teams" class={isActive("/teams")}>Teams</a>
+      </li>
+      {#if authState.isAdmin}
+        <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
+      {/if}
+    </ul>
   </div>
 
   <div class="navbar-end">
