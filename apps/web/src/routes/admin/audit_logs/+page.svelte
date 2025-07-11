@@ -325,7 +325,7 @@
             </th>
             <th
               scope="col"
-              class="w-40 border-r-2 border-base-400 font-semibold"
+              class="w-52 border-r-2 border-base-400 font-semibold"
             >
               Operation
             </th>
