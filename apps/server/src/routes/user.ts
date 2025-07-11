@@ -137,7 +137,6 @@ export async function routes(fastify: FastifyInstance) {
         security: [{ bearer: [] }],
         tags: ["user"],
         auth: {
-          require: true,
           policy: ["user.get"],
         },
         body: QueryUsersRequest,
