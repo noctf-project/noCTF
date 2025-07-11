@@ -115,7 +115,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       {
         name: "user",
         description: "Standard user permissions",
-        permissions: ["*", "!admin.*"],
+        permissions: ["*", "!admin.*", "!bypass.*"],
         match_roles: ["active"],
         is_enabled: true,
       },

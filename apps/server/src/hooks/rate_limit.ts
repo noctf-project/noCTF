@@ -17,7 +17,10 @@ export const RateLimitHook = async (
   reply: FastifyReply,
 ) => {
   if (DISABLE_RATE_LIMIT) return;
-  const { rateLimitService } = request.server.container.cradle;
+  const { rateLimitService, policyService } = request.server.container.cradle;
+  if (await policyService.evaluate(request.user?.id, ["bypass.rate_limit"])) {
+    return;
+  }
   const config = request.routeOptions.schema?.rateLimit || DEFAULT_CONFIG;
   let buckets: RateLimitBucket[] = [];
   if (typeof config === "function") {
