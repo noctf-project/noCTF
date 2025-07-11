@@ -7,15 +7,27 @@
   import TeamQueryService from "$lib/state/team_query.svelte";
   import Pagination from "$lib/components/Pagination.svelte";
   import SubmissionsTable from "$lib/components/SubmissionsTable.svelte";
+  import { createDebouncedFields } from "$lib/utils/debounce.svelte";
+
+  const FILTER_DEBOUNCE_MS = 300;
+  const pageSize = 50;
 
   let currentPage = $state(0);
   let statusFilter = $state<string[]>([]);
   let hiddenFilter = $state<boolean | undefined>(undefined);
-  let userIdFilter = $state("");
-  let teamIdFilter = $state("");
-  let challengeIdFilter = $state("");
-  let dataFilter = $state("");
-  const pageSize = 50;
+
+  const textFilters = createDebouncedFields(
+    {
+      userIdFilter: "",
+      teamIdFilter: "",
+      challengeIdFilter: "",
+      dataFilter: "",
+    },
+    FILTER_DEBOUNCE_MS,
+    () => {
+      currentPage = 0;
+    },
+  );
 
   const submissions = $derived.by(() => {
     const filters: any = {
@@ -31,8 +43,8 @@
       filters.hidden = hiddenFilter;
     }
 
-    if (userIdFilter.trim()) {
-      const userIds = userIdFilter
+    if (textFilters.debouncedValues.userIdFilter.trim()) {
+      const userIds = textFilters.debouncedValues.userIdFilter
         .split(",")
         .map((id) => Number(id.trim()))
         .filter((id) => !isNaN(id));
@@ -41,8 +53,8 @@
       }
     }
 
-    if (teamIdFilter.trim()) {
-      const teamIds = teamIdFilter
+    if (textFilters.debouncedValues.teamIdFilter.trim()) {
+      const teamIds = textFilters.debouncedValues.teamIdFilter
         .split(",")
         .map((id) => Number(id.trim()))
         .filter((id) => !isNaN(id));
@@ -51,8 +63,8 @@
       }
     }
 
-    if (challengeIdFilter.trim()) {
-      const challengeIds = challengeIdFilter
+    if (textFilters.debouncedValues.challengeIdFilter.trim()) {
+      const challengeIds = textFilters.debouncedValues.challengeIdFilter
         .split(",")
         .map((id) => Number(id.trim()))
         .filter((id) => !isNaN(id));
@@ -61,8 +73,8 @@
       }
     }
 
-    if (dataFilter.trim()) {
-      filters.data = dataFilter.trim();
+    if (textFilters.debouncedValues.dataFilter.trim()) {
+      filters.data = textFilters.debouncedValues.dataFilter.trim();
     }
 
     return wrapLoadable(
@@ -98,6 +110,7 @@
   });
 
   function handleSearch() {
+    textFilters.forceUpdate();
     currentPage = 0;
   }
 
@@ -123,10 +136,7 @@
   function clearFilters() {
     statusFilter = [];
     hiddenFilter = undefined;
-    userIdFilter = "";
-    teamIdFilter = "";
-    challengeIdFilter = "";
-    dataFilter = "";
+    textFilters.reset();
     currentPage = 0;
   }
 
@@ -223,7 +233,7 @@
             type="text"
             placeholder="e.g., 1,2,3"
             class="input input-bordered"
-            bind:value={userIdFilter}
+            bind:value={textFilters.values.userIdFilter}
             onkeydown={(e) => e.key === "Enter" && handleSearch()}
           />
         </div>
@@ -237,7 +247,7 @@
             type="text"
             placeholder="e.g., 1,2,3"
             class="input input-bordered"
-            bind:value={teamIdFilter}
+            bind:value={textFilters.values.teamIdFilter}
             onkeydown={(e) => e.key === "Enter" && handleSearch()}
           />
         </div>
@@ -251,7 +261,7 @@
             type="text"
             placeholder="e.g., 1,2,3"
             class="input input-bordered"
-            bind:value={challengeIdFilter}
+            bind:value={textFilters.values.challengeIdFilter}
             onkeydown={(e) => e.key === "Enter" && handleSearch()}
           />
         </div>
@@ -265,7 +275,7 @@
             type="text"
             placeholder="Search in submission data..."
             class="input input-bordered"
-            bind:value={dataFilter}
+            bind:value={textFilters.values.dataFilter}
             onkeydown={(e) => e.key === "Enter" && handleSearch()}
           />
         </div>

@@ -20,10 +20,7 @@
 
 <script lang="ts">
   import { Carta, Markdown } from "carta-md";
-  import {
-    categoryToIcon,
-    formatFileSize,
-  } from "$lib/utils/challenges";
+  import { categoryToIcon, formatFileSize } from "$lib/utils/challenges";
   import Icon from "@iconify/svelte";
   import { type Difficulty } from "$lib/constants/difficulties";
   import { Tween } from "svelte/motion";
