@@ -1,4 +1,5 @@
 import { sql, type Kysely } from "kysely";
+import { CreateTriggerUpdatedAt } from "./util";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
@@ -25,6 +26,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .execute();
 
+  await CreateTriggerUpdatedAt("challenge").execute(db);
   await schema
     .createIndex("challenge_idx_tags")
     .on("challenge")

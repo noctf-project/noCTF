@@ -1,4 +1,5 @@
 import { sql, type Kysely } from "kysely";
+import { CreateTriggerUpdatedAt } from "./util";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
@@ -19,6 +20,9 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("provider_id", "varchar(64)")
     .addColumn("provider_metadata", "jsonb")
     .addColumn("created_at", "timestamptz", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
+    .addColumn("updated_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
     .addCheckConstraint(
@@ -50,6 +54,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .nullsNotDistinct()
     .execute();
 
+  await CreateTriggerUpdatedAt("ticket").execute(db);
   await schema
     .createTable("ticket_ban")
     .addColumn("team_id", "integer", (col) => col.references("team.id"))

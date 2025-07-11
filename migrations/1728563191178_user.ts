@@ -1,4 +1,5 @@
 import { sql, type Kysely } from "kysely";
+import { CreateTriggerUpdatedAt } from "./util";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
@@ -22,7 +23,12 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
+    .addColumn("updated_at", "timestamptz", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
     .execute();
+
+  await CreateTriggerUpdatedAt("user").execute(db);
   await schema
     .createIndex("user_idx_trgm_name_normalized")
     .on("user")
@@ -54,6 +60,8 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .execute();
 
+  await CreateTriggerUpdatedAt("user_identity").execute(db);
+
   await schema
     .createTable("oauth_provider")
     .addColumn("id", "integer", (col) =>
@@ -74,7 +82,12 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
+    .addColumn("updated_at", "timestamptz", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
     .execute();
+
+  await CreateTriggerUpdatedAt("oauth_provider").execute(db);
   await schema
     .createIndex("oauth_provider_idx_is_enabled")
     .on("oauth_provider")

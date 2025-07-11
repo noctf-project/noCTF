@@ -26,8 +26,13 @@ export class AuditLogDAO {
     params?: Parameters<AuditLogDAO["listQuery"]>[0],
     limit?: LimitOffset,
   ): Promise<AuditLogEntry[]> {
-    let query = this.listQuery(params)
-      .select(["actor", "operation", "entities", "data", "created_at"]);
+    let query = this.listQuery(params).select([
+      "actor",
+      "operation",
+      "entities",
+      "data",
+      "created_at",
+    ]);
 
     if (limit?.limit) {
       query = query.limit(limit.limit);
@@ -59,8 +64,7 @@ export class AuditLogDAO {
     entities,
     operation,
   }: Omit<QueryAuditLogRequest, "limit|offset"> = {}) {
-    let query = this.db
-      .selectFrom("audit_log");
+    let query = this.db.selectFrom("audit_log");
 
     if (created_at) {
       if (created_at[0]) query = query.where("created_at", ">=", created_at[0]);

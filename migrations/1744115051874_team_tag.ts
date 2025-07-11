@@ -1,4 +1,5 @@
 import { sql, type Kysely } from "kysely";
+import { CreateTriggerUpdatedAt } from "./util";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
@@ -15,7 +16,12 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("created_at", "timestamptz", (col) =>
       col.defaultTo(sql`now()`).notNull(),
     )
+    .addColumn("updated_at", "timestamptz", (col) =>
+      col.defaultTo(sql`now()`).notNull(),
+    )
     .execute();
+
+  await CreateTriggerUpdatedAt("team_tag").execute(db);
 
   await db.schema
     .createTable("team_tag_member")

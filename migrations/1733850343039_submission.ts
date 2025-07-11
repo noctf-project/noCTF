@@ -1,4 +1,5 @@
 import { sql, type Kysely } from "kysely";
+import { CreateTriggerUpdatedAt } from "./util";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
@@ -38,6 +39,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     )
     .execute();
 
+  await CreateTriggerUpdatedAt("submission").execute(db);
   await schema
     .createIndex("submission_idx_trgm_data")
     .on("submission")
