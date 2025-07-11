@@ -4,10 +4,14 @@
   import Pagination from "$lib/components/Pagination.svelte";
   import { countryCodeToFlag } from "$lib/utils/country";
   import { getFlagConfig } from "$lib/utils/team-flags";
+  import { createDebouncedState } from "$lib/utils/debounce.svelte";
 
-  let searchQuery = $state("");
   let currentPage = $state(0);
   const pageSize = 60;
+
+  const searchQuery = createDebouncedState("", 300, () => {
+    currentPage = 0;
+  });
 
   const teams = $derived.by(() => {
     return wrapLoadable(
@@ -15,7 +19,7 @@
         body: {
           page: currentPage + 1,
           page_size: pageSize,
-          name: searchQuery || undefined,
+          name: searchQuery.debouncedValue || undefined,
         },
       }),
     );
@@ -34,6 +38,7 @@
   const divisions = $derived(apiDivisions.r?.data?.data || []);
 
   function handleSearch() {
+    searchQuery.forceUpdate();
     currentPage = 0;
   }
 
@@ -54,7 +59,7 @@
         type="text"
         placeholder="Search teams by name..."
         class="input input-bordered flex-1"
-        bind:value={searchQuery}
+        bind:value={searchQuery.value}
         onkeydown={(e) => e.key === "Enter" && handleSearch()}
       />
       <button class="btn btn-primary pop" onclick={handleSearch}>

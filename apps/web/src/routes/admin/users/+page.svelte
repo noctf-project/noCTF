@@ -3,10 +3,14 @@
   import api, { wrapLoadable } from "$lib/api/index.svelte";
   import TeamQueryService from "$lib/state/team_query.svelte";
   import Pagination from "$lib/components/Pagination.svelte";
+  import { createDebouncedState } from "$lib/utils/debounce.svelte";
 
-  let searchQuery = $state("");
   let currentPage = $state(0);
   const pageSize = 50;
+
+  const searchQuery = createDebouncedState("", 300, () => {
+    currentPage = 0;
+  });
 
   const users = $derived.by(() => {
     return wrapLoadable(
@@ -14,7 +18,7 @@
         body: {
           page: currentPage + 1,
           page_size: pageSize,
-          name: searchQuery || undefined,
+          name: searchQuery.debouncedValue || undefined,
         },
       }),
     );
@@ -35,6 +39,7 @@
   });
 
   function handleSearch() {
+    searchQuery.forceUpdate();
     currentPage = 0;
   }
 
@@ -70,7 +75,7 @@
         type="text"
         placeholder="Search users by name..."
         class="input input-bordered flex-1"
-        bind:value={searchQuery}
+        bind:value={searchQuery.value}
         onkeydown={(e) => e.key === "Enter" && handleSearch()}
       />
       <button class="btn btn-primary pop" onclick={handleSearch}>

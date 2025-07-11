@@ -45,6 +45,7 @@ export class AuditLogDAO {
     return Number(
       (
         await this.listQuery(params)
+          .clearSelect()
           .select(this.db.fn.countAll().as("count"))
           .executeTakeFirstOrThrow()
       ).count,
@@ -77,7 +78,7 @@ export class AuditLogDAO {
       );
     }
     if (operation && operation.length) {
-      query = query.where("operation", "in", operation);
+      query = query.where("operation", "like", operation);
     }
     return query;
   }
