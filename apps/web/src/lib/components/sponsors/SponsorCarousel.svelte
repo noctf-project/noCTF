@@ -30,7 +30,7 @@
     <div class="sponsor-tier">
       <img
         alt={`${sponsor.level} sponsor banner`}
-        src={`/images/sponsors/sponsor-tiers/${sponsor.level}-banner.png`}
+        src={`/images/sponsors/sponsor-tiers/${sponsor.level}-banner.webp`}
       />
     </div>
   </div>

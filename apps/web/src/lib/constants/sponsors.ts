@@ -3,25 +3,25 @@ import { type SponsorDetails } from "$lib/api/types";
 export const sponsors: SponsorDetails[] = [
   {
     name: "TantoSec",
-    logo: "/images/sponsors/tanto-security.png",
+    logo: "/images/sponsors/tanto-security.webp",
     url: "https://tantosec.com/",
     level: "platinum",
   },
   {
     name: "Exploit Security",
-    logo: "/images/sponsors/exploit-security.png",
+    logo: "/images/sponsors/exploit-security.webp",
     url: "https://www.exploitsecurity.io/",
     level: "gold",
   },
   {
     name: "REA",
-    logo: "/images/sponsors/rea.png",
+    logo: "/images/sponsors/rea.webp",
     url: "https://www.rea-group.com/security/",
     level: "gold",
   },
   {
     name: "Trenchant",
-    logo: "/images/sponsors/trenchant.png",
+    logo: "/images/sponsors/trenchant.webp",
     url: "https://www.trenchant.io/",
     level: "gold",
   },
@@ -33,7 +33,7 @@ export const sponsors: SponsorDetails[] = [
   },
   {
     name: "Asontu",
-    logo: "/images/sponsors/asontu.png",
+    logo: "/images/sponsors/asontu.webp",
     url: "https://asontu.com.au/",
     level: "silver",
   },
@@ -45,19 +45,19 @@ export const sponsors: SponsorDetails[] = [
   },
   {
     name: "Mantel Group",
-    logo: "/images/sponsors/mantel-group.png",
+    logo: "/images/sponsors/mantel-group.webp",
     url: "https://mantelgroup.com.au",
     level: "silver",
   },
   {
     name: "PentesterLab",
-    logo: "/images/sponsors/pentesterlab.png",
+    logo: "/images/sponsors/pentesterlab.webp",
     url: "https://pentesterlab.com/",
     level: "silver",
   },
   {
     name: "Google Cloud Platform (GCP)",
-    logo: "/images/sponsors/gcloud.png",
+    logo: "/images/sponsors/gcloud.webp",
     url: "https://cloud.google.com",
     level: "infra",
   },
