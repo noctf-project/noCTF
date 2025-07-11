@@ -32,7 +32,7 @@
     page.url.pathname === "/" ? "" : "blur-sm transition"
   }`}
 ></div>
-<div class="flex flex-col h-full">
+<div class="flex flex-col min-h-screen w-screen h-auto">
   {#if page.url.pathname.startsWith("/admin")}
     <AdminHeader />
   {:else}
