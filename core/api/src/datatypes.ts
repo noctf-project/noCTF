@@ -97,6 +97,7 @@ export const PolicyDocument = Type.Object({
   public: Type.Boolean(),
   is_enabled: Type.Boolean(),
   created_at: TypeDate,
+  updated_at: TypeDate,
   version: Type.Integer(),
 });
 export type PolicyDocument = Static<typeof PolicyDocument>;

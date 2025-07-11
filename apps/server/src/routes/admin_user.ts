@@ -1,5 +1,4 @@
 import { SetupConfig } from "@noctf/api/config";
-import { UserIdentity } from "@noctf/api/datatypes";
 import { IdParams } from "@noctf/api/params";
 import { SessionQuery } from "@noctf/api/query";
 import {
@@ -21,7 +20,6 @@ import {
 import { ActorType, EntityType } from "@noctf/server-core/types/enums";
 import { Paginate } from "@noctf/server-core/util/paginator";
 import { Policy } from "@noctf/server-core/util/policy";
-import { RunInParallelWithLimit } from "@noctf/server-core/util/semaphore";
 import { FastifyInstance } from "fastify";
 
 export const PAGE_SIZE = 60;

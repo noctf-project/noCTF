@@ -2,14 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mockDeep, mockReset } from "vitest-mock-extended";
 import { PolicyDAO } from "../dao/policy.ts";
 import { UserDAO } from "../dao/user.ts";
-import { Evaluate } from "../util/policy.ts";
+import { Evaluate, PreprocessPermissions } from "../util/policy.ts";
 import { UserFlag } from "../types/enums.ts";
 import { PolicyService } from "./policy.ts";
 import { ServiceCradle } from "../index.ts";
 import { PolicyDocument } from "@noctf/api/datatypes";
 import { AuthConfig } from "@noctf/api/config";
-import { TeamDAO } from "../dao/team.ts";
-import { ConfigService, ConfigValue } from "./config.ts";
+import { ConfigValue } from "./config.ts";
 
 vi.mock(import("../dao/policy.ts"));
 vi.mock(import("../dao/user.ts"));
@@ -21,6 +20,7 @@ describe(PolicyService, () => {
   const logger = mockDeep<ServiceCradle["logger"]>();
   const configService = mockDeep<ServiceCradle["configService"]>();
   const auditLogService = mockDeep<ServiceCradle["auditLogService"]>();
+  const eventBusService = mockDeep<ServiceCradle["eventBusService"]>();
 
   const mockPolicyDAO = mockDeep<PolicyDAO>();
   const mockUserDAO = mockDeep<UserDAO>();
@@ -36,12 +36,14 @@ describe(PolicyService, () => {
 
     vi.mocked(PolicyDAO).mockImplementation(() => mockPolicyDAO);
     vi.mocked(UserDAO).mockImplementation(() => mockUserDAO);
+    vi.mocked(PreprocessPermissions).mockImplementation((x) => x);
 
     policyService = new PolicyService({
       databaseClient,
       logger,
       configService,
       auditLogService,
+      eventBusService,
     });
   });
 
@@ -64,6 +66,9 @@ describe(PolicyService, () => {
           permissions: [],
           public: false,
           is_enabled: true,
+          created_at: new Date(0),
+          updated_at: new Date(0),
+          version: 0,
         },
         {
           id: 2,
@@ -74,6 +79,9 @@ describe(PolicyService, () => {
           permissions: [],
           public: false,
           is_enabled: true,
+          created_at: new Date(0),
+          updated_at: new Date(0),
+          version: 0,
         },
         {
           id: 3,
@@ -84,6 +92,9 @@ describe(PolicyService, () => {
           permissions: [],
           public: false,
           is_enabled: true,
+          created_at: new Date(0),
+          updated_at: new Date(0),
+          version: 0,
         },
         {
           id: 4,
@@ -94,6 +105,9 @@ describe(PolicyService, () => {
           permissions: [],
           public: true,
           is_enabled: true,
+          created_at: new Date(0),
+          updated_at: new Date(0),
+          version: 0,
         },
       ];
 
@@ -225,6 +239,9 @@ describe(PolicyService, () => {
           permissions: [],
           public: false,
           is_enabled: true,
+          created_at: new Date(0),
+          updated_at: new Date(0),
+          version: 0,
         },
         {
           id: 2,
@@ -235,6 +252,9 @@ describe(PolicyService, () => {
           permissions: [],
           public: true,
           is_enabled: true,
+          created_at: new Date(0),
+          updated_at: new Date(0),
+          version: 0,
         },
         {
           id: 3,
@@ -245,6 +265,9 @@ describe(PolicyService, () => {
           permissions: [],
           public: true,
           is_enabled: true,
+          created_at: new Date(0),
+          updated_at: new Date(0),
+          version: 0,
         },
       ];
 
@@ -277,6 +300,9 @@ describe(PolicyService, () => {
           omit_roles: [],
           public: false,
           is_enabled: true,
+          created_at: new Date(0),
+          updated_at: new Date(0),
+          version: 0,
         },
         {
           id: 2,
@@ -287,6 +313,9 @@ describe(PolicyService, () => {
           omit_roles: [],
           public: false,
           is_enabled: true,
+          created_at: new Date(0),
+          updated_at: new Date(0),
+          version: 0,
         },
       ];
 
@@ -311,6 +340,9 @@ describe(PolicyService, () => {
           omit_roles: [],
           public: false,
           is_enabled: true,
+          created_at: new Date(0),
+          updated_at: new Date(0),
+          version: 0,
         },
         {
           id: 2,
@@ -321,6 +353,9 @@ describe(PolicyService, () => {
           omit_roles: [],
           public: false,
           is_enabled: true,
+          created_at: new Date(0),
+          updated_at: new Date(0),
+          version: 0,
         },
       ];
 
@@ -337,13 +372,16 @@ describe(PolicyService, () => {
       const mockPolicies: PolicyDocument[] = [
         {
           id: 1,
-          name: "PublicPolicy",
+          name: "NotPublicPolicy",
           description: "",
           permissions: ["dummy.1"],
           match_roles: [],
           omit_roles: [],
           public: false,
           is_enabled: true,
+          created_at: new Date(0),
+          updated_at: new Date(0),
+          version: 0,
         },
         {
           id: 2,
@@ -354,6 +392,9 @@ describe(PolicyService, () => {
           omit_roles: [],
           public: true,
           is_enabled: true,
+          created_at: new Date(0),
+          updated_at: new Date(0),
+          version: 0,
         },
       ];
 

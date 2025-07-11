@@ -32,7 +32,9 @@ export class PolicyDAO {
         "match_roles",
         "omit_roles",
         "is_enabled",
-        "version"
+        "version",
+        "created_at",
+        "updated_at",
       ])
       .orderBy("id");
     if (typeof params.is_enabled === "boolean") {
@@ -51,13 +53,13 @@ export class PolicyDAO {
       match_roles,
       omit_roles,
       is_enabled,
-      version
+      version,
     }: Updateable<DB["policy"]>,
   ) {
     let query = this.db
       .updateTable("policy")
-      .set(
-        (eb) => FilterUndefined({
+      .set((eb) =>
+        FilterUndefined({
           name,
           description,
           permissions,
@@ -65,19 +67,20 @@ export class PolicyDAO {
           match_roles,
           omit_roles,
           is_enabled,
-          version: eb("version", "+", 1)
+          version: eb("version", "+", 1),
+          updated_at: new Date(),
         }),
       )
       .where("id", "=", id)
-      .returning(["version"]);
+      .returning(["name", "version", "updated_at"]);
     if (version || version === 0) {
       query = query.where("version", "=", version);
     }
     const result = await query.executeTakeFirst();
-    if (!result.numUpdatedRows) {
-      throw new NotFoundError("Policy not found");
+    if (!result) {
+      throw new NotFoundError("Policy and version not found");
     }
-    return { version: version + 1 };
+    return result;
   }
 
   async create({
@@ -99,16 +102,15 @@ export class PolicyDAO {
       is_enabled: !!is_enabled,
     };
     try {
-      const { id, version } = await this.db
+      const result = await this.db
         .insertInto("policy")
         .values(v)
-        .returning(["id", "version"])
+        .returning(["id", "version", "created_at", "updated_at"])
         .executeTakeFirstOrThrow();
 
       return {
         ...v,
-        id,
-        version,
+        ...result,
       };
     } catch (e) {
       const pgerror = TryPGConstraintError(e, CREATE_ERROR_CONFIG);
@@ -118,13 +120,17 @@ export class PolicyDAO {
   }
 
   async delete(id: number, version?: number) {
-    const query = this.db
+    let query = this.db
       .deleteFrom("policy")
-      .where("id", "=", id);
-    
-      .executeTakeFirstOrThrow();
-    if (!result.numDeletedRows) {
-      throw new NotFoundError("Policy not found");
+      .where("id", "=", id)
+      .returning(["name", "version"]);
+    if (version || version === 0) {
+      query = query.where("version", "=", version);
     }
+    const result = await query.executeTakeFirstOrThrow();
+    if (!result) {
+      throw new NotFoundError("Policy and version not found");
+    }
+    return result;
   }
 }

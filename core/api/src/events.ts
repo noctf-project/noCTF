@@ -1,5 +1,5 @@
 import { Static, Type } from "@sinclair/typebox";
-import { SubmissionStatus } from "./enums.ts";
+import { PolicyUpdateType, SubmissionStatus } from "./enums.ts";
 import { EmailAddressOrUserId, TypeDate } from "./datatypes.ts";
 
 export const SubmissionUpdateEvent = Type.Object(
@@ -48,6 +48,7 @@ export const PolicyUpdateEvent = Type.Object(
     id: Type.Integer(),
     version: Type.Integer(),
     updated_at: TypeDate,
+    type: PolicyUpdateType,
   },
   { $id: "events.policy.update" },
 );
