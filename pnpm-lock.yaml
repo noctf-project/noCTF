@@ -191,7 +191,7 @@ importers:
         version: 8.11.10
       '@vitest/coverage-v8':
         specifier: 'catalog:'
-        version: 2.1.8(vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass@1.89.2))
+        version: 2.1.8(vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass-embedded@1.89.2)(sass@1.89.2))
       esbuild:
         specifier: 'catalog:'
         version: 0.24.2
@@ -206,7 +206,7 @@ importers:
         version: 5.7.2
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass@1.89.2)
+        version: 2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass-embedded@1.89.2)(sass@1.89.2)
 
   apps/web:
     dependencies:
@@ -252,6 +252,9 @@ importers:
       openapi-fetch:
         specifier: ^0.13.4
         version: 0.13.4
+      sass-embedded:
+        specifier: ^1.89.2
+        version: 1.89.2
       svelte-jsoneditor:
         specifier: ^3.6.1
         version: 3.6.1(svelte@5.17.3)
@@ -264,13 +267,13 @@ importers:
         version: link:../../core/openapi-spec
       '@sveltejs/adapter-static':
         specifier: ^3.0.8
-        version: 3.0.8(@sveltejs/kit@2.15.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2)))
+        version: 3.0.8(@sveltejs/kit@2.15.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)))
       '@sveltejs/kit':
         specifier: ^2.0.0
-        version: 2.15.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2))
+        version: 2.15.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2))
       '@sveltejs/vite-plugin-svelte':
-        specifier: ^4.0.0
-        version: 4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2))
+        specifier: ^4.0.4
+        version: 4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2))
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.20(postcss@8.4.49)
@@ -300,7 +303,7 @@ importers:
         version: 5.7.2
       vite:
         specifier: ^5.4.11
-        version: 5.4.11(@types/node@22.10.2)(sass@1.89.2)
+        version: 5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)
 
   core/api:
     dependencies:
@@ -353,7 +356,7 @@ importers:
         version: 5.7.2
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass@1.89.2)
+        version: 2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass-embedded@1.89.2)(sass@1.89.2)
 
   core/mod-captcha:
     dependencies:
@@ -403,16 +406,16 @@ importers:
     devDependencies:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
-        version: 2.1.8(vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass@1.89.2))
+        version: 2.1.8(vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass-embedded@1.89.2)(sass@1.89.2))
       typescript:
         specifier: 'catalog:'
         version: 5.7.2
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass@1.89.2)
+        version: 2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass-embedded@1.89.2)(sass@1.89.2)
       vitest-mock-extended:
         specifier: 'catalog:'
-        version: 2.0.2(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass@1.89.2))
+        version: 2.0.2(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass-embedded@1.89.2)(sass@1.89.2))
 
   core/openapi-spec:
     devDependencies:
@@ -516,16 +519,16 @@ importers:
         version: 6.4.17
       '@vitest/coverage-v8':
         specifier: 'catalog:'
-        version: 2.1.8(vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass@1.89.2))
+        version: 2.1.8(vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass-embedded@1.89.2)(sass@1.89.2))
       typescript:
         specifier: 'catalog:'
         version: 5.7.2
       vitest:
         specifier: 'catalog:'
-        version: 2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass@1.89.2)
+        version: 2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass-embedded@1.89.2)(sass@1.89.2)
       vitest-mock-extended:
         specifier: 'catalog:'
-        version: 2.0.2(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass@1.89.2))
+        version: 2.0.2(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass-embedded@1.89.2)(sass@1.89.2))
 
 packages:
 
@@ -563,6 +566,9 @@ packages:
 
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
+
+  '@bufbuild/protobuf@2.6.0':
+    resolution: {integrity: sha512-6cuonJVNOIL7lTj5zgo/Rc2bKAo4/GvN+rKCrUj7GdEHRzCk8zKOfFwUsL9nAVk5rSIsRmlgcpLzTRysopEeeg==}
 
   '@cbor-extract/cbor-extract-darwin-arm64@2.2.0':
     resolution: {integrity: sha512-P7swiOAdF7aSi0H+tHtHtr6zrpF3aAq/W9FXx5HektRvLTM2O89xCyXF3pk7pLc7QpaY7AoaE8UowVf9QBdh3w==}
@@ -1896,6 +1902,9 @@ packages:
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
 
+  buffer-builder@0.2.0:
+    resolution: {integrity: sha512-7VPMEPuYznPSoR21NE1zvd2Xna6c/CloiZCfcMXR1Jny6PjX0N4Nsa38zcBFo/FMK+BlA+FLKbJCQ0i2yxp+Xg==}
+
   buffer-crc32@1.0.0:
     resolution: {integrity: sha512-Db1SbgBS/fg/392AblrMJk97KggmvYhr4pB5ZIMTWtaivCPMWLkmb7m21cJvpvgK+J3nsU2CmmixNBZx4vFj/w==}
     engines: {node: '>=8.0.0'}
@@ -2045,6 +2054,9 @@ packages:
 
   colorette@2.0.20:
     resolution: {integrity: sha512-IfEDxwoWIjkeXL1eXcDiow4UbKjhLdq6/EuSVR9GMN7KVH3r9gQ83e73hsz1Nd1T3ijd5xv1wcWRYO+D6kCI2w==}
+
+  colorjs.io@0.5.2:
+    resolution: {integrity: sha512-twmVoizEW7ylZSN32OgKdXRmo1qg+wT5/6C3xu5b9QsWzSFAhHLn2xd8ro0diCsKfCj1RdaTP/nrcW+vAoQPIw==}
 
   combined-stream@1.0.8:
     resolution: {integrity: sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==}
@@ -3826,6 +3838,9 @@ packages:
   run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
 
+  rxjs@7.8.2:
+    resolution: {integrity: sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==}
+
   sade@1.8.1:
     resolution: {integrity: sha512-xal3CZX1Xlo/k4ApwCFrHVACi9fBqJ7V+mwhBsuf/1IOKbBy098Fex+Wa/5QMubw09pSZ/u8EY8PWgevJsXp1A==}
     engines: {node: '>=6'}
@@ -3849,6 +3864,107 @@ packages:
 
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
+
+  sass-embedded-android-arm64@1.89.2:
+    resolution: {integrity: sha512-+pq7a7AUpItNyPu61sRlP6G2A8pSPpyazASb+8AK2pVlFayCSPAEgpwpCE9A2/Xj86xJZeMizzKUHxM2CBCUxA==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm64]
+    os: [android]
+
+  sass-embedded-android-arm@1.89.2:
+    resolution: {integrity: sha512-oHAPTboBHRZlDBhyRB6dvDKh4KvFs+DZibDHXbkSI6dBZxMTT+Yb2ivocHnctVGucKTLQeT7+OM5DjWHyynL/A==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm]
+    os: [android]
+
+  sass-embedded-android-riscv64@1.89.2:
+    resolution: {integrity: sha512-HfJJWp/S6XSYvlGAqNdakeEMPOdhBkj2s2lN6SHnON54rahKem+z9pUbCriUJfM65Z90lakdGuOfidY61R9TYg==}
+    engines: {node: '>=14.0.0'}
+    cpu: [riscv64]
+    os: [android]
+
+  sass-embedded-android-x64@1.89.2:
+    resolution: {integrity: sha512-BGPzq53VH5z5HN8de6jfMqJjnRe1E6sfnCWFd4pK+CAiuM7iw5Fx6BQZu3ikfI1l2GY0y6pRXzsVLdp/j4EKEA==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [android]
+
+  sass-embedded-darwin-arm64@1.89.2:
+    resolution: {integrity: sha512-UCm3RL/tzMpG7DsubARsvGUNXC5pgfQvP+RRFJo9XPIi6elopY5B6H4m9dRYDpHA+scjVthdiDwkPYr9+S/KGw==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm64]
+    os: [darwin]
+
+  sass-embedded-darwin-x64@1.89.2:
+    resolution: {integrity: sha512-D9WxtDY5VYtMApXRuhQK9VkPHB8R79NIIR6xxVlN2MIdEid/TZWi1MHNweieETXhWGrKhRKglwnHxxyKdJYMnA==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [darwin]
+
+  sass-embedded-linux-arm64@1.89.2:
+    resolution: {integrity: sha512-2N4WW5LLsbtrWUJ7iTpjvhajGIbmDR18ZzYRywHdMLpfdPApuHPMDF5CYzHbS+LLx2UAx7CFKBnj5LLjY6eFgQ==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm64]
+    os: [linux]
+
+  sass-embedded-linux-arm@1.89.2:
+    resolution: {integrity: sha512-leP0t5U4r95dc90o8TCWfxNXwMAsQhpWxTkdtySDpngoqtTy3miMd7EYNYd1znI0FN1CBaUvbdCMbnbPwygDlA==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm]
+    os: [linux]
+
+  sass-embedded-linux-musl-arm64@1.89.2:
+    resolution: {integrity: sha512-nTyuaBX6U1A/cG7WJh0pKD1gY8hbg1m2SnzsyoFG+exQ0lBX/lwTLHq3nyhF+0atv7YYhYKbmfz+sjPP8CZ9lw==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm64]
+    os: [linux]
+
+  sass-embedded-linux-musl-arm@1.89.2:
+    resolution: {integrity: sha512-Z6gG2FiVEEdxYHRi2sS5VIYBmp17351bWtOCUZ/thBM66+e70yiN6Eyqjz80DjL8haRUegNQgy9ZJqsLAAmr9g==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm]
+    os: [linux]
+
+  sass-embedded-linux-musl-riscv64@1.89.2:
+    resolution: {integrity: sha512-N6oul+qALO0SwGY8JW7H/Vs0oZIMrRMBM4GqX3AjM/6y8JsJRxkAwnfd0fDyK+aICMFarDqQonQNIx99gdTZqw==}
+    engines: {node: '>=14.0.0'}
+    cpu: [riscv64]
+    os: [linux]
+
+  sass-embedded-linux-musl-x64@1.89.2:
+    resolution: {integrity: sha512-K+FmWcdj/uyP8GiG9foxOCPfb5OAZG0uSVq80DKgVSC0U44AdGjvAvVZkrgFEcZ6cCqlNC2JfYmslB5iqdL7tg==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [linux]
+
+  sass-embedded-linux-riscv64@1.89.2:
+    resolution: {integrity: sha512-g9nTbnD/3yhOaskeqeBQETbtfDQWRgsjHok6bn7DdAuwBsyrR3JlSFyqKc46pn9Xxd9SQQZU8AzM4IR+sY0A0w==}
+    engines: {node: '>=14.0.0'}
+    cpu: [riscv64]
+    os: [linux]
+
+  sass-embedded-linux-x64@1.89.2:
+    resolution: {integrity: sha512-Ax7dKvzncyQzIl4r7012KCMBvJzOz4uwSNoyoM5IV6y5I1f5hEwI25+U4WfuTqdkv42taCMgpjZbh9ERr6JVMQ==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [linux]
+
+  sass-embedded-win32-arm64@1.89.2:
+    resolution: {integrity: sha512-j96iJni50ZUsfD6tRxDQE2QSYQ2WrfHxeiyAXf41Kw0V4w5KYR/Sf6rCZQLMTUOHnD16qTMVpQi20LQSqf4WGg==}
+    engines: {node: '>=14.0.0'}
+    cpu: [arm64]
+    os: [win32]
+
+  sass-embedded-win32-x64@1.89.2:
+    resolution: {integrity: sha512-cS2j5ljdkQsb4PaORiClaVYynE9OAPZG/XjbOMxpQmjRIf7UroY4PEIH+Waf+y47PfXFX9SyxhYuw2NIKGbEng==}
+    engines: {node: '>=14.0.0'}
+    cpu: [x64]
+    os: [win32]
+
+  sass-embedded@1.89.2:
+    resolution: {integrity: sha512-Ack2K8rc57kCFcYlf3HXpZEJFNUX8xd8DILldksREmYXQkRHI879yy8q4mRDJgrojkySMZqmmmW1NxrFxMsYaA==}
+    engines: {node: '>=16.0.0'}
+    hasBin: true
 
   sass@1.89.2:
     resolution: {integrity: sha512-xCmtksBKd/jdJ9Bt9p7nPKiuqrlBMBuuGkQlkhZjjQk3Ty48lv93k5Dq6OPkKt4XwxDJ7tvlfrTa1MPA9bf+QA==}
@@ -4011,6 +4127,10 @@ packages:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
     engines: {node: '>=8'}
 
+  supports-color@8.1.1:
+    resolution: {integrity: sha512-MpUEN2OodtUzxvKQl72cUF7RQ5EiHsGvSsVG0ia9c5RbWGL2CI4C7EpPS8UTBIplnlzZiNuV56w+FuNxy3ty2Q==}
+    engines: {node: '>=10'}
+
   supports-color@9.4.0:
     resolution: {integrity: sha512-VL+lNrEoIXww1coLPOmiEmK/0sGigko5COxI09KzHc2VJXJsQ37UaQ+8quuxjDeA7+KnLGTWRyOXSLLR2Wb4jw==}
     engines: {node: '>=12'}
@@ -4063,6 +4183,14 @@ packages:
 
   symbol-tree@3.2.4:
     resolution: {integrity: sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==}
+
+  sync-child-process@1.0.2:
+    resolution: {integrity: sha512-8lD+t2KrrScJ/7KXCSyfhT3/hRq78rC0wBFqNJXv3mZyn6hW2ypM05JmlSvtqRbeq6jqA94oHbxAr2vYsJ8vDA==}
+    engines: {node: '>=16.0.0'}
+
+  sync-message-port@1.1.3:
+    resolution: {integrity: sha512-GTt8rSKje5FilG+wEdfCkOcLL7LWqpMlr2c3LRuKt/YXxcJ52aGSbGBAdI4L3aaqfrBt6y711El53ItyH1NWzg==}
+    engines: {node: '>=16.0.0'}
 
   tailwindcss@3.4.17:
     resolution: {integrity: sha512-w33E2aCvSDP0tW9RZuNXadXlkHXqFzSkQew/aIa2i/Sj8fThxwovwlXHSPXTbAHwEIhBFXAedUhP2tueAKP8Og==}
@@ -4260,6 +4388,9 @@ packages:
 
   vanilla-picker@2.12.3:
     resolution: {integrity: sha512-qVkT1E7yMbUsB2mmJNFmaXMWE2hF8ffqzMMwe9zdAikd8u2VfnsVY2HQcOUi2F38bgbxzlJBEdS1UUhOXdF9GQ==}
+
+  varint@6.0.0:
+    resolution: {integrity: sha512-cXEIW6cfr15lFv563k4GuVuW/fiwjknytD37jIOLSdSWuOI6WnO/oKwmP2FQTU2l01LP8/M5TSAJpzUaGe3uWg==}
 
   vfile-message@4.0.2:
     resolution: {integrity: sha512-jRDZ1IMLttGj41KcZvlrYAaI3CfqpLpfpf+Mfig13viT6NKvRzWZ+lXz0Y5D60w6uJIBAOGq9mSHf0gktF0duw==}
@@ -4510,6 +4641,8 @@ snapshots:
       '@babel/helper-validator-identifier': 7.25.9
 
   '@bcoe/v8-coverage@0.2.3': {}
+
+  '@bufbuild/protobuf@2.6.0': {}
 
   '@cbor-extract/cbor-extract-darwin-arm64@2.2.0':
     optional: true
@@ -5277,13 +5410,13 @@ snapshots:
 
   '@sphinxxxx/color-conversion@2.2.2': {}
 
-  '@sveltejs/adapter-static@3.0.8(@sveltejs/kit@2.15.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2)))':
+  '@sveltejs/adapter-static@3.0.8(@sveltejs/kit@2.15.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)))':
     dependencies:
-      '@sveltejs/kit': 2.15.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2))
+      '@sveltejs/kit': 2.15.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2))
 
-  '@sveltejs/kit@2.15.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2))':
+  '@sveltejs/kit@2.15.2(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2))':
     dependencies:
-      '@sveltejs/vite-plugin-svelte': 4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2))
+      '@sveltejs/vite-plugin-svelte': 4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2))
       '@types/cookie': 0.6.0
       cookie: 0.6.0
       devalue: 5.1.1
@@ -5297,27 +5430,27 @@ snapshots:
       sirv: 3.0.0
       svelte: 5.17.3
       tiny-glob: 0.2.9
-      vite: 5.4.11(@types/node@22.10.2)(sass@1.89.2)
+      vite: 5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)
 
-  '@sveltejs/vite-plugin-svelte-inspector@3.0.1(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2))':
+  '@sveltejs/vite-plugin-svelte-inspector@3.0.1(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2))':
     dependencies:
-      '@sveltejs/vite-plugin-svelte': 4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2))
+      '@sveltejs/vite-plugin-svelte': 4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2))
       debug: 4.4.0(supports-color@9.4.0)
       svelte: 5.17.3
-      vite: 5.4.11(@types/node@22.10.2)(sass@1.89.2)
+      vite: 5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)
     transitivePeerDependencies:
       - supports-color
 
-  '@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2))':
+  '@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2))':
     dependencies:
-      '@sveltejs/vite-plugin-svelte-inspector': 3.0.1(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2))
+      '@sveltejs/vite-plugin-svelte-inspector': 3.0.1(@sveltejs/vite-plugin-svelte@4.0.4(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)))(svelte@5.17.3)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2))
       debug: 4.4.0(supports-color@9.4.0)
       deepmerge: 4.3.1
       kleur: 4.1.5
       magic-string: 0.30.17
       svelte: 5.17.3
-      vite: 5.4.11(@types/node@22.10.2)(sass@1.89.2)
-      vitefu: 1.0.5(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2))
+      vite: 5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)
+      vitefu: 1.0.5(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2))
     transitivePeerDependencies:
       - supports-color
 
@@ -5496,7 +5629,7 @@ snapshots:
 
   '@ungap/structured-clone@1.3.0': {}
 
-  '@vitest/coverage-v8@2.1.8(vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass@1.89.2))':
+  '@vitest/coverage-v8@2.1.8(vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass-embedded@1.89.2)(sass@1.89.2))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
@@ -5510,7 +5643,7 @@ snapshots:
       std-env: 3.8.0
       test-exclude: 7.0.1
       tinyrainbow: 1.2.0
-      vitest: 2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass@1.89.2)
+      vitest: 2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass-embedded@1.89.2)(sass@1.89.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -5521,13 +5654,13 @@ snapshots:
       chai: 5.1.2
       tinyrainbow: 1.2.0
 
-  '@vitest/mocker@2.1.8(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2))':
+  '@vitest/mocker@2.1.8(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2))':
     dependencies:
       '@vitest/spy': 2.1.8
       estree-walker: 3.0.3
       magic-string: 0.30.17
     optionalDependencies:
-      vite: 5.4.11(@types/node@22.10.2)(sass@1.89.2)
+      vite: 5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)
 
   '@vitest/pretty-format@2.1.8':
     dependencies:
@@ -5697,6 +5830,8 @@ snapshots:
       electron-to-chromium: 1.5.80
       node-releases: 2.0.19
       update-browserslist-db: 1.1.2(browserslist@4.24.4)
+
+  buffer-builder@0.2.0: {}
 
   buffer-crc32@1.0.0: {}
 
@@ -5871,6 +6006,8 @@ snapshots:
   colorette@1.4.0: {}
 
   colorette@2.0.20: {}
+
+  colorjs.io@0.5.2: {}
 
   combined-stream@1.0.8:
     dependencies:
@@ -7921,6 +8058,10 @@ snapshots:
     dependencies:
       queue-microtask: 1.2.3
 
+  rxjs@7.8.2:
+    dependencies:
+      tslib: 2.8.1
+
   sade@1.8.1:
     dependencies:
       mri: 1.2.0
@@ -7942,6 +8083,82 @@ snapshots:
   safe-stable-stringify@2.5.0: {}
 
   safer-buffer@2.1.2: {}
+
+  sass-embedded-android-arm64@1.89.2:
+    optional: true
+
+  sass-embedded-android-arm@1.89.2:
+    optional: true
+
+  sass-embedded-android-riscv64@1.89.2:
+    optional: true
+
+  sass-embedded-android-x64@1.89.2:
+    optional: true
+
+  sass-embedded-darwin-arm64@1.89.2:
+    optional: true
+
+  sass-embedded-darwin-x64@1.89.2:
+    optional: true
+
+  sass-embedded-linux-arm64@1.89.2:
+    optional: true
+
+  sass-embedded-linux-arm@1.89.2:
+    optional: true
+
+  sass-embedded-linux-musl-arm64@1.89.2:
+    optional: true
+
+  sass-embedded-linux-musl-arm@1.89.2:
+    optional: true
+
+  sass-embedded-linux-musl-riscv64@1.89.2:
+    optional: true
+
+  sass-embedded-linux-musl-x64@1.89.2:
+    optional: true
+
+  sass-embedded-linux-riscv64@1.89.2:
+    optional: true
+
+  sass-embedded-linux-x64@1.89.2:
+    optional: true
+
+  sass-embedded-win32-arm64@1.89.2:
+    optional: true
+
+  sass-embedded-win32-x64@1.89.2:
+    optional: true
+
+  sass-embedded@1.89.2:
+    dependencies:
+      '@bufbuild/protobuf': 2.6.0
+      buffer-builder: 0.2.0
+      colorjs.io: 0.5.2
+      immutable: 5.1.3
+      rxjs: 7.8.2
+      supports-color: 8.1.1
+      sync-child-process: 1.0.2
+      varint: 6.0.0
+    optionalDependencies:
+      sass-embedded-android-arm: 1.89.2
+      sass-embedded-android-arm64: 1.89.2
+      sass-embedded-android-riscv64: 1.89.2
+      sass-embedded-android-x64: 1.89.2
+      sass-embedded-darwin-arm64: 1.89.2
+      sass-embedded-darwin-x64: 1.89.2
+      sass-embedded-linux-arm: 1.89.2
+      sass-embedded-linux-arm64: 1.89.2
+      sass-embedded-linux-musl-arm: 1.89.2
+      sass-embedded-linux-musl-arm64: 1.89.2
+      sass-embedded-linux-musl-riscv64: 1.89.2
+      sass-embedded-linux-musl-x64: 1.89.2
+      sass-embedded-linux-riscv64: 1.89.2
+      sass-embedded-linux-x64: 1.89.2
+      sass-embedded-win32-arm64: 1.89.2
+      sass-embedded-win32-x64: 1.89.2
 
   sass@1.89.2:
     dependencies:
@@ -8100,6 +8317,10 @@ snapshots:
     dependencies:
       has-flag: 4.0.0
 
+  supports-color@8.1.1:
+    dependencies:
+      has-flag: 4.0.0
+
   supports-color@9.4.0: {}
 
   supports-preserve-symlinks-flag@1.0.0: {}
@@ -8194,6 +8415,12 @@ snapshots:
       zimmerframe: 1.1.2
 
   symbol-tree@3.2.4: {}
+
+  sync-child-process@1.0.2:
+    dependencies:
+      sync-message-port: 1.1.3
+
+  sync-message-port@1.1.3: {}
 
   tailwindcss@3.4.17:
     dependencies:
@@ -8414,6 +8641,8 @@ snapshots:
     dependencies:
       '@sphinxxxx/color-conversion': 2.2.2
 
+  varint@6.0.0: {}
+
   vfile-message@4.0.2:
     dependencies:
       '@types/unist': 3.0.3
@@ -8424,13 +8653,13 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.2
 
-  vite-node@2.1.8(@types/node@22.10.2)(sass@1.89.2):
+  vite-node@2.1.8(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2):
     dependencies:
       cac: 6.7.14
       debug: 4.4.0(supports-color@9.4.0)
       es-module-lexer: 1.6.0
       pathe: 1.1.2
-      vite: 5.4.11(@types/node@22.10.2)(sass@1.89.2)
+      vite: 5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -8442,7 +8671,7 @@ snapshots:
       - supports-color
       - terser
 
-  vite@5.4.11(@types/node@22.10.2)(sass@1.89.2):
+  vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2):
     dependencies:
       esbuild: 0.21.5
       postcss: 8.4.49
@@ -8451,21 +8680,22 @@ snapshots:
       '@types/node': 22.10.2
       fsevents: 2.3.3
       sass: 1.89.2
+      sass-embedded: 1.89.2
 
-  vitefu@1.0.5(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2)):
+  vitefu@1.0.5(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)):
     optionalDependencies:
-      vite: 5.4.11(@types/node@22.10.2)(sass@1.89.2)
+      vite: 5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)
 
-  vitest-mock-extended@2.0.2(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass@1.89.2)):
+  vitest-mock-extended@2.0.2(typescript@5.7.2)(vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass-embedded@1.89.2)(sass@1.89.2)):
     dependencies:
       ts-essentials: 10.0.4(typescript@5.7.2)
       typescript: 5.7.2
-      vitest: 2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass@1.89.2)
+      vitest: 2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass-embedded@1.89.2)(sass@1.89.2)
 
-  vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass@1.89.2):
+  vitest@2.1.8(@types/node@22.10.2)(jsdom@26.1.0)(sass-embedded@1.89.2)(sass@1.89.2):
     dependencies:
       '@vitest/expect': 2.1.8
-      '@vitest/mocker': 2.1.8(vite@5.4.11(@types/node@22.10.2)(sass@1.89.2))
+      '@vitest/mocker': 2.1.8(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2))
       '@vitest/pretty-format': 2.1.8
       '@vitest/runner': 2.1.8
       '@vitest/snapshot': 2.1.8
@@ -8481,8 +8711,8 @@ snapshots:
       tinyexec: 0.3.2
       tinypool: 1.0.2
       tinyrainbow: 1.2.0
-      vite: 5.4.11(@types/node@22.10.2)(sass@1.89.2)
-      vite-node: 2.1.8(@types/node@22.10.2)(sass@1.89.2)
+      vite: 5.4.11(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)
+      vite-node: 2.1.8(@types/node@22.10.2)(sass-embedded@1.89.2)(sass@1.89.2)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.10.2

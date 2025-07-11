@@ -2,6 +2,8 @@
   import { onMount } from "svelte";
   import configState from "$lib/state/config.svelte";
   import authState from "$lib/state/auth.svelte";
+  import SponsorCarousell from "$lib/components/sponsors/SponsorCarousell.svelte";
+  import { sponsors } from "$lib/constants/sponsors";
 
   let currentTime = $state(Date.now() / 1000);
   let timeInterval: ReturnType<typeof setInterval>;
@@ -93,5 +95,8 @@
         Register Now
       </a>
     {/if}
+  </div>
+  <div class="absolute bottom-0 py-3">
+    <SponsorCarousell {sponsors} />
   </div>
 </div>
