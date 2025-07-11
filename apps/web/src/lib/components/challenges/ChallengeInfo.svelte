@@ -22,7 +22,6 @@
   import { Carta, Markdown } from "carta-md";
   import {
     categoryToIcon,
-    difficultyToBgColour,
     formatFileSize,
   } from "$lib/utils/challenges";
   import Icon from "@iconify/svelte";
