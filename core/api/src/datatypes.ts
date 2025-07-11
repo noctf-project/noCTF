@@ -96,6 +96,8 @@ export const PolicyDocument = Type.Object({
   permissions: Type.Array(Type.String({ maxLength: 128 })),
   public: Type.Boolean(),
   is_enabled: Type.Boolean(),
+  created_at: TypeDate,
+  version: Type.Integer(),
 });
 export type PolicyDocument = Static<typeof PolicyDocument>;
 

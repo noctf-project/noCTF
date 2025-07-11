@@ -32,6 +32,7 @@ export class PolicyDAO {
         "match_roles",
         "omit_roles",
         "is_enabled",
+        "version"
       ])
       .orderBy("id");
     if (typeof params.is_enabled === "boolean") {
@@ -50,12 +51,13 @@ export class PolicyDAO {
       match_roles,
       omit_roles,
       is_enabled,
+      version
     }: Updateable<DB["policy"]>,
   ) {
-    const result = await this.db
+    let query = this.db
       .updateTable("policy")
       .set(
-        FilterUndefined({
+        (eb) => FilterUndefined({
           name,
           description,
           permissions,
@@ -63,13 +65,19 @@ export class PolicyDAO {
           match_roles,
           omit_roles,
           is_enabled,
+          version: eb("version", "+", 1)
         }),
       )
       .where("id", "=", id)
-      .executeTakeFirst();
+      .returning(["version"]);
+    if (version || version === 0) {
+      query = query.where("version", "=", version);
+    }
+    const result = await query.executeTakeFirst();
     if (!result.numUpdatedRows) {
       throw new NotFoundError("Policy not found");
     }
+    return { version: version + 1 };
   }
 
   async create({
@@ -91,15 +99,16 @@ export class PolicyDAO {
       is_enabled: !!is_enabled,
     };
     try {
-      const { id } = await this.db
+      const { id, version } = await this.db
         .insertInto("policy")
         .values(v)
-        .returning(["id"])
+        .returning(["id", "version"])
         .executeTakeFirstOrThrow();
 
       return {
         ...v,
         id,
+        version,
       };
     } catch (e) {
       const pgerror = TryPGConstraintError(e, CREATE_ERROR_CONFIG);
@@ -108,10 +117,11 @@ export class PolicyDAO {
     }
   }
 
-  async delete(id: number) {
-    const result = await this.db
+  async delete(id: number, version?: number) {
+    const query = this.db
       .deleteFrom("policy")
-      .where("id", "=", id)
+      .where("id", "=", id);
+    
       .executeTakeFirstOrThrow();
     if (!result.numDeletedRows) {
       throw new NotFoundError("Policy not found");

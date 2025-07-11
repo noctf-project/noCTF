@@ -11,16 +11,18 @@ import { AuditParams } from "../types/audit_log.ts";
 
 type Props = Pick<
   ServiceCradle,
-  "databaseClient" | "logger" | "configService" | "auditLogService"
+  "databaseClient" | "logger" | "configService" | "auditLogService" | "policyService"
 >;
 
 export const CACHE_NAMESPACE = "core:svc:policy";
 
-const POLICY_EXPIRATION = 5000;
+const POLICY_EXPIRATION = 60000;
+
 export class PolicyService {
   private readonly logger;
   private readonly auditLogService;
   private readonly configService;
+  private readonly eventBusService;
 
   private readonly policyDAO;
   private readonly userDAO;
@@ -39,10 +41,12 @@ export class PolicyService {
     logger,
     configService,
     auditLogService,
+    eventBusService,
   }: Props) {
     this.logger = logger;
     this.auditLogService = auditLogService;
     this.configService = configService;
+    this.eventBusService = eventBusService;
     this.policyDAO = new PolicyDAO(databaseClient.get());
     this.userDAO = new UserDAO(databaseClient.get());
   }
@@ -63,6 +67,7 @@ export class PolicyService {
       data: message,
       entities: [`${EntityType.POLICY}:${policy.id}`],
     });
+    await this.eventBusService.
     return policy;
   }
 

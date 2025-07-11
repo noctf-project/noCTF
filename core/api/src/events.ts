@@ -42,6 +42,17 @@ export const ConfigUpdateEvent = Type.Object(
 );
 export type ConfigUpdateEvent = Static<typeof ConfigUpdateEvent>;
 
+export const PolicyUpdateEvent = Type.Object(
+  {
+    name: Type.String(),
+    id: Type.Integer(),
+    version: Type.Integer(),
+    updated_at: TypeDate,
+  },
+  { $id: "events.policy.update" },
+);
+export type PolicyUpdateEvent = Static<typeof PolicyUpdateEvent>;
+
 export const EmailQueueEvent = Type.Object(
   {
     to: Type.Optional(Type.Array(EmailAddressOrUserId)),
