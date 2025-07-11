@@ -15,7 +15,7 @@ export const sponsors: SponsorDetails[] = [
   },
   {
     name: "REA",
-    logo: "/images/sponsors/rea.svg",
+    logo: "/images/sponsors/rea.png",
     url: "https://www.rea-group.com/security/",
     level: "gold",
   },

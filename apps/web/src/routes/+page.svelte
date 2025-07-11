@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import configState from "$lib/state/config.svelte";
   import authState from "$lib/state/auth.svelte";
-  import SponsorCarousell from "$lib/components/sponsors/SponsorCarousell.svelte";
+  import SponsorCarousel from "$lib/components/sponsors/SponsorCarousel.svelte";
   import { sponsors } from "$lib/constants/sponsors";
 
   let currentTime = $state(Date.now() / 1000);
@@ -97,6 +97,6 @@
     {/if}
   </div>
   <div class="absolute bottom-0 py-3">
-    <SponsorCarousell {sponsors} />
+    <SponsorCarousel {sponsors} />
   </div>
 </div>
