@@ -28,16 +28,14 @@ export class ConfigDAO {
     value: T,
     version?: number,
   ) {
-    const updated_at = new Date();
     let query = this.db
       .updateTable("config")
       .set((eb) => ({
         value: value as JsonObject,
-        updated_at,
         version: eb("version", "+", 1),
       }))
       .where("namespace", "=", namespace)
-      .returning(["version"]);
+      .returning(["version", "updated_at"]);
     if (version || version === 0) {
       query = query.where("version", "=", version);
     }
@@ -45,7 +43,7 @@ export class ConfigDAO {
     if (!result) {
       throw new BadRequestError("config version mismatch");
     }
-    return { version: result.version, updated_at };
+    return result;
   }
 
   async register<T extends SerializableMap>(namespace: string, value: T) {
