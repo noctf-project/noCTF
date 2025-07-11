@@ -1,45 +1,30 @@
 <script lang="ts">
   import Icon from "@iconify/svelte";
-  import { onMount, untrack } from "svelte";
   import { toasts } from "$lib/stores/toast";
   import { countryCodeToFlag } from "$lib/utils/country";
   import Pagination from "$lib/components/Pagination.svelte";
   import TeamQueryService, { type Team } from "$lib/state/team_query.svelte";
+  import { createDebouncedState } from "$lib/utils/debounce.svelte";
 
   const TEAMS_PER_PAGE = 60;
   const SEARCH_DEBOUNCE_MS = 300;
 
   let currentPage = $state(0);
-  let searchQuery = $state("");
   let previousSearchQuery = $state("");
-  let debouncedSearchQuery = $state("");
   let isLoading = $state(true);
   let teams: Team[] = $state([]);
   let totalTeams = $state(0);
   let totalTeamsRegistered = $state(0);
-  let searchDebounceTimer: ReturnType<typeof setTimeout> | null = $state(null);
 
-  $effect(() => {
-    if (searchQuery || searchQuery == "") {
-      untrack(() => {
-        if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
-        searchDebounceTimer = setTimeout(() => {
-          if (searchQuery !== debouncedSearchQuery) {
-            previousSearchQuery = debouncedSearchQuery;
-            debouncedSearchQuery = searchQuery;
-            if (previousSearchQuery !== searchQuery) {
-              currentPage = 0;
-            }
-          }
-          searchDebounceTimer = null;
-        }, SEARCH_DEBOUNCE_MS);
-      });
+  const searchQuery = createDebouncedState("", SEARCH_DEBOUNCE_MS, (value) => {
+    if (previousSearchQuery !== value) {
+      currentPage = 0;
     }
   });
 
   $effect(() => {
     // re-trigger a load if the search changed or currentPage changed
-    if (debouncedSearchQuery !== undefined || currentPage !== undefined) {
+    if (searchQuery.debouncedValue !== undefined || currentPage !== undefined) {
       loadTeams();
     }
   });
@@ -51,14 +36,14 @@
       const result = await TeamQueryService.queryTeams({
         page: currentPage + 1,
         page_size: TEAMS_PER_PAGE,
-        name: debouncedSearchQuery,
+        name: searchQuery.debouncedValue,
       });
 
       teams = result.teams;
       totalTeams = result.total;
 
       // this should always get set on the first query when the page loads
-      if (!debouncedSearchQuery) {
+      if (!searchQuery.debouncedValue) {
         totalTeamsRegistered = result.total;
       }
     } catch (error) {
@@ -70,23 +55,12 @@
   }
 
   function clearSearch() {
-    searchQuery = "";
-    if (searchDebounceTimer) {
-      clearTimeout(searchDebounceTimer);
-      searchDebounceTimer = null;
-    }
-    previousSearchQuery = debouncedSearchQuery;
-    debouncedSearchQuery = "";
+    previousSearchQuery = searchQuery.debouncedValue;
+    searchQuery.reset("");
     if (previousSearchQuery) {
       currentPage = 0;
     }
   }
-
-  onMount(() => {
-    return () => {
-      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
-    };
-  });
 </script>
 
 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
@@ -106,11 +80,11 @@
       </div>
       <input
         type="text"
-        bind:value={searchQuery}
+        bind:value={searchQuery.value}
         placeholder="Search teams by name..."
         class="input input-bordered w-full ps-11 bg-base-100 pop duration-200 transition-colors focus:outline-none focus:pop focus:ring-0 focus:ring-offset-0"
       />
-      {#if searchQuery}
+      {#if searchQuery.value}
         <button
           class="absolute inset-y-0 end-0 flex items-center pe-4 hover:text-error"
           onclick={clearSearch}
