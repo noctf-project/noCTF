@@ -96,7 +96,7 @@
       </a>
     {/if}
   </div>
-  <div class="absolute bottom-0 py-3">
+  <div class="absolute bottom-0 py-3 overflow-hidden">
     <SponsorCarousel {sponsors} />
   </div>
 </div>

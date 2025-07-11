@@ -150,8 +150,11 @@
   }
 
   @media screen and (max-width: 750px) and (orientation: portrait) {
-    .slider {
+    .slide-container {
       width: 100%;
+    }
+    .slider {
+      display: none;
     }
   }
 </style>
