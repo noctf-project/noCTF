@@ -137,7 +137,6 @@ export async function routes(fastify: FastifyInstance) {
         security: [{ bearer: [] }],
         tags: ["user"],
         auth: {
-          require: true,
           policy: ["user.get"],
         },
         body: QueryUsersRequest,
@@ -149,16 +148,17 @@ export async function routes(fastify: FastifyInstance) {
     async (request) => {
       const admin = await policyService.evaluate(request.user?.id, adminPolicy);
       const { page, page_size, ...query } = request.body;
+      const q = {
+        ...query,
+        flags: admin ? [] : ["!hidden"],
+      };
       const [result, total] = await Promise.all([
         Paginate(
-          {
-            ...query,
-            flags: admin ? [] : ["!hidden"],
-          },
+          q,
           { page, page_size },
           (q, l) => userService.listSummary(q, l),
         ),
-        query.ids && query.ids.length ? 0 : userService.getCount(query),
+        q.ids && q.ids.length ? 0 : userService.getCount(q),
       ]);
       return {
         data: {

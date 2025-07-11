@@ -111,6 +111,7 @@ export async function up(db: Kysely<any>): Promise<void> {
           "team.get",
           "scoreboard.get",
           "division.get",
+          "user.get",
         ],
         public: true,
         is_enabled: true,

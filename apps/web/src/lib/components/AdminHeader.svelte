@@ -62,6 +62,16 @@
           >
         </li>
         <li>
+          <a href="/admin/policies" class={isActive("/admin/policies")}
+            >Policies</a
+          >
+        </li>
+        <li>
+          <a href="/admin/audit_logs" class={isActive("/admin/audit_logs")}
+            >Audit Logs</a
+          >
+        </li>
+        <li>
           <a href="/admin/config" class={isActive("/admin/config")}>Config</a>
         </li>
       </ul>
@@ -110,11 +120,20 @@
           >
         </li>
         <li>
+          <a href="/admin/policies" class={isActive("/admin/policies")}
+            >Policies</a
+          >
+        </li>
+        <li>
+          <a href="/admin/audit_logs" class={isActive("/admin/audit_logs")}
+            >Audit Logs</a
+          >
+        </li>
+        <li>
           <a href="/admin/config" class={isActive("/admin/config")}>Config</a>
         </li>
       </ul>
     </div>
   </div>
-
   <div class="navbar-end"></div>
 </div>

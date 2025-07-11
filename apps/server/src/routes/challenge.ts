@@ -7,12 +7,13 @@ import {
   SolveChallengeResponse,
 } from "@noctf/api/responses";
 import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import { SolveChallengeRequest } from "@noctf/api/requests";
 import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
 import { SetupConfig } from "@noctf/api/config";
 import { SolveQuery } from "@noctf/api/query";
+import { GetRouteKey } from "@noctf/server-core/util/limit_keys";
 
 export async function routes(fastify: FastifyInstance) {
   const {
@@ -213,6 +214,18 @@ export async function routes(fastify: FastifyInstance) {
           require: true,
           policy: ["OR", "challenge.solves.create"],
         },
+        rateLimit: async (r: FastifyRequest<{ Params: IdParams }>) => [
+          {
+            key: `${GetRouteKey(r)}:t${(await r.user?.membership)?.team_id || 0}`,
+            limit: 8,
+            windowSeconds: 60,
+          },
+          {
+            key: `${GetRouteKey(r)}:t${(await r.user?.membership)?.team_id || 0}i${r.params.id}`,
+            limit: 2,
+            windowSeconds: 30,
+          },
+        ],
         params: IdParams,
         body: SolveChallengeRequest,
         response: {

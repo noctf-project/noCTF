@@ -53,7 +53,7 @@ class CTFClient:
         # Step 1: Initialize email authentication
         init_response = await self._request(
             "POST", 
-            "/auth/email/init", 
+            "/auth/email/verify", 
             data={"email": email},
             auth=False
         )

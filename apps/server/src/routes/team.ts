@@ -25,6 +25,7 @@ import { ActorType, TeamFlag } from "@noctf/server-core/types/enums";
 import { Policy } from "@noctf/server-core/util/policy";
 import SingleValueCache from "@noctf/server-core/util/single_value_cache";
 import { Paginate } from "@noctf/server-core/util/paginator";
+import { GetRouteUserIPKey } from "@noctf/server-core/util/limit_keys";
 
 export async function routes(fastify: FastifyInstance) {
   const adminPolicy: Policy = ["admin.team.get"];
@@ -177,6 +178,13 @@ export async function routes(fastify: FastifyInstance) {
           require: true,
           policy: ["team.self.join"],
         },
+        rateLimit: (r) => [
+          {
+            key: GetRouteUserIPKey(r),
+            limit: 4,
+            windowSeconds: 60,
+          },
+        ],
         body: JoinTeamRequest,
         response: {
           201: MeTeamResponse,
@@ -205,6 +213,13 @@ export async function routes(fastify: FastifyInstance) {
           require: true,
           policy: ["team.self.leave"],
         },
+        rateLimit: (r) => [
+          {
+            key: GetRouteUserIPKey(r),
+            limit: 1,
+            windowSeconds: 60,
+          },
+        ],
       },
     },
     async () => {
@@ -248,6 +263,13 @@ export async function routes(fastify: FastifyInstance) {
           require: true,
           policy: ["team.self.update"],
         },
+        rateLimit: (r) => [
+          {
+            key: GetRouteUserIPKey(r),
+            limit: 3,
+            windowSeconds: 60,
+          },
+        ],
         body: UpdateTeamRequest,
         response: {
           200: UpdateTeamResponse,
@@ -304,16 +326,17 @@ export async function routes(fastify: FastifyInstance) {
     async (request) => {
       const admin = await policyService.evaluate(request.user?.id, adminPolicy);
       const { page, page_size, ...query } = request.body;
+      const q = {
+        ...query,
+        flags: admin ? [] : ["!hidden"],
+      };
       const [result, total] = await Promise.all([
         Paginate(
-          {
-            ...query,
-            flags: admin ? [] : ["!hidden"],
-          },
+          q,
           { page, page_size },
           (q, l) => teamService.listSummary(q, l),
         ),
-        query.ids && query.ids.length ? 0 : teamService.getCount(query),
+        q.ids && q.ids.length ? 0 : teamService.getCount(q),
       ]);
       return {
         data: {
