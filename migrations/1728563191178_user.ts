@@ -92,6 +92,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("omit_roles", sql`varchar[]`, (col) =>
       col.notNull().defaultTo("{}"),
     )
+    .addColumn("version", "integer", (col) => col.notNull().defaultTo(1))
     .execute();
   await CreateTriggerUpdatedAt("policy").execute(db);
 
