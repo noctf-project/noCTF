@@ -59,7 +59,7 @@
 <div class={`flex flex-col items-center gap-2 ${className}`}>
   <div class="flex flex-wrap justify-center items-center gap-2">
     <button
-      class="btn btn-sm btn-outline pop hover:pop"
+      class="btn btn-sm bg-base-100 pop hover:pop"
       disabled={currentPage === 0}
       onclick={goToPrevPage}
     >
@@ -73,7 +73,7 @@
           <button
             class="btn btn-sm hover:pop pop {i === currentPage
               ? 'btn-primary'
-              : 'btn-ghost'}"
+              : 'bg-base-100'}"
             onclick={() => goToPage(i)}
           >
             {i + 1}
@@ -83,14 +83,14 @@
         <button
           class="btn btn-sm hover:pop pop {currentPage === 0
             ? 'btn-primary'
-            : 'btn-ghost'}"
+            : 'bg-base-100'}"
           onclick={() => goToPage(0)}
         >
           1
         </button>
 
         {#if currentPage > 2}
-          <button class="btn btn-sm btn-ghost hover:pop pop">...</button>
+          <button class="btn btn-sm bg-base-100 hover:pop pop">...</button>
         {/if}
 
         {#if currentPage <= 2}
@@ -98,7 +98,7 @@
             <button
               class="btn btn-sm hover:pop pop {i === currentPage
                 ? 'btn-primary'
-                : 'btn-ghost'}"
+                : 'bg-base-100'}"
               onclick={() => goToPage(i)}
             >
               {i + 1}
@@ -109,7 +109,7 @@
             <button
               class="btn btn-sm hover:pop pop {i === currentPage
                 ? 'btn-primary'
-                : 'btn-ghost'}"
+                : 'bg-base-100'}"
               onclick={() => goToPage(i)}
             >
               {i + 1}
@@ -120,7 +120,7 @@
             <button
               class="btn btn-sm hover:pop pop {i === currentPage
                 ? 'btn-primary'
-                : 'btn-ghost'}"
+                : 'bg-base-100'}"
               onclick={() => goToPage(i)}
             >
               {i + 1}
@@ -129,13 +129,13 @@
         {/if}
 
         {#if currentPage < totalPages - 3}
-          <button class="btn btn-sm btn-ghost hover:pop pop">...</button>
+          <button class="btn btn-sm bg-base-100 hover:pop pop">...</button>
         {/if}
 
         <button
           class="btn btn-sm hover:pop pop {currentPage === totalPages - 1
             ? 'btn-primary'
-            : 'btn-ghost'}"
+            : 'bg-base-100'}"
           onclick={() => goToPage(totalPages - 1)}
         >
           {totalPages}
@@ -144,7 +144,7 @@
     </div>
 
     <button
-      class="btn btn-sm btn-outline pop hover:pop"
+      class="btn btn-sm bg-base-100 pop hover:pop"
       disabled={currentPage === totalPages - 1}
       onclick={goToNextPage}
     >
