@@ -3,6 +3,7 @@
   import { sponsors } from "$lib/constants/sponsors";
   import Icon from "@iconify/svelte";
   import { slide } from "svelte/transition";
+  import themeState from "$lib/state/theme.svelte";
 
   const platinumSponsor = sponsors.find(
     (sponsor) => sponsor.level === "platinum",
@@ -41,9 +42,11 @@
     >
       <a href={sponsor.url} target="_blank">
         <img
-          src={sponsor.logo}
+          src={themeState.currentTheme === "dark"
+            ? sponsor.logo.dark
+            : sponsor.logo.light}
           alt={`${sponsor.name} Sponsor`}
-          class={`${size === "large" ? "w-full max-w-96" : "w-full max-w-48 max-h-24"}`}
+          class={`${size === "large" ? "max-w-96" : "max-w-48 max-h-24"} w-full`}
         />
       </a>
     </div>
@@ -75,7 +78,7 @@
                   <a
                     href={link}
                     target="_blank"
-                    class="text-blue-500 hover:text-blue-600 text-sm block"
+                    class="text-blue-500 hover:text-blue-600 text-sm block break-all"
                   >
                     {link}
                   </a>

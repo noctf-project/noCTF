@@ -13,7 +13,10 @@ export type PathResponse<
 
 export type SponsorDetails = {
   name: string;
-  logo: string;
+  logo: {
+    light: string;
+    dark: string;
+  };
   description?: {
     text: string;
     links: string[];

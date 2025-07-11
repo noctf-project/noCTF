@@ -3,7 +3,10 @@ import { type SponsorDetails } from "$lib/api/types";
 export const sponsors: SponsorDetails[] = [
   {
     name: "TantoSec",
-    logo: "/images/sponsors/tanto-security.webp",
+    logo: {
+      light: "/images/sponsors/tanto-security.webp",
+      dark: "/images/sponsors/tanto-security.webp",
+    },
     url: "https://tantosec.com/",
     level: "platinum",
     description: {
@@ -17,7 +20,10 @@ export const sponsors: SponsorDetails[] = [
   },
   {
     name: "Exploit Security",
-    logo: "/images/sponsors/exploit-security.webp",
+    logo: {
+      light: "/images/sponsors/exploit-security.webp",
+      dark: "/images/sponsors/exploit-security.webp",
+    },
     url: "https://www.exploitsecurity.io/",
     level: "gold",
     description: {
@@ -33,7 +39,10 @@ Learn more:`,
   },
   {
     name: "REA",
-    logo: "/images/sponsors/rea.webp",
+    logo: {
+      light: "/images/sponsors/rea.webp",
+      dark: "/images/sponsors/rea-dark.webp",
+    },
     url: "https://www.rea-group.com/security/",
     level: "gold",
     description: {
@@ -45,7 +54,10 @@ Learn more:`,
   },
   {
     name: "Trenchant",
-    logo: "/images/sponsors/trenchant.webp",
+    logo: {
+      light: "/images/sponsors/trenchant.webp",
+      dark: "/images/sponsors/trenchant.webp",
+    },
     url: "https://www.trenchant.io/",
     level: "gold",
     description: {
@@ -57,37 +69,55 @@ Learn more:`,
   },
   {
     name: "Division 5",
-    logo: "/images/sponsors/division5.svg",
+    logo: {
+      light: "/images/sponsors/division5.webp",
+      dark: "/images/sponsors/division5-dark.svg",
+    },
     url: "https://division5.io/",
     level: "silver",
   },
   {
     name: "Asontu",
-    logo: "/images/sponsors/asontu.webp",
+    logo: {
+      light: "/images/sponsors/asontu.webp",
+      dark: "/images/sponsors/asontu.webp",
+    },
     url: "https://asontu.com.au/",
     level: "silver",
   },
   {
     name: "Volkis",
-    logo: "/images/sponsors/volkis-alt.svg",
+    logo: {
+      light: "/images/sponsors/volkis-alt.svg",
+      dark: "/images/sponsors/volkis-alt.svg",
+    },
     url: "https://www.volkis.com.au/",
     level: "silver",
   },
   {
     name: "Mantel Group",
-    logo: "/images/sponsors/mantel-group.webp",
+    logo: {
+      light: "/images/sponsors/mantel-group.webp",
+      dark: "/images/sponsors/mantel-group.webp",
+    },
     url: "https://mantelgroup.com.au",
     level: "silver",
   },
   {
     name: "PentesterLab",
-    logo: "/images/sponsors/pentesterlab.webp",
+    logo: {
+      light: "/images/sponsors/pentesterlab.webp",
+      dark: "/images/sponsors/pentesterlab.webp",
+    },
     url: "https://pentesterlab.com/",
     level: "silver",
   },
   {
     name: "Google Cloud Platform (GCP)",
-    logo: "/images/sponsors/gcloud.webp",
+    logo: {
+      light: "/images/sponsors/gcloud.webp",
+      dark: "/images/sponsors/gcloud.webp",
+    },
     url: "https://g.co/SecurityPrivacyEngJobs",
     level: "infra",
     description: {

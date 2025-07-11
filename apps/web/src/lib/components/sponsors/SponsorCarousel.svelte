@@ -6,8 +6,10 @@
 
 <script lang="ts">
   import { type SponsorDetails, type SponsorTier } from "$lib/api/types";
+  import themeState from "$lib/state/theme.svelte";
 
   const { sponsors }: SponsorCarousellProps = $props();
+
   // map of each tier to the list of sponsors at that tier
   const sponsorsByTier = $derived(
     sponsors.reduce(
@@ -24,7 +26,12 @@
   <div class="slide">
     <div class="logo">
       <a href={sponsor.url} target="_blank" title={sponsor.name}>
-        <img alt={sponsor.name} src={sponsor.logo} />
+        <img
+          alt={sponsor.name}
+          src={themeState.currentTheme === "dark"
+            ? sponsor.logo.dark
+            : sponsor.logo.light}
+        />
       </a>
     </div>
     <div class="sponsor-tier">
@@ -38,9 +45,7 @@
 
 <div class="slide-container">
   <h2 class="text-center" style="margin-top: 0;  text-align: center;">
-    <a style="text-decoration: none;" href="https://downunderctf.com/sponsors"
-      >Sponsored By</a
-    >
+    <a class="text-xl hover:text-primary" href="/sponsors">Our Sponsors</a>
   </h2>
   <div class="flex items-center">
     <div class=" items-center hidden sm:flex">
