@@ -205,7 +205,7 @@ export class ConfigService {
       this.auditLogService.log({
         actor,
         operation: "config.update",
-        entities: [namespace],
+        entities: [`config:${namespace}`],
         data: `Updated to version ${updated.version}`,
       }),
       this.eventBusService.publish(ConfigUpdateEvent, {

@@ -137,7 +137,7 @@ export class UserService {
     await this.auditLogService.log({
       actor,
       operation: "user.delete",
-      entities: [`${ActorType.TEAM}:${id}`],
+      entities: [`${ActorType.USER}:${id}`],
       data: message,
     });
   }

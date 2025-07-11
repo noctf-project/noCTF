@@ -153,10 +153,8 @@ export async function routes(fastify: FastifyInstance) {
         flags: admin ? [] : ["!hidden"],
       };
       const [result, total] = await Promise.all([
-        Paginate(
-          q,
-          { page, page_size },
-          (q, l) => userService.listSummary(q, l),
+        Paginate(q, { page, page_size }, (q, l) =>
+          userService.listSummary(q, l),
         ),
         q.ids && q.ids.length ? 0 : userService.getCount(q),
       ]);

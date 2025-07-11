@@ -11,6 +11,8 @@
   import SubmissionsTable from "$lib/components/SubmissionsTable.svelte";
   import { goto } from "$app/navigation";
   import { availableFlags, getFlagConfig } from "$lib/utils/team-flags";
+  import { createDebouncedState } from "$lib/utils/debounce.svelte";
+  import { toasts } from "$lib/stores/toast";
 
   const teamId = Number(page.params.id);
 
@@ -63,7 +65,6 @@
   let editMode = $state(false);
   let loading = $state(false);
   let error = $state("");
-  let success = $state("");
 
   let editForm = $state({
     name: "",
@@ -103,7 +104,6 @@
   async function saveTeam() {
     loading = true;
     error = "";
-    success = "";
 
     try {
       const result = await api.PUT("/admin/teams/{id}", {
@@ -123,7 +123,7 @@
         return;
       }
 
-      success = "Team updated successfully!";
+      toasts.success("Team updated successfully!");
       editMode = false;
 
       const refreshedData = await api.POST("/admin/teams/query", {
@@ -186,7 +186,6 @@
 
     loading = true;
     error = "";
-    success = "";
 
     try {
       const result = await api.DELETE("/admin/teams/{id}", {
@@ -227,7 +226,7 @@
       });
 
       if (result.error) {
-        alert(`Failed to ${action} submission`);
+        toasts.error(`Failed to ${action} submission`);
         return;
       }
 
@@ -239,7 +238,9 @@
       });
       submissions.r = refreshedData;
     } catch (e) {
-      alert(`An error occurred while trying to ${action} the submission`);
+      toasts.error(
+        `An error occurred while trying to ${action} the submission`,
+      );
       console.error(e);
     }
   }
@@ -261,7 +262,7 @@
       });
 
       if (result.error) {
-        alert("Failed to remove member");
+        toasts.error(result.error.message || "Failed to remove member");
         return;
       }
 
@@ -270,7 +271,11 @@
       });
       team.r = refreshedData;
     } catch (e) {
-      alert("An error occurred while removing the member");
+      const errorMessage =
+        e instanceof Error
+          ? e.message
+          : "An error occurred while removing the member";
+      toasts.error(errorMessage);
       console.error(e);
     }
   }
@@ -292,17 +297,114 @@
       });
 
       if (result.error) {
-        alert("Failed to transfer ownership");
+        toasts.error(result.error.message || "Failed to transfer ownership");
         return;
       }
 
-      // Refresh team data
       const refreshedData = await api.POST("/admin/teams/query", {
         body: { ids: [teamId] },
       });
       team.r = refreshedData;
     } catch (e) {
-      alert("An error occurred while transferring ownership");
+      const errorMessage =
+        e instanceof Error
+          ? e.message
+          : "An error occurred while transferring ownership";
+      toasts.error(errorMessage);
+      console.error(e);
+    }
+  }
+
+  type AdminUser = {
+    id: number;
+    name: string;
+    bio: string;
+    created_at: string;
+    identities: Array<{
+      provider: string;
+      provider_id: string;
+    }>;
+  };
+
+  const userSearchQuery = createDebouncedState("", 300);
+  let userSearchResults = $state<AdminUser[]>([]);
+  let userSearchLoading = $state(false);
+  let userSearchError = $state("");
+  let showUserSearch = $state(false);
+
+  async function searchUsers() {
+    if (!userSearchQuery.debouncedValue.trim()) {
+      userSearchResults = [];
+      return;
+    }
+
+    userSearchLoading = true;
+    userSearchError = "";
+
+    try {
+      const { data, error } = await api.POST("/admin/users/query", {
+        body: {
+          page: 1,
+          page_size: 100,
+          name: userSearchQuery.debouncedValue,
+        },
+      });
+
+      if (error) throw new Error(error.message);
+
+      userSearchResults = data.data.entries;
+    } catch (e) {
+      userSearchError =
+        e instanceof Error ? e.message : "Failed to search users";
+      console.error(e);
+    } finally {
+      userSearchLoading = false;
+    }
+  }
+
+  $effect(() => {
+    if (userSearchQuery.debouncedValue) {
+      searchUsers();
+    } else {
+      userSearchResults = [];
+    }
+  });
+
+  async function addUserToTeam(user: AdminUser) {
+    const confirmed = confirm(
+      `Are you sure you want to add ${user.name} (ID: ${user.id}) to this team as a member?`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const result = await api.PUT("/admin/teams/{id}/members", {
+        params: { path: { id: teamId } },
+        body: {
+          user_id: user.id,
+          role: "member",
+        },
+      });
+
+      if (result.error) {
+        toasts.error(result.error.message || "Failed to add user to team");
+        return;
+      }
+
+      const refreshedData = await api.POST("/admin/teams/query", {
+        body: { ids: [teamId] },
+      });
+      team.r = refreshedData;
+
+      userSearchQuery.value = "";
+      userSearchResults = [];
+      showUserSearch = false;
+    } catch (e) {
+      const errorMessage =
+        e instanceof Error
+          ? e.message
+          : "An error occurred while adding the user to the team";
+      toasts.error(errorMessage);
       console.error(e);
     }
   }
@@ -341,15 +443,6 @@
           Cancel
         </button>
       {:else}
-        <a
-          href="/teams/{teamId}"
-          class="btn bg-base-100 pop hover:pop"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Icon icon="material-symbols:open-in-new" class="text-lg" />
-          View Public Profile
-        </a>
         <button
           class="btn btn-primary pop hover:pop"
           onclick={() => (editMode = true)}
@@ -394,16 +487,6 @@
             <div class="alert alert-error pop">
               <Icon icon="material-symbols:error-outline" class="text-2xl" />
               <span>{error}</span>
-            </div>
-          {/if}
-
-          {#if success}
-            <div class="alert alert-success pop">
-              <Icon
-                icon="material-symbols:check-circle-outline"
-                class="text-2xl"
-              />
-              <span>{success}</span>
             </div>
           {/if}
 
@@ -786,10 +869,152 @@
     </div>
 
     <!-- Members Section -->
-    {#if teamData.members && teamData.members.length > 0}
-      <div class="space-y-4 mt-8">
-        <h2 class="text-xl font-bold">Members ({teamData.members.length})</h2>
+    <div class="space-y-4 mt-8">
+      <div class="flex justify-between items-center">
+        <h2 class="text-xl font-bold">
+          Members ({teamData.members?.length || 0})
+        </h2>
+        <button
+          class="btn btn-primary pop hover:pop"
+          onclick={() => (showUserSearch = !showUserSearch)}
+        >
+          <Icon
+            icon={showUserSearch
+              ? "material-symbols:close"
+              : "material-symbols:person-add"}
+            class="text-lg"
+          />
+          {showUserSearch ? "Cancel" : "Add User"}
+        </button>
+      </div>
 
+      {#if showUserSearch}
+        <div class="card bg-base-100 pop rounded-lg w-full">
+          <div class="card-body">
+            <div class="space-y-4">
+              <!-- Search Input -->
+              <div class="form-control w-full">
+                <label for="user-search" class="label">
+                  <span class="label-text">Search for users by name</span>
+                </label>
+                <input
+                  id="user-search"
+                  type="text"
+                  bind:value={userSearchQuery.value}
+                  class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+                  placeholder="Enter user name to search..."
+                />
+              </div>
+
+              <!-- Search Results -->
+              {#if userSearchLoading}
+                <div class="flex justify-center items-center py-4">
+                  <span class="loading loading-spinner loading-md"></span>
+                  <span class="ml-2">Searching users...</span>
+                </div>
+              {:else if userSearchError}
+                <div class="alert alert-error pop">
+                  <Icon icon="material-symbols:error" />
+                  <span>{userSearchError}</span>
+                </div>
+              {:else if userSearchQuery.debouncedValue && userSearchResults.length === 0}
+                <div class="text-center py-4 text-base-content/70">
+                  <p>
+                    No users found matching "{userSearchQuery.debouncedValue}"
+                  </p>
+                </div>
+              {:else if userSearchResults.length > 0}
+                <div class="space-y-2">
+                  <h3 class="font-semibold">Search Results:</h3>
+                  <div
+                    class="pop border border-base-500 bg-base-100 rounded-lg overflow-x-auto max-h-64 overflow-y-auto"
+                  >
+                    <table class="w-full border-collapse">
+                      <thead>
+                        <tr>
+                          <th
+                            class="border-y border-base-300 bg-base-200 py-2 px-3 text-left font-bold sticky top-0"
+                            >User</th
+                          >
+                          <th
+                            class="border-y border-base-300 bg-base-200 py-2 px-3 text-left font-bold sticky top-0"
+                            >ID</th
+                          >
+                          <th
+                            class="border-y border-base-300 bg-base-200 py-2 px-3 text-left font-bold sticky top-0"
+                            >Created</th
+                          >
+                          <th
+                            class="border-y border-base-300 bg-base-200 py-2 px-3 text-right font-bold sticky top-0"
+                            >Action</th
+                          >
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {#each userSearchResults as user}
+                          {@const isAlreadyMember = teamData.members?.some(
+                            (m) => m.user_id === user.id,
+                          )}
+                          <tr class="bg-base-100 hover:bg-base-300/30">
+                            <td class="border-y border-base-300 py-2 px-3">
+                              <div class="flex flex-col">
+                                <span class="font-medium">{user.name}</span>
+                                {#if user.bio}
+                                  <span class="text-sm text-base-content/60"
+                                    >{user.bio}</span
+                                  >
+                                {/if}
+                              </div>
+                            </td>
+                            <td class="border-y border-base-300 py-2 px-3">
+                              <span class="font-mono text-sm">{user.id}</span>
+                            </td>
+                            <td class="border-y border-base-300 py-2 px-3">
+                              <span
+                                class="text-sm text-base-content/70 font-mono"
+                              >
+                                {formatDateTime(user.created_at)}
+                              </span>
+                            </td>
+                            <td
+                              class="border-y border-base-300 py-2 px-3 text-right"
+                            >
+                              {#if isAlreadyMember}
+                                <span
+                                  class="badge badge-secondary pop pointer-events-none"
+                                >
+                                  <Icon
+                                    icon="material-symbols:check"
+                                    class="text-xs"
+                                  />
+                                  Already Member
+                                </span>
+                              {:else}
+                                <button
+                                  class="btn btn-primary btn-sm pop hover:pop"
+                                  onclick={() => addUserToTeam(user)}
+                                >
+                                  <Icon
+                                    icon="material-symbols:person-add"
+                                    class="text-sm"
+                                  />
+                                  Add to Team
+                                </button>
+                              {/if}
+                            </td>
+                          </tr>
+                        {/each}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              {/if}
+            </div>
+          </div>
+        </div>
+      {/if}
+
+      {#if teamData.members && teamData.members.length > 0}
         <div
           class="pop border border-base-500 bg-base-100 rounded-lg overflow-x-auto"
         >
@@ -896,8 +1121,16 @@
             </tbody>
           </table>
         </div>
-      </div>
-    {/if}
+      {:else}
+        <div
+          class="flex flex-col items-center justify-center py-8 text-base-content/70"
+        >
+          <Icon icon="material-symbols:group" class="text-5xl mb-2" />
+          <p class="text-lg font-medium">No members yet</p>
+          <p class="text-sm">This team doesn't have any members</p>
+        </div>
+      {/if}
+    </div>
 
     <!-- Submissions Section -->
     <div class="space-y-4 mt-8">
