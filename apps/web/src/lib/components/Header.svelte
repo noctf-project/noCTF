@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
   import authState from "$lib/state/auth.svelte";
-  import configState from "$lib/state/config.svelte";
   import Icon from "@iconify/svelte";
 
   const isActive = (path: string) => {
@@ -90,7 +89,7 @@
   </div>
 
   <div class="navbar-end">
-    {#if !authState.isAuthenticated && !page.url.pathname.startsWith("/auth")}
+    {#if !authState.isAuthenticated && !page.url.pathname.startsWith("/auth") && page.url.pathname !== "/"}
       <a href="/auth" class="btn btn-primary px-6 sm:px-8 pop hover:pop"
         >Login</a
       >

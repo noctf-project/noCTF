@@ -38,7 +38,7 @@ export default {
           ...daisyuiThemes["light"],
           "--base-400": "#8a8b90",
           "--base-500": "#3a3b40",
-          primary: "#60a5fa",
+          primary: "#5d7bd5",
           secondary: "#6c9ee4",
           info: "#5cb4ef",
           success: "#72ca72",
@@ -54,7 +54,7 @@ export default {
       },
       {
         dark: {
-          primary: "#60a5fa",
+          primary: "#576eb5",
           secondary: "#65ac69",
           accent: "#49d9b1",
           neutral: "#020405",

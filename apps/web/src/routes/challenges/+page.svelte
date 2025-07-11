@@ -165,11 +165,11 @@
     </div>
   {:else if apiChallenges.error || apiChallenges.r?.error}
     <div class="flex flex-col items-center gap-4 mt-16">
-      <p class="text-center">
+      <p class="text-center text-2xl font-bold">
         {apiChallenges.r?.error?.message || "Unknown error occurred"}
       </p>
       <button
-        class="btn btn-primary"
+        class="btn btn-primary pop hover:pop"
         onclick={() => {
           // Refresh challenges does not reset the loading state
           // so we need to reset it manually
@@ -287,7 +287,7 @@
                       {category}
                     </h1>
                     <div
-                      class="flex flex-col flex-wrap md:justify-start justify-center pt-2 gap-4 min-w-[150px]"
+                      class="flex flex-row flex-wrap md:justify-start justify-center pt-2 gap-4 min-w-[150px]"
                     >
                       {#each categoryChallenges as challenge (challenge.id)}
                         <ChallengeCard

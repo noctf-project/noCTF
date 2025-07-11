@@ -258,7 +258,7 @@
               <Markdown
                 {carta}
                 value={"Dear " +
-                  authState.user?.name +
+                  (authState.user?.name || "player") +
                   ",\n\n" +
                   challDetails!.description}
               />
@@ -321,11 +321,11 @@
           <div class="flex justify-center gap-2">
             <button
               onclick={() => {
-                goto("/team");
+                goto(authState.isAuthenticated ? "/team" : "/auth");
               }}
-              class="btn btn-primary"
+              class="btn btn-primary pop hover:pop"
             >
-              Sign up to a team
+              Create or join a team to submit flags
             </button>
           </div>
         {:else}
