@@ -66,6 +66,7 @@ export class UserIdentityDAO {
     withSecret?: false | undefined,
   ): Promise<Omit<UserIdentity, "secret_data">[]>;
   async listProvidersForUser(ids: number[], withSecret?: boolean) {
+    if (!ids.length) return [];
     let query = this.db.selectFrom("user_identity").where("user_id", "in", ids);
     if (withSecret) {
       return query
