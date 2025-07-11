@@ -43,7 +43,7 @@
     >
   </h2>
   <div class="flex items-center">
-    <div class="flex items-center">
+    <div class=" items-center hidden sm:flex">
       {#each sponsorsByTier.platinum as sponsor}
         {@render sponsorSlide(sponsor)}
       {/each}
@@ -52,6 +52,11 @@
       <div class="slide-track">
         <!-- This double up is intentional -->
         {#each [1, 2] as _}
+          <div class="sm:hidden flex">
+            {#each sponsorsByTier.platinum as sponsor}
+              {@render sponsorSlide(sponsor)}
+            {/each}
+          </div>
           {#each sponsorsByTier.infra as sponsor}
             {@render sponsorSlide(sponsor)}
           {/each}
@@ -152,9 +157,6 @@
   @media screen and (max-width: 750px) and (orientation: portrait) {
     .slide-container {
       width: 100%;
-    }
-    .slider {
-      display: none;
     }
   }
 </style>

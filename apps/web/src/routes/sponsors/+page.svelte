@@ -39,11 +39,13 @@
     <div
       class={`${size === "large" ? "h-36" : "h-24"} flex flex-col items-center justify-center w-full`}
     >
-      <img
-        src={sponsor.logo}
-        alt={`${sponsor.name} Sponsor`}
-        class={`${size === "large" ? "w-full max-w-96" : "w-full max-w-48"}`}
-      />
+      <a href={sponsor.url} target="_blank">
+        <img
+          src={sponsor.logo}
+          alt={`${sponsor.name} Sponsor`}
+          class={`${size === "large" ? "w-full max-w-96" : "w-full max-w-48 max-h-24"}`}
+        />
+      </a>
     </div>
     {#if sponsor.description}
       <div class="flex flex-col w-full mt-4">
@@ -121,7 +123,7 @@
     <!-- Silver Sponsors -->
     <div class="flex flex-col items-center pb-10">
       <h1 class="text-4xl font-bold">Silver Sponsors</h1>
-      <div class="flex flex-wrap gap-4 justify-center">
+      <div class="flex flex-wrap gap-10 justify-center">
         {#each silverSponsors as sponsor}
           {@render singleSponsor(sponsor, "small")}
         {/each}
