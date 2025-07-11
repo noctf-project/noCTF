@@ -14,6 +14,10 @@ export type PathResponse<
 export type SponsorDetails = {
   name: string;
   logo: string;
+  description?: {
+    text: string;
+    links: string[];
+  };
   level: "platinum" | "gold" | "silver" | "infra";
   url: string;
 };

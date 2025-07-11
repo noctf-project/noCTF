@@ -6,24 +6,54 @@ export const sponsors: SponsorDetails[] = [
     logo: "/images/sponsors/tanto-security.webp",
     url: "https://tantosec.com/",
     level: "platinum",
+    description: {
+      text: `Tanto Security offers cutting-edge offensive cyber security services for top organisations across Australia, New Zealand and North America. Benefit from expert advice infused with an attacker mindset when collaborating with our certified, passionate, and experienced team. Our adversary-focused penetration testing and red teaming services empower customers to defend against evolving threats, while our specialised build pipeline security assessments simulate compromised user scenarios to identify potential vectors for supply chain attacks. 
+    
+    Drawing on extensive industry experience, we take a collaborative approach to drive superior results. Just as the Samurai’s tantō exposed vulnerabilities in armor, our services pinpoint your most vulnerable areas to enhance your security posture. As proud supporters of the security community and returning sponsors for our third consecutive year, we’re committed to fostering the growth of cybersecurity talent in Australia and New Zealand. The expertise we cultivate in our region helps protect organisations globally against emerging cyber threats. 
+    
+    For more, visit `,
+      links: ["https://tantosec.com/"],
+    },
   },
   {
     name: "Exploit Security",
     logo: "/images/sponsors/exploit-security.webp",
     url: "https://www.exploitsecurity.io/",
     level: "gold",
+    description: {
+      text: `Exploit Security is a team of offensive security consultants with a deep expertise and specialty in embedded system penetration testing. We are the creators of The Exploit This CTF, a unique competition focused exclusively on hardware and embedded security challenges, where participants engage in real-world exploitation of devices and firmware. Our team also developed the open-source Damn Vulnerable Raspberry Pi (DVRPi), a purpose-built training platform for learning and practicing embedded hacking techniques. Through hands-on challenges and practical tools, we aim to advance the field of hardware security and help defenders better understand the threats they face. Curiosity Drives Our Very Fabric.
+
+Learn more:`,
+      links: [
+        "https://www.exploitsecurity.io/",
+        "https://github.com/exploitsecurityio/DVRPi/",
+        "https://exploitthis.ctfd.io/",
+      ],
+    },
   },
   {
     name: "REA",
     logo: "/images/sponsors/rea.webp",
     url: "https://www.rea-group.com/security/",
     level: "gold",
+    description: {
+      text: `Born in a Melbourne garage in 1995, REA Group is a global digital business specialising in property. Its team of 3,400 people are guided by its purpose to change the way the world experiences property. REA helps people at every stage of the property journey by offering personalised content, data and insights, property valuation estimates and home financing solutions while delivering unparalleled value to its customers – Australia’s property professionals. Its flagship site, realestate.com.au, is the number one place Australians trust and consistently preference to find their next home, with millions of buyers, sellers and renters visiting the platform every month.
+
+      Learn more:`,
+      links: ["https://www.rea-group.com/security/"],
+    },
   },
   {
     name: "Trenchant",
     logo: "/images/sponsors/trenchant.webp",
     url: "https://www.trenchant.io/",
     level: "gold",
+    description: {
+      text: `Trenchant is a trusted industry leader in vulnerability research and capability engineering. They are solving some of the most difficult and interesting problems, across the hardest targets.
+
+      Learn more:`,
+      links: ["https://www.trenchant.io/"],
+    },
   },
   {
     name: "Division 5",
@@ -58,7 +88,15 @@ export const sponsors: SponsorDetails[] = [
   {
     name: "Google Cloud Platform (GCP)",
     logo: "/images/sponsors/gcloud.webp",
-    url: "https://cloud.google.com",
+    url: "https://g.co/SecurityPrivacyEngJobs",
     level: "infra",
+    description: {
+      text: `Are you ready to help us fight the good fight? Are you passionate about building systems to protect Google and its users from attacks? Do you like to break things - and then fix them?
+
+Join Google Security & Privacy Engineering to build secure software solutions; conduct cutting-edge research; and use a wealth of tools, languages, frameworks. Our mission is to keep Google and its millions of users safe, secure, and happy.
+
+Learn more: `,
+      links: ["https://g.co/SecurityPrivacyEngJobs"],
+    },
   },
 ];

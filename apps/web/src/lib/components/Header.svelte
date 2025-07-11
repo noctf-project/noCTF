@@ -46,6 +46,9 @@
         <li>
           <a href="/teams" class={isActive("/teams")}>Teams</a>
         </li>
+        <li>
+          <a href="/sponsors" class={isActive("/sponsors")}>Sponsors</a>
+        </li>
         {#if authState.isAdmin}
           <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
         {/if}
@@ -81,6 +84,9 @@
       </li>
       <li>
         <a href="/teams" class={isActive("/teams")}>Teams</a>
+      </li>
+      <li>
+        <a href="/sponsors" class={isActive("/sponsors")}>Sponsors</a>
       </li>
       {#if authState.isAdmin}
         <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
