@@ -217,13 +217,18 @@
               </div>
             </div>
             <div class="mt-4 flex items-center gap-3">
-              <div
-                class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-600"
-              >
-                <Icon
-                  icon={categoryToIcon(challData?.categories[0] ?? "misc")}
-                  class="text-2xl"
-                />
+              <div class="flex flex-row gap-2">
+                {#each challData?.categories as cat}
+                  <div
+                    class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-600 tooltip"
+                    data-tip={cat}
+                  >
+                    <Icon
+                      icon={categoryToIcon(cat ?? "misc")}
+                      class="text-2xl"
+                    />
+                  </div>
+                {/each}
               </div>
               <div>
                 <p class="font-semibold text-sm">

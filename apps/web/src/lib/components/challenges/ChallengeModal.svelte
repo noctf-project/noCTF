@@ -18,7 +18,6 @@
   import api from "$lib/api/index.svelte";
   import { getRelativeTime } from "$lib/utils/time";
   import TeamNamesService from "$lib/state/team_query.svelte";
-  import Icon from "@iconify/svelte";
 
   interface ScoreEntry {
     teamId: number;

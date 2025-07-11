@@ -1,4 +1,6 @@
 <script lang="ts">
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+
   import type { ChallengeCardData } from "./ChallengeCard.svelte";
   import { categoryToIcon } from "$lib/utils/challenges";
   import Icon from "@iconify/svelte";
@@ -43,8 +45,8 @@
   };
 
   const getCategoryCounts = (category: string) => {
-    const chals = allChallenges.filter((c) =>
-      c.categories.find((f) => f == category),
+    const chals = allChallenges.filter(
+      (c) => c.categories.indexOf(category) === 0,
     );
     return {
       solved: chals.filter((c) => c.isSolved).length,
@@ -67,7 +69,7 @@
         const f = new Set(
           Object.keys(categoryFilters).filter((k) => categoryFilters[k]),
         );
-        return chal.categories.find((c) => f.has(c));
+        return f.has(chal.categories[0]!);
       });
     }
     const sorted = filtered.sort((a, b) => b.solves - a.solves);
@@ -108,7 +110,7 @@
   </button>
 {/snippet}
 
-{#snippet topLevelFilterCount(solved: number, total: number, selected: boolean)}
+{#snippet topLevelFilterCount(_: number, total: number, selected: boolean)}
   <span
     class="text-xs font-bold"
     class:text-blue-600={selected}

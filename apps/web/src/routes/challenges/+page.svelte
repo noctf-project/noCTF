@@ -13,6 +13,7 @@
   import { toasts } from "$lib/stores/toast";
   import Icon from "@iconify/svelte";
   import ChallengeInfo from "$lib/components/challenges/ChallengeInfo.svelte";
+  import { DIFFICULTIES, type Difficulty } from "$lib/constants/difficulties";
 
   let apiChallenges = $state(wrapLoadable(api.GET("/challenges")));
   let challDetailsMap: { [id in number]: ChallDetails } = {};
@@ -75,21 +76,24 @@
     const grouped: { [category: string]: ChallengeCardData[] } = {};
 
     for (const challenge of challenges) {
-      const categories =
+      const primaryCategory =
         challenge.categories.length > 0
-          ? challenge.categories
-          : ["uncategorized"];
+          ? challenge.categories[0]!
+          : "uncategorized";
 
-      for (const category of categories) {
-        if (!grouped[category]) {
-          grouped[category] = [];
-        }
-        grouped[category].push(challenge);
+      if (!grouped[primaryCategory]) {
+        grouped[primaryCategory] = [];
       }
+      grouped[primaryCategory].push(challenge);
     }
 
     for (const category in grouped) {
-      grouped[category]!.sort((a, b) => (a.points || 0) - (b.points || 0));
+      grouped[category]!.sort(
+        (a, b) =>
+          (a.points || 0) - (b.points || 0) ||
+          (DIFFICULTIES.indexOf(a.difficulty as Difficulty) || 0) -
+            (DIFFICULTIES.indexOf(b.difficulty as Difficulty) || 0),
+      );
     }
 
     const sortedCategories = Object.keys(grouped).sort();
