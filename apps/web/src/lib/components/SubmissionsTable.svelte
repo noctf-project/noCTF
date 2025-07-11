@@ -249,7 +249,7 @@
               : "border-y border-base-300 py-2 px-3 text-center"}
           >
             <span
-              class="badge {getSubmissionStatusBadgeClass(
+              class="badge pop {getSubmissionStatusBadgeClass(
                 submission.status,
               )} badge-sm"
             >
