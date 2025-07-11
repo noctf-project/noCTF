@@ -326,16 +326,17 @@ export async function routes(fastify: FastifyInstance) {
     async (request) => {
       const admin = await policyService.evaluate(request.user?.id, adminPolicy);
       const { page, page_size, ...query } = request.body;
+      const q = {
+        ...query,
+        flags: admin ? [] : ["!hidden"],
+      };
       const [result, total] = await Promise.all([
         Paginate(
-          {
-            ...query,
-            flags: admin ? [] : ["!hidden"],
-          },
+          q,
           { page, page_size },
           (q, l) => teamService.listSummary(q, l),
         ),
-        query.ids && query.ids.length ? 0 : teamService.getCount(query),
+        q.ids && q.ids.length ? 0 : teamService.getCount(q),
       ]);
       return {
         data: {
