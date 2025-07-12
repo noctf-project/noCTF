@@ -1,4 +1,8 @@
 import { sql, type Kysely } from "kysely";
+import {
+  CreateTableWithDefaultTimestamps,
+  CreateTriggerUpdatedAt,
+} from "./util";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
@@ -9,8 +13,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .asEnum(["queued", "incorrect", "correct", "invalid"])
     .execute();
 
-  await schema
-    .createTable("submission")
+  await CreateTableWithDefaultTimestamps(schema, "submission")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
@@ -30,13 +33,8 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("metadata", "jsonb", (col) => col.notNull().defaultTo("{}"))
     .addColumn("hidden", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("status", sql`submission_status`, (col) => col.notNull())
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
-    .addColumn("updated_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
     .execute();
+  await CreateTriggerUpdatedAt("submission").execute(db);
 
   await schema
     .createIndex("submission_idx_trgm_data")

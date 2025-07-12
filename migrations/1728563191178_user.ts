@@ -1,11 +1,14 @@
 import { sql, type Kysely } from "kysely";
+import {
+  CreateTableWithDefaultTimestamps,
+  CreateTriggerUpdatedAt,
+} from "./util";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
 
-  await schema
-    .createTable("user")
+  await CreateTableWithDefaultTimestamps(schema, "user")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
@@ -19,10 +22,9 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("bio", "text", (col) => col.notNull().defaultTo(""))
     .addColumn("flags", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .addColumn("roles", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
     .execute();
+
+  await CreateTriggerUpdatedAt("user").execute(db);
   await schema
     .createIndex("user_idx_trgm_name_normalized")
     .on("user")
@@ -30,8 +32,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .expression(sql`name_normalized gin_trgm_ops`)
     .execute();
 
-  await schema
-    .createTable("user_identity")
+  await CreateTableWithDefaultTimestamps(schema, "user_identity")
     .addColumn("user_id", "integer", (col) =>
       col.notNull().references("user.id").onDelete("cascade"),
     )
@@ -46,16 +47,10 @@ export async function up(db: Kysely<any>): Promise<void> {
       "provider",
       "provider_id",
     ])
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
-    .addColumn("updated_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
     .execute();
+  await CreateTriggerUpdatedAt("user_identity").execute(db);
 
-  await schema
-    .createTable("oauth_provider")
+  await CreateTableWithDefaultTimestamps(schema, "oauth_provider")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
@@ -71,18 +66,16 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("token_url", "varchar", (col) => col.notNull())
     .addColumn("info_url", "varchar", (col) => col.notNull())
     .addColumn("info_id_property", "varchar")
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
     .execute();
+  await CreateTriggerUpdatedAt("oauth_provider").execute(db);
+
   await schema
     .createIndex("oauth_provider_idx_is_enabled")
     .on("oauth_provider")
     .column("is_enabled")
     .execute();
 
-  await schema
-    .createTable("policy")
+  await CreateTableWithDefaultTimestamps(schema, "policy")
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
@@ -99,7 +92,10 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("omit_roles", sql`varchar[]`, (col) =>
       col.notNull().defaultTo("{}"),
     )
+    .addColumn("version", "integer", (col) => col.notNull().defaultTo(1))
     .execute();
+  await CreateTriggerUpdatedAt("policy").execute(db);
+
   await db
     .insertInto("policy")
     .values([

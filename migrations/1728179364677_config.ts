@@ -1,4 +1,8 @@
 import { sql, type Kysely } from "kysely";
+import {
+  CreateTableWithDefaultTimestamps,
+  CreateTriggerUpdatedAt,
+} from "./util";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
@@ -7,22 +11,26 @@ export async function up(db: Kysely<any>): Promise<void> {
   await sql`CREATE EXTENSION IF NOT EXISTS unaccent`.execute(db);
   await sql`CREATE EXTENSION IF NOT EXISTS pg_trgm`.execute(db);
   await sql`CREATE OR REPLACE FUNCTION immutable_unaccent(text) RETURNS text
-AS $$
-  SELECT public.unaccent('public.unaccent', $1);
-$$ LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT`.execute(db);
+  AS $$
+    SELECT public.unaccent('public.unaccent', $1);
+  $$ LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT`.execute(db);
 
-  await schema
-    .createTable("config")
+  await sql`CREATE OR REPLACE FUNCTION trigger_updated_at()
+  RETURNS TRIGGER AS $$
+  BEGIN
+  IF OLD.updated_at = NEW.updated_at THEN
+    NEW.updated_at = NOW();
+  END IF;
+  RETURN NEW;
+  END;
+  $$ language 'plpgsql'`.execute(db);
+
+  await CreateTableWithDefaultTimestamps(schema, "config")
     .addColumn("namespace", "varchar", (col) => col.primaryKey())
     .addColumn("value", "jsonb", (col) => col.notNull().defaultTo("{}"))
     .addColumn("version", "integer", (col) => col.notNull().defaultTo(1))
-    .addColumn("created_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
-    .addColumn("updated_at", "timestamptz", (col) =>
-      col.defaultTo(sql`now()`).notNull(),
-    )
     .execute();
+  await CreateTriggerUpdatedAt("config").execute(db);
 
   await schema
     .createTable("audit_log")
@@ -51,6 +59,7 @@ export async function down(db: Kysely<any>): Promise<void> {
 
   await schema.dropTable("audit_log").execute();
   await schema.dropTable("config").execute();
+  await sql`DROP FUNCTION trigger_updated_at`.execute(db);
   await sql`DROP FUNCTION immutable_unaccent`.execute(db);
   await sql`DROP EXTENSION unaccent`.execute(db);
 }

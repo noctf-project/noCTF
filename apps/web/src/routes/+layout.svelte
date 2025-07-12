@@ -24,7 +24,7 @@
 </script>
 
 <svelte:head>
-  <title>{configState.siteConfig?.name || "noCTF"}</title>
+  <title>{configState.siteConfig?.name || "DownUnderCTF"}</title>
 </svelte:head>
 
 <div

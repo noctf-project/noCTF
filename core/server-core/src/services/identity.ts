@@ -255,12 +255,18 @@ export class IdentityService {
       provider,
     });
   }
-  async listProvidersForUser(ids: number | number[], withSecret: true);
+  async listProvidersForUser(
+    ids: number | number[],
+    withSecret: true,
+  ): Promise<UserIdentity[]>;
   async listProvidersForUser(
     ids: number | number[],
     withSecret?: false | undefined,
-  );
-  async listProvidersForUser(ids: number | number[], withSecret?: boolean) {
+  ): Promise<Omit<UserIdentity, "secret_data">[]>;
+  async listProvidersForUser(
+    ids: number | number[],
+    withSecret?: boolean,
+  ): Promise<any[]> {
     const q = typeof ids === "number" ? [ids] : ids;
     if (withSecret === true) {
       return this.identityDAO.listProvidersForUser(q, true);
