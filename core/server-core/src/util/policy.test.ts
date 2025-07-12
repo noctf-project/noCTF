@@ -48,6 +48,12 @@ describe(Evaluate, () => {
     ).toBe(false);
   });
 
+  it("Should not match longer prefixes", () => {
+    const permissions = ["admin.user"];
+
+    expect(Wrapped(["admin.user.get"], permissions)).toBe(false);
+  });
+
   it("Evaluates nested policies", () => {
     const permissions = ["admin.user.*"];
 

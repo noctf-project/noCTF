@@ -182,37 +182,41 @@ const EvaluatePrefixScalar = (
 };
 
 const EvaluateScalar = (permission: string, policy: string[]) => {
-  // search for denials first
-  let p = permission;
-  let allowed = false;
-  while (p !== "") {
-    const n = "!" + p;
-    if (PredicateMatches(n, policy, true)) {
-      return false;
-    }
-    if (PredicateMatches(p, policy, false)) {
-      allowed = true;
-    }
-    p = p.replace(REPLACE_REGEX, "");
-  }
-
   return (
-    !PredicateMatches("", policy, true) &&
-    (allowed || PredicateMatches("", policy, false))
+    !PredicateMatches(`!${permission}`, policy, true) &&
+    PredicateMatches(permission, policy, false)
   );
 };
 
 const PredicateMatches = (p: string, policy: string[], neg: boolean) => {
+  console.log(p, policy);
   if (policy.length === 0) return neg;
+
   const pidx = BisectLeft(p, policy);
   let pp = policy[pidx];
   if (!pp) pp = policy[pidx - 1];
-  return (
-    pp === p ||
-    (!neg && pp === "*") ||
-    (neg && pp === "!*") ||
-    (pp.endsWith(".*") && p.startsWith(pp.substring(0, pp.length - 2)))
-  );
+
+  // Exact match
+  if (pp === p) return true;
+
+  // Universal wildcard matches
+  if (!neg && pp === "*") return true;
+  if (neg && pp === "!*") return true;
+
+  // Prefix wildcard matches - but only if the policy entry actually ends with .*
+  if (pp.endsWith(".*")) {
+    const prefix = pp.substring(0, pp.length - 2);
+    if (p.startsWith(prefix)) {
+      if (p.length > prefix.length && p[prefix.length] === ".") {
+        return true;
+      }
+      if (p === prefix) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 };
 
 const BisectLeft = (target: string, array: string[]) => {
