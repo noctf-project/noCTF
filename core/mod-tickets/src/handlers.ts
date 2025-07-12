@@ -9,9 +9,9 @@ import {
   UpdateTicketResponse,
 } from "./schema/api.ts";
 import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
-import { ActorType } from "@noctf/server-core/types/enums";
 import { SupportSpecFactory } from "./specs.ts";
 import { IdParams } from "@noctf/api/params";
+import { GetRouteUserIPKey } from "@noctf/server-core/util/limit_keys";
 
 export async function handlers(fastify: FastifyInstance) {
   const { configService, policyService } = fastify.container
@@ -28,16 +28,18 @@ export async function handlers(fastify: FastifyInstance) {
         tags: ["tickets"],
         security: [{ bearer: [] }],
         rateLimit: async (r) => [
-          // {
-          //   key: GetRouteUserIPKey(r),
-          //   windowSeconds: 60,
-          //   limit: 1,
-          // },
+          {
+            key: GetRouteUserIPKey(r),
+            windowSeconds: 60,
+            limit: await policyService.evaluate(r.user.id, [
+              "admin.ticket.create",
+            ]) ? 60 : 1,
+          },
         ],
         body: OpenTicketRequest,
         auth: {
           require: true,
-          policy: ["ticket.create"],
+          policy: ["OR", "ticket.create", "amdin.ticket.create"],
         },
         response: {
           "2xx": OpenTicketResponse,
@@ -96,17 +98,19 @@ export async function handlers(fastify: FastifyInstance) {
         tags: ["tickets"],
         security: [{ bearer: [] }],
         rateLimit: async (r) => [
-          // {
-          //   key: GetRouteUserIPKey(r),
-          //   windowSeconds: 60,
-          //   limit: 1,
-          // },
+          {
+            key: GetRouteUserIPKey(r),
+            windowSeconds: 60,
+            limit: await policyService.evaluate(r.user.id, [
+              "admin.ticket.update",
+            ]) ? 60 : 1,
+          },
         ],
         body: UpdateTicketRequest,
         params: IdParams,
         auth: {
           require: true,
-          policy: ["ticket.update"],
+          policy: ["OR", "ticket.update", "admin.ticket.update"],
         },
         response: {
           "2xx": UpdateTicketResponse,

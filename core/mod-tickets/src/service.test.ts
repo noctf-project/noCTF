@@ -90,7 +90,7 @@ describe(TicketService, () => {
       ),
     ).toMatchObject(ticket);
     expect(lockService.acquireLease).toHaveBeenCalledWith(
-      "ticket:42",
+      "ticket:42:state",
       anyNumber(),
     );
     expect(eventBusService.publish).toHaveBeenCalledWith("queue.ticket.state", {
@@ -140,14 +140,14 @@ describe(TicketService, () => {
 
   it("successfully drops the lease", async () => {
     const service = new TicketService(props);
-    await service.dropLease(42, "token");
-    expect(lockService.dropLease).toBeCalledWith("ticket:42", "token");
+    await service.dropLease(42, "apply", "token");
+    expect(lockService.dropLease).toBeCalledWith("ticket:42:apply", "token");
   });
 
   it("does not throw when dropping the lease if it returns an error", async () => {
     const service = new TicketService(props);
     lockService.dropLease.mockRejectedValueOnce("oops");
-    await service.dropLease(42, "token");
+    await service.dropLease(42, "apply", "token");
   });
 
   it("gets the ticket details", async () => {
@@ -201,6 +201,6 @@ describe(TicketService, () => {
         "user:1",
       ),
     ).rejects.toThrowError();
-    expect(lockService.dropLease).toBeCalledWith("ticket:42", "lease");
+    expect(lockService.dropLease).toBeCalledWith("ticket:42:apply", "lease");
   });
 });
