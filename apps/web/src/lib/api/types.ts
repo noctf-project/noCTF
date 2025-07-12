@@ -10,3 +10,19 @@ export type PathResponse<
 }
   ? R
   : never;
+
+export type SponsorDetails = {
+  name: string;
+  logo: {
+    light: string;
+    dark: string;
+  };
+  description?: {
+    text: string;
+    links: string[];
+  };
+  level: "platinum" | "gold" | "silver" | "infra";
+  url: string;
+};
+
+export type SponsorTier = "platinum" | "gold" | "silver" | "infra";

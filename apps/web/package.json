@@ -15,7 +15,7 @@
     "@noctf/openapi-spec": "workspace:",
     "@sveltejs/adapter-static": "^3.0.8",
     "@sveltejs/kit": "^2.0.0",
-    "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "@sveltejs/vite-plugin-svelte": "^4.0.4",
     "autoprefixer": "^10.4.20",
     "daisyui": "^4.12.23",
     "eslint": "^9.7.0",
@@ -42,6 +42,7 @@
     "isomorphic-dompurify": "^2.25.0",
     "lru-cache": "^11.0.2",
     "openapi-fetch": "^0.13.4",
+    "sass-embedded": "^1.89.2",
     "svelte-jsoneditor": "^3.6.1"
   }
 }

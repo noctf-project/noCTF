@@ -47,6 +47,9 @@
         <li>
           <a href="/teams" class={isActive("/teams")}>Teams</a>
         </li>
+        <li>
+          <a href="/sponsors" class={isActive("/sponsors")}>Sponsors</a>
+        </li>
         {#if authState.isAdmin}
           <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
         {/if}
@@ -63,9 +66,8 @@
   <div class="navbar-center lg:hidden">
     <a href="/" class="text-xl font-bold">
       <div class="top-6 left-20 flex flex-row gap-2 items-center">
-        <!-- <img src="/images/DUCTF6-banner.webp" alt="DUCTF6" class="w-52" /> -->
         <img src="/images/ductf-logo-nobg.webp" alt="DUCTF6" class="w-20" />
-        <div class="text-2xl font-bold">{configState.siteConfig?.name || "DownUnderCTF"}</div>
+        <div class="text-2xl font-bold hidden sm:block">{configState.siteConfig?.name || "DownUnderCTF"}</div>
       </div>
     </a>
   </div>
@@ -82,6 +84,9 @@
       </li>
       <li>
         <a href="/teams" class={isActive("/teams")}>Teams</a>
+      </li>
+      <li>
+        <a href="/sponsors" class={isActive("/sponsors")}>Sponsors</a>
       </li>
       {#if authState.isAdmin}
         <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>

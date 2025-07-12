@@ -66,9 +66,6 @@
   let showIncorrectAnimation = $state(false);
   let showCorrectAnimation = $state(false);
 
-  $inspect(showCorrectAnimation);
-  $inspect(showIncorrectAnimation);
-
   let knowsSolvesClick = localStorage.getItem("knowsSolvesClick") == "1";
   let showHint = $state(!knowsSolvesClick);
   setTimeout(() => {

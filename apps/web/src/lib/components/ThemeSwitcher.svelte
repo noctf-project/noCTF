@@ -4,31 +4,22 @@
 </script>
 
 <script lang="ts">
-  import { onMount } from "svelte";
+  import themeState from "$lib/state/theme.svelte";
 
   export let detailed: boolean = false;
 
-  let currentTheme: string = "dark";
   let checkbox: HTMLInputElement;
 
-  onMount(() => {
-    const storedTheme = localStorage.getItem("theme");
-    currentTheme = storedTheme || "dark";
-    document.documentElement.setAttribute("data-theme", currentTheme);
-  });
-
   function updateTheme(event: Event): void {
-    currentTheme = (event.target as HTMLInputElement).checked
-      ? "dark"
-      : "light";
-    localStorage.setItem("theme", currentTheme);
-    document.documentElement.setAttribute("data-theme", currentTheme);
+    themeState.updateTheme(
+      (event.target as HTMLInputElement).checked ? "dark" : "light",
+    );
   }
 
   function toggleTheme(): void {
     checkbox.checked = !checkbox.checked;
     checkbox.dispatchEvent(new Event("change"));
-    currentTheme = checkbox.checked ? "dark" : "light";
+    themeState.updateTheme(checkbox.checked ? "dark" : "light");
   }
 </script>
 
@@ -40,7 +31,7 @@
         data-toggle-theme="dark,light"
         data-act-class="swap-active"
         class="opacity-0"
-        checked={currentTheme === "dark"}
+        checked={themeState.currentTheme === "dark"}
         on:change={updateTheme}
         bind:this={checkbox}
       />
@@ -66,7 +57,7 @@
 
     {#if detailed}
       <span class="text-sm font-medium flex items-center">
-        {currentTheme === "dark" ? "Dark" : "Light"}
+        {themeState.currentTheme === "dark" ? "Dark" : "Light"}
       </span>
     {/if}
   </div>

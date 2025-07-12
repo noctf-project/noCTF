@@ -28,15 +28,11 @@
 </svelte:head>
 
 <div
-  class="bg-[url(/images/background.webp)] bg-center bg-cover opacity-40"
-  style="height: 100vh; width: 100vw; z-index: -999; position: fixed;"
+  class={`bg-[url(/images/background.webp)] h-screen w-screen bg-center bg-cover opacity-70 -z-[999] fixed ${
+    page.url.pathname === "/" ? "" : "blur-sm transition"
+  }`}
 ></div>
-<div
-  class="flex flex-col min-h-screen h-auto opacity-100 {page.url.pathname ===
-  '/'
-    ? ''
-    : 'backdrop-blur-sm'} transition"
->
+<div class="flex flex-col min-h-screen w-screen h-auto">
   {#if page.url.pathname.startsWith("/admin")}
     <AdminHeader />
   {:else}
