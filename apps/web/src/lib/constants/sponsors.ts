@@ -4,8 +4,8 @@ export const sponsors: SponsorDetails[] = [
   {
     name: "TantoSec",
     logo: {
-      light: "/images/sponsors/tanto-security.webp",
-      dark: "/images/sponsors/tanto-security.webp",
+      light: "/images/sponsors/tanto-security.svg",
+      dark: "/images/sponsors/tanto-security-dark.webp",
     },
     url: "https://tantosec.com/",
     level: "platinum",
@@ -80,7 +80,7 @@ Learn more:`,
     name: "Asontu",
     logo: {
       light: "/images/sponsors/asontu.webp",
-      dark: "/images/sponsors/asontu.webp",
+      dark: "/images/sponsors/asontu-dark.webp",
     },
     url: "https://asontu.com.au/",
     level: "silver",
