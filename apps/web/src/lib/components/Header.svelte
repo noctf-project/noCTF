@@ -37,7 +37,8 @@
           </svg>
         </div>
         <ul
-          class="menu menu-sm dropdown-content mt-3 z-[10] p-2 pop bg-base-100 rounded-box w-52" tabindex="-1"
+          class="menu menu-sm dropdown-content mt-3 z-[10] p-2 pop bg-base-100 rounded-box w-52"
+          tabindex="-1"
         >
           <li>
             <a href="/challenges" class={isActive("/challenges")}>Challenges</a>
@@ -120,7 +121,8 @@
         <Icon icon="mdi:chevron-down" class="hidden sm:block ml-1" />
       </div>
       <ul
-        class="menu menu-sm dropdown-content mt-3 z-[10] p-1 px-2 pop bg-base-100 rounded-box w-52 gap-0" tabindex="-1"
+        class="menu menu-sm dropdown-content mt-3 z-[10] p-1 px-2 pop bg-base-100 rounded-box w-52 gap-0"
+        tabindex="-1"
       >
         <li class="flex flex-col sm:hidden pointer-events-none w-full gap-0">
           <div class="w-full font-semibold truncate">
