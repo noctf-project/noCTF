@@ -1,36 +1,52 @@
 import { PolicyDAO } from "../dao/policy.ts";
 import type { ServiceCradle } from "../index.ts";
 import type { Policy } from "../util/policy.ts";
-import { Evaluate, EvaluatePrefixes } from "../util/policy.ts";
+import {
+  Evaluate,
+  EvaluatePrefixes,
+  PreprocessPermissions,
+} from "../util/policy.ts";
 import { LocalCache } from "../util/local_cache.ts";
 import { UserDAO } from "../dao/user.ts";
 import { AuthConfig } from "@noctf/api/config";
 import { EntityType, UserFlag, UserRole } from "../types/enums.ts";
 import SingleValueCache from "../util/single_value_cache.ts";
 import { AuditParams } from "../types/audit_log.ts";
+import { PolicyUpdateEvent } from "@noctf/api/events";
 
 type Props = Pick<
   ServiceCradle,
-  "databaseClient" | "logger" | "configService" | "auditLogService"
+  | "databaseClient"
+  | "logger"
+  | "configService"
+  | "auditLogService"
+  | "eventBusService"
 >;
 
 export const CACHE_NAMESPACE = "core:svc:policy";
 
-const POLICY_EXPIRATION = 5000;
+const USER_ROLES_EXPIRATION = 15000;
+const POLICY_EXPIRATION = 60000;
+
 export class PolicyService {
   private readonly logger;
   private readonly auditLogService;
   private readonly configService;
+  private readonly eventBusService;
 
   private readonly policyDAO;
   private readonly userDAO;
 
   private readonly userRolesCache = new LocalCache<number, Set<string>>({
     max: 16384,
-    ttl: POLICY_EXPIRATION,
+    ttl: USER_ROLES_EXPIRATION,
   });
   private readonly policyGetter = new SingleValueCache(
-    () => this.policyDAO.list({ is_enabled: true }),
+    async () =>
+      (await this.policyDAO.list({ is_enabled: true })).map((x) => ({
+        ...x,
+        permissions: PreprocessPermissions(x.permissions),
+      })),
     POLICY_EXPIRATION,
   );
 
@@ -39,12 +55,33 @@ export class PolicyService {
     logger,
     configService,
     auditLogService,
+    eventBusService,
   }: Props) {
     this.logger = logger;
     this.auditLogService = auditLogService;
     this.configService = configService;
+    this.eventBusService = eventBusService;
     this.policyDAO = new PolicyDAO(databaseClient.get());
     this.userDAO = new UserDAO(databaseClient.get());
+    void this.subscribeUpdates();
+  }
+
+  /**
+   * Listen for config update messages
+   */
+  private async subscribeUpdates() {
+    await this.eventBusService.subscribe<PolicyUpdateEvent>(
+      new AbortController().signal,
+      undefined,
+      [PolicyUpdateEvent.$id!],
+      {
+        concurrency: 1,
+        handler: async () => {
+          // TODO: do a little more sophisticated parsing
+          this.policyGetter.clear();
+        },
+      },
+    );
   }
 
   async list() {
@@ -57,12 +94,21 @@ export class PolicyService {
   ) {
     const policy = await this.policyDAO.create(v);
     this.policyGetter.clear();
-    await this.auditLogService.log({
-      operation: "policy.create",
-      actor,
-      data: message,
-      entities: [`${EntityType.POLICY}:${policy.id}`],
-    });
+    await Promise.all([
+      this.auditLogService.log({
+        operation: "policy.create",
+        actor,
+        data: message,
+        entities: [`${EntityType.POLICY}:${policy.id}`],
+      }),
+      this.eventBusService.publish(PolicyUpdateEvent, {
+        type: "create",
+        id: policy.id,
+        name: policy.name,
+        updated_at: policy.updated_at,
+        version: policy.version,
+      }),
+    ]);
     return policy;
   }
 
@@ -71,19 +117,47 @@ export class PolicyService {
     v: Parameters<PolicyDAO["update"]>[1],
     { actor, message }: AuditParams = {},
   ) {
-    await this.policyDAO.update(id, v);
+    const result = await this.policyDAO.update(id, v);
     this.policyGetter.clear();
-    await this.auditLogService.log({
-      operation: "policy.update",
-      actor,
-      data: message,
-      entities: [`${EntityType.POLICY}:${id}`],
-    });
+    await Promise.all([
+      this.auditLogService.log({
+        operation: "policy.update",
+        actor,
+        data: message,
+        entities: [`${EntityType.POLICY}:${id}`],
+      }),
+      this.eventBusService.publish(PolicyUpdateEvent, {
+        type: "update",
+        id: id,
+        name: result.name,
+        updated_at: result.updated_at,
+        version: result.version,
+      }),
+    ]);
   }
 
-  async delete(id: number, { actor, message }: AuditParams = {}) {
-    await this.policyDAO.delete(id);
+  async delete(
+    id: number,
+    version?: number,
+    { actor, message }: AuditParams = {},
+  ) {
+    const result = await this.policyDAO.delete(id, version);
     this.policyGetter.clear();
+    await Promise.all([
+      this.auditLogService.log({
+        operation: "policy.delete",
+        actor,
+        data: message,
+        entities: [`${EntityType.POLICY}:${id}`],
+      }),
+      this.eventBusService.publish(PolicyUpdateEvent, {
+        type: "delete",
+        id: id,
+        name: result.name,
+        updated_at: new Date(),
+        version: result.version + 1,
+      }),
+    ]);
     await this.auditLogService.log({
       operation: "policy.delete",
       actor,

@@ -32,6 +32,9 @@ export class PolicyDAO {
         "match_roles",
         "omit_roles",
         "is_enabled",
+        "version",
+        "created_at",
+        "updated_at",
       ])
       .orderBy("id");
     if (typeof params.is_enabled === "boolean") {
@@ -50,11 +53,12 @@ export class PolicyDAO {
       match_roles,
       omit_roles,
       is_enabled,
+      version,
     }: Updateable<DB["policy"]>,
   ) {
-    const result = await this.db
+    let query = this.db
       .updateTable("policy")
-      .set(
+      .set((eb) =>
         FilterUndefined({
           name,
           description,
@@ -63,13 +67,20 @@ export class PolicyDAO {
           match_roles,
           omit_roles,
           is_enabled,
+          version: eb("version", "+", 1),
+          updated_at: new Date(),
         }),
       )
       .where("id", "=", id)
-      .executeTakeFirst();
-    if (!result.numUpdatedRows) {
-      throw new NotFoundError("Policy not found");
+      .returning(["name", "version", "updated_at"]);
+    if (version || version === 0) {
+      query = query.where("version", "=", version);
     }
+    const result = await query.executeTakeFirst();
+    if (!result) {
+      throw new NotFoundError("Policy and version not found");
+    }
+    return result;
   }
 
   async create({
@@ -91,15 +102,15 @@ export class PolicyDAO {
       is_enabled: !!is_enabled,
     };
     try {
-      const { id } = await this.db
+      const result = await this.db
         .insertInto("policy")
         .values(v)
-        .returning(["id"])
+        .returning(["id", "version", "created_at", "updated_at"])
         .executeTakeFirstOrThrow();
 
       return {
         ...v,
-        id,
+        ...result,
       };
     } catch (e) {
       const pgerror = TryPGConstraintError(e, CREATE_ERROR_CONFIG);
@@ -108,13 +119,18 @@ export class PolicyDAO {
     }
   }
 
-  async delete(id: number) {
-    const result = await this.db
+  async delete(id: number, version?: number) {
+    let query = this.db
       .deleteFrom("policy")
       .where("id", "=", id)
-      .executeTakeFirstOrThrow();
-    if (!result.numDeletedRows) {
-      throw new NotFoundError("Policy not found");
+      .returning(["name", "version"]);
+    if (version || version === 0) {
+      query = query.where("version", "=", version);
     }
+    const result = await query.executeTakeFirstOrThrow();
+    if (!result) {
+      throw new NotFoundError("Policy and version not found");
+    }
+    return result;
   }
 }
