@@ -92,9 +92,9 @@
   </div>
 {/snippet}
 
-<div class="flex flex-col items-center h-screen">
+<div class="flex flex-col items-center h-screen p-2">
   <div
-    class="flex flex-col items-center w-8/12 bg-base-100 p-4 rounded-lg opacity-95"
+    class="flex flex-col items-center w-full md:w-8/12 bg-base-100 p-4 rounded-lg opacity-95"
   >
     <!-- Platinum Sponsor -->
     <div class="flex flex-col items-center pb-10 w-full">
