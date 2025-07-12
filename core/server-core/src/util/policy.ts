@@ -189,7 +189,6 @@ const EvaluateScalar = (permission: string, policy: string[]) => {
 };
 
 const PredicateMatches = (p: string, policy: string[], neg: boolean) => {
-  console.log(p, policy);
   if (policy.length === 0) return neg;
 
   const pidx = BisectLeft(p, policy);
