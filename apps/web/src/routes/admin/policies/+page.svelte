@@ -124,7 +124,7 @@
     editForm.is_enabled = true;
   }
 
-  async function updatePolicy() {
+  async function updatePolicy(version: number) {
     if (!editingPolicy || !editForm.name.trim()) {
       toasts.error("Please enter a policy name");
       return;
@@ -142,6 +142,7 @@
           permissions: parseArrayField(editForm.permissions),
           public: editForm.public,
           is_enabled: editForm.is_enabled,
+          version,
         },
       });
 
@@ -461,7 +462,7 @@
                   </button>
                   <button
                     class="btn btn-primary pop hover:pop"
-                    onclick={updatePolicy}
+                    onclick={() => updatePolicy(policy.version)}
                     disabled={isUpdating}
                   >
                     {#if isUpdating}

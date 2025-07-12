@@ -103,12 +103,18 @@ export class OAuthIdentityProvider implements IdentityProvider {
   ): Promise<FinishAuthResponse["data"]> {
     const data = await this.tokenService.lookup("state", state);
     const method = await this.configProvider.getMethod(data.name);
-    const id = await this.getExternalId(method, code, redirect_uri);
-    const identity = await this.identityService.getIdentityForProvider(
-      `${this.id()}:${data.name}`,
-      id,
+    const accessToken = await this.exchangeAccessToken(
+      method,
+      code,
+      redirect_uri,
     );
     await this.tokenService.invalidate("state", state);
+    const provider_id = await this.getExternalId(method, accessToken);
+    console.log(provider_id, `${this.id()}:${data.name}`);
+    const identity = await this.identityService.getIdentityForProvider(
+      `${this.id()}:${data.name}`,
+      provider_id,
+    );
     if (!identity) {
       if (method.is_registration_enabled) {
         return {
@@ -117,7 +123,7 @@ export class OAuthIdentityProvider implements IdentityProvider {
             identity: [
               {
                 provider: `${this.id()}:${data.name}`,
-                provider_id: id,
+                provider_id,
               },
             ],
           }),
@@ -145,7 +151,13 @@ export class OAuthIdentityProvider implements IdentityProvider {
   ) {
     const data = await this.tokenService.lookup("state", state);
     const method = await this.configProvider.getMethod(data.name);
-    const provider_id = await this.getExternalId(method, code, redirect_uri);
+    const accessToken = await this.exchangeAccessToken(
+      method,
+      code,
+      redirect_uri,
+    );
+    await this.tokenService.invalidate("state", state);
+    const provider_id = await this.getExternalId(method, accessToken);
     await this.identityService.associateIdentities([
       {
         user_id,
@@ -169,17 +181,15 @@ export class OAuthIdentityProvider implements IdentityProvider {
     return { url: url.toString(), state };
   }
 
-  async getExternalId(
+  async exchangeAccessToken(
     {
       client_id,
       client_secret,
       token_url,
-      info_url,
-      info_id_property,
     }: Awaited<ReturnType<OAuthConfigProvider["getMethod"]>>,
     code: string,
     redirect_uri: string,
-  ): Promise<string> {
+  ) {
     const tokenResponse = await fetch(token_url, {
       method: "POST",
       body: new URLSearchParams({
@@ -193,11 +203,19 @@ export class OAuthIdentityProvider implements IdentityProvider {
     if (!tokenResponse.ok) {
       throw new AuthenticationError("Could not exchange code for access_token");
     }
-    const token = (await tokenResponse.json()).access_token;
+    return (await tokenResponse.json()).access_token;
+  }
 
+  async getExternalId(
+    {
+      info_url,
+      info_id_property,
+    }: Awaited<ReturnType<OAuthConfigProvider["getMethod"]>>,
+    access_token: string,
+  ): Promise<string> {
     const infoResponse = await fetch(info_url, {
       headers: {
-        authorization: `Bearer ${token}`,
+        authorization: `Bearer ${access_token}`,
       },
     });
     if (!infoResponse.ok) {
