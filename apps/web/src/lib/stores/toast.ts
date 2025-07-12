@@ -16,7 +16,9 @@ function createToastStore() {
     type: ToastType = "info",
     duration: number = 5000,
   ) {
-    const id = crypto.randomUUID();
+    
+    // crypto.randomUUID() is not available in the safari?
+    const id = Math.random().toString(36).substring(2, 15); 
     // only keep the most recent 5 messages
     update((toasts) => {
       const newToasts = [...toasts, { message, type, id }];
