@@ -18,7 +18,7 @@ export class TicketDAO {
       provider_metadata,
     }: Partial<Ticket>,
   ): Promise<Ticket> {
-    const { id, created_at } = await db
+    const { id, created_at, updated_at } = await db
       .insertInto("ticket")
       .values({
         state: TicketState.Created,
@@ -31,7 +31,7 @@ export class TicketDAO {
         provider_id,
         provider_metadata,
       })
-      .returning(["id", "created_at"])
+      .returning(["id", "created_at", "updated_at"])
       .executeTakeFirst();
 
     return {
@@ -46,6 +46,7 @@ export class TicketDAO {
       provider_id: provider_id || null,
       provider_metadata: provider_metadata || null,
       created_at,
+      updated_at,
     };
   }
 
@@ -64,6 +65,7 @@ export class TicketDAO {
         "provider_id",
         "provider_metadata",
         "created_at",
+        "updated_at",
       ])
       .where("id", "=", id)
       .executeTakeFirst();
@@ -86,13 +88,15 @@ export class TicketDAO {
   }
 
   async update(db: DBType, id: number, properties: UpdateTicket) {
-    const { numUpdatedRows } = await db
+    const result = await db
       .updateTable("ticket")
       .set(FilterUndefined(properties))
       .where("id", "=", id)
+      .returning(["updated_at", "state"])
       .executeTakeFirst();
-    if (!numUpdatedRows) {
+    if (!result) {
       throw new NotFoundError("Ticket not found");
     }
+    return result as Pick<Ticket, "state" | "updated_at">;
   }
 }

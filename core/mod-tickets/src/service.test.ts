@@ -10,6 +10,7 @@ import { TicketDAO } from "./dao.ts";
 import type { Ticket } from "./schema/datatypes.ts";
 import { TicketState } from "./schema/datatypes.ts";
 import { BadRequestError, ConflictError } from "@noctf/server-core/errors";
+import { ActorType } from "@noctf/server-core/types/enums";
 
 vi.mock(import("./dao.ts"), () => ({
   TicketDAO: vi.fn(),
@@ -36,6 +37,7 @@ describe(TicketService, () => {
     provider_id: null,
     provider_metadata: null,
     created_at: date,
+    updated_at: date,
   };
 
   const props = {
@@ -56,11 +58,14 @@ describe(TicketService, () => {
     const service = new TicketService(props);
     configService.get.mockResolvedValue({ value: {}, version: 1 });
     await expect(() =>
-      service.create("user:1", {
-        category: "test",
-        item: "test",
-        team_id: 1,
-      }),
+      service.create(
+        {
+          category: "test",
+          item: "test",
+          team_id: 1,
+        },
+        "user:1",
+      ),
     ).rejects.toThrowError("A provider has not been configured");
   });
 
@@ -75,11 +80,14 @@ describe(TicketService, () => {
 
     ticketDAO.create.mockResolvedValue(ticket);
     expect(
-      await service.create("user:1", {
-        category: "test",
-        item: "test",
-        team_id: 1,
-      }),
+      await service.create(
+        {
+          category: "test",
+          item: "test",
+          team_id: 1,
+        },
+        "user:1",
+      ),
     ).toMatchObject(ticket);
     expect(lockService.acquireLease).toHaveBeenCalledWith(
       "ticket:42",
@@ -96,7 +104,7 @@ describe(TicketService, () => {
     const service = new TicketService(props);
     ticketDAO.getState.mockResolvedValueOnce(TicketState.Created);
     lockService.acquireLease.mockResolvedValueOnce("lease");
-    await service.requestStateChange("user:1", 42, TicketState.Open);
+    await service.requestStateChange(42, TicketState.Open);
     expect(eventBusService.publish).toBeCalledWith("queue.ticket.state", {
       lease: "lease",
       desired_state: TicketState.Open,
@@ -108,7 +116,7 @@ describe(TicketService, () => {
     const service = new TicketService(props);
     ticketDAO.getState.mockResolvedValueOnce(TicketState.Open);
     lockService.acquireLease.mockResolvedValueOnce("lease");
-    await service.requestStateChange("user:1", 42, TicketState.Open);
+    await service.requestStateChange(42, TicketState.Open);
     expect(lockService.acquireLease).not.toBeCalled();
     expect(eventBusService.publish).not.toBeCalled();
   });
@@ -116,7 +124,7 @@ describe(TicketService, () => {
   it("Throws error if ticket state does not exist", async () => {
     const service = new TicketService(props);
     expect(() =>
-      service.requestStateChange("user:1", 42, "NonExistent" as TicketState),
+      service.requestStateChange(42, "NonExistent" as TicketState),
     ).rejects.toThrowError(BadRequestError);
   });
 
@@ -125,7 +133,7 @@ describe(TicketService, () => {
     ticketDAO.getState.mockResolvedValueOnce(TicketState.Created);
     lockService.acquireLease.mockRejectedValueOnce(new Error("lol"));
     await expect(() =>
-      service.requestStateChange("user:1", 42, TicketState.Open),
+      service.requestStateChange(42, TicketState.Open),
     ).rejects.toThrowError(ConflictError);
     expect(eventBusService.publish).not.toBeCalled();
   });
@@ -163,9 +171,13 @@ describe(TicketService, () => {
   it("apply updates the DB and sends out a message", async () => {
     const service = new TicketService(props);
     lockService.acquireLease.mockResolvedValue("lease");
-    await service.apply("user:1", 42, {
-      assignee_id: 1,
-    });
+    await service.apply(
+      42,
+      {
+        assignee_id: 1,
+      },
+      "user:1",
+    );
     expect(ticketDAO.update).toBeCalledWith(databaseClient, 42, {
       assignee_id: 1,
     });
@@ -181,9 +193,13 @@ describe(TicketService, () => {
     lockService.acquireLease.mockResolvedValue("lease");
     ticketDAO.update.mockRejectedValue(Error);
     await expect(() =>
-      service.apply("user:1", 42, {
-        assignee_id: 1,
-      }),
+      service.apply(
+        42,
+        {
+          assignee_id: 1,
+        },
+        "user:1",
+      ),
     ).rejects.toThrowError();
     expect(lockService.dropLease).toBeCalledWith("ticket:42", "lease");
   });

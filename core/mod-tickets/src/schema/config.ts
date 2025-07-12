@@ -3,7 +3,12 @@ import { Type } from "@sinclair/typebox";
 
 export const SupportSpec = Type.Object({
   name: Type.String({
-    title: "Name of category",
+    title: "Name of ticket item",
+    minLength: 1,
+    maxLength: 256,
+  }),
+  id: Type.String({
+    title: "ID of ticket item",
   }),
   requester: Type.Enum(
     {
@@ -38,7 +43,7 @@ export const TicketConfig = Type.Object(
         "Number of tickets that can be open at once for a user. " +
         "Does not include admin initiated tickets. 0 for unlimited.",
     }),
-    support_specs: Type.Record(Type.String(), SupportSpec, {
+    support_specs: Type.Record(Type.String(), Type.Omit(SupportSpec, ["id"]), {
       title: "Support ticket categories.",
     }),
     discord: Type.Optional(
@@ -52,12 +57,10 @@ export const TicketConfig = Type.Object(
             title: "Discord Channel ID where tickets are created.",
             pattern: "^\\d+",
           }),
-          notifications_channel_id: Type.Optional(
-            Type.String({
-              title: "Discord Channel ID to store private ticket notes.",
-              pattern: "^\\d+",
-            }),
-          ),
+          notifications_channel_id: Type.String({
+            title: "Discord Channel ID to store private ticket notes.",
+            pattern: "^\\d+",
+          }),
         },
         {
           title: "Discord Provider Options",

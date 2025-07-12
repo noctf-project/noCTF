@@ -5,10 +5,16 @@ import {
   TicketStateMessage,
   UpdateTicket,
 } from "./schema/datatypes.ts";
-import { BadRequestError, ConflictError } from "@noctf/server-core/errors";
+import {
+  BadRequestError,
+  ConflictError,
+  NotImplementedError,
+} from "@noctf/server-core/errors";
 import { TicketConfig } from "./schema/config.ts";
 import { TicketDAO } from "./dao.ts";
 import { Value } from "@sinclair/typebox/value";
+import { AuditLogActor } from "@noctf/server-core/types/audit_log";
+import { FilterUndefined } from "./util.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -45,21 +51,21 @@ export class TicketService {
   }
 
   async create(
-    actor: string,
     params: Pick<Ticket, "category" | "item" | "team_id" | "user_id">,
+    actor: string,
   ): Promise<Ticket> {
     const {
       value: { provider },
     } = await this.configService.get(TicketConfig);
     if (!provider) {
-      throw new Error("A provider has not been configured");
+      throw new NotImplementedError("A provider has not been configured");
     }
     const ticket = await this.dao.create(this.databaseClient.get(), {
       ...params,
       provider,
     });
 
-    const lease = await this.acquireLease(ticket.id);
+    const lease = await this.acquireLease(ticket.id, "state");
     await this.eventBusService.publish("queue.ticket.state", {
       lease,
       id: ticket.id,
@@ -72,11 +78,7 @@ export class TicketService {
     return this.dao.get(this.databaseClient.get(), id);
   }
 
-  async requestStateChange(
-    actor: string,
-    id: number,
-    desired_state: TicketState,
-  ) {
+  private async requestStateChange(id: number, desired_state: TicketState) {
     if (
       !Value.Check(TicketStateMessage.properties.desired_state, desired_state)
     ) {
@@ -89,26 +91,29 @@ export class TicketService {
     }
 
     try {
-      const lease = await this.acquireLease(id);
+      const lease = await this.acquireLease(id, "state");
       await this.eventBusService.publish("queue.ticket.state", {
         lease,
         desired_state,
         id,
       } as TicketStateMessage);
-    } catch {
+    } catch (e) {
       throw new ConflictError(
         "A request to change the ticket state has not been completed.",
       );
     }
   }
 
-  async acquireLease(id: number) {
-    return this.lockService.acquireLease(`ticket:${id}`, LEASE_DURATION);
+  private async acquireLease(id: number, type: "state" | "apply") {
+    return this.lockService.acquireLease(
+      `ticket:${id}:${type}`,
+      LEASE_DURATION,
+    );
   }
 
-  async dropLease(id: number, token: string) {
+  async dropLease(id: number, type: "state" | "apply", token: string) {
     try {
-      await this.lockService.dropLease(`ticket:${id}`, token);
+      await this.lockService.dropLease(`ticket:${id}:${type}`, token);
     } catch (err) {
       this.logger.warn(
         err,
@@ -117,27 +122,52 @@ export class TicketService {
     }
   }
 
+  /**
+   * Update ticket without applying
+   * @param id id
+   * @param properties properties
+   */
   async update(id: number, properties: UpdateTicket) {
-    await this.dao.update(
+    return this.dao.update(
       this.databaseClient.get(),
       id,
       Value.Clean(UpdateTicket, properties),
     );
   }
 
-  async apply(actor: string, id: number, properties: UpdateTicket) {
-    const lease = await this.acquireLease(id);
+  async getSpec(category: string, item: string) {
+    return {
+      category,
+      item,
+    };
+  }
+
+  async apply(
+    id: number,
+    properties: UpdateTicket,
+    actor: string,
+  ): Promise<Pick<Ticket, "updated_at" | "state"> | undefined> {
+    const lease = await this.acquireLease(id, "apply");
+    const { state, ...other } = properties;
     try {
-      await this.update(id, properties);
-      await this.eventBusService.publish("queue.ticket.apply", {
-        lease,
-        properties,
-        id,
-      } as TicketApplyMessage);
+      let result: Pick<Ticket, "updated_at" | "state"> | undefined;
+      const toApply = FilterUndefined(other);
+      if (Object.keys(toApply).length) result = await this.update(id, toApply);
+      if (state) {
+        await this.requestStateChange(id, state);
+        await this.dropLease(id, "apply", lease);
+      } else {
+        await this.eventBusService.publish("queue.ticket.apply", {
+          lease,
+          properties,
+          id,
+        } as TicketApplyMessage);
+      }
+      return result;
     } catch (err) {
       this.logger.error(err, "Could not update and apply properties");
       if (lease) {
-        await this.dropLease(id, lease);
+        await this.dropLease(id, "apply", lease);
       }
       throw err;
     }

@@ -18,6 +18,7 @@ import type {
 import { ChannelType } from "discord-api-types/v10";
 import type { TicketService } from "../service.ts";
 import { EventBusNonRetryableError } from "@noctf/server-core/services/event_bus";
+import { SetupConfig } from "@noctf/api/config";
 
 export const DiscordProviderData = Type.Object({
   channel: Type.String(),
@@ -143,6 +144,7 @@ export class DiscordProvider {
     { ticket, assignee }: { ticket: Ticket; assignee?: string },
     messageId?: string,
   ) {
+    const { value: config } = await this.configService.get(SetupConfig);
     const client = await this.getClient();
     const requesterType = ticket.team_id ? "Team" : "User";
     const requesterId = (ticket.team_id || ticket.user_id).toString();
@@ -162,7 +164,7 @@ export class DiscordProvider {
         },
         {
           name: "ID",
-          value: `[${ticket.id}](https://ctf.sk8boarding.dog/ticket/${ticket.id})`,
+          value: `[${ticket.id}](${config.root_url}/tickets/${ticket.id})`,
           inline: true,
         },
         { name: "", value: "" },
@@ -257,6 +259,7 @@ export class DiscordProvider {
       state,
       {
         ticket,
+        assignee: await this.formatUserIdForDiscord(ticket.assignee_id),
       },
     );
     await this.ticketService.update(ticket.id, {
@@ -267,6 +270,7 @@ export class DiscordProvider {
     });
     await this.postNotification(ticket.provider_id, state, {
       ticket,
+      assignee: await this.formatUserIdForDiscord(ticket.assignee_id),
     });
 
     if (ticket.user_id) {

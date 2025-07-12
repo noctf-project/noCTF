@@ -1,7 +1,4 @@
 import type { ServiceCradle } from "@noctf/server-core";
-import type { FastifyInstance } from "fastify";
-import { DEFAULT_CONFIG, TicketConfig } from "./schema/config.ts";
-import { OpenTicketRequest, OpenTicketResponse } from "./schema/api.ts";
 import "@noctf/server-core/types/fastify";
 import { TicketService } from "./service.ts";
 import { DiscordProvider } from "./providers/discord.ts";
@@ -11,48 +8,9 @@ import type {
 } from "./schema/datatypes.ts";
 import { TicketState } from "./schema/datatypes.ts";
 import { EventBusNonRetryableError } from "@noctf/server-core/services/event_bus";
-import { GetRouteKey } from "@noctf/server-core/util/limit_keys";
-import { ForbiddenError } from "@noctf/server-core/errors";
+import { handlers } from "./handlers.ts";
 
-export async function initServer(fastify: FastifyInstance) {
-  const { configService } = fastify.container.cradle as ServiceCradle;
-  await configService.register(TicketConfig, DEFAULT_CONFIG);
-
-  fastify.post<{ Request: OpenTicketRequest; Reply: OpenTicketResponse }>(
-    "/tickets",
-    {
-      schema: {
-        tags: ["tickets"],
-        security: [{ bearer: [] }],
-        rateLimit: async (r) => [
-          {
-            key: `${GetRouteKey(r)}:t${(await r.user.membership).team_id}`,
-            windowSeconds: 60,
-            limit: 1,
-          },
-        ],
-        body: OpenTicketRequest,
-        auth: {
-          require: true,
-        },
-        response: {
-          "2xx": OpenTicketResponse,
-        },
-      },
-    },
-    async () => {
-      const config = await configService.get(TicketConfig);
-      if (!config.value.enabled) {
-        throw new ForbiddenError("Ticket functionality is not enabled");
-      }
-      return {
-        data: {
-          id: 0,
-        },
-      };
-    },
-  );
-}
+export const initServer = handlers;
 
 export async function initWorker(signal: AbortSignal, cradle: ServiceCradle) {
   const { eventBusService } = cradle;
@@ -67,6 +25,7 @@ export async function initWorker(signal: AbortSignal, cradle: ServiceCradle) {
         "Ticket provider is not discord (others not implemented).",
       );
     if (ticket.state === desired_state) {
+      await ticketService.dropLease(ticket.id, "state", lease);
       return;
     }
     try {
@@ -77,27 +36,28 @@ export async function initWorker(signal: AbortSignal, cradle: ServiceCradle) {
       }
     } catch (e) {
       if (e instanceof EventBusNonRetryableError) {
-        await ticketService.dropLease(ticket.id, lease);
+        await ticketService.dropLease(ticket.id, "state", lease);
       }
       throw e;
     }
-    await ticketService.dropLease(ticket.id, lease);
+    await ticketService.dropLease(ticket.id, "state", lease);
   };
 
   const ApplyHandler = async (message: TicketApplyMessage) => {
     const { properties, id, lease } = message;
     // Right now we only support assignee updates
     if (!properties.assignee_id && properties.assignee_id !== null) {
-      await ticketService.dropLease(id, lease);
+      await ticketService.dropLease(id, "apply", lease);
       return;
     }
 
     try {
       // Have to grab the whole ticket anyways
-      await discordProvider.assign(await ticketService.get(id));
+      const ticket = await ticketService.get(id);
+      await discordProvider.assign(ticket);
     } catch (e) {
       if (e instanceof EventBusNonRetryableError) {
-        await ticketService.dropLease(id, lease);
+        await ticketService.dropLease(id, "apply", lease);
       }
       throw e;
     }
