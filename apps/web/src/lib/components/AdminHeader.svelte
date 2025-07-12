@@ -33,7 +33,7 @@
         </svg>
       </div>
       <ul
-        class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
+        class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52" tabindex="-1"
       >
         <li>
           <a href="/admin/challenges" class={isActive("/admin/challenges")}
