@@ -7,7 +7,7 @@
   import { createDebouncedState } from "$lib/utils/debounce.svelte";
 
   let currentPage = $state(0);
-  const pageSize = 60;
+  const pageSize = 50;
 
   const searchQuery = createDebouncedState("", 300, () => {
     currentPage = 0;
