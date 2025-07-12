@@ -163,5 +163,9 @@
     .slide-container {
       width: 100%;
     }
+    .slider {
+      mask-image: none;
+      width: 100vw;
+    }
   }
 </style>
