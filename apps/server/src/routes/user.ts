@@ -27,7 +27,7 @@ export async function routes(fastify: FastifyInstance) {
         tags: ["user"],
         auth: {
           require: true,
-          policy: ["user.self"],
+          policy: ["user.self.get"],
         },
         response: {
           200: MeUserResponse,
