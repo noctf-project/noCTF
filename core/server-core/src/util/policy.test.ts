@@ -39,7 +39,7 @@ describe(Evaluate, () => {
     ).toBe(true);
     expect(
       Wrapped(["OR", "admin.user.update", "admin.challenges.get"], permissions),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       Wrapped(
         ["AND", "admin.user.update", "admin.challenges.get"],
@@ -52,6 +52,13 @@ describe(Evaluate, () => {
     const permissions = ["admin.user"];
 
     expect(Wrapped(["admin.user.get"], permissions)).toBe(false);
+  });
+
+  it("Should match when permission with wildcard matches a shorter policy", () => {
+    const permissions = ["admin.user.*"];
+
+    expect(Wrapped(["admin.user"], permissions)).toBe(true);
+    expect(Wrapped(["admin"], permissions)).toBe(false);
   });
 
   it("Evaluates nested policies", () => {
