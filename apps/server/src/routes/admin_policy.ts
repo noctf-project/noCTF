@@ -118,7 +118,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      await policyService.delete(request.params.id, {
+      await policyService.delete(request.params.id, undefined, {
         actor: {
           type: ActorType.USER,
           id: request.user.id,

@@ -3,6 +3,9 @@ import type { Policy } from "./policy.ts";
 import { Evaluate, EvaluatePrefixes, PreprocessPermissions } from "./policy.ts";
 
 describe(Evaluate, () => {
+  const Wrapped = (
+    ...[policy, permissions, ...rest]: Parameters<typeof Evaluate>
+  ) => Evaluate(policy, PreprocessPermissions(permissions), ...rest);
   it("Evaluates single scalar policies", () => {
     const permissions = [
       "admin.user.*",
@@ -10,14 +13,14 @@ describe(Evaluate, () => {
       "!admin.user.update",
     ];
 
-    expect(Evaluate(["admin.user"], permissions)).toBe(true);
-    expect(Evaluate(["admin.user.update"], permissions)).toBe(false);
-    expect(Evaluate(["admin.config"], permissions)).toBe(false);
-    expect(Evaluate(["admin.challenges"], permissions)).toBe(true);
-    expect(Evaluate(["admin.challenges"], ["!*", "admin.challenges.*"])).toBe(
+    expect(Wrapped(["admin.user"], permissions)).toBe(true);
+    expect(Wrapped(["admin.user.update"], permissions)).toBe(false);
+    expect(Wrapped(["admin.config"], permissions)).toBe(false);
+    expect(Wrapped(["admin.challenges"], permissions)).toBe(true);
+    expect(Wrapped(["admin.challenges"], ["!*", "admin.challenges.*"])).toBe(
       false,
     );
-    expect(Evaluate(["user.get"], permissions)).toBe(false);
+    expect(Wrapped(["user.get"], permissions)).toBe(false);
   });
 
   it("Evaluates multi scalar policies", () => {
@@ -28,20 +31,17 @@ describe(Evaluate, () => {
       "!admin.user.update",
     ];
 
+    expect(Wrapped(["OR", "admin.challenges", "admin.user"], permissions)).toBe(
+      true,
+    );
     expect(
-      Evaluate(["OR", "admin.challenges", "admin.user"], permissions),
+      Wrapped(["AND", "admin.challenges", "admin.user"], permissions),
     ).toBe(true);
     expect(
-      Evaluate(["AND", "admin.challenges", "admin.user"], permissions),
+      Wrapped(["OR", "admin.user.update", "admin.challenges.get"], permissions),
     ).toBe(true);
     expect(
-      Evaluate(
-        ["OR", "admin.user.update", "admin.challenges.get"],
-        permissions,
-      ),
-    ).toBe(true);
-    expect(
-      Evaluate(
+      Wrapped(
         ["AND", "admin.user.update", "admin.challenges.get"],
         permissions,
       ),
@@ -52,7 +52,7 @@ describe(Evaluate, () => {
     const permissions = ["admin.user.*"];
 
     expect(
-      Evaluate(
+      Wrapped(
         [
           "OR",
           ["OR", "admin.challenges", "admin.user"],
@@ -63,7 +63,7 @@ describe(Evaluate, () => {
     ).toBe(true);
 
     expect(
-      Evaluate(
+      Wrapped(
         [
           "AND",
           ["OR", "admin.challenges", "admin.user"],
@@ -78,7 +78,7 @@ describe(Evaluate, () => {
     const permissions = ["admin.user.*"];
 
     expect(
-      Evaluate(
+      Wrapped(
         [
           "OR",
           ["OR", ["OR", ["OR", "admin.challenges", "admin.user"]]],
@@ -90,7 +90,7 @@ describe(Evaluate, () => {
     ).toBe(false);
 
     expect(
-      Evaluate(
+      Wrapped(
         [
           "OR",
           ["OR", ["OR", ["OR", "admin.challenges", "admin.user"]]],
@@ -106,7 +106,7 @@ describe(Evaluate, () => {
     const permissions = ["admin.user", "!admin", "admin.challenges"];
 
     expect(() =>
-      Evaluate(["NO", "admin.user"] as unknown as Policy, permissions),
+      Wrapped(["NO", "admin.user"] as unknown as Policy, permissions),
     ).toThrowError("Invalid policy expression");
   });
 });
@@ -250,10 +250,14 @@ describe(PreprocessPermissions, () => {
 });
 
 describe(EvaluatePrefixes, () => {
+  const Wrapped = (
+    ...[prefixes, permissions]: Parameters<typeof EvaluatePrefixes>
+  ) => EvaluatePrefixes(prefixes, PreprocessPermissions(permissions));
+
   it("should remove matching prefixes from set and return them", () => {
     const prefixes = new Set(["admin", "user", "system"]);
     const permissions = ["admin.get", "user.post", "team.read"];
-    const result = EvaluatePrefixes(prefixes, permissions);
+    const result = Wrapped(prefixes, permissions);
 
     expect(result).toEqual(["admin", "user"]);
     expect(Array.from(prefixes)).toEqual(["system"]);
@@ -262,7 +266,7 @@ describe(EvaluatePrefixes, () => {
   it("should remove all prefixes with global wildcard", () => {
     const prefixes = new Set(["admin", "user", "system"]);
     const permissions = ["*"];
-    const result = EvaluatePrefixes(prefixes, permissions);
+    const result = Wrapped(prefixes, permissions);
 
     expect(result).toEqual(["admin", "user", "system"]);
     expect(Array.from(prefixes)).toEqual([]);
@@ -271,7 +275,7 @@ describe(EvaluatePrefixes, () => {
   it("should respect negative permissions", () => {
     const prefixes = new Set(["admin", "user", "system"]);
     const permissions = ["*", "!admin.*"];
-    const result = EvaluatePrefixes(prefixes, permissions);
+    const result = Wrapped(prefixes, permissions);
 
     expect(result).toEqual(["user", "system"]);
     expect(Array.from(prefixes)).toEqual(["admin"]);
@@ -280,7 +284,7 @@ describe(EvaluatePrefixes, () => {
   it("should return empty array when no prefixes match", () => {
     const prefixes = new Set(["admin", "user", "system"]);
     const permissions = ["team.read", "other.write"];
-    const result = EvaluatePrefixes(prefixes, permissions);
+    const result = Wrapped(prefixes, permissions);
 
     expect(result).toEqual([]);
     expect(Array.from(prefixes)).toEqual(["admin", "user", "system"]);
@@ -289,7 +293,7 @@ describe(EvaluatePrefixes, () => {
   it("should handle empty set", () => {
     const prefixes = new Set<string>();
     const permissions = ["admin.get", "user.post"];
-    const result = EvaluatePrefixes(prefixes, permissions);
+    const result = Wrapped(prefixes, permissions);
 
     expect(result).toEqual([]);
     expect(Array.from(prefixes)).toEqual([]);
@@ -298,7 +302,7 @@ describe(EvaluatePrefixes, () => {
   it("should handle empty permissions", () => {
     const prefixes = new Set(["admin", "user", "system"]);
     const permissions: string[] = [];
-    const result = EvaluatePrefixes(prefixes, permissions);
+    const result = Wrapped(prefixes, permissions);
 
     expect(result).toEqual([]);
     expect(Array.from(prefixes)).toEqual(["admin", "user", "system"]);
@@ -307,7 +311,7 @@ describe(EvaluatePrefixes, () => {
   it("should handle mixed exact and prefix matches", () => {
     const prefixes = new Set(["admin", "user", "team"]);
     const permissions = ["admin", "user.get", "other.read"];
-    const result = EvaluatePrefixes(prefixes, permissions);
+    const result = Wrapped(prefixes, permissions);
 
     expect(result).toEqual(["admin", "user"]);
     expect(Array.from(prefixes)).toEqual(["team"]);
@@ -316,7 +320,7 @@ describe(EvaluatePrefixes, () => {
   it("should handle specific negations", () => {
     const prefixes = new Set(["admin", "user", "system"]);
     const permissions = ["admin.get", "user.post", "!admin"];
-    const result = EvaluatePrefixes(prefixes, permissions);
+    const result = Wrapped(prefixes, permissions);
 
     expect(result).toEqual(["user"]);
     expect(Array.from(prefixes)).toEqual(["admin", "system"]);
@@ -330,7 +334,7 @@ describe(EvaluatePrefixes, () => {
       "team.read",
       "system.write",
     ];
-    const result = EvaluatePrefixes(prefixes, permissions);
+    const result = Wrapped(prefixes, permissions);
 
     expect(result).toEqual(["admin", "team", "system"]);
     expect(Array.from(prefixes)).toEqual(["user"]);
@@ -339,7 +343,7 @@ describe(EvaluatePrefixes, () => {
   it("should handle case sensitivity", () => {
     const prefixes = new Set(["admin", "user", "system"]);
     const permissions = ["Admin.get", "USER.post", "system.read"];
-    const result = EvaluatePrefixes(prefixes, permissions);
+    const result = Wrapped(prefixes, permissions);
 
     expect(result).toEqual(["system"]);
     expect(Array.from(prefixes)).toEqual(["admin", "user"]);
@@ -348,7 +352,7 @@ describe(EvaluatePrefixes, () => {
   it("should handle single character prefixes", () => {
     const prefixes = new Set(["a", "b", "c"]);
     const permissions = ["a.read", "b", "other.write"];
-    const result = EvaluatePrefixes(prefixes, permissions);
+    const result = Wrapped(prefixes, permissions);
 
     expect(result).toEqual(["a", "b"]);
     expect(Array.from(prefixes)).toEqual(["c"]);
@@ -357,7 +361,7 @@ describe(EvaluatePrefixes, () => {
   it("should handle global denial", () => {
     const prefixes = new Set(["admin", "user", "system"]);
     const permissions = ["!*"];
-    const result = EvaluatePrefixes(prefixes, permissions);
+    const result = Wrapped(prefixes, permissions);
 
     expect(result).toEqual([]);
     expect(Array.from(prefixes)).toEqual(["admin", "user", "system"]);
@@ -366,7 +370,7 @@ describe(EvaluatePrefixes, () => {
   it("should mutate the original set", () => {
     const prefixes = new Set(["admin", "user", "system"]);
     const originalSet = prefixes; // Same reference
-    const result = EvaluatePrefixes(prefixes, ["admin.get"]);
+    const result = Wrapped(prefixes, ["admin.get"]);
 
     expect(result).toEqual(["admin"]);
     expect(originalSet).toBe(prefixes); // Same reference
@@ -376,7 +380,7 @@ describe(EvaluatePrefixes, () => {
   it("should handle complex wildcard and negation combinations", () => {
     const prefixes = new Set(["admin", "user", "team", "system"]);
     const permissions = ["*", "!admin.*", "!user"];
-    const result = EvaluatePrefixes(prefixes, permissions);
+    const result = Wrapped(prefixes, permissions);
 
     expect(result).toEqual(["team", "system"]);
     expect(Array.from(prefixes)).toEqual(["admin", "user"]);
@@ -385,12 +389,12 @@ describe(EvaluatePrefixes, () => {
   it("should handle wildcard negatives", () => {
     const prefixes = new Set(["admin"]);
     const permissions = ["*", "!admin.*"];
-    expect(EvaluatePrefixes(prefixes, permissions)).toEqual([]);
+    expect(Wrapped(prefixes, permissions)).toEqual([]);
   });
 
   it("should handle wildcard positive that exact matches a negative", () => {
     const prefixes = new Set(["admin"]);
     const permissions = ["*", "!admin"];
-    expect(EvaluatePrefixes(prefixes, permissions)).toEqual([]);
+    expect(Wrapped(prefixes, permissions)).toEqual([]);
   });
 });

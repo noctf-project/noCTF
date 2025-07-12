@@ -407,10 +407,20 @@ export type AdminUpdateDivisionRequest = Static<
   typeof AdminUpdateDivisionRequest
 >;
 
-export const AdminCreatePolicyRequest = Type.Omit(PolicyDocument, ["id"], {
-  additionalProperties: false,
-});
+export const AdminCreatePolicyRequest = Type.Omit(
+  PolicyDocument,
+  ["id", "created_at", "updated_at", "version"],
+  {
+    additionalProperties: false,
+  },
+);
 export type AdminCreatePolicyRequest = Static<typeof AdminCreatePolicyRequest>;
 
-export const AdminUpdatePolicyRequest = AdminCreatePolicyRequest;
+export const AdminUpdatePolicyRequest = Type.Omit(
+  PolicyDocument,
+  ["id", "created_at", "updated_at"],
+  {
+    additionalProperties: false,
+  },
+);
 export type AdminUpdatePolicyRequest = Static<typeof AdminUpdatePolicyRequest>;

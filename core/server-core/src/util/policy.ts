@@ -69,11 +69,10 @@ export const EvaluatePrefixes = (
   prefixes: Set<string>,
   permissions: string[],
 ): string[] => {
-  const preprocessed = PreprocessPermissions(permissions);
   const matchingPrefixes: string[] = [];
 
   for (const prefix of prefixes) {
-    if (EvaluatePrefixScalar(prefix, preprocessed)) {
+    if (EvaluatePrefixScalar(prefix, permissions)) {
       matchingPrefixes.push(prefix);
       prefixes.delete(prefix);
     }
@@ -92,13 +91,12 @@ const RecursiveEvaluation = (
     return false;
   }
   const [op, ...expressions] = policy;
-  const preprocessed = PreprocessPermissions(permissions);
 
   const evaluate = (expr: string | Policy): boolean => {
     if (Array.isArray(expr)) {
       return RecursiveEvaluation(expr, permissions, scalar, _ttl - 1);
     } else {
-      return scalar(expr, preprocessed);
+      return scalar(expr, permissions);
     }
   };
 
