@@ -2,7 +2,6 @@ import { QueryAuditLogRequest } from "@noctf/api/requests";
 import { QueryAuditLogResponse } from "@noctf/api/responses";
 import type { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
-import { Paginate } from "@noctf/server-core/util/paginator";
 
 export async function routes(fastify: FastifyInstance) {
   const { auditLogService } = fastify.container.cradle;
@@ -25,17 +24,13 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const { page, page_size, ...query } = request.body;
-      const [result, total] = await Promise.all([
-        Paginate(query, { page, page_size }, (q, l) =>
-          auditLogService.query(q, l),
-        ),
-        auditLogService.getCount(query),
-      ]);
+      const { page_size, ...query } = request.body;
+      const limit = Math.min(Math.max(0, page_size), 1000);
+      const entries = await auditLogService.query(query, limit);
       return {
         data: {
-          ...result,
-          total: total || result.entries.length,
+          entries,
+          page_size: limit,
         },
       };
     },

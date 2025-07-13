@@ -24,7 +24,7 @@ import {
 import { ActorType, TeamFlag } from "@noctf/server-core/types/enums";
 import { Policy } from "@noctf/server-core/util/policy";
 import SingleValueCache from "@noctf/server-core/util/single_value_cache";
-import { Paginate } from "@noctf/server-core/util/paginator";
+import { OffsetPaginate } from "@noctf/server-core/util/paginator";
 import { GetRouteUserIPKey } from "@noctf/server-core/util/limit_keys";
 
 export async function routes(fastify: FastifyInstance) {
@@ -331,7 +331,7 @@ export async function routes(fastify: FastifyInstance) {
         flags: admin ? [] : ["!hidden"],
       };
       const [result, total] = await Promise.all([
-        Paginate(q, { page, page_size }, (q, l) =>
+        OffsetPaginate(q, { page, page_size }, (q, l) =>
           teamService.listSummary(q, l),
         ),
         q.ids && q.ids.length ? 0 : teamService.getCount(q),

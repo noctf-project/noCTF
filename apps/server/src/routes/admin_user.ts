@@ -18,7 +18,7 @@ import {
   NotFoundError,
 } from "@noctf/server-core/errors";
 import { ActorType, EntityType } from "@noctf/server-core/types/enums";
-import { Paginate } from "@noctf/server-core/util/paginator";
+import { OffsetPaginate } from "@noctf/server-core/util/paginator";
 import { Policy } from "@noctf/server-core/util/policy";
 import { FastifyInstance } from "fastify";
 
@@ -60,7 +60,7 @@ export async function routes(fastify: FastifyInstance) {
       const { page, page_size, ...query } = request.body;
       const [{ entries, page_size: actual_page_size }, total] =
         await Promise.all([
-          Paginate(query, { page, page_size }, (q, l) =>
+          OffsetPaginate(query, { page, page_size }, (q, l) =>
             userService.listSummary(q, l),
           ),
           query.ids && query.ids.length ? 0 : userService.getCount(query),

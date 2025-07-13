@@ -86,7 +86,8 @@ server.register(async () => {
       ({ logger }) => new RedisClientFactory(REDIS_URL, logger),
     ).singleton(),
     databaseClient: asFunction(
-      ({ logger }) => new DatabaseClient(logger, POSTGRES_URL),
+      ({ logger, keyService }) =>
+        new DatabaseClient(logger, keyService, POSTGRES_URL),
     ).singleton(),
     natsClientFactory: asFunction(
       ({ logger }) => new NATSClientFactory(logger, NATS_URL),

@@ -2,6 +2,7 @@ import type { QueryAuditLogRequest } from "@noctf/api/requests";
 import type { DBType } from "../clients/database.ts";
 import { sql } from "kysely";
 import type { AuditLogEntry, LimitOffset } from "@noctf/api/datatypes";
+import { LimitCursorDecoded } from "../types/pagination.ts";
 
 export class AuditLogDAO {
   constructor(private readonly db: DBType) {}
@@ -24,7 +25,7 @@ export class AuditLogDAO {
 
   async query(
     params?: Parameters<AuditLogDAO["listQuery"]>[0],
-    limit?: LimitOffset,
+    limit?: number,
   ): Promise<AuditLogEntry[]> {
     let query = this.listQuery(params).select([
       "actor",
@@ -34,16 +35,10 @@ export class AuditLogDAO {
       "created_at",
     ]);
 
-    if (limit?.limit) {
-      query = query.limit(limit.limit);
+    if (limit) {
+      query = query.limit(limit);
     }
-    if (limit?.offset) {
-      query = query.offset(limit.offset);
-    }
-    return query
-      .orderBy("created_at desc")
-      .offset(limit?.offset || 0)
-      .execute();
+    return query.orderBy("created_at desc").execute();
   }
 
   async getCount(
