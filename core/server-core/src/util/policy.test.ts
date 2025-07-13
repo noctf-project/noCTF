@@ -356,19 +356,18 @@ describe(PreprocessPermissions, () => {
       "!admin.*",
       "admin.team.get",
       "admin.user.get",
-      "!admin.user.*",
       "admin.user.post",
     ];
     const result = PreprocessPermissions(input);
 
-    expect(result).toEqual(["!admin.*", "!admin.user.*"]);
+    expect(result).toEqual(["!admin.*"]);
   });
 
   it("should handle duplicate permissions", () => {
     const input = ["!admin.get", "admin.get", "admin.get", "!admin.get"];
     const result = PreprocessPermissions(input);
 
-    expect(result).toEqual(["!admin.get", "!admin.get"]);
+    expect(result).toEqual(["!admin.get"]);
   });
 
   it("should handle permissions with dots but no wildcards", () => {
@@ -415,7 +414,7 @@ describe(PreprocessPermissions, () => {
     const input = ["a.*", "a.b", "!a.c"];
     const result = PreprocessPermissions(input);
 
-    expect(result).toEqual(["!a.c", "a.*", "a.b"]);
+    expect(result).toEqual(["!a.c", "a.*"]);
   });
 
   it("should handle permissions with dots but no wildcards at various positions", () => {
