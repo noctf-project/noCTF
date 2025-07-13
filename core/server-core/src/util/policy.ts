@@ -1,6 +1,12 @@
 export type Policy = [string] | ["OR" | "AND", ...(string | Policy)[]];
 
-const REPLACE_REGEX = /\.*[^.]+$/;
+function WildcardMatch(pattern: string, str: string) {
+  if (pattern === "*" || pattern === str) return true;
+  if (!pattern.endsWith(".*")) return false;
+  
+  const prefix = pattern.slice(0, -2);
+  return str.startsWith(prefix) && (str === prefix || str[prefix.length] === ".");
+}
 
 /**
  * Preprocess permissions to remove positive permissions that are matched by negative permissions
@@ -10,20 +16,19 @@ const REPLACE_REGEX = /\.*[^.]+$/;
 export const PreprocessPermissions = (permissions: string[]): string[] => {
   const negative: string[] = [];
   const positive: string[] = [];
-
-  for (const perm of permissions) {
+  
+  for (const perm of permissions.toSorted()) {
     // short circuit
     if (perm === "!*") return ["!*"];
     if (perm.startsWith("!")) {
-      negative.push(perm.substring(1));
+      const p = perm.substring(1);
+      if (negative.length && WildcardMatch(negative[negative.length-1], p)) continue;
+      negative.push(p);
     } else {
+      if (positive.length && WildcardMatch(positive[positive.length-1], perm)) continue;
       positive.push(perm);
     }
   }
-
-  // Sort both arrays for binary search
-  negative.sort();
-  positive.sort();
 
   // Filter out positive permissions that match negative patterns
   const filteredPositive = positive.filter((positivePerm) => {
@@ -124,6 +129,15 @@ const RecursiveEvaluation = (
   }
 };
 
+const EvaluateScalar = (permission: string, policy: string[]) => {
+  const neg = `!${permission}`;
+  for (const p of policy) {
+    if (p[0] === '!' && WildcardMatch(p, neg)) return false;
+    if (p[0] !== '!' && WildcardMatch(p, permission)) return true;
+  }
+  return false;
+};
+
 /**
  * Evaluate if user has any positive permission matching the given prefix
  * @param prefix The permission prefix to check (e.g., "admin")
@@ -175,42 +189,6 @@ const EvaluatePrefixScalar = (
     const perm = preprocessed[prefixIdx];
     if (!perm.startsWith("!") && perm.startsWith(prefixWithDot)) {
       return true;
-    }
-  }
-
-  return false;
-};
-
-const EvaluateScalar = (permission: string, policy: string[]) => {
-  return (
-    !PredicateMatches(`!${permission}`, policy, true) &&
-    PredicateMatches(permission, policy, false)
-  );
-};
-
-const PredicateMatches = (p: string, policy: string[], neg: boolean) => {
-  if (policy.length === 0) return neg;
-
-  // Check all policy entries with a simple for loop
-  for (const pp of policy) {
-    // Exact match
-    if (pp === p) return true;
-
-    // Universal wildcard matches
-    if (!neg && pp === "*") return true;
-    if (neg && pp === "!*") return true;
-
-    // Prefix wildcard matches - but only if the policy entry actually ends with .*
-    if (pp.endsWith(".*")) {
-      const prefix = pp.substring(0, pp.length - 2);
-      if (p.startsWith(prefix)) {
-        if (p.length > prefix.length && p[prefix.length] === ".") {
-          return true;
-        }
-        if (p === prefix) {
-          return true;
-        }
-      }
     }
   }
 
