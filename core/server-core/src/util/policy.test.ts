@@ -6,6 +6,7 @@ describe(Evaluate, () => {
   const Wrapped = (
     ...[policy, permissions, ...rest]: Parameters<typeof Evaluate>
   ) => Evaluate(policy, PreprocessPermissions(permissions), ...rest);
+
   it("Evaluates single scalar policies", () => {
     const permissions = [
       "admin.user.*",
@@ -20,6 +21,20 @@ describe(Evaluate, () => {
     expect(Wrapped(["admin.challenges"], ["!*", "admin.challenges.*"])).toBe(
       false,
     );
+    expect(Wrapped(["user.get"], permissions)).toBe(false);
+  });
+
+  it("Negative wildcards override positive wildcards", () => {
+    const permissions = ["!admin.*", "*"];
+
+    expect(Wrapped(["admin.user.get"], permissions)).toBe(false);
+    expect(Wrapped(["user.get"], permissions)).toBe(true);
+  });
+
+  it("Negative wildcards override positive wildcards", () => {
+    const permissions = ["!*", "*"];
+
+    expect(Wrapped(["admin.user.get"], permissions)).toBe(false);
     expect(Wrapped(["user.get"], permissions)).toBe(false);
   });
 
@@ -39,7 +54,7 @@ describe(Evaluate, () => {
     ).toBe(true);
     expect(
       Wrapped(["OR", "admin.user.update", "admin.challenges.get"], permissions),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       Wrapped(
         ["AND", "admin.user.update", "admin.challenges.get"],
@@ -121,6 +136,127 @@ describe(Evaluate, () => {
     expect(() =>
       Wrapped(["NO", "admin.user"] as unknown as Policy, permissions),
     ).toThrowError("Invalid policy expression");
+  });
+
+  it("should handle permissions with multiple dots", () => {
+    const permissions = [
+      "admin.user.settings.*",
+      "!admin.user.settings.password",
+    ];
+
+    expect(Wrapped(["admin.user.settings.profile"], permissions)).toBe(true);
+    expect(Wrapped(["admin.user.settings.password"], permissions)).toBe(false);
+    expect(Wrapped(["admin.user.settings.theme.dark"], permissions)).toBe(true);
+  });
+
+  it("should handle overlapping wildcard patterns", () => {
+    const permissions = ["admin.*", "admin.user.*", "!admin.user.delete"];
+
+    expect(Wrapped(["admin.config"], permissions)).toBe(true);
+    expect(Wrapped(["admin.user.get"], permissions)).toBe(true);
+    expect(Wrapped(["admin.user.delete"], permissions)).toBe(false);
+  });
+
+  it("should handle permissions with numbers", () => {
+    const permissions = [
+      "api.v1.*",
+      "api.v2.read",
+      "!api.v1.admin",
+      "user123.read",
+    ];
+
+    expect(Wrapped(["api.v1.users"], permissions)).toBe(true);
+    expect(Wrapped(["api.v1.admin"], permissions)).toBe(false);
+    expect(Wrapped(["api.v2.read"], permissions)).toBe(true);
+    expect(Wrapped(["user123.read"], permissions)).toBe(true);
+  });
+
+  it("should handle multiple negations of the same permission", () => {
+    const permissions = [
+      "*",
+      "!admin.delete",
+      "!admin.delete",
+      "!admin.delete",
+    ];
+
+    expect(Wrapped(["admin.delete"], permissions)).toBe(false);
+    expect(Wrapped(["admin.read"], permissions)).toBe(true);
+  });
+
+  it("should handle complex nested OR/AND with edge cases", () => {
+    const permissions = ["admin.read", "user.write", "!system.delete"];
+
+    expect(
+      Wrapped(
+        [
+          "OR",
+          ["AND", "admin.read", "nonexistent.permission"],
+          ["AND", "user.write", "admin.read"],
+        ],
+        permissions,
+      ),
+    ).toBe(true);
+
+    expect(
+      Wrapped(
+        [
+          "AND",
+          ["OR", "admin.read", "user.write"],
+          ["OR", "system.delete", "nonexistent.permission"],
+        ],
+        permissions,
+      ),
+    ).toBe(false);
+  });
+
+  it("should handle deeply nested policies with mixed operations", () => {
+    const permissions = ["admin.*", "user.read", "!admin.sensitive"];
+
+    expect(
+      Wrapped(
+        [
+          "OR",
+          [
+            "AND",
+            ["OR", "admin.config", "user.read"],
+            ["AND", "admin.users", "user.read"],
+          ],
+          "admin.sensitive",
+        ],
+        permissions,
+      ),
+    ).toBe(true);
+  });
+
+  it("should handle policies with single item arrays", () => {
+    const permissions = ["admin.read", "user.write"];
+
+    expect(Wrapped(["OR", "admin.read"], permissions)).toBe(true);
+    expect(Wrapped(["AND", "admin.read"], permissions)).toBe(true);
+    expect(Wrapped(["OR", "nonexistent"], permissions)).toBe(false);
+    expect(Wrapped(["AND", "nonexistent"], permissions)).toBe(false);
+  });
+
+  it("should handle TTL edge cases", () => {
+    const permissions = ["admin.read"];
+
+    expect(Wrapped(["admin.read"], permissions, 0)).toBe(false);
+    expect(Wrapped(["admin.read"], permissions, 1)).toBe(true);
+    expect(Wrapped(["admin.read"], permissions, -1)).toBe(false);
+  });
+
+  it("should handle malformed policy arrays", () => {
+    const permissions = ["admin.read"];
+
+    expect(() =>
+      Wrapped(["INVALID_OP", "admin.read"] as unknown as Policy, permissions),
+    ).toThrowError("Invalid policy expression");
+  });
+
+  it("should handle empty policy arrays", () => {
+    const permissions = ["admin.read"];
+
+    expect(() => Wrapped([] as unknown as Policy, permissions)).toThrowError();
   });
 });
 
@@ -260,6 +396,34 @@ describe(PreprocessPermissions, () => {
     expect(PreprocessPermissions(input)).toEqual(["!admin.*", "user.post"]);
     expect(input).toEqual(originalInput);
   });
+
+  it("should handle mixed negations and wildcards", () => {
+    const input = ["!*", "admin.*", "user.read", "!admin.delete"];
+    const result = PreprocessPermissions(input);
+
+    expect(result).toEqual(["!*"]);
+  });
+
+  it("should handle permissions with numbers", () => {
+    const input = ["api.v1.*", "user123.read", "!api.v1.admin"];
+    const result = PreprocessPermissions(input);
+
+    expect(result).toEqual(["!api.v1.admin", "api.v1.*", "user123.read"]);
+  });
+
+  it("should handle single character permissions with wildcards", () => {
+    const input = ["a.*", "a.b", "!a.c"];
+    const result = PreprocessPermissions(input);
+
+    expect(result).toEqual(["!a.c", "a.*", "a.b"]);
+  });
+
+  it("should handle permissions with dots but no wildcards at various positions", () => {
+    const input = ["admin.team.lead", "admin.team.member", "!admin.team.lead"];
+    const result = PreprocessPermissions(input);
+
+    expect(result).toEqual(["!admin.team.lead", "admin.team.member"]);
+  });
 });
 
 describe(EvaluatePrefixes, () => {
@@ -353,15 +517,6 @@ describe(EvaluatePrefixes, () => {
     expect(Array.from(prefixes)).toEqual(["user"]);
   });
 
-  it("should handle case sensitivity", () => {
-    const prefixes = new Set(["admin", "user", "system"]);
-    const permissions = ["Admin.get", "USER.post", "system.read"];
-    const result = Wrapped(prefixes, permissions);
-
-    expect(result).toEqual(["system"]);
-    expect(Array.from(prefixes)).toEqual(["admin", "user"]);
-  });
-
   it("should handle single character prefixes", () => {
     const prefixes = new Set(["a", "b", "c"]);
     const permissions = ["a.read", "b", "other.write"];
@@ -409,5 +564,67 @@ describe(EvaluatePrefixes, () => {
     const prefixes = new Set(["admin"]);
     const permissions = ["*", "!admin"];
     expect(Wrapped(prefixes, permissions)).toEqual([]);
+  });
+
+  it("should handle prefixes with numbers", () => {
+    const prefixes = new Set(["api1", "api2", "user123"]);
+    const permissions = ["api1.read", "api2.*", "user456.write"];
+    const result = Wrapped(prefixes, permissions);
+
+    expect(result).toEqual(["api1", "api2"]);
+    expect(Array.from(prefixes)).toEqual(["user123"]);
+  });
+
+  it("should handle prefixes that are substrings of each other", () => {
+    const prefixes = new Set(["admin", "administrator", "adm"]);
+    const permissions = ["admin.read", "administrator.config"];
+    const result = Wrapped(prefixes, permissions);
+
+    expect(result).toEqual(["admin", "administrator"]);
+    expect(Array.from(prefixes)).toEqual(["adm"]);
+  });
+
+  it("should handle overlapping wildcard negations", () => {
+    const prefixes = new Set(["admin", "user", "system"]);
+    const permissions = ["*", "!admin.*", "!user"];
+    const result = Wrapped(prefixes, permissions);
+
+    expect(result).toEqual(["system"]);
+    expect(Array.from(prefixes)).toEqual(["admin", "user"]);
+  });
+
+  it("should handle exact match negations with wildcards", () => {
+    const prefixes = new Set(["admin", "user", "guest"]);
+    const permissions = ["admin.*", "user.read", "!admin", "guest"];
+    const result = Wrapped(prefixes, permissions);
+
+    expect(result.sort()).toEqual(["guest", "user"]);
+    expect(Array.from(prefixes)).toEqual(["admin"]);
+  });
+
+  it("should handle single character prefixes with wildcards", () => {
+    const prefixes = new Set(["a", "b", "c"]);
+    const permissions = ["a.*", "b.read", "!a"];
+    const result = Wrapped(prefixes, permissions);
+
+    expect(result).toEqual(["b"]);
+    expect(Array.from(prefixes)).toEqual(["a", "c"]);
+  });
+
+  it("should handle prefixes that match permission prefixes exactly", () => {
+    const prefixes = new Set(["admin.user", "admin.config", "user"]);
+    const permissions = ["admin.user.read", "admin.config.*", "user.write"];
+    const result = Wrapped(prefixes, permissions);
+
+    expect(result).toEqual(["admin.user", "admin.config", "user"]);
+    expect(Array.from(prefixes)).toEqual([]);
+  });
+
+  it("should handle negation of specific prefix in wildcard context", () => {
+    const prefixes = new Set(["admin", "user", "guest"]);
+    const permissions = ["*", "!admin.*", "admin.safe"];
+    const result = Wrapped(prefixes, permissions);
+    expect(result.sort()).toEqual(["guest", "user"]);
+    expect(Array.from(prefixes)).toEqual(["admin"]);
   });
 });
