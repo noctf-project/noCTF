@@ -4,6 +4,7 @@ import type { ServiceCradle } from "../index.ts";
 import type { AuditLogActor } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 import { AuditLogDAO } from "../dao/audit_log.ts";
+import { LimitCursorEncoded, PaginationCursor } from "../types/pagination.ts";
 
 type Props = Pick<ServiceCradle, "databaseClient">;
 
@@ -13,8 +14,10 @@ export const SYSTEM_ACTOR: AuditLogActor = {
 
 export class AuditLogService {
   private readonly dao;
+  private readonly databaseClient;
 
   constructor({ databaseClient }: Props) {
+    this.databaseClient = databaseClient;
     this.dao = new AuditLogDAO(databaseClient.get());
   }
 
@@ -35,7 +38,7 @@ export class AuditLogService {
 
   async query(
     q: Omit<QueryAuditLogRequest, "page" | "page_size">,
-    limit?: { limit?: number; offset?: number },
+    limit?: number,
   ): Promise<AuditLogEntry[]> {
     return this.dao.query(q, limit);
   }

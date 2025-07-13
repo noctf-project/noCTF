@@ -10,7 +10,7 @@ import {
   UpdateTeamResponse,
 } from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
-import { Paginate } from "@noctf/server-core/util/paginator";
+import { OffsetPaginate } from "@noctf/server-core/util/paginator";
 import { FastifyInstance } from "fastify";
 
 export const PAGE_SIZE = 60;
@@ -37,7 +37,7 @@ export async function routes(fastify: FastifyInstance) {
     async (request) => {
       const { page, page_size, ...query } = request.body;
       const [result, total] = await Promise.all([
-        Paginate(query, { page, page_size }, (q, l) =>
+        OffsetPaginate(query, { page, page_size }, (q, l) =>
           teamService.listSummary(q, l),
         ),
         query.ids && query.ids.length ? 0 : teamService.getCount(query),

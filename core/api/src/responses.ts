@@ -88,7 +88,6 @@ export const QueryAuditLogResponse = Type.Object({
   data: Type.Object({
     entries: Type.Array(AuditLogEntry),
     page_size: Type.Number(),
-    total: Type.Number(),
   }),
 });
 export type QueryAuditLogResponse = Static<typeof QueryAuditLogResponse>;

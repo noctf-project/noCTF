@@ -11,7 +11,7 @@ import {
 } from "@noctf/api/responses";
 import { ConflictError, NotFoundError } from "@noctf/server-core/errors";
 import { Policy } from "@noctf/server-core/util/policy";
-import { Paginate } from "@noctf/server-core/util/paginator";
+import { OffsetPaginate } from "@noctf/server-core/util/paginator";
 
 export async function routes(fastify: FastifyInstance) {
   const { userService, teamService, policyService, identityService } = fastify
@@ -153,7 +153,7 @@ export async function routes(fastify: FastifyInstance) {
         flags: admin ? [] : ["!hidden"],
       };
       const [result, total] = await Promise.all([
-        Paginate(q, { page, page_size }, (q, l) =>
+        OffsetPaginate(q, { page, page_size }, (q, l) =>
           userService.listSummary(q, l),
         ),
         q.ids && q.ids.length ? 0 : userService.getCount(q),

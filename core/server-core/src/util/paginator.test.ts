@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { Paginate, type PaginateOptions } from "./paginator.ts";
+import { OffsetPaginate, type PaginateOptions } from "./paginator.ts";
 
 describe("Paginate", () => {
   // Mock data for testing
@@ -24,7 +24,7 @@ describe("Paginate", () => {
 
   describe("Basic functionality", () => {
     it("should return first page with default page size", async () => {
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "test" },
         { page: 1 },
         mockQueryFn,
@@ -41,7 +41,7 @@ describe("Paginate", () => {
     });
 
     it("should return second page with correct offset", async () => {
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "test" },
         { page: 2, page_size: 20 },
         mockQueryFn,
@@ -58,7 +58,7 @@ describe("Paginate", () => {
     });
 
     it("should work with custom page size", async () => {
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "test" },
         { page: 1, page_size: 25 },
         mockQueryFn,
@@ -77,7 +77,7 @@ describe("Paginate", () => {
 
   describe("Default values", () => {
     it("should default to page 1 when page is not provided", async () => {
-      const result = await Paginate({ filter: "test" }, {}, mockQueryFn);
+      const result = await OffsetPaginate({ filter: "test" }, {}, mockQueryFn);
 
       expect(mockQueryFn).toHaveBeenCalledWith(
         { filter: "test" },
@@ -86,7 +86,7 @@ describe("Paginate", () => {
     });
 
     it("should default to page 1 when page is null/undefined", async () => {
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "test" },
         { page: undefined },
         mockQueryFn,
@@ -99,7 +99,7 @@ describe("Paginate", () => {
     });
 
     it("should use default page size when not provided", async () => {
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "test" },
         { page: 1 },
         mockQueryFn,
@@ -111,7 +111,7 @@ describe("Paginate", () => {
 
   describe("Page size limits", () => {
     it("should enforce max page size limit", async () => {
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "test" },
         { page: 1, page_size: 200 }, // Exceeds default max of 100
         mockQueryFn,
@@ -125,7 +125,7 @@ describe("Paginate", () => {
     });
 
     it("should allow page size up to max limit", async () => {
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "test" },
         { page: 1, page_size: 100 },
         mockQueryFn,
@@ -141,7 +141,7 @@ describe("Paginate", () => {
         max_page_size: 200,
       };
 
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "test" },
         { page: 1, page_size: 150 },
         mockQueryFn,
@@ -156,7 +156,7 @@ describe("Paginate", () => {
         default_page_size: 25,
       };
 
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "test" },
         { page: 1 }, // No page_size provided
         mockQueryFn,
@@ -172,7 +172,7 @@ describe("Paginate", () => {
         // default_page_size not provided, should use default of 50
       };
 
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "test" },
         { page: 1, page_size: 80 }, // Exceeds custom max
         mockQueryFn,
@@ -187,7 +187,7 @@ describe("Paginate", () => {
         max_page_size: 0, // Unlimited
       };
 
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "test" },
         { page: 1, page_size: 500 }, // Very large page size
         mockQueryFn,
@@ -206,7 +206,7 @@ describe("Paginate", () => {
     it("should handle empty results", async () => {
       const emptyQueryFn = vi.fn(async () => []);
 
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "empty" },
         { page: 1, page_size: 10 },
         emptyQueryFn,
@@ -219,7 +219,7 @@ describe("Paginate", () => {
     });
 
     it("should handle page beyond available data", async () => {
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "test" },
         { page: 100, page_size: 10 }, // Way beyond available data
         mockQueryFn,
@@ -233,7 +233,7 @@ describe("Paginate", () => {
     });
 
     it("should handle zero page size by using default", async () => {
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "test" },
         { page: 1, page_size: 0 },
         mockQueryFn,
@@ -243,7 +243,7 @@ describe("Paginate", () => {
     });
 
     it("should handle negative page size by using default", async () => {
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "test" },
         { page: 1, page_size: -10 },
         mockQueryFn,
@@ -253,7 +253,7 @@ describe("Paginate", () => {
     });
 
     it("should handle negative page by defaulting to page 1", async () => {
-      const result = await Paginate(
+      const result = await OffsetPaginate(
         { filter: "test" },
         { page: -5, page_size: 10 },
         mockQueryFn,
