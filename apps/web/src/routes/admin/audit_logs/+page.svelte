@@ -3,14 +3,13 @@
 
   import Icon from "@iconify/svelte";
   import api, { wrapLoadable } from "$lib/api/index.svelte";
-  import Pagination from "$lib/components/Pagination.svelte";
   import UserQueryService from "$lib/state/user_query.svelte";
   import TeamQueryService from "$lib/state/team_query.svelte";
   import { createDebouncedFields } from "$lib/utils/debounce.svelte";
   import { fade, fly } from "svelte/transition";
 
   const FILTER_DEBOUNCE_MS = 300;
-  const pageSize = 50;
+  const pageSize = 100;
 
   let currentPage = $state(0);
 
@@ -159,6 +158,16 @@
     modalData = "";
   }
 
+  function getLocalISODate(date: string, add: number) {
+    const newDate = new Date(new Date(date).getTime() + add);
+    const ms = newDate.getMilliseconds().toString().padStart(3, "0");
+    return `${newDate.toLocaleString("sv-SE").replace(" ", "T")}.${ms}`;
+  }
+
+  function getDatetimeForInput(date: string) {
+    return date.substring(0, 16);
+  }
+
   function outsideClickHandler(node: Node) {
     const handleClick = (event: Event) => {
       if (
@@ -261,7 +270,10 @@
           <input
             type="datetime-local"
             class="input input-bordered"
-            bind:value={filters.values.startDateFilter}
+            bind:value={
+              () => getDatetimeForInput(filters.values.startDateFilter),
+              (v) => (filters.values.startDateFilter = v)
+            }
           />
         </div>
 
@@ -273,7 +285,10 @@
           <input
             type="datetime-local"
             class="input input-bordered"
-            bind:value={filters.values.endDateFilter}
+            bind:value={
+              () => getDatetimeForInput(filters.values.endDateFilter),
+              (v) => (filters.values.endDateFilter = v)
+            }
           />
         </div>
       </div>
@@ -302,6 +317,38 @@
     </div>
   {:else if auditLogs.r?.data?.data}
     {@const data = auditLogs.r.data.data}
+    <div class="flex flex-wrap justify-center items-center gap-2 p-4">
+      <div class="mt-6">
+        <button
+          class="btn btn-sm bg-base-100 pop hover:pop"
+          disabled={data.entries.length === 0}
+          onclick={() => {
+            filters.values.startDateFilter = getLocalISODate(
+              data.entries[0]!.created_at,
+              1,
+            );
+          }}
+        >
+          <Icon icon="material-symbols:arrow-back" />
+          Load Newer
+        </button>
+      </div>
+      <div class="mt-6">
+        <button
+          class="btn btn-sm bg-base-100 pop hover:pop"
+          disabled={data.entries.length === 0}
+          onclick={() => {
+            filters.values.endDateFilter = getLocalISODate(
+              data.entries[data.entries.length - 1]!.created_at,
+              -1,
+            );
+          }}
+        >
+          Load Older
+          <Icon icon="material-symbols:arrow-forward" />
+        </button>
+      </div>
+    </div>
 
     <!-- Audit Logs Table -->
     <div class="overflow-x-auto pop rounded-lg">
@@ -496,17 +543,6 @@
           {/each}
         </tbody>
       </table>
-    </div>
-
-    <!-- Pagination -->
-    <div class="mt-6">
-      <Pagination
-        totalItems={data.total}
-        itemsPerPage={pageSize}
-        initialPage={currentPage}
-        onChange={(page) => (currentPage = page)}
-        className="mt-4"
-      />
     </div>
   {/if}
 </div>
