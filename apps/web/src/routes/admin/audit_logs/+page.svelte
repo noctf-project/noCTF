@@ -323,21 +323,6 @@
           class="btn btn-sm bg-base-100 pop hover:pop"
           disabled={data.entries.length === 0}
           onclick={() => {
-            filters.values.startDateFilter = getLocalISODate(
-              data.entries[0]!.created_at,
-              1,
-            );
-          }}
-        >
-          <Icon icon="material-symbols:arrow-back" />
-          Load Newer
-        </button>
-      </div>
-      <div class="mt-6">
-        <button
-          class="btn btn-sm bg-base-100 pop hover:pop"
-          disabled={data.entries.length === 0}
-          onclick={() => {
             filters.values.endDateFilter = getLocalISODate(
               data.entries[data.entries.length - 1]!.created_at,
               -1,
