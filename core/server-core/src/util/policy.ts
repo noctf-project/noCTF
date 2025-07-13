@@ -87,7 +87,7 @@ const RecursiveEvaluation = (
   scalar: (expr: string, permissions: string[]) => boolean,
   _ttl = 64,
 ) => {
-  if (_ttl === 0) {
+  if (_ttl <= 0) {
     return false;
   }
   const [op, ...expressions] = policy;
@@ -191,26 +191,25 @@ const EvaluateScalar = (permission: string, policy: string[]) => {
 const PredicateMatches = (p: string, policy: string[], neg: boolean) => {
   if (policy.length === 0) return neg;
 
-  const pidx = BisectLeft(p, policy);
-  let pp = policy[pidx];
-  if (!pp) pp = policy[pidx - 1];
+  // Check all policy entries with a simple for loop
+  for (const pp of policy) {
+    // Exact match
+    if (pp === p) return true;
 
-  // Exact match
-  if (pp === p) return true;
+    // Universal wildcard matches
+    if (!neg && pp === "*") return true;
+    if (neg && pp === "!*") return true;
 
-  // Universal wildcard matches
-  if (!neg && pp === "*") return true;
-  if (neg && pp === "!*") return true;
-
-  // Prefix wildcard matches - but only if the policy entry actually ends with .*
-  if (pp.endsWith(".*")) {
-    const prefix = pp.substring(0, pp.length - 2);
-    if (p.startsWith(prefix)) {
-      if (p.length > prefix.length && p[prefix.length] === ".") {
-        return true;
-      }
-      if (p === prefix) {
-        return true;
+    // Prefix wildcard matches - but only if the policy entry actually ends with .*
+    if (pp.endsWith(".*")) {
+      const prefix = pp.substring(0, pp.length - 2);
+      if (p.startsWith(prefix)) {
+        if (p.length > prefix.length && p[prefix.length] === ".") {
+          return true;
+        }
+        if (p === prefix) {
+          return true;
+        }
       }
     }
   }
