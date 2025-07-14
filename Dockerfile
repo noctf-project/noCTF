@@ -26,6 +26,7 @@ COPY --from=build_server /deploy/server /build/apps/server
 ENV HOST=::
 ENV ENABLE_SWAGGER=0
 WORKDIR "/build/apps/server"
+USER 1000
 CMD ["node", "dist/www.cjs"]
 
 FROM base AS build_web
