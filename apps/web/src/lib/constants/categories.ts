@@ -12,6 +12,7 @@ export const CATEGORIES = [
   "beginner",
   "unsolved",
   "solved",
+  "ai",
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
 export const ICON_MAP: { [k in Category | "all"]: string } = {
@@ -29,5 +30,6 @@ export const ICON_MAP: { [k in Category | "all"]: string } = {
   blockchain: "tdesign:blockchain",
   beginner: "mdi:seedling",
   cloud: "material-symbols:cloud",
+  ai: "material-symbols:wand-stars-outline-rounded",
 };
 export const CATEGORY_UNKNOWN_ICON = "carbon:unknown-filled";
