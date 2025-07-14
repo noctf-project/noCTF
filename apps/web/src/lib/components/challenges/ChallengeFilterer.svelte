@@ -22,7 +22,7 @@
   );
   const allCount = $derived(allChallenges.length);
   const categories = $derived(
-    new Set(allChallenges.flatMap((c) => c.categories)),
+    new Set(allChallenges.map((c) => c.categories[0])),
   );
 
   // let anyFilter = $state(true);

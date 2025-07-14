@@ -8,6 +8,7 @@ export const CATEGORIES = [
   "forensics",
   "osint",
   "blockchain",
+  "cloud",
   "beginner",
   "unsolved",
   "solved",
@@ -27,5 +28,6 @@ export const ICON_MAP: { [k in Category | "all"]: string } = {
   osint: "ph:detective-fill",
   blockchain: "tdesign:blockchain",
   beginner: "mdi:seedling",
+  cloud: "material-symbols:cloud",
 };
 export const CATEGORY_UNKNOWN_ICON = "carbon:unknown-filled";
