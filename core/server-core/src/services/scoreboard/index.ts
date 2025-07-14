@@ -113,7 +113,7 @@ export class ScoreboardService {
     }
   }
 
-  async computeFullGraph() {
+  async recomputeFullGraph() {
     const { challenges, teams, divisions } =
       await this.fetchScoreboardCalculationParams();
 

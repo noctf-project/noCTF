@@ -28,6 +28,16 @@ export const AdminUpdateUserRequest = Type.Pick(
 );
 export type AdminUpdateUserRequest = Static<typeof AdminUpdateUserRequest>;
 
+export const AdminScoreboardTriggerRequest = Type.Object(
+  {
+    recompute_graph: Type.Optional(Type.Boolean()),
+  },
+  { additionalProperties: false },
+);
+export type AdminScoreboardTriggerRequest = Static<
+  typeof AdminScoreboardTriggerRequest
+>;
+
 export const InitAuthOauthRequest = Type.Object(
   {
     name: Type.String(),
