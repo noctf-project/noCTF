@@ -4,6 +4,7 @@
   import authState from "$lib/state/auth.svelte";
   import SponsorCarousel from "$lib/components/sponsors/SponsorCarousel.svelte";
   import { sponsors } from "$lib/constants/sponsors";
+  import Icon from "@iconify/svelte";
 
   let currentTime = $state(Date.now() / 1000);
   let timeInterval: ReturnType<typeof setInterval>;
@@ -95,7 +96,16 @@
         Register Now
       </a>
     {/if}
+    <!-- Discord link and icon -->
   </div>
+  <a
+    href="https://duc.tf/discord"
+    target="_blank"
+    class="btn btn-neutral btn-sm px-8 pop hover:pop"
+  >
+    <span class="text-xs">Discord</span>
+    <Icon icon="simple-icons:discord" class="w-6 h-6" />
+  </a>
   <div class="absolute bottom-0 py-3 overflow-hidden">
     <SponsorCarousel {sponsors} />
   </div>
