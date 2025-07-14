@@ -3,9 +3,11 @@ export type Policy = [string] | ["OR" | "AND", ...(string | Policy)[]];
 function WildcardMatch(pattern: string, str: string) {
   if (pattern === "*" || pattern === str) return true;
   if (!pattern.endsWith(".*")) return false;
-  
+
   const prefix = pattern.slice(0, -2);
-  return str.startsWith(prefix) && (str === prefix || str[prefix.length] === ".");
+  return (
+    str.startsWith(prefix) && (str === prefix || str[prefix.length] === ".")
+  );
 }
 
 /**
@@ -16,16 +18,18 @@ function WildcardMatch(pattern: string, str: string) {
 export const PreprocessPermissions = (permissions: string[]): string[] => {
   const negative: string[] = [];
   const positive: string[] = [];
-  
+
   for (const perm of permissions.toSorted()) {
     // short circuit
     if (perm === "!*") return ["!*"];
     if (perm.startsWith("!")) {
       const p = perm.substring(1);
-      if (negative.length && WildcardMatch(negative[negative.length-1], p)) continue;
+      if (negative.length && WildcardMatch(negative[negative.length - 1], p))
+        continue;
       negative.push(p);
     } else {
-      if (positive.length && WildcardMatch(positive[positive.length-1], perm)) continue;
+      if (positive.length && WildcardMatch(positive[positive.length - 1], perm))
+        continue;
       positive.push(perm);
     }
   }
@@ -132,8 +136,8 @@ const RecursiveEvaluation = (
 const EvaluateScalar = (permission: string, policy: string[]) => {
   const neg = `!${permission}`;
   for (const p of policy) {
-    if (p[0] === '!' && WildcardMatch(p, neg)) return false;
-    if (p[0] !== '!' && WildcardMatch(p, permission)) return true;
+    if (p[0] === "!" && WildcardMatch(p, neg)) return false;
+    if (p[0] !== "!" && WildcardMatch(p, permission)) return true;
   }
   return false;
 };

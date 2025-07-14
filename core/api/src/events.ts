@@ -54,6 +54,14 @@ export const PolicyUpdateEvent = Type.Object(
 );
 export type PolicyUpdateEvent = Static<typeof PolicyUpdateEvent>;
 
+export const ScoreboardTriggerEvent = Type.Object(
+  {
+    recompute_graph: Type.Optional(Type.Boolean()),
+  },
+  { $id: "events.scoreboard.trigger" },
+);
+export type ScoreboardTriggerEvent = Static<typeof ScoreboardTriggerEvent>;
+
 export const EmailQueueEvent = Type.Object(
   {
     to: Type.Optional(Type.Array(EmailAddressOrUserId)),

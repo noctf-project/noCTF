@@ -1,4 +1,8 @@
-import { ChallengeUpdateEvent, SubmissionUpdateEvent } from "@noctf/api/events";
+import {
+  ChallengeUpdateEvent,
+  SubmissionUpdateEvent,
+  ScoreboardTriggerEvent,
+} from "@noctf/api/events";
 import { ServiceCradle } from "../../index.ts";
 
 type Props = Pick<
@@ -11,11 +15,17 @@ export const RunLockedScoreboardCalculator = async (
     lockService,
     scoreboardService,
   }: Pick<ServiceCradle, "lockService" | "scoreboardService">,
-  timestamp?: Date,
+  {
+    updated_at,
+    recompute_graph,
+  }: { updated_at?: Date; recompute_graph?: boolean } = {},
 ) => {
-  await lockService.withLease(`singleton:scoreboard`, () =>
-    scoreboardService.computeAndSaveScoreboards(timestamp),
-  );
+  await lockService.withLease(`singleton:scoreboard`, () => {
+    if (recompute_graph) {
+      return scoreboardService.recomputeFullGraph();
+    }
+    return scoreboardService.computeAndSaveScoreboards(updated_at);
+  });
 };
 
 export const ScoreboardCalculatorWorker = async (
@@ -27,10 +37,20 @@ export const ScoreboardCalculatorWorker = async (
   >(
     signal,
     "ScoreboardWorker",
-    [SubmissionUpdateEvent.$id!, ChallengeUpdateEvent.$id!],
+    [
+      SubmissionUpdateEvent.$id!,
+      ChallengeUpdateEvent.$id!,
+      ScoreboardTriggerEvent.$id!,
+    ],
     {
       concurrency: 1,
       handler: async (data) => {
+        if (data.subject === ScoreboardTriggerEvent.$id!) {
+          return await RunLockedScoreboardCalculator(c, {
+            recompute_graph: (data.data as ScoreboardTriggerEvent)
+              .recompute_graph,
+          });
+        }
         let updated_at = new Date(data.timestamp);
         if (data.data.updated_at) updated_at = data.data.updated_at;
         const sub = data.data as SubmissionUpdateEvent;
@@ -41,7 +61,7 @@ export const ScoreboardCalculatorWorker = async (
         )
           return;
 
-        await RunLockedScoreboardCalculator(c, updated_at);
+        await RunLockedScoreboardCalculator(c, { updated_at });
       },
     },
   );
