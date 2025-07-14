@@ -29,7 +29,7 @@
 
 <div
   class={`bg-[url(/images/background.webp)] h-screen w-screen bg-center bg-cover opacity-70 -z-[999] fixed ${
-    page.url.pathname === "/" ? "" : "blur-sm transition"
+    page.url.pathname === "/" ? "" : "blur-sm scale-[1.01] transition"
   }`}
 ></div>
 <div class="flex flex-col min-h-screen w-screen h-auto">
