@@ -31,9 +31,11 @@ export async function handlers(fastify: FastifyInstance) {
           {
             key: GetRouteUserIPKey(r),
             windowSeconds: 60,
-            limit: await policyService.evaluate(r.user.id, [
+            limit: (await policyService.evaluate(r.user.id, [
               "admin.ticket.create",
-            ]) ? 60 : 1,
+            ]))
+              ? 60
+              : 1,
           },
         ],
         body: OpenTicketRequest,
@@ -101,9 +103,11 @@ export async function handlers(fastify: FastifyInstance) {
           {
             key: GetRouteUserIPKey(r),
             windowSeconds: 60,
-            limit: await policyService.evaluate(r.user.id, [
+            limit: (await policyService.evaluate(r.user.id, [
               "admin.ticket.update",
-            ]) ? 60 : 1,
+            ]))
+              ? 60
+              : 1,
           },
         ],
         body: UpdateTicketRequest,

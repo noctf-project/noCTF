@@ -13,7 +13,6 @@ import {
 import { TicketConfig } from "./schema/config.ts";
 import { TicketDAO } from "./dao.ts";
 import { Value } from "@sinclair/typebox/value";
-import { AuditLogActor } from "@noctf/server-core/types/audit_log";
 import { FilterUndefined } from "./util.ts";
 
 type Props = Pick<
@@ -25,7 +24,7 @@ type Props = Pick<
   | "logger"
 >;
 
-export const LEASE_DURATION = 10;
+export const LEASE_DURATION = 60;
 
 export class TicketService {
   private readonly configService;

@@ -24,7 +24,7 @@ export class RedisClientFactory {
     if (this.logger) {
       const url = new URL(this.url);
       this.logger.info(
-        `Connecting to redis at ${url.host}:${url.port || 6379}`,
+        `Connecting to redis at ${url.hostname}:${url.port || 6379}`,
       );
     }
     this.client = await createClient({

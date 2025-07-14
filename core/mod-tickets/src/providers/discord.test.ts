@@ -18,6 +18,7 @@ import { ChannelType, ThreadMemberFlags } from "discord-api-types/v10";
 import type { TicketService } from "../service.ts";
 import type { Ticket } from "../schema/datatypes.ts";
 import { TicketState } from "../schema/datatypes.ts";
+import { UserService } from "@noctf/server-core/services/user";
 
 vi.mock("ky");
 const mockKy = vi.mocked(ky, true);
@@ -25,7 +26,17 @@ const configService = mock<ConfigService>();
 const identityService = mock<IdentityService>();
 const teamService = mock<TeamService>();
 const ticketService = mock<TicketService>();
+const userService = mock<UserService>();
 const logger = mock<Logger>();
+
+const props = {
+  ticketService,
+  userService,
+  teamService,
+  identityService,
+  configService,
+  logger,
+};
 
 const date = new Date("1970-01-01T00:00:00Z");
 
@@ -50,16 +61,11 @@ describe("Discord Tickets Provider", async () => {
     team_id: a.team_id || null,
     user_id: a.user_id || null,
     created_at: new Date("1970-01-01T00:00:00Z"),
+    updated_at: new Date("1970-01-01T00:00:00Z"),
   });
 
   test("Fails to open if discord config is not present", async () => {
-    const provider = new DiscordProvider({
-      configService,
-      identityService,
-      teamService,
-      ticketService,
-      logger,
-    });
+    const provider = new DiscordProvider(props);
     configService.get.mockResolvedValue({ version: 1, value: {} });
     await expect(() => provider.open(mockTicket())).rejects.toThrowError(
       "discord config is not present",
@@ -67,13 +73,7 @@ describe("Discord Tickets Provider", async () => {
   });
 
   test("Fails to close if discord config is not present", async () => {
-    const provider = new DiscordProvider({
-      configService,
-      identityService,
-      teamService,
-      ticketService,
-      logger,
-    });
+    const provider = new DiscordProvider(props);
     configService.get.mockResolvedValue({ version: 1, value: {} });
     await expect(() => provider.open(mockTicket())).rejects.toThrowError(
       "discord config is not present",
@@ -81,13 +81,7 @@ describe("Discord Tickets Provider", async () => {
   });
 
   test("Open a new ticket on behalf of a team", async () => {
-    const provider = new DiscordProvider({
-      configService,
-      identityService,
-      teamService,
-      ticketService,
-      logger,
-    });
+    const provider = new DiscordProvider(props);
     configService.get.mockResolvedValue({
       version: 1,
       value: {
@@ -123,6 +117,7 @@ describe("Discord Tickets Provider", async () => {
         provider,
         user_id,
         created_at: date,
+        updated_at: date,
         secret_data: null,
       }),
     );
@@ -187,13 +182,7 @@ describe("Discord Tickets Provider", async () => {
   });
 
   test("Open a new ticket on behalf of a user", async () => {
-    const provider = new DiscordProvider({
-      configService,
-      identityService,
-      teamService,
-      ticketService,
-      logger,
-    });
+    const provider = new DiscordProvider(props);
     configService.get.mockResolvedValue({
       version: 1,
       value: {
@@ -230,6 +219,7 @@ describe("Discord Tickets Provider", async () => {
           provider,
           user_id,
           created_at: date,
+          updated_at: date,
           secret_data: null,
         }),
     );
@@ -293,13 +283,7 @@ describe("Discord Tickets Provider", async () => {
   });
 
   test("Open a new ticket for a user without a linked discord account.", async () => {
-    const provider = new DiscordProvider({
-      configService,
-      identityService,
-      teamService,
-      ticketService,
-      logger,
-    });
+    const provider = new DiscordProvider(props);
     configService.get.mockResolvedValue({
       version: 1,
       value: {
@@ -386,13 +370,7 @@ describe("Discord Tickets Provider", async () => {
   });
 
   test("Re-open an existing ticket", async () => {
-    const provider = new DiscordProvider({
-      configService,
-      identityService,
-      teamService,
-      ticketService,
-      logger,
-    });
+    const provider = new DiscordProvider(props);
     configService.get.mockResolvedValue({
       version: 1,
       value: {
@@ -410,6 +388,7 @@ describe("Discord Tickets Provider", async () => {
           provider,
           user_id,
           created_at: date,
+          updated_at: date,
           secret_data: null,
         }),
     );
@@ -507,13 +486,7 @@ describe("Discord Tickets Provider", async () => {
   });
 
   test("Closing a ticket", async () => {
-    const provider = new DiscordProvider({
-      configService,
-      identityService,
-      teamService,
-      ticketService,
-      logger,
-    });
+    const provider = new DiscordProvider(props);
     configService.get.mockResolvedValue({
       version: 1,
       value: {
@@ -531,6 +504,7 @@ describe("Discord Tickets Provider", async () => {
           provider: name,
           user_id: Math.floor(parseInt(id) / 10),
           created_at: date,
+          updated_at: date,
           secret_data: null,
         }),
     );

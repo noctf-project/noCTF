@@ -10,7 +10,6 @@ import { TicketDAO } from "./dao.ts";
 import type { Ticket } from "./schema/datatypes.ts";
 import { TicketState } from "./schema/datatypes.ts";
 import { BadRequestError, ConflictError } from "@noctf/server-core/errors";
-import { ActorType } from "@noctf/server-core/types/enums";
 
 vi.mock(import("./dao.ts"), () => ({
   TicketDAO: vi.fn(),

@@ -36,16 +36,19 @@ export enum EmbedColor {
 export const API_ENDPOINT = "https://discord.com/api/v10";
 
 const USER_REGEX = /^(user|discord):(\d+)$/;
+const PROVIDER_ID = "oauth:discord";
 
 type Props = Pick<
   ServiceCradle,
-  "configService" | "identityService" | "teamService" | "logger"
+  "configService" | "identityService" | "teamService" | "logger" | "userService"
 > & { ticketService: TicketService };
+
 export class DiscordProvider {
   private readonly configService;
   private readonly teamService;
   private readonly identityService;
   private readonly ticketService;
+  private readonly userService;
   private readonly logger;
 
   private client: KyInstance;
@@ -55,6 +58,7 @@ export class DiscordProvider {
     configService,
     identityService,
     teamService,
+    userService,
     logger,
     ticketService,
   }: Props) {
@@ -62,6 +66,7 @@ export class DiscordProvider {
     this.identityService = identityService;
     this.teamService = teamService;
     this.ticketService = ticketService;
+    this.userService = userService;
     this.logger = logger;
   }
 
@@ -102,6 +107,7 @@ export class DiscordProvider {
 
   private async addUsers(channelId: string, userIds: number[], isNew: boolean) {
     const client = await this.getClient();
+    console.log(userIds);
     const current = new Set<string>();
     if (!isNew) {
       const limit = 100;
@@ -129,7 +135,7 @@ export class DiscordProvider {
     }
     for (const id of userIds) {
       const providerId = (
-        await this.identityService.getProviderForUser(id, "discord")
+        await this.identityService.getProviderForUser(id, PROVIDER_ID)
       )?.provider_id;
       if (!providerId || current.has(providerId)) {
         continue;
@@ -147,7 +153,6 @@ export class DiscordProvider {
     const { value: config } = await this.configService.get(SetupConfig);
     const client = await this.getClient();
     const requesterType = ticket.team_id ? "Team" : "User";
-    const requesterId = (ticket.team_id || ticket.user_id).toString();
     const embed: APIEmbed = {
       title: `Ticket ${status}`,
       color: EmbedColor[status],
@@ -174,8 +179,8 @@ export class DiscordProvider {
           inline: true,
         },
         {
-          name: "Requester ID",
-          value: requesterId.toString(),
+          name: "Requester",
+          value: await this.getRequesterDisplay(ticket),
           inline: true,
         },
         {
@@ -345,7 +350,7 @@ export class DiscordProvider {
 
   private async getActingDiscordId(actor: string | number) {
     if (typeof actor === "number") {
-      return (await this.identityService.getProviderForUser(actor, "discord"))
+      return (await this.identityService.getProviderForUser(actor, PROVIDER_ID))
         ?.provider_id;
     }
     const match = actor.match(USER_REGEX);
@@ -353,11 +358,30 @@ export class DiscordProvider {
       return (
         await this.identityService.getProviderForUser(
           parseInt(match[2]),
-          "discord",
+          PROVIDER_ID,
         )
       )?.provider_id;
     } else if (match && match[1] === "discord") {
       return match[2];
     }
+  }
+
+  private async getRequesterDisplay({
+    team_id,
+    user_id,
+  }: {
+    team_id?: number;
+    user_id?: number;
+  }) {
+    let requester: string | undefined;
+
+    try {
+      if (team_id) {
+        requester = (await this.teamService.get(team_id)).name;
+      } else if (user_id) {
+        requester = (await this.userService.get(user_id)).name;
+      }
+    } catch {}
+    return requester || "unknown";
   }
 }
