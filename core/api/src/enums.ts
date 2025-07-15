@@ -8,9 +8,9 @@ export const SubmissionStatus = Type.Enum({
 });
 export type SubmissionStatus = Static<typeof SubmissionStatus>;
 
-export const PolicyUpdateType = Type.Enum({
+export const ObjectUpdateType = Type.Enum({
   Create: "create",
   Update: "update",
   Delete: "delete",
 });
-export type PolicyUpdateType = Static<typeof PolicyUpdateType>;
+export type ObjectUpdateType = Static<typeof ObjectUpdateType>;

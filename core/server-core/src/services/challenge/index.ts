@@ -111,6 +111,7 @@ export class ChallengeService {
       version: challenge.version,
       updated_at: challenge.updated_at,
       hidden: challenge.hidden,
+      type: "create",
     });
     return challenge;
   }
@@ -136,6 +137,7 @@ export class ChallengeService {
       version,
       updated_at,
       hidden,
+      type: "update",
     });
     return version;
   }
@@ -187,7 +189,14 @@ export class ChallengeService {
   }
 
   async delete(id: number) {
-    return this.challengeDAO.delete(id);
+    const { slug, version } = await this.challengeDAO.delete(id);
+    await this.eventBusService.publish(ChallengeUpdateEvent, {
+      id,
+      slug,
+      version: version + 1,
+      updated_at: new Date(),
+      type: "delete",
+    });
   }
 
   async solve(

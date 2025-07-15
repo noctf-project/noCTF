@@ -149,12 +149,14 @@ export class ChallengeDAO {
   }
 
   async delete(id: number) {
-    const { numDeletedRows } = await this.db
+    const result = await this.db
       .deleteFrom("challenge")
       .where("id", "=", id)
+      .returning(["slug", "version", "updated_at", "hidden"])
       .executeTakeFirst();
-    if (!numDeletedRows) {
+    if (!result) {
       throw new NotFoundError("Challenge not found");
     }
+    return result;
   }
 }

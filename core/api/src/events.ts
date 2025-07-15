@@ -1,5 +1,5 @@
 import { Static, Type } from "@sinclair/typebox";
-import { PolicyUpdateType, SubmissionStatus } from "./enums.ts";
+import { ObjectUpdateType, SubmissionStatus } from "./enums.ts";
 import { EmailAddressOrUserId, TypeDate } from "./datatypes.ts";
 
 export const SubmissionUpdateEvent = Type.Object(
@@ -24,8 +24,9 @@ export const ChallengeUpdateEvent = Type.Object(
   {
     id: Type.Integer(),
     slug: Type.String(),
-    hidden: Type.Boolean(),
+    hidden: Type.Optional(Type.Boolean()),
     version: Type.Integer(),
+    type: ObjectUpdateType,
     updated_at: TypeDate,
   },
   { $id: "events.challenge.update" },
@@ -48,7 +49,7 @@ export const PolicyUpdateEvent = Type.Object(
     id: Type.Integer(),
     version: Type.Integer(),
     updated_at: TypeDate,
-    type: PolicyUpdateType,
+    type: ObjectUpdateType,
   },
   { $id: "events.policy.update" },
 );
