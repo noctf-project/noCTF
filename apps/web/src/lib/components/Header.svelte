@@ -51,6 +51,12 @@
         <li>
           <a href="/sponsors" class={isActive("/sponsors")}>Sponsors</a>
         </li>
+        <li>
+          <a href="/prizes" class={isActive("/prizes")}>Prizes</a>
+        </li>
+        <!-- <li> -->
+        <!-- <a href="/rules" class={isActive("/rules")}>Rules</a> -->
+        <!-- </li> -->
         {#if authState.isAdmin}
           <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
         {/if}
@@ -93,6 +99,12 @@
       <li>
         <a href="/sponsors" class={isActive("/sponsors")}>Sponsors</a>
       </li>
+      <li>
+        <a href="/prizes" class={isActive("/prizes")}>Prizes</a>
+      </li>
+      <!-- <li> -->
+      <!-- <a href="/rules" class={isActive("/rules")}>Rules</a> -->
+      <!-- </li> -->
       {#if authState.isAdmin}
         <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
       {/if}

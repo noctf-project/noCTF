@@ -92,7 +92,7 @@
   </div>
 {/snippet}
 
-<div class="flex flex-col items-center h-screen p-2">
+<div class="flex flex-col items-center">
   <div
     class="flex flex-col items-center w-full md:w-8/12 bg-base-100 p-4 rounded-lg opacity-95"
   >
