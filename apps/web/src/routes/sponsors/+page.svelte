@@ -97,7 +97,7 @@
     class="flex flex-col items-center w-full md:w-8/12 bg-base-100 p-4 rounded-lg opacity-95"
   >
     <!-- Platinum Sponsor -->
-    <div class="flex flex-col items-center pb-10 w-full">
+    <div class="flex flex-col items-center gap-10 pb-10 w-full">
       <h1 class="text-4xl font-bold">Platinum Sponsor</h1>
 
       {#if platinumSponsor}

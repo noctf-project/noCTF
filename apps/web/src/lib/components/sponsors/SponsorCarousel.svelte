@@ -150,6 +150,7 @@
 
       img {
         max-height: 10vh;
+        padding: 15px 0px;
         width: 100%;
       }
     }
