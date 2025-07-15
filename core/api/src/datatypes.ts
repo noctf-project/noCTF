@@ -438,3 +438,14 @@ export const OutgoingSolveWebhookGeneric = Type.Composite([
 export type OutgoingSolveWebhookGeneric = Static<
   typeof OutgoingSolveWebhookGeneric
 >;
+
+export const Announcement = Type.Object({
+  title: Type.String({ minLength: 1, maxLength: 128 }),
+  message: Type.String({ maxLength: 1600 }),
+  created_by: Type.Union([Type.Integer(), Type.Null()]),
+  updated_by: Type.Union([Type.Integer(), Type.Null()]),
+  visible_to: Type.Array(Type.String({ maxLength: 72 }), { uniqueItems: true }),
+  created_at: TypeDate,
+  updated_at: TypeDate,
+});
+export type Announcement = Static<typeof Announcement>;

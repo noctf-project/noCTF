@@ -58,7 +58,7 @@ export class AuditLogDAO {
     actor,
     entities,
     operation,
-  }: Omit<QueryAuditLogRequest, "limit|offset"> = {}) {
+  }: Omit<QueryAuditLogRequest, "page_size"> = {}) {
     let query = this.db.selectFrom("audit_log");
 
     if (created_at) {

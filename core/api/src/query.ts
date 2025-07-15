@@ -1,5 +1,5 @@
 import { Static, Type } from "@sinclair/typebox";
-import { Challenge } from "./datatypes.ts";
+import { Challenge, TypeDate } from "./datatypes.ts";
 
 export const FilterChallengesQuery = Type.Partial(
   Type.Pick(Challenge, ["tags", "hidden", "visible_at"]),
@@ -56,3 +56,11 @@ export const SessionQuery = Type.Composite(
   { additionalProperties: false },
 );
 export type SessionQuery = Static<typeof SessionQuery>;
+
+export const GetAnnouncementsQuery = Type.Object(
+  {
+    updated_at: Type.Optional(TypeDate),
+  },
+  { additionalProperties: false },
+);
+export type GetAnnouncementsQuery = Static<typeof GetAnnouncementsQuery>;

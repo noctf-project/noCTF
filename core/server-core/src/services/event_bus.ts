@@ -31,6 +31,7 @@ export type EventSubscribeOptions<T> = {
   handler: EventHandlerFn<T>;
   backoff?: (attempts: number) => number;
   concurrency?: number;
+  max_retries?: number;
 };
 
 export type EventSubscriberHandle<T> = {
@@ -133,7 +134,8 @@ export class EventBusService {
         durable_name: consumer,
         ack_policy: AckPolicy.Explicit,
         deliver_policy: DELIVER_POLICIES[type],
-        max_deliver: 5,
+        max_deliver:
+          typeof options.max_retries === "number" ? options.max_retries : 5,
         ...updateable,
       });
       name = cons.name;
