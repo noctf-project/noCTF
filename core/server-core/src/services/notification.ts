@@ -1,6 +1,7 @@
 import { NotificationConfig } from "@noctf/api/config";
 import { ServiceCradle } from "../index.ts";
 import {
+  AnnouncementUpdateEvent,
   NotificationQueueWebhookEvent,
   SubmissionUpdateEvent,
 } from "@noctf/api/events";
@@ -11,16 +12,22 @@ import Handlebars from "handlebars";
 import TTLCache from "@isaacs/ttlcache";
 import { OutgoingSolveWebhookGeneric } from "@noctf/api/datatypes";
 import { ValidationError } from "../errors.ts";
+import SingleValueCache from "../util/single_value_cache.ts";
+import { AnnouncementDAO } from "../dao/announcement.ts";
+import { bisectLeft } from "../util/arrays.ts";
 
 type Props = Pick<
   ServiceCradle,
   | "logger"
+  | "databaseClient"
   | "challengeService"
   | "configService"
   | "eventBusService"
   | "teamService"
   | "userService"
 >;
+
+const ANNOUNCEMENT_CACHE_SIZE = 1024;
 
 export class NotificationService {
   private readonly client;
@@ -30,6 +37,7 @@ export class NotificationService {
   private readonly eventBusService;
   private readonly teamService;
   private readonly userService;
+  private readonly announcementDAO;
 
   private readonly templateCache = new TTLCache<
     string,
@@ -38,9 +46,20 @@ export class NotificationService {
     max: 256,
     ttl: Infinity,
   });
+  private readonly cached = new SingleValueCache(
+    async () =>
+      (await this.announcementDAO.query({}, ANNOUNCEMENT_CACHE_SIZE)).map(
+        ({ visible_to, ...rest }) => ({
+          ...rest,
+          visible_to: new Set(visible_to),
+        }),
+      ),
+    180000,
+  );
 
   constructor({
     logger,
+    databaseClient,
     challengeService,
     configService,
     eventBusService,
@@ -54,6 +73,7 @@ export class NotificationService {
     this.eventBusService = eventBusService;
     this.teamService = teamService;
     this.userService = userService;
+    this.announcementDAO = new AnnouncementDAO(databaseClient.get());
   }
 
   async init() {
@@ -78,16 +98,71 @@ export class NotificationService {
           handler: (data) => this.handleSubmission(data),
         },
       ),
+      this.eventBusService.subscribe<AnnouncementUpdateEvent>(
+        signal,
+        undefined,
+        [AnnouncementUpdateEvent.$id!],
+        {
+          concurrency: 1,
+          handler: (data) => this.handleAnnouncementCache(data),
+        },
+      ),
       this.eventBusService.subscribe<NotificationQueueWebhookEvent>(
         signal,
         "NotificationQueueWebhookWorker",
         [NotificationQueueWebhookEvent.$id!],
         {
           concurrency: 2,
+          backoff: () => 20000 + Math.floor(Math.random() * 10000),
           handler: (data) => this.sendWebhook(data),
         },
       ),
     ]);
+  }
+
+  async getVisibleAnnouncements(
+    visible_to?: string[],
+    updated_at?: Date,
+    limit?: number,
+  ) {
+    const announcements = await this.cached.get();
+    const updated_time = updated_at?.getTime() || 0;
+    let idx = updated_time
+      ? bisectLeft(announcements, -updated_time, (v) => -v.updated_at.getTime())
+      : announcements.length;
+    if (updated_time === announcements[idx]?.updated_at.getTime()) {
+      idx += 1;
+    }
+    const out = [];
+    for (let i = 0; i < idx; i++) {
+      if (
+        !visible_to ||
+        visible_to.some((item) => announcements[i].visible_to.has(item))
+      ) {
+        out.push(announcements[i]);
+        if (limit && out.length === limit) return out;
+      }
+    }
+    // if results returned is less than what we would expect, query the db
+    if (announcements.length >= ANNOUNCEMENT_CACHE_SIZE) {
+      return this.announcementDAO.query({
+        visible_to,
+        updated_at: updated_at ? [new Date(0), updated_at] : undefined,
+      });
+    }
+    return out;
+  }
+
+  private async handleAnnouncementCache(
+    data: EventItem<AnnouncementUpdateEvent>,
+  ) {
+    const announcements = await this.cached.get();
+    if (
+      !announcements.length ||
+      announcements[0].updated_at < data.data.updated_at
+    ) {
+      this.cached.clear();
+    }
   }
 
   private async handleSubmission(data: EventItem<SubmissionUpdateEvent>) {

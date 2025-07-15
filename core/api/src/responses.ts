@@ -19,6 +19,7 @@ import {
   Session,
   PolicyDocument,
   Team,
+  Announcement,
 } from "./datatypes.ts";
 import { AuthTokenType } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
@@ -354,6 +355,22 @@ export const GetSiteConfigResponse = Type.Object({
   data: SetupConfig,
 });
 export type GetSiteConfigResponse = Static<typeof GetSiteConfigResponse>;
+
+export const GetAnnouncementsResponse = Type.Object({
+  data: Type.Object({
+    entries: Type.Array(
+      Type.Pick(Announcement, [
+        "id",
+        "title",
+        "message",
+        "created_at",
+        "updated_at",
+      ]),
+    ),
+    page_size: Type.Integer(),
+  }),
+});
+export type GetAnnouncementsResponse = Static<typeof GetAnnouncementsResponse>;
 
 export const OAuthAuthorizeInternalResponse = Type.Object({
   data: Type.Object({

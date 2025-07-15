@@ -1,6 +1,6 @@
 import { Static, Type } from "@sinclair/typebox";
 import { ObjectUpdateType, SubmissionStatus } from "./enums.ts";
-import { EmailAddressOrUserId, TypeDate } from "./datatypes.ts";
+import { Announcement, EmailAddressOrUserId, TypeDate } from "./datatypes.ts";
 
 export const SubmissionUpdateEvent = Type.Object(
   {
@@ -19,6 +19,18 @@ export const SubmissionUpdateEvent = Type.Object(
   { $id: "events.submission.update" },
 );
 export type SubmissionUpdateEvent = Static<typeof SubmissionUpdateEvent>;
+
+export const AnnouncementUpdateEvent = Type.Composite(
+  [
+    Announcement,
+    Type.Object({
+      state: ObjectUpdateType,
+      delivery_channels: Type.Array(Type.String(), { uniqueItems: true }),
+    }),
+  ],
+  { $id: "events.announcement.update" },
+);
+export type AnnouncementUpdateEvent = Static<typeof AnnouncementUpdateEvent>;
 
 export const ChallengeUpdateEvent = Type.Object(
   {

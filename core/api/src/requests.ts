@@ -184,6 +184,23 @@ export type AdminQuerySubmissionsRequest = Static<
   typeof AdminQuerySubmissionsRequest
 >;
 
+export const AdminQueryAnnouncementsRequest = Type.Object(
+  {
+    updated_at: Type.Optional(
+      Type.Tuple([
+        Type.Union([TypeDate, Type.Null()]),
+        Type.Union([TypeDate, Type.Null()]),
+      ]),
+    ),
+    visible_to: Type.Optional(Type.Array(Type.String())),
+    page_size: Type.Optional(Type.Number()),
+  },
+  { additionalProperties: false },
+);
+export type AdminQueryAnnouncementsRequest = Static<
+  typeof AdminQueryAnnouncementsRequest
+>;
+
 export const AdminUpdateSubmissionsRequest = Type.Object(
   {
     ids: Type.Array(Type.Number(), { minItems: 1 }),
