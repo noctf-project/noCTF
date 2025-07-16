@@ -69,7 +69,9 @@ export class UserIdentityDAO {
     withSecret?: boolean,
   ): Promise<any[]> {
     if (!ids.length) return [];
-    let query = this.db.selectFrom("user_identity").where("user_id", "in", ids);
+    const query = this.db
+      .selectFrom("user_identity")
+      .where("user_id", "in", ids);
     if (withSecret) {
       return query
         .select([

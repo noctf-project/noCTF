@@ -1,6 +1,6 @@
 import { Primitive } from "@noctf/api/types";
 
-export type PaginationCursor = Record<string, Primitive | Date | BigInt>;
+export type PaginationCursor = Record<string, Primitive | Date | bigint>;
 
 export type LimitCursorEncoded = {
   limit?: number;

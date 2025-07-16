@@ -17,7 +17,7 @@ import { FastifyInstance } from "fastify";
 export async function routes(fastify: FastifyInstance) {
   const { announcementService } = fastify.container.cradle;
 
-  fastify.get<{
+  fastify.post<{
     Reply: AdminListAnnnouncementsResponse;
     Body: AdminQueryAnnouncementsRequest;
   }>(
@@ -26,6 +26,7 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["admin"],
+        body: AdminQueryAnnouncementsRequest,
         response: {
           200: AdminListAnnnouncementsResponse,
         },
