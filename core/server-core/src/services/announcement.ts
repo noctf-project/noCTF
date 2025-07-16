@@ -146,6 +146,7 @@ export class AnnouncementService {
       }),
       this.eventBusService.publish(AnnouncementUpdateEvent, {
         ...announcement,
+        ...FilterUndefined(v),
         updated_at: result.updated_at,
         type: "update",
       }),
