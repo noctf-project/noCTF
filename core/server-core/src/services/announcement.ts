@@ -234,9 +234,15 @@ export class AnnouncementService {
 
   static isPrivate(visible_to: string[] | Set<string>) {
     const visible = Array.isArray(visible_to) ? visible_to : [...visible_to];
-    return (
-      !visible.length ||
-      visible.some((x) => x.startsWith("team:") || x.startsWith("user:"))
-    );
+    if (visible.length === 0) return true;
+    let maybePrivate = false;
+    for (const v of visible) {
+      // definitely public
+      if (v === "user" || v === "public" || v.startsWith("role:")) return false;
+      if (v.startsWith("team:") || v.startsWith("user:")) {
+        maybePrivate = true;
+      }
+    }
+    return maybePrivate;
   }
 }
