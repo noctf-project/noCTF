@@ -45,11 +45,13 @@
   );
 
   onMount(() => {
-    const storedTheme = localStorage.getItem("theme");
-    document.documentElement.setAttribute(
-      "data-theme",
-      storedTheme || "system",
-    );
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
+    const theme =
+      localStorage.getItem("theme") || (prefersDark ? "dark" : "light");
+    localStorage.setItem("theme", theme);
+    document.documentElement.setAttribute("data-theme", theme);
   });
 </script>
 
