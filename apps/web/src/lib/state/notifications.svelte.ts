@@ -55,8 +55,7 @@ class NotificationState {
 
           if (newAnnouncements.length === 0) {
             this.hasMoreAnnouncements = false;
-          }
-          else if (
+          } else if (
             response.data.data.page_size &&
             newAnnouncements.length < response.data.data.page_size
           ) {

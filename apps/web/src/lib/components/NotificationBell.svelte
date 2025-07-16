@@ -7,6 +7,7 @@
   import DOMPurify from "isomorphic-dompurify";
   import notificationState from "$lib/state/notifications.svelte";
   import type { PathResponse } from "$lib/api/types";
+  import { getRelativeTime } from "$lib/utils/time";
 
   type AnnouncementResponse = PathResponse<"/announcements", "get">;
   type Announcement = AnnouncementResponse["data"]["entries"][0];
@@ -57,21 +58,6 @@
     }
   }
 
-  function formatDate(dateString: string) {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-
-    return date.toLocaleDateString();
-  }
   function hasBeenUpdated(announcement: Announcement) {
     const created = new Date(announcement.created_at);
     const updated = new Date(announcement.updated_at);
@@ -193,7 +179,7 @@
                     ).toLocaleString()}
                     style="position: relative;"
                   >
-                    {formatDate(announcement.created_at)}
+                    {getRelativeTime(new Date(announcement.created_at))}
                   </span>
                   {#if hasBeenUpdated(announcement)}
                     <span
