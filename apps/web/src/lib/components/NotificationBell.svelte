@@ -197,7 +197,7 @@
                   </span>
                   {#if hasBeenUpdated(announcement)}
                     <span
-                      class="text-warning text-xs tooltip tooltip-right"
+                      class="text-base-content/40 text-xs tooltip tooltip-right"
                       data-tip={new Date(
                         announcement.updated_at,
                       ).toLocaleString()}>(edited)</span
