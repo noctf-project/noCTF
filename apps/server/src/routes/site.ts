@@ -11,8 +11,8 @@ import { Type } from "@sinclair/typebox";
 import { FastifyInstance } from "fastify";
 
 export async function routes(fastify: FastifyInstance) {
-  const { configService, announcementService } = fastify.container
-    .cradle as ServiceCradle;
+  const { configService, announcementService, policyService } = fastify
+    .container.cradle as ServiceCradle;
 
   fastify.get<{ Reply: GetSiteConfigResponse }>(
     "/site/config",
@@ -63,7 +63,13 @@ export async function routes(fastify: FastifyInstance) {
         visible_to.push("public");
       }
       if (request.user) {
-        visible_to.push("user", `user:${request.user.id}`);
+        visible_to.push(
+          "user",
+          `user:${request.user.id}`,
+          ...[...(await policyService.getRolesForUser(request.user.id))].map(
+            (r) => `role:${r}`,
+          ),
+        );
         const membership = await request.user.membership;
         if (membership) {
           visible_to.push("team", `team:${membership.team_id}`);
