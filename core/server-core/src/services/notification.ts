@@ -24,6 +24,35 @@ type Props = Pick<
   | "userService"
 >;
 
+const handlebars = Handlebars.create();
+handlebars.registerHelper("compare", (params) => {
+  let v1 = params[0];
+  let operator = params[1];
+  let v2 = params[2];
+  switch (operator) {
+    case "==":
+      return v1 == v2;
+    case "!=":
+      return v1 != v2;
+    case "===":
+      return v1 === v2;
+    case "<":
+      return v1 < v2;
+    case "<=":
+      return v1 <= v2;
+    case ">":
+      return v1 > v2;
+    case ">=":
+      return v1 >= v2;
+    case "&&":
+      return !!(v1 && v2);
+    case "||":
+      return !!(v1 || v2);
+    default:
+      return false;
+  }
+});
+
 export class NotificationService {
   private readonly client;
   private readonly logger;
@@ -60,10 +89,20 @@ export class NotificationService {
 
   async init() {
     await this.configService.register(NotificationConfig, {}, (v) => {
-      if (!v.submission) return;
-      for (const item of v.submission) {
-        if (item.type === "discord" && typeof item.template !== "string") {
-          throw new ValidationError("Discord webhooks must have a template");
+      for (const item of v.submission || []) {
+        if (item.type === "discord") {
+          if (typeof item.template !== "string") {
+            throw new ValidationError("Discord webhooks must have a template");
+          }
+          // validate template compiles
+          this.getTemplateFunction(item.template);
+        }
+      }
+      for (const key of Object.keys(v.announcement?.webhooks || {})) {
+        const item = v.announcement?.webhooks?.[key];
+        if (item?.template) {
+          // validate template compiles
+          this.getTemplateFunction(item.template);
         }
       }
     });
@@ -230,7 +269,7 @@ export class NotificationService {
   private getTemplateFunction(template: string) {
     let tpl = this.templateCache.get(template);
     if (!tpl) {
-      tpl = Handlebars.compile(template);
+      tpl = handlebars.compile(template);
       this.templateCache.set(template, tpl);
     }
     return tpl;

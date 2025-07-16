@@ -68,8 +68,9 @@
           >
         </li>
         <li>
-          <a href="/admin/announcements" class={isActive("/admin/announcements")}
-            >Announcements</a
+          <a
+            href="/admin/announcements"
+            class={isActive("/admin/announcements")}>Announcements</a
           >
         </li>
         <li>
@@ -136,8 +137,9 @@
           >
         </li>
         <li>
-          <a href="/admin/announcements" class={isActive("/admin/announcements")}
-            >Announcements</a
+          <a
+            href="/admin/announcements"
+            class={isActive("/admin/announcements")}>Announcements</a
           >
         </li>
         <li>
