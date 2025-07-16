@@ -199,6 +199,13 @@ export const NotificationConfig = Type.Object(
                   title: "Notification Type",
                 },
               ),
+              template: Type.Optional(
+                Type.String({
+                  title: "Message template",
+                  description:
+                    "Handlebars template for the message. Does not apply to the webhook notification type",
+                }),
+              ),
               enabled: Type.Boolean({ title: "Enabled" }),
             }),
             { title: "Webhook Delivery Channels" },

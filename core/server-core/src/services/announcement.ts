@@ -103,7 +103,7 @@ export class AnnouncementService {
     v: Parameters<AnnouncementDAO["create"]>[0],
     { actor, message }: AuditParams = {},
   ) {
-    await this.validateDeliveryChannels(v.delivery_channels);
+    await this.validateDeliveryChannels(v.visible_to, v.delivery_channels);
     const result = await this.dao.create(v);
     await Promise.all([
       this.auditLogService.log({
@@ -136,6 +136,7 @@ export class AnnouncementService {
       );
     }
     await this.validateDeliveryChannels(
+      v.visible_to || announcement.visible_to,
       v.delivery_channels || announcement.delivery_channels,
     );
     const result = await this.dao.update(id, v, updated_at);
@@ -209,7 +210,11 @@ export class AnnouncementService {
     return out;
   }
 
-  private async validateDeliveryChannels(channels: string[]) {
+  private async validateDeliveryChannels(
+    visible_to: string[] | Set<string>,
+    channels: string[],
+  ) {
+    const isPrivate = AnnouncementService.isPrivate(visible_to);
     const config = await this.configService.get(NotificationConfig);
     for (const channel of channels) {
       if (channel === "email") {
@@ -217,6 +222,10 @@ export class AnnouncementService {
         throw new BadRequestError("email delivery is not enabled");
       }
       if (channel.startsWith("webhook:")) {
+        if (isPrivate)
+          throw new BadRequestError(
+            "Private announcements may not be made to webhoooks",
+          );
         const hook =
           config.value.announcement?.webhooks?.[channel.substring(8)];
         if (!hook || !hook.enabled)
