@@ -20,6 +20,7 @@ import {
   PolicyDocument,
   Team,
   Announcement,
+  ChallengeStat,
 } from "./datatypes.ts";
 import { AuthTokenType } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
@@ -114,6 +115,16 @@ export const ListTeamsResponse = Type.Object({
   }),
 });
 export type ListTeamsResponse = Static<typeof ListTeamsResponse>;
+
+export const ListChallengeStatsResponse = Type.Object({
+  data: Type.Object({
+    entries: Type.Array(ChallengeStat),
+    division_id: Type.Integer(),
+  }),
+});
+export type ListChallengeStatsResponse = Static<
+  typeof ListChallengeStatsResponse
+>;
 
 export const AdminListTeamsResponse = Type.Object({
   data: Type.Object({

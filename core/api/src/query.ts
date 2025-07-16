@@ -38,13 +38,13 @@ export const GetFileQuery = Type.Object(
 );
 export type GetFileQuery = Static<typeof GetFileQuery>;
 
-export const SolveQuery = Type.Object(
+export const DivisionQuery = Type.Object(
   {
     division_id: Type.Optional(Type.Integer()),
   },
   { additionalProperties: false },
 );
-export type SolveQuery = Static<typeof SolveQuery>;
+export type DivisionQuery = Static<typeof DivisionQuery>;
 
 export const SessionQuery = Type.Composite(
   [

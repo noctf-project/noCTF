@@ -12,7 +12,7 @@ import { SolveChallengeRequest } from "@noctf/api/requests";
 import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
 import { SetupConfig } from "@noctf/api/config";
-import { SolveQuery } from "@noctf/api/query";
+import { DivisionQuery } from "@noctf/api/query";
 import { GetRouteKey } from "@noctf/server-core/util/limit_keys";
 
 export async function routes(fastify: FastifyInstance) {
@@ -144,7 +144,7 @@ export async function routes(fastify: FastifyInstance) {
 
   fastify.get<{
     Params: IdParams;
-    Querystring: SolveQuery;
+    Querystring: DivisionQuery;
     Reply: GetChallengeSolvesResponse;
   }>(
     "/challenges/:id/solves",
@@ -156,7 +156,7 @@ export async function routes(fastify: FastifyInstance) {
           policy: ["OR", "scoreboard.get", "admin.challenge.get"],
         },
         params: IdParams,
-        querystring: SolveQuery,
+        querystring: DivisionQuery,
         response: {
           200: GetChallengeSolvesResponse,
         },

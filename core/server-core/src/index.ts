@@ -26,6 +26,7 @@ import type { DivisionService } from "./services/division.ts";
 import type { TokenService } from "./services/token.ts";
 import type { NotificationService } from "./services/notification.ts";
 import type { AnnouncementService } from "./services/announcement.ts";
+import type { StatsService } from "./services/stats.ts";
 
 export type ServiceCradle = {
   logger: Logger;
@@ -55,6 +56,7 @@ export type ServiceCradle = {
   tokenService: TokenService;
   userService: UserService;
   lockService: LockService;
+  statsService: StatsService;
 };
 
 declare module "fastify" {
