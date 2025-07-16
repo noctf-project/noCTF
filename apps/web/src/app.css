@@ -15,6 +15,10 @@
   max-width: 95%;
 }
 
+.markdown-body a {
+    @apply text-primary;
+}
+
 .carta-font-code {
   font-family: "...", monospace;
   font-size: 1.1rem;
