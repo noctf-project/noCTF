@@ -499,6 +499,7 @@
                       </label>
                       <input
                         type="number"
+                        step="any"
                         id={p}
                         required
                         bind:value={scoringParams[p]}
