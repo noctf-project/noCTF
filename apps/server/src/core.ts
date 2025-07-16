@@ -1,3 +1,4 @@
+import { routes as adminAnnouncement } from "./routes/admin_announcement.ts";
 import { routes as adminAuditLog } from "./routes/admin_audit_log.ts";
 import { routes as adminChallenge } from "./routes/admin_challenge.ts";
 import { routes as adminConfig } from "./routes/admin_config.ts";
@@ -41,6 +42,7 @@ export default async function (fastify: FastifyInstance) {
 
   emailService.register(new NodeMailerProvider({ configService }));
 
+  fastify.register(adminAnnouncement);
   fastify.register(adminAuditLog);
   fastify.register(adminChallenge);
   fastify.register(adminConfig);

@@ -27,6 +27,7 @@ export enum ActorType {
 export enum EntityType {
   TEAM_TAG = "team_tag",
   POLICY = "policy",
+  ANNOUNCEMENT = "announcement",
   DIVISION = "division",
   USER = "user",
   ROLE = "role",

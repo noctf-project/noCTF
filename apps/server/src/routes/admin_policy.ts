@@ -113,7 +113,7 @@ export async function routes(fastify: FastifyInstance) {
         params: IdParams,
         auth: {
           require: true,
-          policy: ["admin.policies.manage"],
+          policy: ["admin.policy.manage"],
         },
       },
     },

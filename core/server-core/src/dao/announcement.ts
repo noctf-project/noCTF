@@ -1,10 +1,22 @@
-import { Announcement } from "@noctf/api/datatypes";
+import { Announcement, LimitOffset } from "@noctf/api/datatypes";
 import { DBType } from "../clients/database.ts";
 import { AdminQueryAnnouncementsRequest } from "@noctf/api/requests";
 import { sql, Updateable } from "kysely";
 import { DB } from "@noctf/schema";
 import { FilterUndefined } from "../util/filter.ts";
 import { NotFoundError } from "../errors.ts";
+
+const FIELDS = [
+  "id",
+  "title",
+  "message",
+  "created_at",
+  "updated_at",
+  "created_by",
+  "updated_by",
+  "visible_to",
+  "delivery_channels",
+] as const;
 
 export class AnnouncementDAO {
   constructor(private readonly db: DBType) {}
@@ -14,8 +26,12 @@ export class AnnouncementDAO {
     created_by,
     updated_by,
     visible_to,
-  }: Omit<Announcement, "id" | "created_at" | "updated_at">) {
-    return this.db
+    delivery_channels,
+  }: Omit<
+    Announcement,
+    "id" | "created_at" | "updated_at"
+  >): Promise<Announcement> {
+    const result = await this.db
       .insertInto("announcement")
       .values({
         title,
@@ -23,46 +39,87 @@ export class AnnouncementDAO {
         created_by,
         updated_by,
         visible_to,
+        delivery_channels,
       })
-      .execute();
+      .returning(["created_at", "updated_at", "id"])
+      .executeTakeFirstOrThrow();
+    return {
+      title,
+      message,
+      created_by,
+      updated_by,
+      visible_to,
+      delivery_channels,
+      ...result,
+    };
   }
 
   async query(
     params?: Parameters<AnnouncementDAO["listQuery"]>[0],
-    limit?: number,
+    limit?: LimitOffset,
   ): Promise<Announcement[]> {
-    let query = this.listQuery(params).select([
-      "id",
-      "title",
-      "message",
-      "created_at",
-      "updated_at",
-      "created_by",
-      "updated_by",
-      "visible_to",
-    ]);
+    let query = this.listQuery(params).select(FIELDS);
 
-    if (limit) {
-      query = query.limit(limit);
+    if (limit?.limit) {
+      query = query.limit(limit.limit);
+    }
+    if (limit?.offset) {
+      query = query.limit(limit.offset);
     }
     return query.orderBy("updated_at desc").execute();
+  }
+
+  async get(id: number) {
+    const result = await this.db
+      .selectFrom("announcement")
+      .select(FIELDS)
+      .where("id", "=", id)
+      .executeTakeFirst();
+    if (!result) {
+      throw new NotFoundError("Announcement not found");
+    }
+    return result;
   }
 
   async update(
     id: number,
     v: Pick<
       Updateable<DB["announcement"]>,
-      "title" | "message" | "updated_by" | "visible_to"
+      "title" | "message" | "updated_by" | "visible_to" | "delivery_channels"
     >,
+    updated_at?: Date,
   ) {
-    const { numUpdatedRows } = await this.db
+    let query = this.db
       .updateTable("announcement")
       .set(FilterUndefined(v))
       .where("id", "=", id)
-      .executeTakeFirst();
-    if (!numUpdatedRows) {
-      throw new NotFoundError("Announcement not found");
+      .returning(["updated_at"]);
+
+    if (updated_at) {
+      query = query.where("updated_at", "=", updated_at);
     }
+
+    const result = await query.executeTakeFirst();
+    if (!result) {
+      throw new NotFoundError("Announcement and updated_at not found");
+    }
+    return result;
+  }
+
+  async delete(id: number, updated_at?: Date) {
+    let query = this.db
+      .deleteFrom("announcement")
+      .where("id", "=", id)
+      .returning(FIELDS);
+
+    if (updated_at) {
+      query = query.where("updated_at", "=", updated_at);
+    }
+    const result = await query.executeTakeFirstOrThrow();
+    if (!result) {
+      throw new NotFoundError("Announcement and version not found");
+    }
+    return result;
   }
 
   async getCount(

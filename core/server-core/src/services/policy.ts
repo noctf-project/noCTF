@@ -158,12 +158,6 @@ export class PolicyService {
         version: result.version + 1,
       }),
     ]);
-    await this.auditLogService.log({
-      operation: "policy.delete",
-      actor,
-      data: message,
-      entities: [`${EntityType.POLICY}:${id}`],
-    });
   }
 
   async getPoliciesForUser(userId: number) {

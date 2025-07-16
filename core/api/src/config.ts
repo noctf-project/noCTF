@@ -188,19 +188,21 @@ export const NotificationConfig = Type.Object(
     ),
     announcement: Type.Optional(
       Type.Object({
-        webhooks: Type.Record(
-          Type.String({ minLength: 1, maxLength: 64 }),
-          Type.Object({
-            url: Type.String({ format: "uri", title: "Webhook URL" }),
-            type: Type.Union(
-              [Type.Literal("discord"), Type.Literal("webhook")],
-              {
-                title: "Notification Type",
-              },
-            ),
-            enabled: Type.Boolean({ title: "Enabled" }),
-          }),
-          { title: "Webhook Delivery Channels" },
+        webhooks: Type.Optional(
+          Type.Record(
+            Type.String({ minLength: 1, maxLength: 64 }),
+            Type.Object({
+              url: Type.String({ format: "uri", title: "Webhook URL" }),
+              type: Type.Union(
+                [Type.Literal("discord"), Type.Literal("webhook")],
+                {
+                  title: "Notification Type",
+                },
+              ),
+              enabled: Type.Boolean({ title: "Enabled" }),
+            }),
+            { title: "Webhook Delivery Channels" },
+          ),
         ),
         email: Type.Boolean({ title: "Email", description: "Not Implemented" }),
       }),

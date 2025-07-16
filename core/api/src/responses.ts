@@ -375,6 +375,31 @@ export const GetAnnouncementsResponse = Type.Object({
 });
 export type GetAnnouncementsResponse = Static<typeof GetAnnouncementsResponse>;
 
+export const AdminGetAnnouncementResponse = Type.Object({
+  data: Announcement,
+});
+export type AdminGetAnnouncementResponse = Static<
+  typeof AdminGetAnnouncementResponse
+>;
+
+export const AdminGetAnnouncementDeliveryChannelsResponse = Type.Object({
+  data: Type.Array(Type.String()),
+});
+export type AdminGetAnnouncementDeliveryChannelsResponse = Static<
+  typeof AdminGetAnnouncementDeliveryChannelsResponse
+>;
+
+export const AdminListAnnnouncementsResponse = Type.Object({
+  data: Type.Object({
+    entries: Type.Array(Announcement),
+    page_size: Type.Integer(),
+    total: Type.Integer(),
+  }),
+});
+export type AdminListAnnnouncementsResponse = Static<
+  typeof AdminListAnnnouncementsResponse
+>;
+
 export const OAuthAuthorizeInternalResponse = Type.Object({
   data: Type.Object({
     url: Type.String(),

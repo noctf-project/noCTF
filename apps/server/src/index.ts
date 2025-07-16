@@ -53,6 +53,7 @@ import { KeyService } from "@noctf/server-core/services/key";
 import { DivisionService } from "@noctf/server-core/services/division";
 import { TokenService } from "@noctf/server-core/services/token";
 import { NotificationService } from "@noctf/server-core/services/notification";
+import { AnnouncementService } from "@noctf/server-core/services/announcement";
 
 export const server = fastify({
   logger: {
@@ -96,6 +97,7 @@ server.register(async () => {
       ({ logger }) =>
         new MetricsClient(logger, METRICS_PATH, METRICS_FILE_NAME_FORMAT),
     ).singleton(),
+    announcementService: asClass(AnnouncementService).singleton(),
     cacheService: asClass(CacheService).singleton(),
     appService: asClass(AppService).singleton(),
     auditLogService: asClass(AuditLogService).singleton(),

@@ -235,19 +235,21 @@
   {@const nameFg = isMe ? "text-primary-content" : ""}
 
   <div class={`flex items-center gap-2 ${!isCompact ? "w-full" : ""}`}>
-      {#await TeamQueryService.get(team_id)}
-        <div class="skeleton h-4 w-32"></div>
-      {:then team}
-            {#if team?.country}
-        <span class="text-xl flex-shrink-0">{countryCodeToFlag(team.country)}</span>
-{/if}
-    <a
-      href={`/teams/${team_id}`}
-      class={`truncate block cursor-pointer ${nameBg} ${nameFg} p-0.5 px-2 rounded-md font-medium`}
-    >
+    {#await TeamQueryService.get(team_id)}
+      <div class="skeleton h-4 w-32"></div>
+    {:then team}
+      {#if team?.country}
+        <span class="text-xl flex-shrink-0"
+          >{countryCodeToFlag(team.country)}</span
+        >
+      {/if}
+      <a
+        href={`/teams/${team_id}`}
+        class={`truncate block cursor-pointer ${nameBg} ${nameFg} p-0.5 px-2 rounded-md font-medium`}
+      >
         {team?.name}
-    </a>
-      {/await}
+      </a>
+    {/await}
   </div>
 {/snippet}
 
