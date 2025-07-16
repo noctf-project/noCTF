@@ -7,10 +7,12 @@
     hasFastThemeSwitcher,
   } from "$lib/components/ThemeSwitcher.svelte";
   import Toast from "$lib/components/Toast.svelte";
+  import NotificationBell from "$lib/components/NotificationBell.svelte";
   import { onMount } from "svelte";
   import "../app.css";
   import configState from "$lib/state/config.svelte";
   import captchaState from "$lib/state/captcha.svelte";
+  import authState from "$lib/state/auth.svelte";
 
   let { children } = $props();
 
@@ -57,6 +59,11 @@
       <ThemeSwitcher />
     </div>
   {/if}
+
+  {#if authState.isAuthenticated}
+    <NotificationBell />
+  {/if}
+
   <Toast />
   <footer class="text-center pb-4 text-xs">
     Powered by <a href="https://noctf.dev" class="text-primary">noCTF</a>
