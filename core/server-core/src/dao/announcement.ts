@@ -87,19 +87,13 @@ export class AnnouncementDAO {
       Updateable<DB["announcement"]>,
       "title" | "message" | "updated_by" | "visible_to" | "delivery_channels"
     >,
-    updated_at?: Date,
   ) {
-    let query = this.db
+    const result = await this.db
       .updateTable("announcement")
       .set(FilterUndefined({ ...v, updated_at: undefined }))
       .where("id", "=", id)
-      .returning(["updated_at"]);
-
-    if (updated_at) {
-      query = query.where("updated_at", "=", updated_at);
-    }
-
-    const result = await query.executeTakeFirst();
+      .returning(["updated_at"])
+      .executeTakeFirst();
     if (!result) {
       throw new NotFoundError("Announcement and updated_at not found");
     }

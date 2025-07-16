@@ -139,7 +139,7 @@ export class AnnouncementService {
       v.visible_to || announcement.visible_to,
       v.delivery_channels || announcement.delivery_channels,
     );
-    const result = await this.dao.update(id, v, updated_at);
+    const result = await this.dao.update(id, v);
     await Promise.all([
       this.auditLogService.log({
         operation: "announcement.update",
