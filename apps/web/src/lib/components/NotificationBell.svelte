@@ -122,10 +122,6 @@
           </div>
         {:else if notificationState.announcements.length === 0}
           <div class="p-8 text-center text-base-content/60">
-            <Icon
-              icon="material-symbols:notifications-off-outline"
-              class="text-4xl mb-2"
-            />
             <p>No announcements yet</p>
           </div>
         {:else}
