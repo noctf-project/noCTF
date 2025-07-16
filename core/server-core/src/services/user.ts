@@ -35,6 +35,7 @@ export class UserService {
   async listSummary(
     params?: {
       flags?: string[];
+      roles?: string[];
       ids?: number[];
       name?: string;
     },
@@ -45,6 +46,7 @@ export class UserService {
 
   async getCount(params?: {
     flags?: string[];
+    roles?: string[];
     division_id?: number;
     ids?: number[];
   }) {

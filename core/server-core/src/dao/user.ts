@@ -7,6 +7,7 @@ import { FilterUndefined } from "../util/filter.ts";
 import type { UserSummary, User } from "@noctf/api/datatypes";
 import { partition } from "../util/object.ts";
 import { NormalizeName } from "../util/string.ts";
+import { SplitYesNoQuery } from "./util.ts";
 
 export class UserDAO {
   constructor(private readonly db: DBType) {}
@@ -128,6 +129,7 @@ export class UserDAO {
   private listQuery(
     params?: {
       flags?: string[];
+      roles?: string[];
       ids?: number[];
       name?: string;
     },
@@ -135,16 +137,10 @@ export class UserDAO {
   ) {
     let query = this.db.selectFrom("user");
     if (params?.flags) {
-      const [no, yes] = partition(params.flags, (f) => f.startsWith("!"));
-
-      if (yes.length) {
-        query = query.where("flags", "&&", sql.val(yes));
-      }
-      if (no.length) {
-        query = query.where((eb) =>
-          eb.not(eb("flags", "&&", eb.val(no.map((f) => f.substring(1))))),
-        );
-      }
+      query = SplitYesNoQuery(query, "flags", params.flags);
+    }
+    if (params?.roles) {
+      query = SplitYesNoQuery(query, "roles", params.roles);
     }
     if (params?.name) {
       const normalized = NormalizeName(params.name).replace(/[_%]/g, "\\$&");

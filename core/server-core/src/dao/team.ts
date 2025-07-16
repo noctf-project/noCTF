@@ -10,6 +10,7 @@ import { PostgresErrorCode, PostgresErrorConfig } from "../util/pgerror.ts";
 import { TryPGConstraintError } from "../util/pgerror.ts";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { NormalizeName } from "../util/string.ts";
+import { SplitYesNoQuery } from "./util.ts";
 
 const CREATE_ERROR_CONFIG: PostgresErrorConfig = {
   [PostgresErrorCode.Duplicate]: {
@@ -318,16 +319,7 @@ export class TeamDAO {
   ) {
     let query = this.db.selectFrom("team");
     if (params?.flags) {
-      const [no, yes] = partition(params.flags, (f) => f.startsWith("!"));
-
-      if (yes.length) {
-        query = query.where("flags", "&&", sql.val(yes));
-      }
-      if (no.length) {
-        query = query.where((eb) =>
-          eb.not(eb("flags", "&&", eb.val(no.map((f) => f.substring(1))))),
-        );
-      }
+      query = SplitYesNoQuery(query, "flags", params.flags);
     }
     if (params?.name) {
       const normalized = NormalizeName(params.name).replace(/[_%]/g, "\\$&");

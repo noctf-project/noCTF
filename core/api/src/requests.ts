@@ -402,6 +402,11 @@ export const AdminQueryUsersRequest = Type.Composite([
         maxItems: 50,
       }),
     ),
+    roles: Type.Optional(
+      Type.Array(Type.String({ minLength: 1, maxLength: 64 }), {
+        maxItems: 50,
+      }),
+    ),
   }),
 ]);
 export type AdminQueryUsersRequest = Static<typeof AdminQueryUsersRequest>;
