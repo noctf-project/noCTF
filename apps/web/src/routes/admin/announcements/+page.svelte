@@ -70,12 +70,14 @@
   let isPublic = $state(false);
   let selectedUsers = $state<AdminUser[]>([]);
   let selectedTeams = $state<AdminTeam[]>([]);
+  let selectedRoles = $state<string[]>([]);
   let showUserSearch = $state(false);
   let showTeamSearch = $state(false);
 
   let editIsPublic = $state(false);
   let editSelectedUsers = $state<AdminUser[]>([]);
   let editSelectedTeams = $state<AdminTeam[]>([]);
+  let editSelectedRoles = $state<string[]>([]);
   let showEditUserSearch = $state(false);
   let showEditTeamSearch = $state(false);
 
@@ -112,6 +114,7 @@
     }
     selectedUsers.forEach((user) => visibilityArray.push(`user:${user.id}`));
     selectedTeams.forEach((team) => visibilityArray.push(`team:${team.id}`));
+    selectedRoles.forEach((role) => visibilityArray.push(`role:${role}`));
     createForm.visible_to = visibilityArray;
   }
 
@@ -126,12 +129,14 @@
     editSelectedTeams.forEach((team) =>
       visibilityArray.push(`team:${team.id}`),
     );
+    editSelectedRoles.forEach((role) => visibilityArray.push(`role:${role}`));
     editForm.visible_to = visibilityArray;
   }
 
   async function parseVisibilityArray(visibleTo: string[]) {
     const users: AdminUser[] = [];
     const teams: AdminTeam[] = [];
+    const roles: string[] = [];
     let publicFlag = false;
 
     const userIds: number[] = [];
@@ -146,6 +151,9 @@
       } else if (item.startsWith("team:")) {
         const teamId = parseInt(item.substring(5));
         teamIds.push(teamId);
+      } else if (item.startsWith("role:")) {
+        const role = item.substring(5);
+        roles.push(role);
       }
     });
 
@@ -189,19 +197,21 @@
       }
     }
 
-    return { users, teams, publicFlag };
+    return { users, teams, roles, publicFlag };
   }
 
   function formatVisibility(visibleTo: string[]): {
     public: boolean;
     users: string[];
     teams: string[];
+    roles: string[];
     other: string[];
   } {
     const result = {
       public: false,
       users: [] as string[],
       teams: [] as string[],
+      roles: [] as string[],
       other: [] as string[],
     };
 
@@ -212,6 +222,8 @@
         result.users.push(item.substring(5));
       } else if (item.startsWith("team:")) {
         result.teams.push(item.substring(5));
+      } else if (item.startsWith("role:")) {
+        result.roles.push(item.substring(5));
       } else {
         result.other.push(item);
       }
@@ -276,6 +288,23 @@
     updateEditVisibilityArray();
   }
 
+  function handleRoleAdd(roleName: string) {
+    if (!selectedRoles.includes(roleName)) {
+      selectedRoles = [...selectedRoles, roleName];
+      updateVisibilityArray();
+    }
+  }
+
+  function handleRoleRemove(roleName: string) {
+    selectedRoles = selectedRoles.filter((r) => r !== roleName);
+    updateVisibilityArray();
+  }
+
+  function handleEditRoleRemove(roleName: string) {
+    editSelectedRoles = editSelectedRoles.filter((r) => r !== roleName);
+    updateEditVisibilityArray();
+  }
+
   async function createAnnouncement() {
     if (!createForm.title.trim()) {
       toasts.error("Please enter an announcement title");
@@ -309,6 +338,7 @@
       isPublic = false;
       selectedUsers = [];
       selectedTeams = [];
+      selectedRoles = [];
 
       announcements = wrapLoadable(fetchAnnouncements());
     } catch (error) {
@@ -326,12 +356,13 @@
     editForm.visible_to = [...announcement.visible_to];
     editForm.delivery_channels = [...announcement.delivery_channels];
 
-    const { users, teams, publicFlag } = await parseVisibilityArray(
+    const { users, teams, roles, publicFlag } = await parseVisibilityArray(
       announcement.visible_to,
     );
     editIsPublic = publicFlag;
     editSelectedUsers = users;
     editSelectedTeams = teams;
+    editSelectedRoles = roles;
   }
 
   function cancelEdit() {
@@ -343,6 +374,7 @@
     editIsPublic = false;
     editSelectedUsers = [];
     editSelectedTeams = [];
+    editSelectedRoles = [];
   }
 
   async function updateAnnouncement() {
@@ -441,116 +473,164 @@
       <span class="label-text">Visible To</span>
     </div>
 
-    <!-- Public checkbox -->
-    <div class="form-control">
-      {#if isForEdit}
-        <label
-          class="cursor-pointer label justify-start"
-          for="public-checkbox-edit"
-        >
-          <input
-            id="public-checkbox-edit"
-            type="checkbox"
-            class="checkbox checkbox-primary mr-2"
-            bind:checked={editIsPublic}
-            onchange={() => updateEditVisibilityArray()}
-          />
-          <span class="label-text">Public (visible to everyone)</span>
-        </label>
-      {:else}
-        <label
-          class="cursor-pointer label justify-start"
-          for="public-checkbox-create"
-        >
-          <input
-            id="public-checkbox-create"
-            type="checkbox"
-            class="checkbox checkbox-primary mr-2"
-            bind:checked={isPublic}
-            onchange={() => handleVisibilityChange()}
-          />
-          <span class="label-text">Public (visible to everyone)</span>
-        </label>
-      {/if}
-    </div>
+    <div class="flex flex-row gap-8 items-center">
+      <div>
+        <!-- Public checkbox -->
+        <div class="form-control">
+          {#if isForEdit}
+            <label
+              class="cursor-pointer label justify-start"
+              for="public-checkbox-edit"
+            >
+              <input
+                id="public-checkbox-edit"
+                type="checkbox"
+                class="checkbox checkbox-primary mr-2"
+                bind:checked={editIsPublic}
+                onchange={() => updateEditVisibilityArray()}
+              />
+              <span class="label-text">Public (visible to everyone)</span>
+            </label>
+          {:else}
+            <label
+              class="cursor-pointer label justify-start"
+              for="public-checkbox-create"
+            >
+              <input
+                id="public-checkbox-create"
+                type="checkbox"
+                class="checkbox checkbox-primary mr-2"
+                bind:checked={isPublic}
+                onchange={() => handleVisibilityChange()}
+              />
+              <span class="label-text">Public (visible to everyone)</span>
+            </label>
+          {/if}
+        </div>
 
-    <!-- Selected users and teams display -->
-    {#if (isForEdit ? editSelectedUsers : selectedUsers).length > 0 || (isForEdit ? editSelectedTeams : selectedTeams).length > 0}
-      <div class="mt-2 space-y-2">
-        {#if (isForEdit ? editSelectedUsers : selectedUsers).length > 0}
-          <div>
-            <span class="text-sm font-medium">Selected Users:</span>
-            <div class="flex flex-wrap gap-1 mt-1">
-              {#each isForEdit ? editSelectedUsers : selectedUsers as user}
-                <div class="badge badge-primary gap-1 pop">
-                  <Icon icon="material-symbols:person" class="text-xs" />
-                  {user.name}
-                  <button
-                    type="button"
-                    class="btn btn-xs btn-circle btn-ghost"
-                    onclick={() =>
-                      isForEdit
-                        ? handleEditUserRemove(user.id)
-                        : handleUserRemove(user.id)}
-                  >
-                    <Icon icon="material-symbols:close" class="text-xs" />
-                  </button>
+        <!-- Selected users, teams, and roles display -->
+        {#if (isForEdit ? editSelectedUsers : selectedUsers).length > 0 || (isForEdit ? editSelectedTeams : selectedTeams).length > 0 || (isForEdit ? editSelectedRoles : selectedRoles).length > 0}
+          <div class="mt-2 space-y-2">
+            {#if (isForEdit ? editSelectedUsers : selectedUsers).length > 0}
+              <div>
+                <span class="text-sm font-medium">Selected Users:</span>
+                <div class="flex flex-wrap gap-1 mt-1">
+                  {#each isForEdit ? editSelectedUsers : selectedUsers as user}
+                    <div class="badge badge-primary gap-1 pop">
+                      <Icon icon="material-symbols:person" class="text-xs" />
+                      {user.name}
+                      <button
+                        type="button"
+                        class="btn btn-xs btn-circle btn-ghost"
+                        onclick={() =>
+                          isForEdit
+                            ? handleEditUserRemove(user.id)
+                            : handleUserRemove(user.id)}
+                      >
+                        <Icon icon="material-symbols:close" class="text-xs" />
+                      </button>
+                    </div>
+                  {/each}
                 </div>
-              {/each}
-            </div>
+              </div>
+            {/if}
+
+            {#if (isForEdit ? editSelectedTeams : selectedTeams).length > 0}
+              <div>
+                <span class="text-sm font-medium">Selected Teams:</span>
+                <div class="flex flex-wrap gap-1 mt-1">
+                  {#each isForEdit ? editSelectedTeams : selectedTeams as team}
+                    <div class="badge badge-secondary gap-1 pop">
+                      <Icon icon="material-symbols:group" class="text-xs" />
+                      {team.name}
+                      <button
+                        type="button"
+                        class="btn btn-xs btn-circle btn-ghost"
+                        onclick={() =>
+                          isForEdit
+                            ? handleEditTeamRemove(team.id)
+                            : handleTeamRemove(team.id)}
+                      >
+                        <Icon icon="material-symbols:close" class="text-xs" />
+                      </button>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/if}
           </div>
         {/if}
 
-        {#if (isForEdit ? editSelectedTeams : selectedTeams).length > 0}
-          <div>
-            <span class="text-sm font-medium">Selected Teams:</span>
-            <div class="flex flex-wrap gap-1 mt-1">
-              {#each isForEdit ? editSelectedTeams : selectedTeams as team}
-                <div class="badge badge-secondary gap-1 pop">
-                  <Icon icon="material-symbols:group" class="text-xs" />
-                  {team.name}
-                  <button
-                    type="button"
-                    class="btn btn-xs btn-circle btn-ghost"
-                    onclick={() =>
-                      isForEdit
-                        ? handleEditTeamRemove(team.id)
-                        : handleTeamRemove(team.id)}
-                  >
-                    <Icon icon="material-symbols:close" class="text-xs" />
-                  </button>
-                </div>
-              {/each}
-            </div>
-          </div>
-        {/if}
+        <!-- Add users/teams buttons -->
+        <div class="flex gap-2 mt-2">
+          <button
+            type="button"
+            class="btn btn-sm bg-base-100 pop hover:pop"
+            onclick={() =>
+              isForEdit
+                ? (showEditUserSearch = !showEditUserSearch)
+                : (showUserSearch = !showUserSearch)}
+          >
+            <Icon icon="material-symbols:person-add" class="text-sm" />
+            Add Users
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm bg-base-100 pop hover:pop"
+            onclick={() =>
+              isForEdit
+                ? (showEditTeamSearch = !showEditTeamSearch)
+                : (showTeamSearch = !showTeamSearch)}
+          >
+            <Icon icon="material-symbols:group-add" class="text-sm" />
+            Add Teams
+          </button>
+        </div>
       </div>
-    {/if}
+      <!-- Role selection -->
+      <div class="mt-4">
+        {#if (isForEdit ? editSelectedRoles : selectedRoles).length > 0}
+          <div>
+            <span class="text-sm font-medium">Selected Roles:</span>
+            <div class="flex flex-wrap gap-1 mt-1">
+              {#each isForEdit ? editSelectedRoles : selectedRoles as role}
+                <div class="badge badge-warning gap-1 pop">
+                  <Icon icon="material-symbols:shield-person" class="text-xs" />
+                  {role}
+                  <button
+                    type="button"
+                    class="btn btn-xs btn-circle btn-ghost"
+                    onclick={() =>
+                      isForEdit
+                        ? handleEditRoleRemove(role)
+                        : handleRoleRemove(role)}
+                  >
+                    <Icon icon="material-symbols:close" class="text-xs" />
+                  </button>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
 
-    <!-- Add users/teams buttons -->
-    <div class="flex gap-2 mt-2">
-      <button
-        type="button"
-        class="btn btn-sm bg-base-100 pop hover:pop"
-        onclick={() =>
-          isForEdit
-            ? (showEditUserSearch = !showEditUserSearch)
-            : (showUserSearch = !showUserSearch)}
-      >
-        <Icon icon="material-symbols:person-add" class="text-sm" />
-        Add Users
-      </button>
-      <button
-        type="button"
-        class="btn btn-sm bg-base-100 pop hover:pop"
-        onclick={() =>
-          isForEdit
-            ? (showEditTeamSearch = !showEditTeamSearch)
-            : (showTeamSearch = !showTeamSearch)}
-      >
-        <Icon icon="material-symbols:group-add" class="text-sm" />
-        Add Teams
-      </button>
+        <div class="mt-2">
+          <div class="text-sm font-medium mb-2 opacity-70">Roles</div>
+          <div class="flex gap-2">
+            <input
+              type="text"
+              placeholder="Enter custom role name"
+              class="input input-bordered h-8 flex-1 focus:outline-none focus:ring-0 focus:ring-offset-0"
+              onkeydown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleRoleAdd(e.currentTarget.value);
+                }
+              }}
+            />
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2"></div>
+      </div>
     </div>
 
     <!-- User search -->
@@ -733,13 +813,22 @@
                     {/await}
                   </span>
                 {/each}
+                {#each visibility.roles as role}
+                  <span class="badge badge-warning pop badge-sm">
+                    <Icon
+                      icon="material-symbols:shield-person"
+                      class="text-xs mr-1"
+                    />
+                    {role}
+                  </span>
+                {/each}
                 {#each visibility.other as item}
                   <span class="badge badge-neutral pop badge-sm">
                     <Icon icon="material-symbols:rule" class="text-xs mr-1" />
                     {item}
                   </span>
                 {/each}
-                {#if !visibility.public && visibility.users.length === 0 && visibility.teams.length === 0 && visibility.other.length === 0}
+                {#if !visibility.public && visibility.users.length === 0 && visibility.teams.length === 0 && visibility.roles.length === 0 && visibility.other.length === 0}
                   <span class="badge badge-warning pop badge-sm">
                     <Icon
                       icon="material-symbols:warning"
@@ -891,7 +980,7 @@
           {@render visibilitySelector(false)}
 
           <button
-            class="btn btn-primary pop hover:pop"
+            class="btn btn-primary pop hover:pop float-right"
             onclick={createAnnouncement}
             disabled={isCreating ||
               !createForm.title.trim() ||
