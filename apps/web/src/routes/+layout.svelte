@@ -7,19 +7,51 @@
     hasFastThemeSwitcher,
   } from "$lib/components/ThemeSwitcher.svelte";
   import Toast from "$lib/components/Toast.svelte";
+  import NotificationBell from "$lib/components/NotificationBell.svelte";
   import { onMount } from "svelte";
   import "../app.css";
   import configState from "$lib/state/config.svelte";
   import captchaState from "$lib/state/captcha.svelte";
+  import authState from "$lib/state/auth.svelte";
+  import notificationState from "$lib/state/notifications.svelte";
 
   let { children } = $props();
 
+  const userFacingPages = [
+    "/",
+    "/challenges",
+    "/scoreboard",
+    "/teams",
+    "/team",
+    "/settings",
+  ];
+
+  const isUserFacingPage = $derived(
+    !page.url.pathname.startsWith("/admin") &&
+      !page.url.pathname.startsWith("/auth") &&
+      (userFacingPages.some(
+        (path) =>
+          page.url.pathname === path ||
+          page.url.pathname.startsWith(path + "/"),
+      ) ||
+        page.url.pathname === "/"),
+  );
+
+  const shouldShowNotificationBell = $derived(
+    authState.isAuthenticated &&
+      isUserFacingPage &&
+      (page.url.pathname.startsWith("/challenges") ||
+        notificationState.unseenCount > 0),
+  );
+
   onMount(() => {
-    const storedTheme = localStorage.getItem("theme");
-    document.documentElement.setAttribute(
-      "data-theme",
-      storedTheme || "system",
-    );
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
+    const theme =
+      localStorage.getItem("theme") || (prefersDark ? "dark" : "light");
+    localStorage.setItem("theme", theme);
+    document.documentElement.setAttribute("data-theme", theme);
   });
 </script>
 
@@ -57,6 +89,11 @@
       <ThemeSwitcher />
     </div>
   {/if}
+
+  {#if shouldShowNotificationBell}
+    <NotificationBell />
+  {/if}
+
   <Toast />
   <footer class="text-center pb-4 text-xs">
     Powered by <a href="https://noctf.dev" class="text-primary">noCTF</a>

@@ -9,7 +9,6 @@ import { NotificationService } from "@noctf/server-core/services/notification";
 import { GetRouteUserIPKey } from "@noctf/server-core/util/limit_keys";
 import { Type } from "@sinclair/typebox";
 import { FastifyInstance } from "fastify";
-import { request } from "http";
 
 export async function routes(fastify: FastifyInstance) {
   const { configService, notificationService } = fastify.container
