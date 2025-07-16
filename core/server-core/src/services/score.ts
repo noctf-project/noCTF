@@ -108,7 +108,7 @@ export class ScoreService {
     Object.keys(cfgStrategies).map(
       (k) =>
         (strategies[`config:${k}`] = {
-          ...STRATEGIES[k],
+          ...cfgStrategies[k],
           source: "config",
         }),
     );
