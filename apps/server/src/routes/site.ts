@@ -5,6 +5,7 @@ import {
   GetSiteConfigResponse,
 } from "@noctf/api/responses";
 import { ServiceCradle } from "@noctf/server-core";
+import { NotificationService } from "@noctf/server-core/services/notification";
 import { GetRouteUserIPKey } from "@noctf/server-core/util/limit_keys";
 import { Type } from "@sinclair/typebox";
 import { FastifyInstance } from "fastify";
@@ -60,7 +61,7 @@ export async function routes(fastify: FastifyInstance) {
     async (request) => {
       const visible_to: string[] = [];
       if (!request.routeOptions.schema?.auth?.require) {
-        visible_to.push("anonymous");
+        visible_to.push("public");
       }
       if (request.user) {
         visible_to.push("user", `user:${request.user.id}`);
@@ -71,12 +72,18 @@ export async function routes(fastify: FastifyInstance) {
       }
       return {
         data: {
-          entries: await notificationService.getVisibleAnnouncements(
-            visible_to,
-            (request.query.updated_at && new Date(request.query.updated_at)) ||
-              undefined,
-            100,
-          ),
+          entries: (
+            await notificationService.getVisibleAnnouncements(
+              visible_to,
+              (request.query.updated_at &&
+                new Date(request.query.updated_at)) ||
+                undefined,
+              100,
+            )
+          ).map((x) => ({
+            ...x,
+            is_private: NotificationService.isAnnouncementPrivate(x.visible_to),
+          })),
           page_size: 100,
         },
       };

@@ -444,7 +444,13 @@ export const Announcement = Type.Object({
   message: Type.String({ maxLength: 1600 }),
   created_by: Type.Union([Type.Integer(), Type.Null()]),
   updated_by: Type.Union([Type.Integer(), Type.Null()]),
-  visible_to: Type.Array(Type.String({ maxLength: 72 }), { uniqueItems: true }),
+  visible_to: Type.Array(
+    Type.String({
+      maxLength: 72,
+      pattern: "^(public|(user|team)(:\d)?|role:[a-z0-9_-]+)$",
+    }),
+    { uniqueItems: true },
+  ),
   created_at: TypeDate,
   updated_at: TypeDate,
 });

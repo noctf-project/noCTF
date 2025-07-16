@@ -10,7 +10,10 @@ import { TeamFlag } from "../types/enums.ts";
 import ky from "ky";
 import Handlebars from "handlebars";
 import TTLCache from "@isaacs/ttlcache";
-import { OutgoingSolveWebhookGeneric } from "@noctf/api/datatypes";
+import {
+  Announcement,
+  OutgoingSolveWebhookGeneric,
+} from "@noctf/api/datatypes";
 import { ValidationError } from "../errors.ts";
 import SingleValueCache from "../util/single_value_cache.ts";
 import { AnnouncementDAO } from "../dao/announcement.ts";
@@ -256,5 +259,13 @@ export class NotificationService {
       this.templateCache.set(template, tpl);
     }
     return tpl;
+  }
+
+  static isAnnouncementPrivate(visible_to: string[] | Set<string>) {
+    const visible = Array.isArray(visible_to) ? visible_to : [...visible_to];
+    return (
+      !visible.length ||
+      visible.some((x) => x.startsWith("team:") || x.startsWith("user:"))
+    );
   }
 }

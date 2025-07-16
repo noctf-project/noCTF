@@ -359,12 +359,15 @@ export type GetSiteConfigResponse = Static<typeof GetSiteConfigResponse>;
 export const GetAnnouncementsResponse = Type.Object({
   data: Type.Object({
     entries: Type.Array(
-      Type.Pick(Announcement, [
-        "id",
-        "title",
-        "message",
-        "created_at",
-        "updated_at",
+      Type.Composite([
+        Type.Pick(Announcement, [
+          "id",
+          "title",
+          "message",
+          "created_at",
+          "updated_at",
+        ]),
+        Type.Object({ is_private: Type.Boolean() }),
       ]),
     ),
     page_size: Type.Integer(),
