@@ -133,6 +133,7 @@ export async function routes(fastify: FastifyInstance) {
         request.body.division_id,
         request.body.division_password,
       );
+      await teamService.validateTagsJoinable(request.body.tag_ids);
       const team = await teamService.create(
         {
           name: request.body.name,
@@ -290,6 +291,13 @@ export async function routes(fastify: FastifyInstance) {
       if (team.flags.includes(TeamFlag.FROZEN)) {
         throw new ForbiddenError("An admin has locked changes to your team.");
       }
+      if (request.body.tag_ids) {
+        const existing = team.tag_ids;
+        const proposed = new Set(request.body.tag_ids);
+        existing.forEach((x) => proposed.delete(x));
+        await teamService.validateTagsJoinable([...proposed]);
+      }
+
       const { join_code } = await teamService.update(
         membership.team_id,
         request.body,

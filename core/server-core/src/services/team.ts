@@ -86,7 +86,7 @@ export class TeamService {
     });
   }
 
-  private async validateTags(tag_ids?: number[]) {
+  async validateTagsJoinable(tag_ids?: number[]) {
     if (tag_ids && tag_ids.length) {
       tag_ids = Array.from(new Set(tag_ids));
       const teamTags = await this.teamTagDAO.list();
@@ -98,7 +98,6 @@ export class TeamService {
         throw new NotFoundError("Tag not found");
       }
     }
-    return tag_ids;
   }
 
   async create(
@@ -118,8 +117,6 @@ export class TeamService {
     },
     { actor, message }: AuditParams = {},
   ) {
-    tag_ids = await this.validateTags(tag_ids);
-
     const join_code = generate_join_code ? GenerateJoinCode() : null;
     const team = await this.databaseClient.transaction(async (tx) => {
       const teamDAO = new TeamDAO(tx);
@@ -166,8 +163,6 @@ export class TeamService {
     },
     { actor, message }: AuditParams = {},
   ) {
-    tag_ids = await this.validateTags(tag_ids);
-
     let j: string | null | undefined;
     if (join_code === "refresh") {
       j = GenerateJoinCode();
