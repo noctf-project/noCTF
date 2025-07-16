@@ -14,7 +14,6 @@
 
   let isOpen = $state(false);
   let scrollContainer: HTMLDivElement | undefined = $state();
-  let markAsReadTimeout: ReturnType<typeof setTimeout> | null = null;
 
   const carta = new Carta({
     sanitizer: DOMPurify.sanitize,
@@ -22,26 +21,14 @@
 
   function toggleNotifications() {
     isOpen = !isOpen;
-    if (isOpen) {
-      markAsReadTimeout = setTimeout(() => {
-        notificationState.markAsRead();
-      }, 5000);
-    } else {
-      if (markAsReadTimeout) {
-        clearTimeout(markAsReadTimeout);
-        notificationState.markAsRead();
-        markAsReadTimeout = null;
-      }
+    if (!isOpen) {
+      notificationState.markAsRead();
     }
   }
 
   function closeNotifications() {
     isOpen = false;
     notificationState.markAsRead();
-    if (markAsReadTimeout) {
-      clearTimeout(markAsReadTimeout);
-      markAsReadTimeout = null;
-    }
   }
 
   function handleScroll(event: Event) {
@@ -64,15 +51,18 @@
     return Math.abs(updated.getTime() - created.getTime()) >= 1000;
   }
 
+  $effect(() => {
+    if (notificationState.unseenCount > 0 && !isOpen) {
+      isOpen = true;
+    }
+  });
+
   onMount(() => {
     notificationState.initialize();
   });
 
   onDestroy(() => {
     notificationState.destroy();
-    if (markAsReadTimeout) {
-      clearTimeout(markAsReadTimeout);
-    }
   });
 </script>
 

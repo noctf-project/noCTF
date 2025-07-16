@@ -68,6 +68,12 @@
           >
         </li>
         <li>
+          <a
+            href="/admin/announcements"
+            class={isActive("/admin/announcements")}>Announcements</a
+          >
+        </li>
+        <li>
           <a href="/admin/audit_logs" class={isActive("/admin/audit_logs")}
             >Audit Logs</a
           >
@@ -128,6 +134,12 @@
         <li>
           <a href="/admin/audit_logs" class={isActive("/admin/audit_logs")}
             >Audit Logs</a
+          >
+        </li>
+        <li>
+          <a
+            href="/admin/announcements"
+            class={isActive("/admin/announcements")}>Announcements</a
           >
         </li>
         <li>
