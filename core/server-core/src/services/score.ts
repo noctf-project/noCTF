@@ -4,6 +4,7 @@ import type { Expression } from "expr-eval";
 import { Parser } from "expr-eval";
 import type { ServiceCradle } from "../index.ts";
 import type { ScoringStrategy } from "@noctf/api/datatypes";
+import { ValidationError } from "../errors.ts";
 
 type Props = Pick<ServiceCradle, "configService" | "logger">;
 
@@ -90,7 +91,17 @@ export class ScoreService {
   }
 
   async init() {
-    await this.configService.register(ScoreConfig, { strategies: {} });
+    await this.configService.register(ScoreConfig, { strategies: {} }, (v) => {
+      for (const strategy of Object.keys(v.strategies)) {
+        try {
+          parser.parse(v.strategies[strategy]!.expr);
+        } catch (e) {
+          throw new ValidationError(
+            `Scoring strategy ${strategy} failed to parse`,
+          );
+        }
+      }
+    });
   }
 
   async getStrategies() {
