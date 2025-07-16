@@ -13,8 +13,36 @@
   import configState from "$lib/state/config.svelte";
   import captchaState from "$lib/state/captcha.svelte";
   import authState from "$lib/state/auth.svelte";
+  import notificationState from "$lib/state/notifications.svelte";
 
   let { children } = $props();
+
+  const userFacingPages = [
+    "/",
+    "/challenges",
+    "/scoreboard",
+    "/teams",
+    "/team",
+    "/settings",
+  ];
+
+  const isUserFacingPage = $derived(
+    !page.url.pathname.startsWith("/admin") &&
+      !page.url.pathname.startsWith("/auth") &&
+      (userFacingPages.some(
+        (path) =>
+          page.url.pathname === path ||
+          page.url.pathname.startsWith(path + "/"),
+      ) ||
+        page.url.pathname === "/"),
+  );
+
+  const shouldShowNotificationBell = $derived(
+    authState.isAuthenticated &&
+      isUserFacingPage &&
+      (page.url.pathname.startsWith("/challenges") ||
+        notificationState.unseenCount > 0),
+  );
 
   onMount(() => {
     const storedTheme = localStorage.getItem("theme");
@@ -60,7 +88,7 @@
     </div>
   {/if}
 
-  {#if authState.isAuthenticated}
+  {#if shouldShowNotificationBell}
     <NotificationBell />
   {/if}
 
