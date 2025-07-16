@@ -16,6 +16,7 @@ const FIELDS = [
   "updated_by",
   "visible_to",
   "delivery_channels",
+  "version",
 ] as const;
 
 export class AnnouncementDAO {
@@ -29,7 +30,7 @@ export class AnnouncementDAO {
     delivery_channels,
   }: Omit<
     Announcement,
-    "id" | "created_at" | "updated_at"
+    "id" | "created_at" | "updated_at" | "version"
   >): Promise<Announcement> {
     const result = await this.db
       .insertInto("announcement")
@@ -41,7 +42,7 @@ export class AnnouncementDAO {
         visible_to,
         delivery_channels,
       })
-      .returning(["created_at", "updated_at", "id"])
+      .returning(["created_at", "updated_at", "id", "version"])
       .executeTakeFirstOrThrow();
     return {
       title,
@@ -83,31 +84,37 @@ export class AnnouncementDAO {
 
   async update(
     id: number,
+    version?: number,
     v: Pick<
       Updateable<DB["announcement"]>,
       "title" | "message" | "updated_by" | "visible_to" | "delivery_channels"
-    >,
+    > = {},
   ) {
-    const result = await this.db
+    let query = this.db
       .updateTable("announcement")
-      .set(FilterUndefined({ ...v, updated_at: undefined }))
+      .set((eb) => FilterUndefined({ ...v, version: eb("version", "+", 1) }))
       .where("id", "=", id)
-      .returning(["updated_at"])
-      .executeTakeFirst();
+      .returning(["updated_at", "version"]);
+
+    if (version) {
+      query = query.where("version", "=", version);
+    }
+
+    const result = await query.executeTakeFirst();
     if (!result) {
       throw new NotFoundError("Announcement and updated_at not found");
     }
     return result;
   }
 
-  async delete(id: number, updated_at?: Date) {
+  async delete(id: number, version?: number) {
     let query = this.db
       .deleteFrom("announcement")
       .where("id", "=", id)
       .returning(FIELDS);
 
-    if (updated_at) {
-      query = query.where("updated_at", "=", updated_at);
+    if (version) {
+      query = query.where("version", "=", version);
     }
     const result = await query.executeTakeFirstOrThrow();
     if (!result) {

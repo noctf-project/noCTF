@@ -141,10 +141,10 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const { updated_at, ...rest } = request.body;
+      const { version, ...rest } = request.body;
       const data = await announcementService.update(
         request.params.id,
-        updated_at ? new Date(updated_at) : undefined,
+        version,
         {
           ...rest,
           updated_by: request.user.id,

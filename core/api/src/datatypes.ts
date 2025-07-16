@@ -457,5 +457,6 @@ export const Announcement = Type.Object({
   delivery_channels: Type.Array(Type.String({ minLength: 1, maxLength: 72 }), {
     uniqueItems: true,
   }),
+  version: Type.Integer({ minimum: 1 }),
 });
 export type Announcement = Static<typeof Announcement>;

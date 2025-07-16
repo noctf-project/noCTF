@@ -122,15 +122,12 @@ export class AnnouncementService {
 
   async update(
     id: number,
-    updated_at: Date | undefined,
-    v: Parameters<AnnouncementDAO["update"]>[1],
+    version: number | undefined,
+    v: Parameters<AnnouncementDAO["update"]>[2] = {},
     { actor, message }: AuditParams = {},
   ) {
     const announcement = await this.dao.get(id);
-    if (
-      updated_at &&
-      updated_at.getTime() !== announcement.updated_at.getTime()
-    ) {
+    if (version && version !== announcement.version) {
       throw new ConflictError(
         "The announcement has been updated by someone else",
       );
@@ -139,7 +136,7 @@ export class AnnouncementService {
       v.visible_to || announcement.visible_to,
       v.delivery_channels || announcement.delivery_channels,
     );
-    const result = await this.dao.update(id, v);
+    const result = await this.dao.update(id, version, v);
     await Promise.all([
       this.auditLogService.log({
         operation: "announcement.update",
@@ -156,16 +153,16 @@ export class AnnouncementService {
     return {
       ...announcement,
       ...FilterUndefined(v),
-      updated_at: result.updated_at,
+      ...result,
     };
   }
 
   async delete(
     id: number,
-    updated_at?: Date,
+    version?: number,
     { actor, message }: AuditParams = {},
   ) {
-    const result = await this.dao.delete(id, updated_at);
+    const result = await this.dao.delete(id, version);
     await Promise.all([
       this.auditLogService.log({
         operation: "announcement.delete",
@@ -175,6 +172,7 @@ export class AnnouncementService {
       }),
       this.eventBusService.publish(AnnouncementUpdateEvent, {
         ...result,
+        version: result.version + 1,
         updated_at: new Date(),
         type: "delete",
       }),

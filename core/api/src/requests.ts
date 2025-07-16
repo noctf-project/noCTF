@@ -222,7 +222,7 @@ export const AdminUpdateAnnouncementRequest = Type.Composite(
   [
     AdminCreateAnnouncementRequest,
     Type.Object({
-      updated_at: TypeDate,
+      version: Type.Integer({ minimum: 1 }),
     }),
   ],
   { additionalProperties: false },
