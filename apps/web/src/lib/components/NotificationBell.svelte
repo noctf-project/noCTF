@@ -56,14 +56,6 @@
       isOpen = true;
     }
   });
-
-  onMount(() => {
-    notificationState.initialize();
-  });
-
-  onDestroy(() => {
-    notificationState.destroy();
-  });
 </script>
 
 <div class="fixed bottom-6 right-6 z-50">
@@ -198,15 +190,18 @@
       </div>
     </div>
 
-    <div
-      transition:fade={{ duration: 200 }}
-      class="fixed inset-0 -z-10"
-      onclick={closeNotifications}
-      onkeydown={(e) => e.key === "Escape" && closeNotifications()}
-      role="button"
-      tabindex="-1"
-      aria-label="Close notifications"
-    ></div>
+    <!-- Only allow closing by clicking outside if it is not display unseen notifs -->
+    {#if notificationState.unseenCount === 0}
+      <div
+        transition:fade={{ duration: 200 }}
+        class="fixed inset-0 -z-10"
+        onclick={closeNotifications}
+        onkeydown={(e) => e.key === "Escape" && closeNotifications()}
+        role="button"
+        tabindex="-1"
+        aria-label="Close notifications"
+      ></div>
+    {/if}
   {/if}
 </div>
 

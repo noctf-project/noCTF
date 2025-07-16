@@ -29,17 +29,15 @@
   const isUserFacingPage = $derived(
     !page.url.pathname.startsWith("/admin") &&
       !page.url.pathname.startsWith("/auth") &&
-      (userFacingPages.some(
+      userFacingPages.some(
         (path) =>
           page.url.pathname === path ||
           page.url.pathname.startsWith(path + "/"),
-      ) ||
-        page.url.pathname === "/"),
+      ),
   );
 
   const shouldShowNotificationBell = $derived(
-    authState.isAuthenticated &&
-      isUserFacingPage &&
+    isUserFacingPage &&
       (page.url.pathname.startsWith("/challenges") ||
         notificationState.unseenCount > 0),
   );

@@ -167,6 +167,10 @@ class NotificationState {
     this.unseenCount = 0;
   }
 
+  constructor() {
+    this.initialize();
+  }
+
   async initialize() {
     this.loadLastSeenTimestamp();
     await this.fetchAnnouncements();
