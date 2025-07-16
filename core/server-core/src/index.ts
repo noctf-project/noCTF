@@ -25,6 +25,7 @@ import type { KeyService } from "./services/key.ts";
 import type { DivisionService } from "./services/division.ts";
 import type { TokenService } from "./services/token.ts";
 import type { NotificationService } from "./services/notification.ts";
+import type { AnnouncementService } from "./services/announcement.ts";
 
 export type ServiceCradle = {
   logger: Logger;
@@ -34,6 +35,7 @@ export type ServiceCradle = {
   redisClientFactory: RedisClientFactory;
   appService: AppService;
   auditLogService: AuditLogService;
+  announcementService: AnnouncementService;
   cacheService: CacheService;
   challengeService: ChallengeService;
   emailService: EmailService;

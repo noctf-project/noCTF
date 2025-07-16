@@ -24,8 +24,7 @@ export const AnnouncementUpdateEvent = Type.Composite(
   [
     Announcement,
     Type.Object({
-      state: ObjectUpdateType,
-      delivery_channels: Type.Array(Type.String(), { uniqueItems: true }),
+      type: ObjectUpdateType,
     }),
   ],
   { $id: "events.announcement.update" },

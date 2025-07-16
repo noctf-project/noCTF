@@ -5,13 +5,13 @@ import {
   GetSiteConfigResponse,
 } from "@noctf/api/responses";
 import { ServiceCradle } from "@noctf/server-core";
-import { NotificationService } from "@noctf/server-core/services/notification";
+import { AnnouncementService } from "@noctf/server-core/services/announcement";
 import { GetRouteUserIPKey } from "@noctf/server-core/util/limit_keys";
 import { Type } from "@sinclair/typebox";
 import { FastifyInstance } from "fastify";
 
 export async function routes(fastify: FastifyInstance) {
-  const { configService, notificationService } = fastify.container
+  const { configService, announcementService } = fastify.container
     .cradle as ServiceCradle;
 
   fastify.get<{ Reply: GetSiteConfigResponse }>(
@@ -72,7 +72,7 @@ export async function routes(fastify: FastifyInstance) {
       return {
         data: {
           entries: (
-            await notificationService.getVisibleAnnouncements(
+            await announcementService.getVisible(
               visible_to,
               (request.query.updated_at &&
                 new Date(request.query.updated_at)) ||
@@ -81,7 +81,7 @@ export async function routes(fastify: FastifyInstance) {
             )
           ).map((x) => ({
             ...x,
-            is_private: NotificationService.isAnnouncementPrivate(x.visible_to),
+            is_private: AnnouncementService.isPrivate(x.visible_to),
           })),
           page_size: 100,
         },

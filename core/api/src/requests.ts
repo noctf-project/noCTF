@@ -1,6 +1,7 @@
 import type { Static } from "@sinclair/typebox";
 import { Type } from "@sinclair/typebox";
 import {
+  Announcement,
   CaptchaValidationString,
   Challenge,
   Division,
@@ -193,12 +194,38 @@ export const AdminQueryAnnouncementsRequest = Type.Object(
       ]),
     ),
     visible_to: Type.Optional(Type.Array(Type.String())),
-    page_size: Type.Optional(Type.Number()),
+    page: Type.Optional(Type.Integer({ minimum: 1 })),
+    page_size: Type.Optional(Type.Number({ minimum: 1 })),
   },
   { additionalProperties: false },
 );
 export type AdminQueryAnnouncementsRequest = Static<
   typeof AdminQueryAnnouncementsRequest
+>;
+
+export const AdminCreateAnnouncementRequest = Type.Composite(
+  [
+    Type.Pick(Announcement, [
+      "title",
+      "message",
+      "visible_to",
+      "delivery_channels",
+    ]),
+  ],
+  { additionalProperties: false },
+);
+export type AdminCreateAnnouncementRequest = Static<
+  typeof AdminCreateAnnouncementRequest
+>;
+
+export const AdminUpdateAnnouncementRequest = Type.Composite([
+  AdminCreateAnnouncementRequest,
+  Type.Object({
+    updated_at: TypeDate,
+  }),
+]);
+export type AdminUpdateAnnouncementRequest = Static<
+  typeof AdminUpdateAnnouncementRequest
 >;
 
 export const AdminUpdateSubmissionsRequest = Type.Object(

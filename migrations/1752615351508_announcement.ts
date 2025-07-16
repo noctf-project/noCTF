@@ -22,6 +22,9 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("visible_to", sql`varchar[]`, (col) =>
       col.notNull().defaultTo("{}"),
     )
+    .addColumn("delivery_channels", sql`varchar[]`, (col) =>
+      col.notNull().defaultTo("{}"),
+    )
     .execute();
 
   await CreateTriggerUpdatedAt("announcement").execute(db);
