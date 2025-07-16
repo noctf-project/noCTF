@@ -160,6 +160,7 @@ export const NotificationConfig = Type.Object(
               title: "Message template",
               description:
                 "Handlebars template for the message. Does not apply to the webhook notification type",
+              contentMediaType: "textarea",
             }),
           ),
           division_ids: Type.Optional(
@@ -198,6 +199,14 @@ export const NotificationConfig = Type.Object(
                 {
                   title: "Notification Type",
                 },
+              ),
+              template: Type.Optional(
+                Type.String({
+                  title: "Message template",
+                  description:
+                    "Handlebars template for the message. Does not apply to the webhook notification type",
+                  contentMediaType: "textarea",
+                }),
               ),
               enabled: Type.Boolean({ title: "Enabled" }),
             }),

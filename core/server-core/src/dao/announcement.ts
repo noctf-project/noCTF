@@ -91,7 +91,7 @@ export class AnnouncementDAO {
   ) {
     let query = this.db
       .updateTable("announcement")
-      .set(FilterUndefined(v))
+      .set(FilterUndefined({ ...v, updated_at: undefined }))
       .where("id", "=", id)
       .returning(["updated_at"]);
 

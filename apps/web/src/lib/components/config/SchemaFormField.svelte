@@ -18,6 +18,7 @@
     maxLength?: number;
     pattern?: string;
     format?: string;
+    contentMediaType?: string;
     items?: {
       type?: string;
       properties?: Record<string, any>;
@@ -181,7 +182,7 @@
         <option value={option}>{option}</option>
       {/each}
     </select>
-  {:else if property.type === "string" && property.format === "textarea"}
+  {:else if property.type === "string" && property.contentMediaType === "textarea"}
     <textarea
       id={getFieldId()}
       class="textarea textarea-bordered"

@@ -218,12 +218,15 @@ export type AdminCreateAnnouncementRequest = Static<
   typeof AdminCreateAnnouncementRequest
 >;
 
-export const AdminUpdateAnnouncementRequest = Type.Composite([
-  AdminCreateAnnouncementRequest,
-  Type.Object({
-    updated_at: TypeDate,
-  }),
-]);
+export const AdminUpdateAnnouncementRequest = Type.Composite(
+  [
+    AdminCreateAnnouncementRequest,
+    Type.Object({
+      updated_at: TypeDate,
+    }),
+  ],
+  { additionalProperties: false },
+);
 export type AdminUpdateAnnouncementRequest = Static<
   typeof AdminUpdateAnnouncementRequest
 >;

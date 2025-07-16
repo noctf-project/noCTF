@@ -448,7 +448,7 @@ export const Announcement = Type.Object({
   visible_to: Type.Array(
     Type.String({
       maxLength: 72,
-      pattern: "^(public|(user|team)(:\d)?|role:[a-z0-9_-]+)$",
+      pattern: "^(public|(user|team)(:\\d+)?|role:[a-z0-9_-]+)$",
     }),
     { uniqueItems: true },
   ),

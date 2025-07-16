@@ -1,6 +1,7 @@
 import { NotificationConfig } from "@noctf/api/config";
 import { ServiceCradle } from "../index.ts";
 import {
+  AnnouncementUpdateEvent,
   NotificationQueueWebhookEvent,
   SubmissionUpdateEvent,
 } from "@noctf/api/events";
@@ -79,6 +80,15 @@ export class NotificationService {
           handler: (data) => this.handleSubmission(data),
         },
       ),
+      this.eventBusService.subscribe<AnnouncementUpdateEvent>(
+        signal,
+        "NotificationAnnouncementWorker",
+        [AnnouncementUpdateEvent.$id!],
+        {
+          concurrency: 2,
+          handler: (data) => this.handleAnnouncement(data),
+        },
+      ),
       this.eventBusService.subscribe<NotificationQueueWebhookEvent>(
         signal,
         "NotificationQueueWebhookWorker",
@@ -90,6 +100,47 @@ export class NotificationService {
         },
       ),
     ]);
+  }
+
+  private async handleAnnouncement(data: EventItem<AnnouncementUpdateEvent>) {
+    const event = data.data;
+    if (event.type === "delete") return;
+    const config = await this.configService.get(NotificationConfig);
+    for (const channel of event.delivery_channels) {
+      if (channel === "email") {
+        this.logger.warn("Email delivery channel is not implemented");
+        continue;
+      }
+      if (channel.startsWith("webhook:")) {
+        const cfg = config.value.announcement?.webhooks?.[channel.substring(8)];
+        if (!cfg) {
+          this.logger.warn({ channel }, "Webhook channel does not exist");
+          continue;
+        }
+        switch (cfg.type) {
+          case "webhook":
+            await this.eventBusService.publish(NotificationQueueWebhookEvent, {
+              url: cfg.url,
+              payload: { message: event.message, title: event.title },
+            });
+            break;
+          case "discord":
+            const template =
+              cfg.template && this.getTemplateFunction(cfg.template);
+            await this.eventBusService.publish(NotificationQueueWebhookEvent, {
+              url: cfg.url,
+              payload: {
+                content: template
+                  ? template(event)
+                  : `# ${event.title}\n${event.message}`,
+              },
+            });
+            break;
+        }
+        continue;
+      }
+      this.logger.warn({ channel }, "Channel not configured for announcements");
+    }
   }
 
   private async handleSubmission(data: EventItem<SubmissionUpdateEvent>) {
