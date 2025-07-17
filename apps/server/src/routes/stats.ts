@@ -23,6 +23,9 @@ export async function routes(fastify: FastifyInstance) {
           policy: ["stats.challenge"],
         },
         querystring: DivisionQuery,
+        response: {
+          200: ListChallengeStatsResponse,
+        },
       },
     },
     async (request) => {
