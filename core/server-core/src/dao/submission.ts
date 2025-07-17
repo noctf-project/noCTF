@@ -270,9 +270,10 @@ export class SubmissionDAO {
         "s.team_id",
         "s.status",
         "s.created_at",
-        sql<number>`ROW_NUMBER() OVER (PARTITION BY s.challenge_id ORDER BY s.created_at ASC)`.as(
-          "rn_first",
-        ),
+        sql<number>`ROW_NUMBER() OVER (
+          PARTITION BY s.challenge_id
+          ORDER BY CASE WHEN s.status = 'correct' THEN s.created_at END ASC
+        )`.as("rn_first"),
       ])
       .where("s.hidden", "=", false)
       .where("t.division_id", "=", division_id)
@@ -299,8 +300,10 @@ export class SubmissionDAO {
         sql<number>`COUNT(*) FILTER (WHERE status = 'incorrect')`.as(
           "incorrect_count",
         ),
-        sql<Date>`MIN(created_at)`.as("first_solve"),
-        sql<number>`MAX(team_id) FILTER (WHERE rn_first = 1)`.as(
+        sql<Date>`MIN(created_at) FILTER (WHERE status = 'correct')`.as(
+          "first_solve",
+        ),
+        sql<number>`MAX(team_id) FILTER (WHERE status = 'correct' AND rn_first = 1)`.as(
           "first_solve_team_id",
         ),
       ])
