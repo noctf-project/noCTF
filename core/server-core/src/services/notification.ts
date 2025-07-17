@@ -172,6 +172,7 @@ export class NotificationService {
                 content: template
                   ? template(event)
                   : `# ${event.title}\n${event.message}`,
+                allowed_mentions: { parse: ["roles"] },
               },
             });
             break;
@@ -233,7 +234,7 @@ export class NotificationService {
           });
           await this.eventBusService.publish(NotificationQueueWebhookEvent, {
             url: cfg.url,
-            payload: { content },
+            payload: { content, allowed_mentions: { parse: [] } },
           });
           break;
         case "webhook":
