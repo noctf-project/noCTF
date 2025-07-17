@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
   import { fly, fade } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import Icon from "@iconify/svelte";
