@@ -54,6 +54,7 @@ import { DivisionService } from "@noctf/server-core/services/division";
 import { TokenService } from "@noctf/server-core/services/token";
 import { NotificationService } from "@noctf/server-core/services/notification";
 import { AnnouncementService } from "@noctf/server-core/services/announcement";
+import { StatsService } from "@noctf/server-core/services/stats";
 
 export const server = fastify({
   logger: {
@@ -117,6 +118,7 @@ server.register(async () => {
     scoreService: asClass(ScoreService).singleton(),
     scoreboardService: asClass(ScoreboardService).singleton(),
     submissionService: asClass(SubmissionService).singleton(),
+    statsService: asClass(StatsService).singleton(),
     userService: asClass(UserService).singleton(),
     lockService: asClass(LockService).singleton(),
   });

@@ -460,3 +460,14 @@ export const Announcement = Type.Object({
   version: Type.Integer({ minimum: 1 }),
 });
 export type Announcement = Static<typeof Announcement>;
+
+export const ChallengeStat = Type.Object({
+  id: Type.Integer(),
+  correct_count: Type.Integer(),
+  incorrect_count: Type.Integer(),
+  first_solve: Type.Union([TypeDate, Type.Null()]),
+  first_solve_team_id: Type.Union([Type.Integer(), Type.Null()]),
+  released_at: Type.Union([TypeDate, Type.Null()]),
+  hidden: Type.Boolean(),
+});
+export type ChallengeStat = Static<typeof ChallengeStat>;

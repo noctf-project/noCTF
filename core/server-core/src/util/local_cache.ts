@@ -48,6 +48,10 @@ export class LocalCache<K = unknown, V = unknown> {
     this.cache.delete(key);
   }
 
+  clear() {
+    this.cache.clear();
+  }
+
   static disposeMetricsHook<K, V>(
     metrics: MetricsClient,
     name: string,

@@ -1,7 +1,7 @@
 import type { DB } from "@noctf/schema";
 import { sql, type Insertable } from "kysely";
 import { DBType } from "../clients/database.ts";
-import { LimitOffset, Submission } from "@noctf/api/datatypes";
+import { ChallengeStat, LimitOffset, Submission } from "@noctf/api/datatypes";
 import { SubmissionStatus } from "@noctf/api/enums";
 import { PostgresErrorCode, TryPGConstraintError } from "../util/pgerror.ts";
 import { ConflictError } from "../errors.ts";
@@ -249,5 +249,69 @@ export class SubmissionDAO {
       query = query.offset(params.offset);
     }
     return query.execute();
+  }
+
+  async listStats({
+    division_id,
+    challenge_ids,
+    start,
+    end,
+  }: {
+    division_id: number;
+    challenge_ids: number[];
+    start?: Date;
+    end?: Date;
+  }) {
+    let visibleSubmissions = this.db
+      .selectFrom("submission as s")
+      .innerJoin("team as t", "s.team_id", "t.id")
+      .select([
+        "s.challenge_id",
+        "s.team_id",
+        "s.status",
+        "s.created_at",
+        sql<number>`ROW_NUMBER() OVER (PARTITION BY s.challenge_id ORDER BY s.created_at ASC)`.as(
+          "rn_first",
+        ),
+      ])
+      .where("s.hidden", "=", false)
+      .where("t.division_id", "=", division_id)
+      .where(sql<boolean>`NOT ('hidden' = ANY(t.flags))`)
+      .where("s.challenge_id", "in", challenge_ids);
+    if (start) {
+      visibleSubmissions = visibleSubmissions.where(
+        "s.created_at",
+        ">=",
+        start,
+      );
+    }
+    if (end) {
+      visibleSubmissions = visibleSubmissions.where("s.created_at", "<=", end);
+    }
+
+    const results = await this.db
+      .selectFrom(visibleSubmissions.as("ordered"))
+      .select([
+        "challenge_id",
+        sql<number>`COUNT(*) FILTER (WHERE status = 'correct')`.as(
+          "correct_count",
+        ),
+        sql<number>`COUNT(*) FILTER (WHERE status = 'incorrect')`.as(
+          "incorrect_count",
+        ),
+        sql<Date>`MIN(created_at)`.as("first_solve"),
+        sql<number>`MAX(team_id) FILTER (WHERE rn_first = 1)`.as(
+          "first_solve_team_id",
+        ),
+      ])
+      .groupBy("challenge_id")
+      .orderBy("challenge_id")
+      .execute();
+    return results.map((x) => ({
+      ...x,
+      id: x.challenge_id,
+      correct_count: Number(x.correct_count),
+      incorrect_count: Number(x.incorrect_count),
+    }));
   }
 }
