@@ -24,3 +24,14 @@ export function getRelativeTime(date: Date) {
   const diffInMonths = Math.floor(diffInDays / 30);
   return `${diffInMonths}mo ago`;
 }
+
+export function formatTimeDifference(a: Date, b: Date): string {
+  const diffInSeconds = Math.abs(
+    Math.floor((a.getTime() - b.getTime()) / 1000),
+  );
+  const hours = Math.floor(diffInSeconds / 3600);
+  const minutes = Math.floor((diffInSeconds % 3600) / 60);
+  const seconds = diffInSeconds % 60;
+
+  return `${hours}h ${minutes}m ${seconds}s`;
+}
