@@ -6,10 +6,16 @@ import { LocalCache } from "../util/local_cache.ts";
 
 type Props = Pick<
   ServiceCradle,
-  "challengeService" | "configService" | "databaseClient"
+  | "userService"
+  | "teamService"
+  | "challengeService"
+  | "configService"
+  | "databaseClient"
 >;
 
 export class StatsService {
+  private readonly userService;
+  private readonly teamService;
   private readonly challengeService;
   private readonly configService;
   private readonly submissionDAO;
@@ -20,10 +26,24 @@ export class StatsService {
     ttl: 60000,
   });
 
-  constructor({ challengeService, configService, databaseClient }: Props) {
+  constructor({
+    userService,
+    teamService,
+    challengeService,
+    configService,
+    databaseClient,
+  }: Props) {
+    this.userService = userService;
+    this.teamService = teamService;
     this.challengeService = challengeService;
     this.configService = configService;
     this.submissionDAO = new SubmissionDAO(databaseClient.get());
+  }
+
+  async getUserStats() {
+    const user_count = await this.userService.getCount();
+    const team_count = await this.teamService.getCount();
+    return { user_count, team_count };
   }
 
   async getChallengeStats(division_id: number) {
