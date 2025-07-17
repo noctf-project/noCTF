@@ -176,6 +176,7 @@ const logRequest = async (
       reqId: request.id,
       status: reply.statusCode,
       path: request.originalUrl,
+      route: request.routeOptions.url || '__404__',
       method: request.method,
       ip: request.ip,
       u: request.user?.id,
@@ -189,7 +190,7 @@ const logRequest = async (
       ["ResponseCount", 1],
     ],
     {
-      http_route: request.routeOptions.url || "__notfound__",
+      http_route: request.routeOptions.url || "__404__",
       http_method: request.method,
       http_status: Math.floor(reply.statusCode / 100) + "xx",
     },
