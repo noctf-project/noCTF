@@ -130,7 +130,7 @@ export class ScoreboardHistory {
           if (team.length && updated === team[team.length - 1][0]) {
             team[team.length - 1][1] = score - lastScore;
           } else {
-            team.push([updated_at.getTime() - lastUpdated, score - lastScore]);
+            team.push([updated - lastUpdated, score - lastScore]);
           }
           lastUpdated = updated;
           lastScore = score;
