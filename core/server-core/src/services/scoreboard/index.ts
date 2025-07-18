@@ -14,7 +14,6 @@ import { MinimalTeamInfo, TeamDAO } from "../../dao/team.ts";
 import { RawSolve, SubmissionDAO } from "../../dao/submission.ts";
 import { MaxDate } from "../../util/date.ts";
 import { ScoreboardHistory } from "./history.ts";
-import { bisectLeft, bisectRight } from "../../util/arrays.ts";
 
 type Props = Pick<
   ServiceCradle,
