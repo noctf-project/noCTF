@@ -116,6 +116,14 @@ export const ListTeamsResponse = Type.Object({
 });
 export type ListTeamsResponse = Static<typeof ListTeamsResponse>;
 
+export const ListUserStatsResponse = Type.Object({
+  data: Type.Object({
+    user_count: Type.Integer(),
+    team_count: Type.Integer(),
+  }),
+});
+export type ListUserStatsResponse = Static<typeof ListUserStatsResponse>;
+
 export const ListChallengeStatsResponse = Type.Object({
   data: Type.Object({
     entries: Type.Array(ChallengeStat),

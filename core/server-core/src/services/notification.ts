@@ -26,9 +26,9 @@ type Props = Pick<
 
 const handlebars = Handlebars.create();
 handlebars.registerHelper("compare", (params) => {
-  let v1 = params[0];
-  let operator = params[1];
-  let v2 = params[2];
+  const v1 = params[0];
+  const operator = params[1];
+  const v2 = params[2];
   switch (operator) {
     case "==":
       return v1 == v2;

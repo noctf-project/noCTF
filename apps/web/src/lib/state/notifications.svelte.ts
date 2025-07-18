@@ -1,6 +1,5 @@
 import api from "$lib/api/index.svelte";
 import type { PathResponse } from "$lib/api/types";
-import { toasts } from "$lib/stores/toast";
 
 type AnnouncementResponse = PathResponse<"/announcements", "get">;
 type Announcement = AnnouncementResponse["data"]["entries"][0];
@@ -86,7 +85,6 @@ class NotificationState {
       }
     } catch (error) {
       console.error("Failed to fetch announcements:", error);
-      toasts.error("Failed to load announcements");
     } finally {
       this.isLoading = false;
     }

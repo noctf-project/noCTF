@@ -37,6 +37,9 @@
         tabindex="-1"
       >
         <li>
+          <a href="/admin" class={isActive("/admin")}>Dashboard</a>
+        </li>
+        <li>
           <a href="/admin/challenges" class={isActive("/admin/challenges")}
             >Challenges</a
           >
@@ -100,6 +103,9 @@
       <ul
         class="menu menu-horizontal border border-base-500 shadow-solid p-1 bg-base-100 rounded-b flex gap-2"
       >
+        <li>
+          <a href="/admin" class={isActive("/admin")}>Dashboard</a>
+        </li>
         <li>
           <a href="/admin/challenges" class={isActive("/admin/challenges")}
             >Challenges</a
