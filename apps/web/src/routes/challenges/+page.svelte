@@ -13,7 +13,7 @@
   import { toasts } from "$lib/stores/toast";
   import Icon from "@iconify/svelte";
 
-  const CHALLENGE_DETAIL_CACHE_TIME = 1000 * 60 * 10; // 10 minutes
+  const CHALLENGE_DETAIL_CACHE_TIME = 1000 * 60 * 5; // 5 minutes
 
   let apiChallenges = $state(wrapLoadable(api.GET("/challenges")));
   let challDetailsMap: {
