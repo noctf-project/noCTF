@@ -126,8 +126,13 @@ export class ScoreboardHistory {
             lastUpdated = 0;
             lastScore = 0;
           }
-          team.push([updated_at.getTime() - lastUpdated, score - lastScore]);
-          lastUpdated = updated_at.getTime();
+          const updated = Math.floor(updated_at.getTime() / 1000);
+          if (team.length && updated === team[team.length - 1][0]) {
+            team[team.length - 1][1] = score - lastScore;
+          } else {
+            team.push([updated_at.getTime() - lastUpdated, score - lastScore]);
+          }
+          lastUpdated = updated;
           lastScore = score;
         },
       );

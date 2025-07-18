@@ -331,7 +331,7 @@ export const GetMinimalScoreboard = (
 export const GetChangedTeamScores = (
   s1: HistoryDataPoint[],
   s2: HistoryDataPoint[],
-  sampleRateMs=1000,
+  sampleRateMs = 1000,
 ) => {
   const map: Map<number, HistoryDataPoint> = new Map();
   const output: HistoryDataPoint[] = [];

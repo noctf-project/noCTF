@@ -150,8 +150,8 @@ export class ScoreboardService {
     const {
       value: { start_time_s, end_time_s },
     } = await this.configService.get(SetupConfig);
-    const start = start_time_s !== undefined ? start_time_s * 1000 : undefined;
-    const end = end_time_s !== undefined ? end_time_s * 1000 : undefined;
+    const start = start_time_s !== undefined ? start_time_s : undefined;
+    const end = end_time_s !== undefined ? end_time_s : undefined;
     const [_count, ranks] = await this.dataLoader.getRanks(
       0,
       division,

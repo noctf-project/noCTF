@@ -119,7 +119,8 @@
       const mid = Math.floor((low + high) / 2);
       const point = data[mid];
       if (!point) break;
-      const pointXNum = point.x instanceof Date ? point.x.getTime() : +point.x;
+      const pointXNum =
+        point.x instanceof Date ? point.x.getTime() : +point.x * 1000;
 
       if (pointXNum <= xValueNum) {
         closestBeforeIdx = mid;
@@ -137,7 +138,7 @@
     const pointXNum =
       closestPoint.x instanceof Date
         ? closestPoint.x.getTime()
-        : +closestPoint.x;
+        : +closestPoint.x * 1000;
     const distance = Math.abs(xValueNum - pointXNum);
 
     return { point: closestPoint, distance };

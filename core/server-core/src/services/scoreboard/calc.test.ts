@@ -167,14 +167,14 @@ describe(GetChangedTeamScores, () => {
       {
         team_id: 1,
         score: 10,
-        updated_at: new Date(1),
+        updated_at: new Date(1000),
       },
     ];
     expect(GetChangedTeamScores(s1, s2)).toEqual([
       {
         team_id: 1,
         score: 10,
-        updated_at: new Date(1),
+        updated_at: new Date(1000),
       },
     ]);
   });
