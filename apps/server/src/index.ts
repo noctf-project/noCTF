@@ -176,7 +176,7 @@ const logRequest = async (
       reqId: request.id,
       status: reply.statusCode,
       path: request.originalUrl,
-      route: request.routeOptions.url || '__404__',
+      route: request.routeOptions.url || "__404__",
       method: request.method,
       ip: request.ip,
       u: request.user?.id,

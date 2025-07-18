@@ -568,6 +568,13 @@
       <div class="loading loading-spinner loading-lg text-primary"></div>
       <p class="text-center">Loading scoreboard...</p>
     </div>
+  {:else if apiScoreboard.r?.error}
+    <div class="flex flex-row justify-center w-full items-center gap-4 mt-16">
+      <Icon icon="material-symbols:error-outline" class="text-3xl" />
+      <p class="text-center text-2xl font-bold">
+        {apiScoreboard.r?.error?.message || "Unknown error occurred"}
+      </p>
+    </div>
   {:else if apiScoreboard.loading}
     <div class="flex flex-col gap-0">
       {@render topGraph()}

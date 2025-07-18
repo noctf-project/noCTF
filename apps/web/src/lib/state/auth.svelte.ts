@@ -37,7 +37,11 @@ class AuthState {
         goto(
           `/auth?redirect_to=${encodeURIComponent(location.href.slice(location.origin.length))}`,
         );
-      } else if (this.isAuthenticated && path.startsWith("/auth") && !path.startsWith("/auth/authorize")) {
+      } else if (
+        this.isAuthenticated &&
+        path.startsWith("/auth") &&
+        !path.startsWith("/auth/authorize")
+      ) {
         goto("/");
       } else if (!this.isAdmin && path.startsWith("/admin")) {
         if (this.isAuthenticated) {

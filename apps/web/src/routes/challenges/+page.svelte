@@ -11,6 +11,7 @@
   import { type ChallDetails } from "$lib/components/challenges/ChallengeInfo.svelte";
   import { onMount } from "svelte";
   import { toasts } from "$lib/stores/toast";
+  import Icon from "@iconify/svelte";
 
   let apiChallenges = $state(wrapLoadable(api.GET("/challenges")));
   let challDetailsMap: { [id in number]: ChallDetails } = {};
@@ -148,20 +149,11 @@
       <p class="text-center">Loading challenges...</p>
     </div>
   {:else if apiChallenges.error || apiChallenges.r?.error}
-    <div class="flex flex-col items-center gap-4 mt-16">
+    <div class="flex flex-row justify-center w-full items-center gap-4 mt-16">
+      <Icon icon="material-symbols:error-outline" class="text-3xl" />
       <p class="text-center text-2xl font-bold">
         {apiChallenges.r?.error?.message || "Unknown error occurred"}
       </p>
-      <button
-        class="btn btn-primary pop hover:pop"
-        onclick={() => {
-          // Refresh challenges does not reset the loading state
-          // so we need to reset it manually
-          apiChallenges = wrapLoadable(api.GET("/challenges"));
-        }}
-      >
-        Retry
-      </button>
     </div>
   {:else}
     <div
