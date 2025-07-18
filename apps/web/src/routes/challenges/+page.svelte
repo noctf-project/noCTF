@@ -13,8 +13,15 @@
   import { toasts } from "$lib/stores/toast";
   import Icon from "@iconify/svelte";
 
+  const CHALLENGE_DETAIL_CACHE_TIME = 1000 * 60 * 5; // 5 minutes
+
   let apiChallenges = $state(wrapLoadable(api.GET("/challenges")));
-  let challDetailsMap: { [id in number]: ChallDetails } = {};
+  let challDetailsMap: {
+    [id in number]: {
+      details: ChallDetails;
+      lastFetch: Date;
+    };
+  } = {};
 
   const refreshChallenges = async () => {
     try {
@@ -95,8 +102,13 @@
     modalVisible = true;
     modalChallData = challData;
     modalChallDetails = undefined; // Reset details while loading/fetching
-    if (challDetailsMap[challData.id]) {
-      modalChallDetails = challDetailsMap[challData.id];
+    const cached = challDetailsMap[challData.id];
+    if (
+      cached &&
+      cached.lastFetch &&
+      cached.lastFetch > new Date(Date.now() - CHALLENGE_DETAIL_CACHE_TIME)
+    ) {
+      modalChallDetails = cached.details;
     } else {
       modalLoading = true;
       try {
@@ -108,7 +120,10 @@
             description: r.data.data.description,
             files: r.data.data.metadata.files,
           };
-          challDetailsMap[challData.id] = challDetails;
+          challDetailsMap[challData.id] = {
+            details: challDetails,
+            lastFetch: new Date(),
+          };
           // Only update if the modal is still meant for this challenge
           if (modalChallData?.id === challData.id) {
             modalChallDetails = challDetails;
