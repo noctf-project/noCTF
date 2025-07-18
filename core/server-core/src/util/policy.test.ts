@@ -53,13 +53,10 @@ describe(Evaluate, () => {
       Wrapped(["AND", "admin.challenges", "admin.user"], permissions),
     ).toBe(true);
     expect(
-      Wrapped(["OR", "admin.user.update", "admin.challenges.get"], permissions),
+      Wrapped(["OR", "admin.user.update", "admin.challenge.get"], permissions),
     ).toBe(true);
     expect(
-      Wrapped(
-        ["AND", "admin.user.update", "admin.challenges.get"],
-        permissions,
-      ),
+      Wrapped(["AND", "admin.user.update", "admin.challenge.get"], permissions),
     ).toBe(false);
   });
 

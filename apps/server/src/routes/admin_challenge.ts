@@ -109,7 +109,7 @@ export async function routes(fastify: FastifyInstance) {
         security: [{ bearer: [] }],
         auth: {
           require: true,
-          policy: ["admin.challenge.create"],
+          policy: ["admin.challenge.get"],
         },
         params: IdOrSlugParams,
         response: {
