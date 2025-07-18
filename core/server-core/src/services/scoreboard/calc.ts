@@ -331,6 +331,7 @@ export const GetMinimalScoreboard = (
 export const GetChangedTeamScores = (
   s1: HistoryDataPoint[],
   s2: HistoryDataPoint[],
+  sampleRateMs = 1000,
 ) => {
   const map: Map<number, HistoryDataPoint> = new Map();
   const output: HistoryDataPoint[] = [];
@@ -341,7 +342,12 @@ export const GetChangedTeamScores = (
     const e2 = map.get(entry.team_id);
     map.delete(entry.team_id);
     if (entry.score !== e2?.score) {
-      output.push(entry);
+      output.push({
+        ...entry,
+        updated_at: new Date(
+          Math.floor(entry.updated_at.getTime() / sampleRateMs) * sampleRateMs,
+        ),
+      });
     }
   }
   for (const [_v, v] of map) {

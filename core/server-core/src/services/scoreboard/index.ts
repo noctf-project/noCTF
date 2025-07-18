@@ -14,7 +14,6 @@ import { MinimalTeamInfo, TeamDAO } from "../../dao/team.ts";
 import { RawSolve, SubmissionDAO } from "../../dao/submission.ts";
 import { MaxDate } from "../../util/date.ts";
 import { ScoreboardHistory } from "./history.ts";
-import { bisectLeft, bisectRight } from "../../util/arrays.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -151,8 +150,8 @@ export class ScoreboardService {
     const {
       value: { start_time_s, end_time_s },
     } = await this.configService.get(SetupConfig);
-    const start = start_time_s !== undefined ? start_time_s * 1000 : undefined;
-    const end = end_time_s !== undefined ? end_time_s * 1000 : undefined;
+    const start = start_time_s !== undefined ? start_time_s : undefined;
+    const end = end_time_s !== undefined ? end_time_s : undefined;
     const [_count, ranks] = await this.dataLoader.getRanks(
       0,
       division,
@@ -189,13 +188,30 @@ export class ScoreboardService {
   ) {
     let start = 0;
     let end = graph.length;
+    let ts = 0;
+    let score = 0;
     if (startTime !== undefined) {
-      start = bisectLeft(graph, startTime, ([v]) => v);
+      start = graph.findIndex(
+        (v) => ((score += v[1]) && 0) || (ts += v[0]) >= startTime,
+      );
+    }
+    if (start === -1) {
+      return [];
     }
     if (endTime !== undefined) {
-      end = bisectRight(graph, endTime, ([v]) => v);
+      let t = ts;
+      const e = graph.slice(start + 1).findIndex((v) => (t += v[0]) > endTime);
+      if (e === -1) end = graph.length;
+      else end = start + 1 + e;
     }
-    return graph.slice(start, end);
+
+    const data = graph.slice(start, end);
+    if (start === 0) return data;
+    if (data[0] && ts !== 0) {
+      data[0][0] = ts;
+      data[0][1] = score;
+    }
+    return data;
   }
 
   private async fetchScoreboardCalculationParams(timestamp?: Date) {
