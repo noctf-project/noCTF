@@ -3,7 +3,7 @@ import client from "$lib/api/index.svelte";
 import type { PathResponse } from "$lib/api/types";
 
 const DEBOUNCE_INTERVAL = 64;
-const MAXIMUM_QUERIES = 60;
+const MAXIMUM_QUERIES = 50;
 
 export type Team = PathResponse<
   "/teams/query",
