@@ -164,9 +164,10 @@
       if (!solves) return [];
       const out = solves.reduce((a, v) => {
         const c = challengeMap.get(v.challenge_id)!;
-        c.categories.forEach((cat) => {
+        if (c.categories.length) {
+          const cat = c.categories[0];
           a.set(cat, (a.get(cat) || 0) + v.value);
-        });
+        }
         return a;
       }, new Map());
       return Array.from(out.entries()).toSorted(([_, a], [__, b]) => b - a);
