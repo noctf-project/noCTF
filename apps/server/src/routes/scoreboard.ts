@@ -11,6 +11,7 @@ import { NotFoundError } from "@noctf/server-core/errors";
 import { ScoreboardQuery, ScoreboardTagsQuery } from "@noctf/api/query";
 import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
+import { WindowDeltaedTimeSeriesPoints } from "@noctf/server-core/util/graph";
 
 export const SCOREBOARD_PAGE_SIZE = 50;
 
@@ -114,7 +115,13 @@ export async function routes(fastify: FastifyInstance) {
         request.query.tags,
       );
       return {
-        data: graphs,
+        data: graphs.map((g) => ({
+          ...g,
+          graph: WindowDeltaedTimeSeriesPoints(
+            g.graph,
+            request.query.graph_interval || 1,
+          ),
+        })),
       };
     },
   );
@@ -178,7 +185,10 @@ export async function routes(fastify: FastifyInstance) {
         data: {
           ...entry,
           solves,
-          graph,
+          graph: WindowDeltaedTimeSeriesPoints(
+            graph,
+            request.query.graph_interval || 1,
+          ),
         },
       };
     },
