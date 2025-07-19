@@ -74,6 +74,7 @@
     api.GET("/scoreboard/teams/{id}", {
       params: {
         path: { id: teamId },
+        query: { graph_interval: 60 },
       },
     }),
   );

@@ -201,7 +201,10 @@
       api.GET("/scoreboard/divisions/{id}/top", {
         params: {
           path: { id: division },
-          query: { tags: selectedTags.length > 0 ? selectedTags : undefined },
+          query: {
+            tags: selectedTags.length > 0 ? selectedTags : undefined,
+            graph_interval: 60,
+          },
         },
       }),
     ),
