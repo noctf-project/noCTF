@@ -38,7 +38,7 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{
+  fastify.get<{
     Params: IdParams;
     Response: AdminExportScoreboardCTFTimeResponse;
   }>(
