@@ -88,11 +88,10 @@ export async function routes(fastify: FastifyInstance) {
         teamsPromise,
       ]);
       const teamMap = new Map(teams.map(({ id, name }) => [id, name]));
-      let unknownCounter = 0;
       return {
         standings: scoreboard.entries.map((x, i) => ({
           pos: i + 1,
-          team: teamMap.get(x.team_id) || `unknown-${unknownCounter++}`,
+          team: teamMap.get(x.team_id) || `unknown-${x.team_id}`,
           score: x.score,
         })),
       };
