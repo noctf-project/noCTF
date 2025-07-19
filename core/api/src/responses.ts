@@ -419,6 +419,19 @@ export type AdminListAnnnouncementsResponse = Static<
   typeof AdminListAnnnouncementsResponse
 >;
 
+export const AdminExportScoreboardCTFTimeResponse = Type.Object({
+  standings: Type.Array(
+    Type.Object({
+      pos: Type.Integer({ minimum: 1 }),
+      team: Type.String(),
+      score: Type.Number(),
+    }),
+  ),
+});
+export type AdminExportScoreboardCTFTimeResponse = Static<
+  typeof AdminExportScoreboardCTFTimeResponse
+>;
+
 export const OAuthAuthorizeInternalResponse = Type.Object({
   data: Type.Object({
     url: Type.String(),

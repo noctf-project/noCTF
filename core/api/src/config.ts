@@ -95,15 +95,27 @@ export const SetupConfig = Type.Object(
     }),
     name: Type.String({ title: "Name of the CTF" }),
     start_time_s: Type.Optional(
-      Type.Number({ title: "CTF Start Time (Epoch seconds)" }),
+      Type.Integer({ title: "CTF Start Time (Epoch seconds)", minimum: 0 }),
     ),
     end_time_s: Type.Optional(
-      Type.Number({ title: "CTF End Time (Epoch seconds)" }),
+      Type.Integer({ title: "CTF End Time (Epoch seconds)", minimum: 0 }),
     ),
     default_division_id: Type.Optional(
-      Type.Number({
+      Type.Integer({
         title: "Default Division for new users",
+        minimum: 1,
       }),
+    ),
+    ctftime_division_ids: Type.Optional(
+      Type.Array(
+        Type.Integer({
+          minimum: 1,
+        }),
+        {
+          title: "Allowed divisions for CTFTime Query",
+          uniqueItems: true,
+        },
+      ),
     ),
   },
   { $id: "core.setup", additionalProperties: false },
