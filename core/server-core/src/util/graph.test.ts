@@ -179,7 +179,6 @@ describe("WindowDeltaedTimeSeriesPoints", () => {
         [35, 300], // t=75, window=70
       ];
       const result = WindowDeltaedTimeSeriesPoints(points, 10);
-      console.log(result);
       expect(result).toEqual([
         [10, 100], // first window at 10
         [30, 200], // delta from 10 to 40 = 30
