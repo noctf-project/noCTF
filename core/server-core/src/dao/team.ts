@@ -1,6 +1,6 @@
 import type { Insertable, SelectQueryBuilder, Updateable } from "kysely";
 import type { DBType } from "../clients/database.ts";
-import type { Team, TeamSummary } from "@noctf/api/datatypes";
+import type { LimitOffset, Team, TeamSummary } from "@noctf/api/datatypes";
 import type { DB, TeamMemberRole } from "@noctf/schema";
 import { FilterUndefined } from "../util/filter.ts";
 import { BadRequestError, ConflictError, NotFoundError } from "../errors.ts";
@@ -128,19 +128,12 @@ export class TeamDAO {
     );
   }
 
-  async queryNames(
-    ids: number[],
-    include_hidden?: boolean,
+  async listNames(
+    q: Parameters<TeamDAO["listQuery"]>[0] = {},
+    limit?: LimitOffset,
   ): Promise<{ id: number; name: string }[]> {
-    let query = this.db
-      .selectFrom("team")
-      .select(["id", "name"])
-      .where("id", "in", ids);
-    if (!include_hidden) {
-      query = query.where((eb) =>
-        eb.not(eb("flags", "&&", eb.val(["hidden"]))),
-      );
-    }
+    let query = this.listQuery(q, limit).select(["id", "name"]);
+
     return query.execute();
   }
 

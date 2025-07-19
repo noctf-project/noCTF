@@ -69,7 +69,12 @@ export async function routes(fastify: FastifyInstance) {
       );
       return {
         data: {
-          scores: scoreboard.entries,
+          scores: admin
+            ? scoreboard.entries
+            : scoreboard.entries.map((e) => ({
+                ...e,
+                solves: e.solves.filter((x) => !x.hidden),
+              })),
           page_size: page_size,
           total: scoreboard.total,
         },
