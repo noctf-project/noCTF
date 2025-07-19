@@ -100,6 +100,22 @@
         bVal = new Date(bVal).getTime();
       }
 
+      // sort by time to first blood, not absolute time of first blood
+      if (
+        typeof aVal === "number" &&
+        sortField === "first_solve" &&
+        a.released_at
+      ) {
+        aVal -= new Date(a.released_at).getTime();
+      }
+      if (
+        typeof bVal === "number" &&
+        sortField === "first_solve" &&
+        b.released_at
+      ) {
+        bVal -= new Date(b.released_at).getTime();
+      }
+
       if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
       if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
       return 0;
@@ -341,7 +357,10 @@
                 <td class="text-center w-48">
                   {#if stat.first_solve}
                     <div class="flex flex-col gap-1 items-center">
-                      <span class="text-sm font-medium">
+                      <span
+                        class="text-sm font-medium"
+                        title={new Date(stat.first_solve).toLocaleString()}
+                      >
                         {#if stat.released_at}
                           {formatTimeDifference(
                             new Date(stat.released_at),
