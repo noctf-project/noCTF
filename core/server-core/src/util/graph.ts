@@ -20,7 +20,6 @@ export const WindowDeltaedTimeSeriesPoints = (
       y = p[1];
     }
   }
-  console.log(x, t);
   out.push([x - l, y]);
   return out;
 };
