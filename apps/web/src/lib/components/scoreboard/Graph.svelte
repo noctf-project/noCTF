@@ -53,7 +53,7 @@
       return {
         label: team.name,
         data: team.data.map(([timestamp, score]) => {
-          x = x + (timestamp*1000);
+          x = x + timestamp * 1000;
           y = y + score;
           return {
             x,
@@ -119,8 +119,7 @@
       const mid = Math.floor((low + high) / 2);
       const point = data[mid];
       if (!point) break;
-      const pointXNum =
-        point.x instanceof Date ? point.x.getTime() : +point.x;
+      const pointXNum = point.x instanceof Date ? point.x.getTime() : +point.x;
 
       if (pointXNum <= xValueNum) {
         closestBeforeIdx = mid;

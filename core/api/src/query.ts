@@ -26,7 +26,15 @@ export const ScoreboardQuery = Type.Composite(
 );
 export type ScoreboardQuery = Static<typeof ScoreboardQuery>;
 
-export const ScoreboardTagsQuery = Type.Pick(ScoreboardQuery, ["tags"]);
+export const ScoreboardTagsQuery = Type.Composite(
+  [
+    Type.Pick(ScoreboardQuery, ["tags"]),
+    Type.Object({
+      graph_interval: Type.Optional(Type.Integer({ minimum: 1 })),
+    }),
+  ],
+  { additionalProperties: false },
+);
 export type ScoreboardTagsQuery = Static<typeof ScoreboardTagsQuery>;
 
 export const GetFileQuery = Type.Object(
