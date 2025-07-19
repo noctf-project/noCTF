@@ -1,7 +1,8 @@
 import type { ServiceCradle } from "@noctf/server-core";
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyInstance } from "fastify";
 import "@noctf/server-core/types/fastify";
 import {
+  ScoreboardExportCTFTimeResponse,
   ScoreboardGraphsResponse,
   ScoreboardResponse,
   ScoreboardTeamResponse,
@@ -12,12 +13,14 @@ import { ScoreboardQuery, ScoreboardTagsQuery } from "@noctf/api/query";
 import { GetUtils } from "./_util.ts";
 import { Policy } from "@noctf/server-core/util/policy";
 import { WindowDeltaedTimeSeriesPoints } from "@noctf/server-core/util/graph";
+import { GetRouteUserIPKey } from "@noctf/server-core/util/limit_keys";
+import { SetupConfig } from "@noctf/api/config";
 
 export const SCOREBOARD_PAGE_SIZE = 50;
 
 export async function routes(fastify: FastifyInstance) {
-  const { scoreboardService, teamService, divisionService } = fastify.container
-    .cradle as ServiceCradle;
+  const { scoreboardService, teamService, divisionService, configService } =
+    fastify.container.cradle as ServiceCradle;
 
   const { gateStartTime } = GetUtils(fastify.container.cradle);
   const adminPolicy: Policy = ["admin.scoreboard.get"];
@@ -195,6 +198,66 @@ export async function routes(fastify: FastifyInstance) {
             request.query.graph_interval || 1,
           ),
         },
+      };
+    },
+  );
+
+  fastify.get<{
+    Params: IdParams;
+    Response: ScoreboardExportCTFTimeResponse;
+  }>(
+    "/scoreboard/divisions/:id/ctftime",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["scoreboard"],
+        // auth maybe not required since we may want to allow ctftime to query
+        auth: {
+          policy: ["scoreboard.get.ctftime"],
+        },
+        rateLimit: (r) => [
+          {
+            key: GetRouteUserIPKey(r),
+            limit: 10,
+            windowSeconds: 60,
+          },
+        ],
+        params: IdParams,
+        response: {
+          200: ScoreboardExportCTFTimeResponse,
+        },
+      },
+    },
+    async (request) => {
+      const { value } = await configService.get(SetupConfig);
+      if (
+        value.ctftime_division_ids &&
+        value.ctftime_division_ids.length &&
+        !value.ctftime_division_ids.includes(request.params.id)
+      ) {
+        throw new NotFoundError("Division not found");
+      }
+
+      const scoreboardPromise = scoreboardService.getScoreboard(
+        request.params.id,
+        0,
+        Number.MAX_SAFE_INTEGER,
+      );
+      const teamsPromise = teamService.listNames({
+        flags: ["!hidden"],
+        division_id: request.params.id,
+      });
+      const [scoreboard, teams] = await Promise.all([
+        scoreboardPromise,
+        teamsPromise,
+      ]);
+      const teamMap = new Map(teams.map(({ id, name }) => [id, name]));
+      return {
+        standings: scoreboard.entries.map((x, i) => ({
+          pos: i + 1,
+          team: teamMap.get(x.team_id) || `unknown-${x.team_id}`,
+          score: x.score,
+        })),
       };
     },
   );
