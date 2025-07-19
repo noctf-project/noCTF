@@ -43,7 +43,7 @@
     const response = await api.GET("/admin/divisions");
     if (!response.data) {
       toasts.error("Failed to fetch divisions: " + response.error?.message);
-      return { tags: [] };
+      return [];
     }
     return response.data.data;
   }
@@ -326,7 +326,7 @@
             <Icon icon="material-symbols:error" />
             <span>Failed to load divisions</span>
           </div>
-        {:else if divisions.r?.tags && divisions.r.tags.length > 0}
+        {:else if divisions.r && divisions.r.length > 0}
           <div class="overflow-x-auto">
             <table class="table w-full">
               <thead>
@@ -342,7 +342,7 @@
                 </tr>
               </thead>
               <tbody>
-                {#each divisions.r.tags as division}
+                {#each divisions.r as division}
                   <tr class="hover:bg-base-200/50">
                     <td>
                       {#if editingDivision?.id === division.id}

@@ -8,7 +8,7 @@
   let viewMode = $state<"overview" | "challenges">("overview");
   let selectedDivision = $state<number>(1);
 
-  const apiDivisions = $state(wrapLoadable(api.GET("/admin/divisions")));
+  const apiDivisions = $state(wrapLoadable(api.GET("/divisions")));
   const apiChallenges = $state(wrapLoadable(api.GET("/challenges")));
   const apiChallengeStats = $derived(
     wrapLoadable(
@@ -19,7 +19,7 @@
   );
   const apiUserStats = $state(wrapLoadable(api.GET("/stats/users")));
 
-  const divisions = $derived(apiDivisions.r?.data?.data?.tags || []);
+  const divisions = $derived(apiDivisions.r?.data?.data || []);
   const challenges = $derived(apiChallenges.r?.data?.data.challenges || []);
 
   const challengeMap = $derived.by(() => {

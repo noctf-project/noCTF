@@ -471,9 +471,7 @@ export type AdminListTeamTagsResponse = Static<
 >;
 
 export const AdminListDivisionsResponse = Type.Object({
-  data: Type.Object({
-    tags: Type.Array(Division),
-  }),
+  data: Type.Array(Division),
 });
 export type AdminListDivisionsResponse = Static<
   typeof AdminListDivisionsResponse
