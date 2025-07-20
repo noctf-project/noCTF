@@ -48,12 +48,10 @@
   let detailedView = $state(false);
   let totalTeams = $state(0);
 
-  // Initialize selectedTags from URL parameter
   let selectedTags = $state<number[]>([]);
 
-  // Sync selectedTags with URL parameter
   $effect(() => {
-    const urlParams = page.url.searchParams.get("teamTags");
+    const urlParams = page.url.searchParams.get("tags");
     if (urlParams) {
       selectedTags = urlParams
         .split(",")
@@ -207,12 +205,11 @@
     selectedTags = newTags;
     currentPage = 0;
 
-    // Update URL parameter
     const url = new URL(page.url);
     if (newTags.length > 0) {
-      url.searchParams.set("teamTags", newTags.join(","));
+      url.searchParams.set("tags", newTags.join(","));
     } else {
-      url.searchParams.delete("teamTags");
+      url.searchParams.delete("tags");
     }
     goto(url.toString(), { replaceState: true });
   }
@@ -221,16 +218,15 @@
     selectedTags = [];
     currentPage = 0;
 
-    // Remove URL parameter
     const url = new URL(page.url);
-    url.searchParams.delete("teamTags");
+    url.searchParams.delete("tags");
     goto(url.toString(), { replaceState: true });
   }
 
   $effect(() => {
-    const urlParams = page.url.searchParams.get("detailed");
-    if (urlParams) {
-      detailedView = urlParams === "true";
+    const viewFromURL = page.url.searchParams.get("view");
+    if (viewFromURL === "detailed") {
+      detailedView = true;
     }
   });
 
@@ -238,9 +234,12 @@
     detailedView = value;
     currentPage = 0;
 
-    // Update URL parameter
     const url = new URL(page.url);
-    url.searchParams.set("detailed", detailedView.toString());
+    if (value) {
+      url.searchParams.set("view", "detailed");
+    } else {
+      url.searchParams.delete("view");
+    }
     goto(url.toString(), { replaceState: true });
   }
 
