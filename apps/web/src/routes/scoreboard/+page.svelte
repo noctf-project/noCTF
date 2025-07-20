@@ -10,7 +10,7 @@
   import Pagination from "$lib/components/Pagination.svelte";
   import { countryCodeToFlag } from "$lib/utils/country";
   import authState from "$lib/state/auth.svelte";
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import { goto } from "$app/navigation";
 
   type ScoreboardEntry = {
@@ -53,7 +53,7 @@
 
   // Sync selectedTags with URL parameter
   $effect(() => {
-    const urlParams = $page.url.searchParams.get("teamTags");
+    const urlParams = page.url.searchParams.get("teamTags");
     if (urlParams) {
       selectedTags = urlParams
         .split(",")
@@ -208,7 +208,7 @@
     currentPage = 0;
 
     // Update URL parameter
-    const url = new URL($page.url);
+    const url = new URL(page.url);
     if (newTags.length > 0) {
       url.searchParams.set("teamTags", newTags.join(","));
     } else {
@@ -222,13 +222,13 @@
     currentPage = 0;
 
     // Remove URL parameter
-    const url = new URL($page.url);
+    const url = new URL(page.url);
     url.searchParams.delete("teamTags");
     goto(url.toString(), { replaceState: true });
   }
 
   $effect(() => {
-    const urlParams = $page.url.searchParams.get("detailed");
+    const urlParams = page.url.searchParams.get("detailed");
     if (urlParams) {
       detailedView = urlParams === "true";
     }
@@ -239,7 +239,7 @@
     currentPage = 0;
 
     // Update URL parameter
-    const url = new URL($page.url);
+    const url = new URL(page.url);
     url.searchParams.set("detailed", detailedView.toString());
     goto(url.toString(), { replaceState: true });
   }
