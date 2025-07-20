@@ -48,6 +48,7 @@
     apiChallenges.r?.data
       ? apiChallenges.r?.data.data.challenges.map((c) => ({
           id: c.id,
+          slug: c.slug,
           title: c.title,
           categories: getCategoriesFromTags(c.tags),
           solves: c.solve_count,
@@ -107,15 +108,13 @@
     goto(url.toString(), { replaceState: true });
   }
 
-  // Handle initial query parameter
   $effect(() => {
-    // Only process the query parameter once when challenges are available
     if (!loadedFromURLParam && allChallenges) {
       loadedFromURLParam = true;
-      const urlParams = page.url.searchParams.get("challenge");
-      if (urlParams) {
+      const slugFromURL = page.url.searchParams.get("c");
+      if (slugFromURL) {
         const challData = allChallenges.find(
-          (c) => c.id.toString() === urlParams,
+          (c) => c.slug === slugFromURL,
         );
         if (challData) {
           onChallengeClicked(challData);
@@ -127,8 +126,8 @@
   async function onChallengeClicked(challData: ChallengeCardData) {
     modalVisible = true;
     modalChallData = challData;
-    modalChallDetails = undefined; // Reset details while loading/fetching
-    updateQueryParam("challenge", challData.id.toString());
+    modalChallDetails = undefined;
+    updateQueryParam("c", challData.slug);
     const cached = challDetailsMap[challData.id];
     if (
       cached &&
@@ -179,9 +178,8 @@
 
   function closeModal() {
     modalVisible = false;
-    updateQueryParam("challenge", "");
     const url = new URL(page.url);
-    url.searchParams.delete("challenge");
+    url.searchParams.delete("c");
     goto(url.toString(), { replaceState: true });
   }
 </script>
