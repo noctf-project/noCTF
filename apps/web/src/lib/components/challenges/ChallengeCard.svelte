@@ -1,6 +1,7 @@
 <script module lang="ts">
   export interface ChallengeCardData {
     id: number;
+    slug: string;
     title: string;
     categories: string[];
     solves: number;
