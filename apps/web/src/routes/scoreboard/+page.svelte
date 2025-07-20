@@ -10,6 +10,8 @@
   import Pagination from "$lib/components/Pagination.svelte";
   import { countryCodeToFlag } from "$lib/utils/country";
   import authState from "$lib/state/auth.svelte";
+  import { page } from "$app/stores";
+  import { goto } from "$app/navigation";
 
   type ScoreboardEntry = {
     team_id: number;
@@ -45,7 +47,22 @@
   let currentPage = $state(0);
   let detailedView = $state(false);
   let totalTeams = $state(0);
+
+  // Initialize selectedTags from URL parameter
   let selectedTags = $state<number[]>([]);
+
+  // Sync selectedTags with URL parameter
+  $effect(() => {
+    const urlParams = $page.url.searchParams.get("teamTags");
+    if (urlParams) {
+      selectedTags = urlParams
+        .split(",")
+        .map((id) => parseInt(id.trim()))
+        .filter((id) => !isNaN(id));
+    } else {
+      selectedTags = [];
+    }
+  });
 
   const apiChallenges = wrapLoadable(api.GET("/challenges"));
 
@@ -180,17 +197,51 @@
   });
 
   function toggleTagFilter(tagId: number) {
+    let newTags: number[];
     if (selectedTags.includes(tagId)) {
-      selectedTags = selectedTags.filter((id) => id !== tagId);
+      newTags = selectedTags.filter((id) => id !== tagId);
     } else {
-      selectedTags = [...selectedTags, tagId];
+      newTags = [...selectedTags, tagId];
     }
+
+    selectedTags = newTags;
     currentPage = 0;
+
+    // Update URL parameter
+    const url = new URL($page.url);
+    if (newTags.length > 0) {
+      url.searchParams.set("teamTags", newTags.join(","));
+    } else {
+      url.searchParams.delete("teamTags");
+    }
+    goto(url.toString(), { replaceState: true });
   }
 
   function clearTagFilters() {
     selectedTags = [];
     currentPage = 0;
+
+    // Remove URL parameter
+    const url = new URL($page.url);
+    url.searchParams.delete("teamTags");
+    goto(url.toString(), { replaceState: true });
+  }
+
+  $effect(() => {
+    const urlParams = $page.url.searchParams.get("detailed");
+    if (urlParams) {
+      detailedView = urlParams === "true";
+    }
+  });
+
+  function setDetailedView(value: boolean) {
+    detailedView = value;
+    currentPage = 0;
+
+    // Update URL parameter
+    const url = new URL($page.url);
+    url.searchParams.set("detailed", detailedView.toString());
+    goto(url.toString(), { replaceState: true });
   }
 
   const paginatedTeamIds = $derived(Array.from(currentPageTeams.keys()));
@@ -329,14 +380,14 @@
           <div class="join">
             <button
               class={`btn btn-sm join-item ${!detailedView ? "btn-primary" : "btn-outline"} pop hover:pop gap-1`}
-              onclick={() => (detailedView = false)}
+              onclick={() => setDetailedView(false)}
             >
               <Icon icon="material-symbols:grid-view" class="text-lg" />
               <span>Compact</span>
             </button>
             <button
               class={`btn btn-sm join-item ${detailedView ? "btn-primary" : "btn-outline"} pop hover:pop gap-1`}
-              onclick={() => (detailedView = true)}
+              onclick={() => setDetailedView(true)}
             >
               <Icon
                 icon="material-symbols:view-agenda-outline"
@@ -401,7 +452,9 @@
 {/snippet}
 
 {#snippet topGraph()}
-  <div class="mx-auto mt-8 min-w-[98%] lg:min-w-[66rem] max-w-[66rem] mb-8">
+  <div
+    class="mx-auto mt-8 min-w-[98%] h-[33rem] lg:min-w-[66rem] max-w-[66rem] mb-8"
+  >
     {#if top10TeamsChartsData}
       {#await top10TeamsChartsData then data}
         <Graph {data} extraClasses="h-[33rem]" />
