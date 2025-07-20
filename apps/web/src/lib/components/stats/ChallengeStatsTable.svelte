@@ -46,11 +46,10 @@
   import DifficultyChip from "../challenges/DifficultyChip.svelte";
   import type { Difficulty } from "$lib/constants/difficulties";
   import TeamQueryService from "$lib/state/team_query.svelte";
-  import configState from "$lib/state/config.svelte";
   import type { UserStat } from "./StatsOverview.svelte";
 
   const {
-    challengeStats: _challengeStats,
+    challengeStats,
     userStats,
     challengeMap,
     loading = false,
@@ -60,7 +59,7 @@
   let sortDirection = $state<SortDirection>("desc");
 
   let stats = $derived(
-    _challengeStats.map((c) => {
+    challengeStats.map((c) => {
       let x = {
         ...c,
         solve_rate:
@@ -364,11 +363,6 @@
                         {#if stat.released_at}
                           {formatTimeDifference(
                             new Date(stat.released_at),
-                            new Date(stat.first_solve),
-                          )}
-                        {:else if configState.siteConfig?.start_time_s}
-                          {formatTimeDifference(
-                            new Date(configState.siteConfig.start_time_s),
                             new Date(stat.first_solve),
                           )}
                         {:else}
