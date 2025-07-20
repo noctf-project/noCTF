@@ -14,6 +14,7 @@ import { MinimalTeamInfo, TeamDAO } from "../../dao/team.ts";
 import { RawSolve, SubmissionDAO } from "../../dao/submission.ts";
 import { MaxDate } from "../../util/date.ts";
 import { ScoreboardHistory } from "./history.ts";
+import { IsTimeBetweenSeconds } from "../../util/time.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -275,9 +276,10 @@ export class ScoreboardService {
     id: number,
     timestamp?: Date,
   ) {
-    const [solveList, awardList] = await Promise.all([
+    const [solveList, awardList, { value: setup }] = await Promise.all([
       this.submissionDAO.getSolvesForCalculation(id),
       this.awardDAO.getAllAwards(id),
+      this.configService.get(SetupConfig),
     ]);
 
     const solvesByChallenge = new Map<number, RawSolve[]>();
@@ -288,7 +290,16 @@ export class ScoreboardService {
         solves = [];
         solvesByChallenge.set(x.challenge_id, solves);
       }
-      solves.push(x);
+      solves.push({
+        ...x,
+        hidden:
+          x.hidden ||
+          !IsTimeBetweenSeconds(
+            x.created_at,
+            setup.start_time_s,
+            setup.end_time_s,
+          ),
+      });
     });
 
     const {

@@ -1,4 +1,4 @@
-import { NotificationConfig } from "@noctf/api/config";
+import { NotificationConfig, SetupConfig } from "@noctf/api/config";
 import { ServiceCradle } from "../index.ts";
 import {
   AnnouncementUpdateEvent,
@@ -186,9 +186,25 @@ export class NotificationService {
   private async handleSubmission(data: EventItem<SubmissionUpdateEvent>) {
     const event = data.data;
     if (event.hidden) return;
-    const { submission } = (await this.configService.get(NotificationConfig))
-      ?.value;
-    const enabled = submission?.filter(
+    const [notification, setup] = await Promise.all([
+      this.configService.get(NotificationConfig),
+      this.configService.get(SetupConfig),
+    ]);
+    const ctime = Math.floor(event.created_at.getTime() / 1000);
+    if (
+      typeof setup.value.start_time_s === "number" &&
+      ctime <= setup.value.start_time_s
+    ) {
+      return;
+    }
+    if (
+      typeof setup.value.end_time_s === "number" &&
+      ctime >= setup.value.end_time_s
+    ) {
+      return;
+    }
+
+    const enabled = notification.value.submission?.filter(
       (b) =>
         b.enabled &&
         (!b.max_seq || event.seq <= b.max_seq) &&
