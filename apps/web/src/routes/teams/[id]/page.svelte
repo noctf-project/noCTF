@@ -42,6 +42,7 @@
       name: string;
     };
     value: number;
+    hidden: boolean;
     created_at: Date;
   };
 
@@ -208,6 +209,7 @@
           },
           value: s.value,
           created_at: new Date(s.created_at),
+          hidden: s.hidden,
         } as SolveEntry;
       })
       .toSorted((a, b) => b.created_at.getTime() - a.created_at.getTime());
@@ -289,7 +291,9 @@
       </thead>
       <tbody>
         {#each solves as solve (`solve-${solve.id}-${solve.solver.id}`)}
-          <tr class="bg-base-100 hover:bg-base-300/30">
+          <tr
+            class={`bg-base-100 hover:bg-base-300/30 ${solve.hidden ? "opacity-40" : ""}`}
+          >
             <td class="border-y border-base-300 py-2 px-3">
               <div class="font-medium">{solve.title}</div>
             </td>
@@ -316,7 +320,11 @@
             <td
               class="border border-base-300 py-2 px-3 text-center font-mono font-bold"
             >
-              {solve.value}
+              {#if solve.hidden}
+                <s>{solve.value}</s>
+              {:else}
+                {solve.value}
+              {/if}
             </td>
             <td class="border border-base-300 py-2 px-3 text-center">
               {solve.solver.name}
@@ -352,7 +360,7 @@
           <Icon {icon} class="text-6xl {iconClass}" />
           <h1 class="text-3xl font-bold">Team Not Found</h1>
           <p class="text-base-content/70 text-lg">
-            The team you're looking for doesn't exist or may be hidden
+            The team you're looking for doesn't exist
           </p>
           <div class="flex gap-2 mt-4">
             <a href="/teams" class="btn btn-primary pop hover:pop">

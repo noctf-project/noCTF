@@ -240,7 +240,11 @@ export async function routes(fastify: FastifyInstance) {
 
       const config = await configService.get(SetupConfig);
       const end = config.value.end_time_s;
-      if ((end || end === 0) && ctime > end * 1000) {
+      if (
+        !config.value.allow_late_submissions &&
+        (end || end === 0) &&
+        ctime > end * 1000
+      ) {
         throw new ForbiddenError("The CTF has ended. Thanks for playing!");
       }
 
