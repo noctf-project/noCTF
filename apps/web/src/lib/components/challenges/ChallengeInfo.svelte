@@ -88,7 +88,7 @@
       return;
     }
     if (r.data) {
-      flagSubmitStatus = r.data.data;
+      flagSubmitStatus = r.data.data.status;
       if (flagSubmitStatus == "correct") {
         correctAnim.set(1);
         onSolve();
