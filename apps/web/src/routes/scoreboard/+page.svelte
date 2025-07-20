@@ -32,6 +32,7 @@
 
   type ChallengeEntry = {
     id: number;
+    slug: string;
     title: string;
     points: number;
     categories: string[];
@@ -91,6 +92,7 @@
     apiChallenges.r?.data?.data.challenges
       .map((c) => ({
         id: c.id,
+        slug: c.slug,
         title: c.title,
         points: c.value || 0,
         categories: getCategoriesFromTags(c.tags),
@@ -323,12 +325,13 @@
         <div
           class="w-10 h-32 border border-x-base-300 border-transparent bg-base-200 skew-x-[-45deg] translate-x-16"
         ></div>
-        <div
+        <a
           class="absolute bottom-14 left-1.5 px-1 -rotate-45 w-40 z-10 truncate"
+          href="/challenges?c={challenge.slug}"
           title={`${challenge.title} (${challenge.categories.join(", ")})`}
         >
           {challenge.title}
-        </div>
+        </a>
       </div>
     {/each}
   </div>
