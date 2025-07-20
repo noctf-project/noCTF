@@ -51,7 +51,7 @@
   }
 
   $effect(() => {
-    if (notificationState.unseenCount > 0 && !isOpen) {
+    if (notificationState.unseenImportant && !isOpen) {
       isOpen = true;
     }
   });
@@ -135,6 +135,10 @@
               <div class={isUnseen ? "ml-4" : ""}>
                 <div class="flex items-center gap-2 mb-1 flex-wrap">
                   <h4 class="font-semibold text-base">{announcement.title}</h4>
+                  {#if announcement.important}
+                    <span class="badge badge-error badge-sm pop">Important</span
+                    >
+                  {/if}
                   {#if announcement.is_private}
                     <span class="badge badge-secondary badge-sm pop"
                       >Only visible to you</span

@@ -383,6 +383,7 @@ export const GetAnnouncementsResponse = Type.Object({
           "id",
           "title",
           "message",
+          "important",
           "created_at",
           "updated_at",
         ]),
