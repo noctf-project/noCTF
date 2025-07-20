@@ -318,10 +318,16 @@
               </div>
             </td>
             <td
-              class="border border-base-300 py-2 px-3 text-center font-mono font-bold"
+              class="border border-base-300 py-2 px-3 text-center font-mono font-bold flex flex-row gap-2 justify-center items-center"
             >
               {#if solve.hidden}
                 <s>{solve.value}</s>
+                <div class="tooltip" data-tip="This submission is hidden">
+                  <Icon
+                    icon="material-symbols:visibility-off"
+                    class="text-gray-500 text-sm"
+                  />
+                </div>
               {:else}
                 {solve.value}
               {/if}
