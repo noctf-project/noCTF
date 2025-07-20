@@ -30,6 +30,7 @@
 
   type ChallengeEntry = {
     id: number;
+    slug: string;
     title: string;
     points: number;
     difficulty: Difficulty;
@@ -110,6 +111,7 @@
       : challengesLoader.r?.data?.data.challenges
           .map((c) => ({
             id: c.id,
+            slug: c.slug,
             title: c.title,
             points: c.value || 0,
             categories: getCategoriesFromTags(c.tags),
@@ -291,7 +293,9 @@
         {#each solves as solve (`solve-${solve.id}-${solve.solver.id}`)}
           <tr class="bg-base-100 hover:bg-base-300/30">
             <td class="border-y border-base-300 py-2 px-3">
-              <div class="font-medium">{solve.title}</div>
+              <a href="/challenges?c={solve.slug}" class="cursor-pointer"
+                ><div class="font-medium">{solve.title}</div></a
+              >
             </td>
             <td class="border-y border-base-300 py-2 px-3">
               <div class="flex flex-wrap justify-center gap-1">
