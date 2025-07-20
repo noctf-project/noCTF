@@ -12,6 +12,8 @@
   import { onMount } from "svelte";
   import { toasts } from "$lib/stores/toast";
   import Icon from "@iconify/svelte";
+  import { page } from "$app/state";
+  import { goto } from "$app/navigation";
 
   const CHALLENGE_DETAIL_CACHE_TIME = 1000 * 60 * 5; // 5 minutes
 
@@ -97,11 +99,36 @@
   let modalLoading = $state(false);
   let modalChallData: ChallengeCardData | undefined = $state();
   let modalChallDetails: ChallDetails | undefined = $state();
+  let loadedFromURLParam = $state(false);
+
+  async function updateQueryParam(key: string, value: string) {
+    const url = new URL(page.url);
+    url.searchParams.set(key, value);
+    goto(url.toString(), { replaceState: true });
+  }
+
+  // Handle initial query parameter
+  $effect(() => {
+    // Only process the query parameter once when challenges are available
+    if (!loadedFromURLParam && allChallenges) {
+      loadedFromURLParam = true;
+      const urlParams = page.url.searchParams.get("challenge");
+      if (urlParams) {
+        const challData = allChallenges.find(
+          (c) => c.id.toString() === urlParams,
+        );
+        if (challData) {
+          onChallengeClicked(challData);
+        }
+      }
+    }
+  });
 
   async function onChallengeClicked(challData: ChallengeCardData) {
     modalVisible = true;
     modalChallData = challData;
     modalChallDetails = undefined; // Reset details while loading/fetching
+    updateQueryParam("challenge", challData.id.toString());
     const cached = challDetailsMap[challData.id];
     if (
       cached &&
@@ -152,6 +179,10 @@
 
   function closeModal() {
     modalVisible = false;
+    updateQueryParam("challenge", "");
+    const url = new URL(page.url);
+    url.searchParams.delete("challenge");
+    goto(url.toString(), { replaceState: true });
   }
 </script>
 
