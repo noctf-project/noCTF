@@ -203,6 +203,16 @@ export type AdminQueryAnnouncementsRequest = Static<
   typeof AdminQueryAnnouncementsRequest
 >;
 
+export const AdminRevokeSessionsRequest = Type.Object(
+  {
+    app_id: Type.Union([Type.Number({ minimum: 1 }), Type.Null()]),
+  },
+  { additionalProperties: false },
+);
+export type AdminRevokeSessionsRequest = Static<
+  typeof AdminRevokeSessionsRequest
+>;
+
 export const AdminCreateAnnouncementRequest = Type.Composite(
   [
     Type.Pick(Announcement, [

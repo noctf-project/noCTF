@@ -224,7 +224,7 @@ export class IdentityService {
     ]);
   }
 
-  async revokeUserSessions(user_id: number, app_id?: number) {
+  async revokeUserSessions(user_id: number, app_id: number | null) {
     const sessions = await this.sessionDAO.revokeUserSessions(user_id, app_id);
     await Promise.all(
       sessions.map(async ({ id, expires_at }) => {
