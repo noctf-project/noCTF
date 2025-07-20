@@ -22,6 +22,7 @@
     created_at: string;
     updated_at: string;
     version: number;
+    important: boolean;
   };
 
   type CreateAnnouncementForm = {
@@ -29,6 +30,7 @@
     message: string;
     visible_to: string[];
     delivery_channels: string[];
+    important: boolean;
   };
 
   type AdminUser = {
@@ -58,6 +60,7 @@
     message: "",
     visible_to: [],
     delivery_channels: [],
+    important: false,
   });
 
   let editForm = $state<CreateAnnouncementForm>({
@@ -65,6 +68,7 @@
     message: "",
     visible_to: [],
     delivery_channels: [],
+    important: false,
   });
 
   let isPublic = $state(false);
@@ -323,6 +327,7 @@
           message: createForm.message.trim(),
           visible_to: createForm.visible_to,
           delivery_channels: createForm.delivery_channels,
+          important: createForm.important,
         },
       });
 
@@ -335,6 +340,7 @@
       createForm.message = "";
       createForm.visible_to = [];
       createForm.delivery_channels = [];
+      createForm.important = false;
       isPublic = false;
       selectedUsers = [];
       selectedTeams = [];
@@ -355,6 +361,7 @@
     editForm.message = announcement.message;
     editForm.visible_to = [...announcement.visible_to];
     editForm.delivery_channels = [...announcement.delivery_channels];
+    editForm.important = announcement.important;
 
     const { users, teams, roles, publicFlag } = await parseVisibilityArray(
       announcement.visible_to,
@@ -397,6 +404,7 @@
           visible_to: editForm.visible_to,
           delivery_channels: editForm.delivery_channels,
           version: editingAnnouncement.version,
+          important: editForm.important,
         },
       });
 
@@ -695,6 +703,19 @@
             </div>
           </div>
 
+          <label
+            class="cursor-pointer label justify-start"
+            for="important-checkbox-edit"
+          >
+            <input
+              id="important-checkbox-edit"
+              type="checkbox"
+              class="checkbox checkbox-primary mr-2"
+              bind:checked={editForm.important}
+            />
+            <span class="label-text">Important (will pop-up on browser)</span>
+          </label>
+
           {#if deliveryChannels.r}
             <div class="form-control">
               <fieldset>
@@ -750,6 +771,15 @@
           <div class="flex-1">
             <h4 class="text-xl font-semibold mb-2">
               {announcement.title}
+              {#if announcement.important}
+                <span class="badge badge-error pop badge-sm">
+                  <Icon
+                    icon="material-symbols:notification-important-rounded"
+                    class="text-xs mr-1"
+                  />
+                  Important
+                </span>
+              {/if}
             </h4>
 
             <div class="prose prose-sm max-w-none mb-4">
@@ -943,6 +973,19 @@
               />
             </div>
           </div>
+
+          <label
+            class="cursor-pointer label justify-start"
+            for="important-checkbox-create"
+          >
+            <input
+              id="important-checkbox-create"
+              type="checkbox"
+              class="checkbox checkbox-primary mr-2"
+              bind:checked={createForm.important}
+            />
+            <span class="label-text">Important (will pop-up on browser)</span>
+          </label>
 
           {#if deliveryChannels.loading}
             <div class="flex justify-center items-center py-4">
