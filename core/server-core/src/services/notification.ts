@@ -12,6 +12,7 @@ import Handlebars from "handlebars";
 import TTLCache from "@isaacs/ttlcache";
 import { OutgoingSolveWebhookGeneric } from "@noctf/api/datatypes";
 import { ValidationError } from "../errors.ts";
+import { IsTimeBetweenSeconds } from "../util/time.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -186,25 +187,21 @@ export class NotificationService {
   private async handleSubmission(data: EventItem<SubmissionUpdateEvent>) {
     const event = data.data;
     if (event.hidden) return;
-    const [notification, setup] = await Promise.all([
+    const [{ value: notification }, { value: setup }] = await Promise.all([
       this.configService.get(NotificationConfig),
       this.configService.get(SetupConfig),
     ]);
-    const ctime = Math.floor(event.created_at.getTime() / 1000);
     if (
-      typeof setup.value.start_time_s === "number" &&
-      ctime <= setup.value.start_time_s
-    ) {
-      return;
-    }
-    if (
-      typeof setup.value.end_time_s === "number" &&
-      ctime >= setup.value.end_time_s
+      !IsTimeBetweenSeconds(
+        event.created_at,
+        setup.start_time_s,
+        setup.end_time_s,
+      )
     ) {
       return;
     }
 
-    const enabled = notification.value.submission?.filter(
+    const enabled = notification.submission?.filter(
       (b) =>
         b.enabled &&
         (!b.max_seq || event.seq <= b.max_seq) &&

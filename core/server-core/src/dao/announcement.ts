@@ -16,6 +16,7 @@ const FIELDS = [
   "updated_by",
   "visible_to",
   "delivery_channels",
+  "important",
   "version",
 ] as const;
 
@@ -28,6 +29,7 @@ export class AnnouncementDAO {
     updated_by,
     visible_to,
     delivery_channels,
+    important,
   }: Omit<
     Announcement,
     "id" | "created_at" | "updated_at" | "version"
@@ -41,6 +43,7 @@ export class AnnouncementDAO {
         updated_by,
         visible_to,
         delivery_channels,
+        important,
       })
       .returning(["created_at", "updated_at", "id", "version"])
       .executeTakeFirstOrThrow();
@@ -51,6 +54,7 @@ export class AnnouncementDAO {
       updated_by,
       visible_to,
       delivery_channels,
+      important,
       ...result,
     };
   }
@@ -87,7 +91,12 @@ export class AnnouncementDAO {
     version?: number,
     v: Pick<
       Updateable<DB["announcement"]>,
-      "title" | "message" | "updated_by" | "visible_to" | "delivery_channels"
+      | "title"
+      | "message"
+      | "updated_by"
+      | "visible_to"
+      | "delivery_channels"
+      | "important"
     > = {},
   ) {
     let query = this.db

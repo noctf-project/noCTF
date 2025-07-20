@@ -210,6 +210,7 @@ export const AdminCreateAnnouncementRequest = Type.Composite(
       "message",
       "visible_to",
       "delivery_channels",
+      "important",
     ]),
   ],
   { additionalProperties: false },

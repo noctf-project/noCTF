@@ -113,9 +113,7 @@
       loadedFromURLParam = true;
       const slugFromURL = page.url.searchParams.get("c");
       if (slugFromURL) {
-        const challData = allChallenges.find(
-          (c) => c.slug === slugFromURL,
-        );
+        const challData = allChallenges.find((c) => c.slug === slugFromURL);
         if (challData) {
           onChallengeClicked(challData);
         }
