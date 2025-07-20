@@ -8,7 +8,6 @@ export const IsTimeBetweenSeconds = (
 ) => {
   const ctime =
     typeof time === "number" ? time : Math.floor(time.getTime() / 1000);
-  console.log(ctime);
   if (typeof start_s === "number" && ctime <= start_s) {
     return false;
   }
