@@ -27,6 +27,7 @@ import { ChallengePlugin } from "./types.ts";
 import { CoreChallengePlugin } from "./core_plugin.ts";
 import { LocalCache } from "../../util/local_cache.ts";
 import type { SerializableMap } from "@noctf/api/types";
+import { SubmissionStatus } from "@noctf/api/enums";
 
 type Props = Pick<
   ServiceCradle,
@@ -205,7 +206,7 @@ export class ChallengeService {
     userId: number,
     data: string,
     metadata?: SerializableMap,
-  ) {
+  ): Promise<{ status: SubmissionStatus; created_at: Date }> {
     let challenge;
     if (typeof ch === "number") {
       challenge = await this.get(ch, true);
@@ -255,7 +256,7 @@ export class ChallengeService {
         is_update: false,
         comments: state.comment || "",
       });
-      return state.status;
+      return { status: state.status, created_at };
       // TODO: queueing, currently it is just marked as queued. probably emit
       // TODO: to event bus
     }

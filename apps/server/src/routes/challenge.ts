@@ -14,6 +14,7 @@ import { Policy } from "@noctf/server-core/util/policy";
 import { SetupConfig } from "@noctf/api/config";
 import { DivisionQuery } from "@noctf/api/query";
 import { GetRouteKey } from "@noctf/server-core/util/limit_keys";
+import { IsTimeBetweenSeconds } from "@noctf/server-core/util/time";
 
 export async function routes(fastify: FastifyInstance) {
   const {
@@ -238,10 +239,10 @@ export async function routes(fastify: FastifyInstance) {
       const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
       const { id } = request.params;
 
-      const config = await configService.get(SetupConfig);
-      const end = config.value.end_time_s;
+      const { value: config } = await configService.get(SetupConfig);
+      const end = config.end_time_s;
       if (
-        !config.value.allow_late_submissions &&
+        !config.allow_late_submissions &&
         (end || end === 0) &&
         ctime > end * 1000
       ) {
@@ -264,14 +265,23 @@ export async function routes(fastify: FastifyInstance) {
         throw new ForbiddenError("You are not currently part of a team");
       }
 
+      const { status, created_at } = await challengeService.solve(
+        challenge,
+        membership.team_id,
+        request.user.id,
+        request.body.data,
+        { ip: request.ip },
+      );
+
       return {
-        data: await challengeService.solve(
-          challenge,
-          membership.team_id,
-          request.user.id,
-          request.body.data,
-          { ip: request.ip },
-        ),
+        data: {
+          status,
+          hidden: !IsTimeBetweenSeconds(
+            created_at,
+            config.start_time_s,
+            config.end_time_s,
+          ),
+        },
       };
     },
   );
