@@ -13,6 +13,9 @@ export const STATIC_EXPORT_CONFIG: StaticExportConfig = {
 };
 
 export const STATIC_ROUTES = {
+  USER_ME: "/user/me",
+  MY_TEAM: "/team",
+
   // Query endpoints (POST)
   TEAMS_QUERY: "/teams/query",
   USERS_QUERY: "/users/query",

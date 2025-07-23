@@ -1,7 +1,10 @@
 import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "@noctf/openapi-spec";
 
-import { IS_STATIC_EXPORT, staticExportMiddleware } from "$lib/static_export/middleware";
+import {
+  IS_STATIC_EXPORT,
+  staticExportMiddleware,
+} from "$lib/static_export/middleware";
 
 export const SESSION_TOKEN_KEY = "noctf-session-token";
 
@@ -21,7 +24,7 @@ const authMiddleware: Middleware = {
 };
 
 if (IS_STATIC_EXPORT) {
-    client.use(staticExportMiddleware);
+  client.use(staticExportMiddleware);
 }
 client.use(authMiddleware);
 

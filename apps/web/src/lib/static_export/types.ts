@@ -1,18 +1,34 @@
 import type { paths } from "@noctf/openapi-spec";
 import type { PathResponse } from "$lib/api/types";
 
+export type UserMeResponse = PathResponse<"/user/me", "get">;
+export type MyTeamResponse = PathResponse<"/team", "get">;
+
 // Team types
-export type Team = PathResponse<"/teams/query", "post">["data"]["entries"][number];
-export type TeamsQueryRequest = NonNullable<paths["/teams/query"]["post"]["requestBody"]>["content"]["application/json"];
+export type Team = PathResponse<
+  "/teams/query",
+  "post"
+>["data"]["entries"][number];
+export type TeamsQueryRequest = NonNullable<
+  paths["/teams/query"]["post"]["requestBody"]
+>["content"]["application/json"];
 export type TeamsQueryResponse = PathResponse<"/teams/query", "post">;
 
 // User types
-export type User = PathResponse<"/users/query", "post">["data"]["entries"][number];
-export type UsersQueryRequest = NonNullable<paths["/users/query"]["post"]["requestBody"]>["content"]["application/json"];
+export type User = PathResponse<
+  "/users/query",
+  "post"
+>["data"]["entries"][number];
+export type UsersQueryRequest = NonNullable<
+  paths["/users/query"]["post"]["requestBody"]
+>["content"]["application/json"];
 export type UsersQueryResponse = PathResponse<"/users/query", "post">;
 
 // Scoreboard types
-export type ScoreboardResponse = PathResponse<"/scoreboard/divisions/{id}", "get">;
+export type ScoreboardResponse = PathResponse<
+  "/scoreboard/divisions/{id}",
+  "get"
+>;
 export type ScoreboardApiResponse = ScoreboardResponse["data"];
 export type ScoreboardEntry = ScoreboardResponse["data"]["entries"][number];
 
@@ -20,7 +36,10 @@ export type ScoreboardEntry = ScoreboardResponse["data"]["entries"][number];
 export type ChallengesResponse = PathResponse<"/challenges", "get">;
 export type Challenge = ChallengesResponse["data"]["challenges"][number];
 export type ChallengeDetailsResponse = PathResponse<"/challenges/{id}", "get">;
-export type ChallengeSolvesResponse = PathResponse<"/challenges/{id}/solves", "get">;
+export type ChallengeSolvesResponse = PathResponse<
+  "/challenges/{id}/solves",
+  "get"
+>;
 
 // Other response types
 export type AnnouncementsResponse = PathResponse<"/announcements", "get">;
@@ -62,8 +81,6 @@ export interface PaginatedResponse<T> {
     page_size: number;
   };
 }
-
-
 
 // Challenge solves structure (keyed by challenge ID)
 export interface ChallengeSolves {

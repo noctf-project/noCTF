@@ -24,6 +24,8 @@ import type {
   ChallengeSolvesResponse,
   Team,
   ScoreboardEntry,
+  UserMeResponse,
+  MyTeamResponse,
 } from "./types";
 
 export const IS_STATIC_EXPORT = STATIC_EXPORT_CONFIG.enabled;
@@ -35,6 +37,7 @@ class StaticExportHandler {
   private scoreboardMap = new Map<number, Map<number, ScoreboardEntry>>(); // division: { team: entry }
   private taggedScoreboardsCache = new Map<string, ScoreboardResponse>();
   private setupPromise: Promise<void> | null = null;
+  private viewAs: number | null = 459;
 
   constructor() {
     this.ensureSetup();
@@ -110,6 +113,87 @@ class StaticExportHandler {
       console.error(`Error loading static file ${path}:`, error);
       throw error;
     }
+  }
+
+  async handleUserMe(): Promise<UserMeResponse> {
+    await this.ensureSetup();
+    if (!this.viewAs) {
+      throw new Error("Viewing as public");
+    }
+    const team = this.teamsMap.get(this.viewAs);
+    if (!team) {
+      throw new Error(`Team data not available for team ${this.viewAs}`);
+    }
+    return {
+      data: {
+        id: -1,
+        name: "",
+        bio: "",
+        roles: [],
+        created_at: "",
+        team_id: this.viewAs,
+        is_admin: false,
+        team_name: team.name,
+        division_id: team.division_id,
+      },
+    };
+  }
+
+  async handleMyTeam(): Promise<MyTeamResponse> {
+    await this.ensureSetup();
+    if (!this.viewAs) {
+      throw new Error("Viewing as public");
+    }
+    const team = this.teamsMap.get(this.viewAs);
+    if (!team) {
+      throw new Error(`Team data not available for team ${this.viewAs}`);
+    }
+    return { data: team };
+  }
+
+  async handleChallenges(): Promise<ChallengesResponse> {
+    await this.ensureSetup()
+
+    const challenges = await this.loadStaticFile<ChallengesResponse>(
+      STATIC_FILES.CHALLENGES,
+    );
+    if (!challenges) {
+      throw new Error("Challenges data not available in static export");
+    }
+    if (!this.viewAs) {
+      return {
+        data: {
+          challenges: challenges.data.challenges.map((v) => ({
+            ...v,
+            solved_by_me: false,
+          })),
+        },
+      };
+    }
+    const team = this.teamsMap.get(this.viewAs);
+    if (!team) {
+      throw new Error(`Team data not available for team ${this.viewAs}`);
+    }
+    const s = this.scoreboardMap.get(team.division_id);
+    if (!s) {
+      throw new Error(
+        `Scoreboard data for division ${team.division_id} not available`,
+      );
+    }
+    const scoreboardEntry = s.get(team.id);
+    const solves = new Set(
+      scoreboardEntry?.solves
+        .filter((v) => !v.hidden)
+        .map((v) => v.challenge_id),
+    );
+    return {
+      data: {
+        challenges: challenges.data.challenges.map((v) => ({
+          ...v,
+          solved_by_me: solves.has(v.id),
+        })),
+      },
+    };
   }
 
   async handleTeamsQuery(body: TeamsQueryRequest): Promise<TeamsQueryResponse> {
@@ -376,7 +460,11 @@ class StaticExportHandler {
 
       let result: unknown = null;
 
-      if (path === STATIC_ROUTES.TEAMS_QUERY && method === "post") {
+      if (path === STATIC_ROUTES.USER_ME && method === "get") {
+        result = await this.handleUserMe();
+      } else if (path === STATIC_ROUTES.MY_TEAM && method === "get") {
+        result = await this.handleMyTeam();
+      } else if (path === STATIC_ROUTES.TEAMS_QUERY && method === "post") {
         result = await this.handleTeamsQuery(body as TeamsQueryRequest);
       } else if (path === STATIC_ROUTES.USERS_QUERY && method === "post") {
         result = await this.handleUsersQuery(body as UsersQueryRequest);
@@ -404,9 +492,7 @@ class StaticExportHandler {
           STATIC_FILES.ANNOUNCEMENTS,
         );
       } else if (path === STATIC_ROUTES.CHALLENGES && method === "get") {
-        result = await this.loadStaticFile<ChallengesResponse>(
-          STATIC_FILES.CHALLENGES,
-        );
+        result = await this.handleChallenges();
       } else if (path === STATIC_ROUTES.DIVISIONS && method === "get") {
         result = await this.loadStaticFile<DivisionsResponse>(
           STATIC_FILES.DIVISIONS,

@@ -8,7 +8,7 @@ import type {
 
 export function paginateEntries<T>(
   entries: T[],
-  { page = 1, page_size = 60 }: PaginationParams
+  { page = 1, page_size = 60 }: PaginationParams,
 ): { entries: T[]; total: number; page: number; page_size: number } {
   const total = entries.length;
   const startIndex = (page - 1) * page_size;
@@ -24,7 +24,7 @@ export function paginateEntries<T>(
 
 export function filterTeams(
   entries: Team[],
-  { name, division_id, ids }: Omit<TeamFilterParams, 'page' | 'page_size'>
+  { name, division_id, ids }: Omit<TeamFilterParams, "page" | "page_size">,
 ): Team[] {
   let filtered = entries;
 
@@ -39,7 +39,7 @@ export function filterTeams(
   if (name) {
     const searchTerm = name.toLowerCase();
     filtered = filtered.filter((entry) =>
-      entry.name.toLowerCase().includes(searchTerm)
+      entry.name.toLowerCase().includes(searchTerm),
     );
   }
 
@@ -48,7 +48,7 @@ export function filterTeams(
 
 export function filterUsers(
   entries: User[],
-  { name, ids }: Omit<UserFilterParams, 'page' | 'page_size'>
+  { name, ids }: Omit<UserFilterParams, "page" | "page_size">,
 ): User[] {
   let filtered = entries;
   if (ids && Array.isArray(ids)) {
@@ -58,13 +58,16 @@ export function filterUsers(
   if (name) {
     const searchTerm = name.toLowerCase();
     filtered = filtered.filter((entry) =>
-      entry.name.toLowerCase().includes(searchTerm)
+      entry.name.toLowerCase().includes(searchTerm),
     );
   }
 
   return filtered;
 }
 
-export function getDivisionFilePath(divisionId: string, filename: string): string {
+export function getDivisionFilePath(
+  divisionId: string,
+  filename: string,
+): string {
   return `division:${divisionId}/${filename}`;
 }
