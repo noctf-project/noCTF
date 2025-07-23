@@ -7,7 +7,7 @@
   import configState from "$lib/state/config.svelte";
   import { untrack } from "svelte";
 
-  let viewMode = $state<"overview" | "challenges" | "categories">("categories");
+  let viewMode = $state<"overview" | "challenges" | "categories">("overview");
   let selectedDivision = $state<number>(1);
 
   const apiDivisions = $state(wrapLoadable(api.GET("/divisions")));

@@ -125,7 +125,7 @@
         </div>
 
         <div class="flex flex-row flex-wrap gap-4">
-          {#each userStats.team_tag_counts.toSorted((a, b) => a.id - b.id) as ttc}
+          {#each userStats.team_tag_counts?.toSorted((a, b) => a.id - b.id) as ttc}
             {@render numberCard(
               teamTags.find(({ id }) => id === ttc.id)!.name,
               "material-symbols:auto-label",
