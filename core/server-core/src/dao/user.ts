@@ -132,10 +132,17 @@ export class UserDAO {
       roles?: string[];
       ids?: number[];
       name?: string;
+      created_at?: [Date | null, Date | null];
     },
     limit?: { limit?: number; offset?: number },
   ) {
     let query = this.db.selectFrom("user");
+    if (params?.created_at) {
+      if (params.created_at[0])
+        query = query.where("created_at", ">=", params.created_at[0]);
+      if (params.created_at[1])
+        query = query.where("created_at", "<=", params.created_at[1]);
+    }
     if (params?.flags) {
       query = SplitYesNoQuery(query, "flags", params.flags);
     }

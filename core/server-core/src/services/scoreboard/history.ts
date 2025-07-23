@@ -4,7 +4,6 @@ import { HistoryDataPoint, ScoreHistoryDAO } from "../../dao/score_history.ts";
 import { decode, encode } from "cbor-x";
 import { Compress, Decompress } from "../../util/message_compression.ts";
 import { ServiceCradle } from "../../index.ts";
-import { ScoreboardDataLoader } from "./loader.ts";
 import { Coleascer } from "../../util/coleascer.ts";
 
 const CACHE_NAMESPACE = "core:svc:score:history";
@@ -12,13 +11,14 @@ const CACHE_DATA_HASH_KEY = `${CACHE_NAMESPACE}:data`;
 
 type Props = Pick<ServiceCradle, "databaseClient" | "redisClientFactory">;
 
-type DataPoint = [number, number];
+type DataPoints = [number[], number[]];
+
 export class ScoreboardHistory {
   private readonly databaseClient;
   private readonly redisClientFactory;
   private readonly scoreHistoryDAO;
 
-  private readonly teamColeascer = new Coleascer<DataPoint[]>();
+  private readonly teamColeascer = new Coleascer<DataPoints>();
 
   constructor({ databaseClient, redisClientFactory }: Props) {
     this.databaseClient = databaseClient;
@@ -60,7 +60,7 @@ export class ScoreboardHistory {
     await multi.exec();
   }
 
-  async getHistoryForTeams(teams: number[]): Promise<Map<number, DataPoint[]>> {
+  async getHistoryForTeams(teams: number[]): Promise<Map<number, DataPoints>> {
     if (!teams.length) return new Map();
     const client = await this.redisClientFactory.getClient();
     const data = await client.hmGet(
@@ -68,8 +68,8 @@ export class ScoreboardHistory {
       CACHE_DATA_HASH_KEY,
       teams.map((t) => t.toString()),
     );
-    const out = new Map<number, DataPoint[]>();
-    const inProgress = new Map<number, Promise<DataPoint[]>>();
+    const out = new Map<number, DataPoints>();
+    const inProgress = new Map<number, Promise<DataPoints>>();
     const missing = teams.filter((t, i) => {
       if (data[i]) {
         out.set(t, decode(data[i]));
@@ -82,9 +82,9 @@ export class ScoreboardHistory {
       }
       if (!data[i]) return true;
     });
-    const toFetch = new Map<number, PromiseWithResolvers<DataPoint[]>>(
+    const toFetch = new Map<number, PromiseWithResolvers<DataPoints>>(
       missing.map((t) => {
-        const result: [number, PromiseWithResolvers<DataPoint[]>] = [
+        const result: [number, PromiseWithResolvers<DataPoints>] = [
           t,
           Promise.withResolvers(),
         ];
@@ -97,16 +97,16 @@ export class ScoreboardHistory {
       fetched.forEach((v, k) => out.set(k, v));
     }
     for (const [team, promise] of inProgress) {
-      out.set(team, await promise.catch(() => [] as DataPoint[])); // we want to return at least sth
+      out.set(team, await promise.catch(() => [[], []] as DataPoints)); // we want to return at least sth
     }
     return out;
   }
 
   private async fetchFromDatabase(
-    toFetch: Map<number, PromiseWithResolvers<DataPoint[]>>,
+    toFetch: Map<number, PromiseWithResolvers<DataPoints>>,
   ) {
-    const fetched = new Map<number, DataPoint[]>(
-      toFetch.keys().map((t) => [t, []] as [number, DataPoint[]]),
+    const fetched = new Map<number, DataPoints>(
+      toFetch.keys().map((t) => [t, [[], []]] as [number, DataPoints]),
     );
     const client = await this.redisClientFactory.getClient();
     let lastTeamId: number | undefined;
@@ -127,10 +127,11 @@ export class ScoreboardHistory {
             lastScore = 0;
           }
           const updated = Math.floor(updated_at.getTime() / 1000);
-          if (team.length && updated === team[team.length - 1][0]) {
-            team[team.length - 1][1] = score - lastScore;
+          if (team.length && updated === team[0][team.length - 1]) {
+            team[1][team.length - 1] = score - lastScore;
           } else {
-            team.push([updated - lastUpdated, score - lastScore]);
+            team[0].push(updated - lastUpdated);
+            team[1].push(score - lastScore);
           }
           lastUpdated = updated;
           lastScore = score;

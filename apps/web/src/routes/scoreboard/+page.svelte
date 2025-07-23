@@ -28,7 +28,7 @@
       value: number;
       created_at: Date;
     }[];
-    graph: [number, number][];
+    graph: [number[], number[]];
   };
 
   type ChallengeEntry = {
@@ -153,8 +153,8 @@
         last_solve: undefined,
         solves: [],
         awards: [],
-        graph: [],
-      };
+        graph: [[], []],
+      } as ScoreboardEntry;
 
     if (!apiMyTeam?.r?.data?.data) return null;
 

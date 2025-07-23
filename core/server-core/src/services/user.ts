@@ -44,12 +44,7 @@ export class UserService {
     return this.userDAO.listSummary(params, limit);
   }
 
-  async getCount(params?: {
-    flags?: string[];
-    roles?: string[];
-    division_id?: number;
-    ids?: number[];
-  }) {
+  async getCount(params?: Parameters<UserDAO["listQuery"]>[0]) {
     return this.userDAO.getCount(params);
   }
 

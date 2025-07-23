@@ -226,12 +226,7 @@ export class TeamService {
     return this.teamDAO.listNames(params, limit);
   }
 
-  async getCount(params?: {
-    flags?: string[];
-    division_id?: number;
-    tag_ids?: number[];
-    ids?: number[];
-  }) {
+  async getCount(params?: Parameters<TeamDAO["listQuery"]>[0]) {
     return this.teamDAO.getCount(params);
   }
 
