@@ -79,14 +79,14 @@ export async function routes(fastify: FastifyInstance) {
             scoreboard.entries.map(({ team_id }) => team_id),
           )
         : new Map();
+
       const entries = scoreboard.entries.map((e) => ({
         ...e,
         solves: admin ? e.solves : e.solves.filter((x) => !x.hidden),
-        graph:
-          WindowDeltaedTimeSeriesPoints(
-            graphs.get(e.team_id),
-            request.query.graph_interval || 1,
-          ) || [],
+        graph: WindowDeltaedTimeSeriesPoints(
+          graphs.get(e.team_id),
+          request.query.graph_interval || 1,
+        ),
       }));
 
       return {
@@ -159,7 +159,7 @@ export async function routes(fastify: FastifyInstance) {
           ...entry,
           solves,
           graph: WindowDeltaedTimeSeriesPoints(
-            graph.get(request.params.id) || [],
+            graph.get(request.params.id) || [[], []],
             request.query.graph_interval || 1,
           ),
         },
