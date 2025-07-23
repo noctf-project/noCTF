@@ -262,9 +262,9 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
 
     TOKEN = os.getenv("NOCTF_TOKEN")
-    if not TOKEN:
-        print("NOCTF_TOKEN env var for static_export user is required")
-        exit(1)
+    if not TOKEN and TOKEN != '':
+       print("NOCTF_TOKEN env var for static_export user is required")
+       exit(1)
 
     exporter = NoCTFExporter(args.base_url, TOKEN, args.output)
     exporter.export_all()

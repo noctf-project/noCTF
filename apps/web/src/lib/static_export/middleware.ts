@@ -152,7 +152,7 @@ class StaticExportHandler {
   }
 
   async handleChallenges(): Promise<ChallengesResponse> {
-    await this.ensureSetup()
+    await this.ensureSetup();
 
     const challenges = await this.loadStaticFile<ChallengesResponse>(
       STATIC_FILES.CHALLENGES,

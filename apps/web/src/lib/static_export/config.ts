@@ -6,7 +6,9 @@ export interface StaticExportConfig {
 }
 
 export const STATIC_EXPORT_CONFIG: StaticExportConfig = {
-  enabled: !!import.meta.env.VITE_IS_STATIC_EXPORT || true,
+  enabled: ["1", "true"].includes(
+    (import.meta.env.VITE_IS_STATIC_EXPORT || "").toLowerCase(),
+  ),
   baseUrl: "/export",
   defaultPageSize: 60,
   maxPageSize: 1000,
