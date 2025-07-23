@@ -5,11 +5,16 @@
   export interface UserStat {
     user_count: number;
     team_count: number;
+    team_tag_counts: {
+      id: number;
+      team_count: number;
+    }[];
   }
 
   interface Props {
     challengeStats: ChallengeStat[];
     userStats: UserStat;
+    teamTags: { id: number; name: string }[];
     loading?: boolean;
     title?: string;
   }
@@ -17,6 +22,7 @@
   let {
     challengeStats,
     userStats,
+    teamTags,
     loading: _loading = false,
     title: _title,
   }: Props = $props();
@@ -81,9 +87,11 @@
   colour: string,
   value: number | string,
 )}
-  <div class="bg-base-200 rounded-lg p-4 w-full sm:w-52">
+  <div
+    class="bg-base-200 flex flex-col justify-between rounded-lg p-4 w-full sm:w-52"
+  >
     <div class="flex items-center gap-2 mb-2">
-      <Icon {icon} class="text-lg {colour}" />
+      <Icon {icon} class="text-lg {colour} min-w-6" />
       <span class="text-sm font-medium text-base-content/70">{title}</span>
     </div>
     <div class="text-2xl font-bold text-base-content">{value}</div>
@@ -99,20 +107,33 @@
         <h3 class="text-2xl font-bold">Users</h3>
       </div>
 
-      <div class="flex flex-row gap-4">
-        {@render numberCard(
-          "Users",
-          "material-symbols:person",
-          "text-primary",
-          userStats.user_count,
-        )}
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-row gap-4">
+          {@render numberCard(
+            "Users",
+            "material-symbols:person",
+            "text-primary",
+            userStats.user_count,
+          )}
 
-        {@render numberCard(
-          "Teams",
-          "mdi:account-group",
-          "text-secondary",
-          userStats.team_count,
-        )}
+          {@render numberCard(
+            "Teams",
+            "mdi:account-group",
+            "text-secondary",
+            userStats.team_count,
+          )}
+        </div>
+
+        <div class="flex flex-row flex-wrap gap-4">
+          {#each userStats.team_tag_counts.toSorted((a, b) => a.id - b.id) as ttc}
+            {@render numberCard(
+              teamTags.find(({ id }) => id === ttc.id)!.name,
+              "material-symbols:auto-label",
+              "text-info",
+              ttc.team_count,
+            )}
+          {/each}
+        </div>
       </div>
     </div>
   </div>

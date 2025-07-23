@@ -43,7 +43,14 @@ export class StatsService {
   async getUserStats() {
     const user_count = await this.userService.getCount();
     const team_count = await this.teamService.getCount();
-    return { user_count, team_count };
+    const tags = await this.teamService.listTags();
+    const team_tag_counts = await Promise.all(
+      tags.map(async ({ id }) => ({
+        id,
+        team_count: await this.teamService.getCount({ tag_ids: [id] }),
+      })),
+    );
+    return { user_count, team_count, team_tag_counts };
   }
 
   async getChallengeStats(division_id: number) {

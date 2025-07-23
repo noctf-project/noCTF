@@ -120,6 +120,12 @@ export const ListUserStatsResponse = Type.Object({
   data: Type.Object({
     user_count: Type.Integer(),
     team_count: Type.Integer(),
+    team_tag_counts: Type.Array(
+      Type.Object({
+        id: Type.Integer(),
+        team_count: Type.Integer(),
+      }),
+    ),
   }),
 });
 export type ListUserStatsResponse = Static<typeof ListUserStatsResponse>;

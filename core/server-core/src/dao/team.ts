@@ -132,7 +132,7 @@ export class TeamDAO {
     q: Parameters<TeamDAO["listQuery"]>[0] = {},
     limit?: LimitOffset,
   ): Promise<{ id: number; name: string }[]> {
-    let query = this.listQuery(q, limit).select(["id", "name"]);
+    const query = this.listQuery(q, limit).select(["id", "name"]);
 
     return query.execute();
   }
@@ -306,6 +306,7 @@ export class TeamDAO {
       flags?: string[];
       ids?: number[];
       name?: string;
+      tag_ids?: number[];
       division_id?: number;
     },
     limit?: { limit?: number; offset?: number },
@@ -323,6 +324,15 @@ export class TeamDAO {
     }
     if (params?.ids && params?.ids.length) {
       query = query.where("id", "in", params.ids);
+    }
+
+    if (params?.tag_ids && params?.tag_ids.length) {
+      query = query.where("id", "in", (eb) =>
+        eb
+          .selectFrom("team_tag_member")
+          .select("team_id")
+          .where("tag_id", "in", params.tag_ids!),
+      );
     }
 
     if (limit?.limit) {

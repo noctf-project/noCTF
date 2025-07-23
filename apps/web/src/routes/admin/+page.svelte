@@ -10,8 +10,9 @@
   let viewMode = $state<"overview" | "challenges" | "categories">("categories");
   let selectedDivision = $state<number>(1);
 
-  let apiDivisions = $state(wrapLoadable(api.GET("/divisions")));
-  let apiChallenges = $state(wrapLoadable(api.GET("/challenges")));
+  const apiDivisions = $state(wrapLoadable(api.GET("/divisions")));
+  const apiTeamTags = $state(wrapLoadable(api.GET("/team_tags")));
+  const apiChallenges = $state(wrapLoadable(api.GET("/challenges")));
   let apiChallengeStats = $state(
     wrapLoadable(
       api.GET("/stats/challenges", {
@@ -23,6 +24,7 @@
 
   const divisions = $derived(apiDivisions.r?.data?.data || []);
   const challenges = $derived(apiChallenges.r?.data?.data.challenges || []);
+  const teamTags = $derived(apiTeamTags.r?.data?.data?.tags || []);
 
   const challengeMap = $derived.by(() => {
     const map = new Map();
@@ -137,6 +139,7 @@
       <StatsOverview
         {challengeStats}
         {userStats}
+        {teamTags}
         {loading}
         title="Challenge Statistics Overview"
       />
