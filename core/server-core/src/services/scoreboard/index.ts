@@ -192,7 +192,7 @@ export class ScoreboardService {
     endTime?: number,
   ): [number[], number[]] {
     let start = 0;
-    let end = graph.length;
+    let end = graph[0].length;
     let ts = 0;
     let score = 0;
     if (startTime !== undefined) {
