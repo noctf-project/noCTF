@@ -1,7 +1,7 @@
 <script lang="ts" module>
   export interface TeamChartData {
     name: string | undefined;
-    data: Array<[number, number]>; // [timestamp, score]
+    data: [number[], number[]]; // [timestamp, score]
   }
 
   interface DataPoint {
@@ -52,9 +52,9 @@
       let y = 0;
       return {
         label: team.name,
-        data: team.data.map(([timestamp, score]) => {
+        data: team.data[0].map((timestamp, idx) => {
           x = x + timestamp * 1000;
-          y = y + score;
+          y = y + team.data[1][idx]!;
           return {
             x,
             y,
@@ -63,8 +63,8 @@
         borderColor: lineColours[index % lineColours.length],
         backgroundColor: lineColours[index % lineColours.length],
         tension: 0.1,
-        pointRadius: team.data.length === 1 ? 4 : 0,
-        pointHoverRadius: team.data.length === 1 ? 4 : 0,
+        pointRadius: team.data[0].length === 1 ? 4 : 0,
+        pointHoverRadius: team.data[0].length === 1 ? 4 : 0,
       };
     });
 

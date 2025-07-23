@@ -1,25 +1,29 @@
 export const WindowDeltaedTimeSeriesPoints = (
-  points: [number, number][],
+  points: [number[], number[]] | undefined,
   windowSize = 1,
   reducer = (a: number, b: number) => a + b,
-) => {
-  if (windowSize === 1 || points.length === 0) return points;
+): [number[], number[]] => {
+  if (!points) return [[], []];
+  if (points[0].length !== points[1].length) throw new Error("Invalid graph");
+  if (windowSize === 1 || points[0].length === 0) return points;
   let t = points[0][0];
   let x = Math.floor(t / windowSize) * windowSize;
   let l = 0;
-  let y = points[0][1];
-  let out: [number, number][] = [];
-  for (const p of points.slice(1)) {
-    const w = Math.floor((t += p[0]) / windowSize) * windowSize;
+  let y = points[1][0];
+  const out: [number[], number[]] = [[], []];
+  for (let p = 1; p < points[0].length; p++) {
+    const w = Math.floor((t += points[0][p]) / windowSize) * windowSize;
     if (w === x) {
-      y = reducer(y, p[1]);
+      y = reducer(y, points[1][p]);
     } else {
-      out.push([x - l, y]);
+      out[0].push(x - l);
+      out[1].push(y);
       l = x;
       x = w;
-      y = p[1];
+      y = points[1][p];
     }
   }
-  out.push([x - l, y]);
+  out[0].push(x - l);
+  out[1].push(y);
   return out;
 };

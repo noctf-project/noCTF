@@ -161,9 +161,9 @@ export class ScoreboardService {
       tags,
     );
     const data = await this.history.getHistoryForTeams(ranks);
-    const partitions: { team_id: number; graph: [number, number][] }[] = [];
+    const partitions: { team_id: number; graph: [number[], number[]] }[] = [];
     ranks.forEach((team_id) => {
-      const graph = data.get(team_id) || [];
+      const graph = data.get(team_id) || [[], []];
       partitions.push({
         team_id,
         graph: this.filterGraph(graph, start, end),
@@ -187,36 +187,44 @@ export class ScoreboardService {
   }
 
   private filterGraph(
-    graph: [number, number][],
+    graph: [number[], number[]],
     startTime?: number,
     endTime?: number,
-  ) {
+  ): [number[], number[]] {
     let start = 0;
     let end = graph.length;
     let ts = 0;
     let score = 0;
     if (startTime !== undefined) {
-      start = graph.findIndex(
-        (v) => ((score += v[1]) && 0) || (ts += v[0]) >= startTime,
-      );
+      for (; start < graph[0].length; start++) {
+        score += graph[1][start];
+        if ((ts += graph[0][start]) >= startTime) {
+          break;
+        }
+      }
     }
     if (start === -1) {
-      return [];
+      return [[], []];
     }
     if (endTime !== undefined) {
       let t = ts;
-      const e = graph.slice(start + 1).findIndex((v) => (t += v[0]) > endTime);
-      if (e === -1) end = graph.length;
-      else end = start + 1 + e;
+
+      for (end = start + 1; end < graph[0].length; end++) {
+        score += graph[1][end];
+        if ((t += graph[0][end]) > endTime) {
+          break;
+        }
+      }
     }
 
-    const data = graph.slice(start, end);
-    if (start === 0) return data;
-    if (data[0] && ts !== 0) {
-      data[0][0] = ts;
-      data[0][1] = score;
+    const x = graph[0].slice(start, end);
+    const y = graph[1].slice(start, end);
+    if (start === 0) return [x, y];
+    if (x[0] && ts !== 0) {
+      x[0] = ts;
+      y[0] = score;
     }
-    return data;
+    return [x, y];
   }
 
   private async fetchScoreboardCalculationParams(timestamp?: Date) {

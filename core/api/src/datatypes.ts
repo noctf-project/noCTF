@@ -305,7 +305,7 @@ export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 export const ScoreboardEntryWithGraph = Type.Composite([
   ScoreboardEntry,
   Type.Object({
-    graph: Type.Array(Type.Tuple([Type.Number(), Type.Number()])),
+    graph: Type.Tuple([Type.Array(Type.Number()), Type.Array(Type.Number())]),
   }),
 ]);
 export type ScoreboardEntryWithGraph = Static<typeof ScoreboardEntryWithGraph>;

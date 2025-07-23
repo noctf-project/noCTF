@@ -110,7 +110,6 @@ export class OAuthIdentityProvider implements IdentityProvider {
     );
     await this.tokenService.invalidate("state", state);
     const provider_id = await this.getExternalId(method, accessToken);
-    console.log(provider_id, `${this.id()}:${data.name}`);
     const identity = await this.identityService.getIdentityForProvider(
       `${this.id()}:${data.name}`,
       provider_id,
