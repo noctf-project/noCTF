@@ -12,12 +12,15 @@ import {
 import { ConflictError, NotFoundError } from "@noctf/server-core/errors";
 import { Policy } from "@noctf/server-core/util/policy";
 import { OffsetPaginate } from "@noctf/server-core/util/paginator";
+import { GetUtils } from "./_util.ts";
 
 export async function routes(fastify: FastifyInstance) {
   const { userService, teamService, policyService, identityService } = fastify
     .container.cradle as ServiceCradle;
 
   const adminPolicy: Policy = ["admin.user.get"];
+
+  const { getMaxPageSize } = GetUtils(fastify.container.cradle);
 
   fastify.get<{ Reply: MeUserResponse }>(
     "/user/me",
@@ -153,8 +156,16 @@ export async function routes(fastify: FastifyInstance) {
         flags: admin ? [] : ["!hidden"],
       };
       const [result, total] = await Promise.all([
-        OffsetPaginate(q, { page, page_size }, (q, l) =>
-          userService.listSummary(q, l),
+        OffsetPaginate(
+          q,
+          { page, page_size },
+          (q, l) => userService.listSummary(q, l),
+          {
+            max_page_size: await getMaxPageSize(
+              ["bypass.page_size.user"],
+              request.user?.id,
+            ),
+          },
         ),
         q.ids && q.ids.length ? 0 : userService.getCount(q),
       ]);

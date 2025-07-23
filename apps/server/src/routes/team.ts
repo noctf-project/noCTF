@@ -26,11 +26,14 @@ import { Policy } from "@noctf/server-core/util/policy";
 import SingleValueCache from "@noctf/server-core/util/single_value_cache";
 import { OffsetPaginate } from "@noctf/server-core/util/paginator";
 import { GetRouteUserIPKey } from "@noctf/server-core/util/limit_keys";
+import { GetUtils } from "./_util.ts";
 
 export async function routes(fastify: FastifyInstance) {
   const adminPolicy: Policy = ["admin.team.get"];
   const { teamService, policyService, divisionService } = fastify.container
     .cradle as ServiceCradle;
+
+  const { gateStartTime, getMaxPageSize } = GetUtils(fastify.container.cradle);
 
   const divisionsGetter = new SingleValueCache(
     () => divisionService.list(),
@@ -339,8 +342,16 @@ export async function routes(fastify: FastifyInstance) {
         flags: admin ? [] : ["!hidden"],
       };
       const [result, total] = await Promise.all([
-        OffsetPaginate(q, { page, page_size }, (q, l) =>
-          teamService.listSummary(q, l),
+        OffsetPaginate(
+          q,
+          { page, page_size },
+          (q, l) => teamService.listSummary(q, l),
+          {
+            max_page_size: await getMaxPageSize([
+              "bypass.page_size.team",
+              request.user?.id,
+            ]),
+          },
         ),
         q.ids && q.ids.length ? 0 : teamService.getCount(q),
       ]);
