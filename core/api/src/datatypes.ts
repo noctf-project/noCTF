@@ -302,6 +302,14 @@ export const ScoreboardEntry = Type.Object({
 });
 export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 
+export const ScoreboardEntryWithGraph = Type.Composite([
+  ScoreboardEntry,
+  Type.Object({
+    graph: Type.Array(Type.Tuple([Type.Number(), Type.Number()])),
+  }),
+]);
+export type ScoreboardEntryWithGraph = Static<typeof ScoreboardEntryWithGraph>;
+
 export const TeamSummary = Type.Composite([
   Type.Omit(Team, ["join_code"]),
   Type.Object({

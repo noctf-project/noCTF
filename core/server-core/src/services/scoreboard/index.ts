@@ -172,14 +172,18 @@ export class ScoreboardService {
     return partitions;
   }
 
-  async getTeamScoreHistory(id: number) {
+  async getTeamScoreHistory(id: number[]) {
     const {
       value: { start_time_s, end_time_s },
     } = await this.configService.get(SetupConfig);
     const start = start_time_s !== undefined ? start_time_s : undefined;
     const end = end_time_s !== undefined ? end_time_s : undefined;
-    const data = await this.history.getHistoryForTeams([id]);
-    return this.filterGraph(data.get(id) || [], start, end);
+    const data = await this.history.getHistoryForTeams(id);
+    return new Map(
+      data
+        .entries()
+        .map(([id, graph]) => [id, this.filterGraph(graph, start, end)]),
+    );
   }
 
   private filterGraph(

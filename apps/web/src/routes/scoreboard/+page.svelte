@@ -28,6 +28,7 @@
       value: number;
       created_at: Date;
     }[];
+    graph: [number, number][];
   };
 
   type ChallengeEntry = {
@@ -103,7 +104,7 @@
   const teamTags: TeamTag[] = $derived(apiTeamTags.r?.data?.data?.tags || []);
 
   const apiTeams = $derived(
-    apiScoreboard.r?.data?.data?.scores.map((s, i) => ({
+    apiScoreboard.r?.data?.data?.entries.map((s, i) => ({
       ...s,
       rank: currentPage * TEAMS_PER_PAGE + (i + 1),
       last_solve: new Date(s.last_solve),
@@ -115,6 +116,7 @@
         ...rest,
         created_at: new Date(created_at),
       })),
+      graph: s.graph,
     })) || [],
   );
 
@@ -151,6 +153,7 @@
         last_solve: undefined,
         solves: [],
         awards: [],
+        graph: [],
       };
 
     if (!apiMyTeam?.r?.data?.data) return null;
@@ -169,8 +172,45 @@
         ...rest,
         created_at: new Date(created_at),
       })),
+      graph: teamData.graph,
     };
   });
+
+  const apiTop10 = $derived(
+    wrapLoadable(
+      api.GET("/scoreboard/divisions/{id}", {
+        params: {
+          path: { id: division },
+          query: {
+            page: 1,
+            page_size: 10,
+            tags: selectedTags.length > 0 ? selectedTags : undefined,
+            graph_interval: 60,
+          },
+        },
+      }),
+    ),
+  );
+
+  let top10TeamsChartsData: Promise<TeamChartData[]> | undefined = $derived(
+    apiTop10.r?.data
+      ? Promise.all(
+          apiTop10.r?.data.data.entries.map(async ({ team_id, graph }) => ({
+            name: (await TeamQueryService.get(team_id))?.name,
+            data: graph,
+          })),
+        )
+      : undefined,
+  );
+
+  const graphs = $derived(
+    Promise.all(
+      apiTeams.map(async ({ team_id, graph: data }) => ({
+        name: (await TeamQueryService.get(team_id))?.name || "unknown",
+        data,
+      })),
+    ),
+  );
 
   const allTeamsToDisplay = $derived.by(() => {
     if (!myTeamEntry || isMyTeamInCurrentPage) {
@@ -247,33 +287,6 @@
 
   const paginatedTeamIds = $derived(Array.from(currentPageTeams.keys()));
   const totalPages = $derived(Math.ceil(totalTeams / TEAMS_PER_PAGE));
-
-  const apiTop10TeamsChartsData = $derived(
-    wrapLoadable(
-      api.GET("/scoreboard/divisions/{id}/top", {
-        params: {
-          path: { id: division },
-          query: {
-            tags: selectedTags.length > 0 ? selectedTags : undefined,
-            graph_interval: 60,
-          },
-        },
-      }),
-    ),
-  );
-
-  let top10TeamsChartsData: Promise<TeamChartData[]> | undefined = $derived(
-    apiTop10TeamsChartsData.r?.data
-      ? Promise.all(
-          apiTop10TeamsChartsData.r?.data.data.map(
-            async ({ team_id, graph }) => ({
-              name: (await TeamQueryService.get(team_id))?.name,
-              data: graph,
-            }),
-          ),
-        )
-      : undefined,
-  );
 
   function getLoadingRowCount() {
     return currentPage === totalPages - 1
