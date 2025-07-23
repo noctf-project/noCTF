@@ -74,66 +74,27 @@ export async function routes(fastify: FastifyInstance) {
         page * page_size - 1,
         request.query.tags,
       );
+      const graphs = request.query.graph_interval
+        ? await scoreboardService.getTeamScoreHistory(
+            scoreboard.entries.map(({ team_id }) => team_id),
+          )
+        : new Map();
+      const entries = scoreboard.entries.map((e) => ({
+        ...e,
+        solves: admin ? e.solves : e.solves.filter((x) => !x.hidden),
+        graph:
+          WindowDeltaedTimeSeriesPoints(
+            graphs.get(e.team_id),
+            request.query.graph_interval || 1,
+          ) || [],
+      }));
+
       return {
         data: {
-          scores: admin
-            ? scoreboard.entries
-            : scoreboard.entries.map((e) => ({
-                ...e,
-                solves: e.solves.filter((x) => !x.hidden),
-              })),
+          entries,
           page_size: page_size,
           total: scoreboard.total,
         },
-      };
-    },
-  );
-
-  fastify.get<{
-    Reply: ScoreboardGraphsResponse;
-    Querystring: ScoreboardTagsQuery;
-    Params: IdParams;
-  }>(
-    "/scoreboard/divisions/:id/top",
-    {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["scoreboard"],
-        auth: {
-          policy: ["scoreboard.get"],
-        },
-        querystring: ScoreboardTagsQuery,
-        params: IdParams,
-        response: {
-          200: ScoreboardGraphsResponse,
-        },
-      },
-    },
-    async (request) => {
-      const admin = await gateStartTime(
-        adminPolicy,
-        Date.now(),
-        request.user?.id,
-      );
-      const id = request.params.id;
-      if (!admin && id !== (await request.user?.membership)?.division_id) {
-        const division = await divisionService.get(id);
-        if (!division?.is_visible)
-          throw new NotFoundError("Division not found");
-      }
-      const graphs = await scoreboardService.getTopScoreHistory(
-        request.params.id,
-        10,
-        request.query.tags,
-      );
-      return {
-        data: graphs.map((g) => ({
-          ...g,
-          graph: WindowDeltaedTimeSeriesPoints(
-            g.graph,
-            request.query.graph_interval || 1,
-          ),
-        })),
       };
     },
   );
@@ -187,9 +148,9 @@ export async function routes(fastify: FastifyInstance) {
         }
         entry.rank = rank;
       }
-      const graph = await scoreboardService.getTeamScoreHistory(
+      const graph = await scoreboardService.getTeamScoreHistory([
         request.params.id,
-      );
+      ]);
       const solves = showHidden
         ? entry.solves
         : entry.solves.filter(({ hidden }) => !hidden);
@@ -198,7 +159,7 @@ export async function routes(fastify: FastifyInstance) {
           ...entry,
           solves,
           graph: WindowDeltaedTimeSeriesPoints(
-            graph,
+            graph.get(request.params.id) || [],
             request.query.graph_interval || 1,
           ),
         },

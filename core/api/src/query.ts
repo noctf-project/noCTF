@@ -20,6 +20,7 @@ export const ScoreboardQuery = Type.Composite(
     PaginatedQuery,
     Type.Object({
       tags: Type.Optional(Type.Array(Type.Number(), { maxItems: 10 })),
+      graph_interval: Type.Optional(Type.Integer({ minimum: 1 })),
     }),
   ],
   { additionalProperties: false },

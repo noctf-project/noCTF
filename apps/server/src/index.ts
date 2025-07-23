@@ -1,24 +1,11 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import fastify from "fastify";
 import { asClass, asFunction, asValue, createContainer } from "awilix";
-import { IdentityService } from "@noctf/server-core/services/identity";
-import { ConfigService } from "@noctf/server-core/services/config";
-import { DatabaseClient } from "@noctf/server-core/clients/database";
-import { UserService } from "@noctf/server-core/services/user";
-import { ApplicationError } from "@noctf/server-core/errors";
-import { TeamService } from "@noctf/server-core/services/team";
-import { CacheService } from "@noctf/server-core/services/cache";
 import Swagger from "@fastify/swagger";
 import SwaggerUI from "@fastify/swagger-ui";
 import { fastifyCompress } from "@fastify/compress";
 import { fastifyCors } from "@fastify/cors";
 import { nanoid } from "nanoid/non-secure";
-import { AuditLogService } from "@noctf/server-core/services/audit_log";
-import { PolicyService } from "@noctf/server-core/services/policy";
-import { RedisClientFactory } from "@noctf/server-core/clients/redis";
-import { EventBusService } from "@noctf/server-core/services/event_bus";
-import { LockService } from "@noctf/server-core/services/lock";
-
 import {
   POSTGRES_URL,
   TOKEN_SECRET,
@@ -34,6 +21,18 @@ import {
   API_URL,
 } from "./config.ts";
 import core from "./core.ts";
+import { IdentityService } from "@noctf/server-core/services/identity";
+import { ConfigService } from "@noctf/server-core/services/config";
+import { DatabaseClient } from "@noctf/server-core/clients/database";
+import { UserService } from "@noctf/server-core/services/user";
+import { ApplicationError } from "@noctf/server-core/errors";
+import { TeamService } from "@noctf/server-core/services/team";
+import { CacheService } from "@noctf/server-core/services/cache";
+import { AuditLogService } from "@noctf/server-core/services/audit_log";
+import { PolicyService } from "@noctf/server-core/services/policy";
+import { RedisClientFactory } from "@noctf/server-core/clients/redis";
+import { EventBusService } from "@noctf/server-core/services/event_bus";
+import { LockService } from "@noctf/server-core/services/lock";
 import { MetricsClient } from "@noctf/server-core/clients/metrics";
 import { NATSClientFactory } from "@noctf/server-core/clients/nats";
 import { ChallengeService } from "@noctf/server-core/services/challenge/index";

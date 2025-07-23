@@ -21,6 +21,7 @@ import {
   Team,
   Announcement,
   ChallengeStat,
+  ScoreboardEntryWithGraph,
 } from "./datatypes.ts";
 import { AuthTokenType } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
@@ -303,7 +304,7 @@ export type AdminGetScoringStrategiesResponse = Static<
 
 export const ScoreboardResponse = Type.Object({
   data: Type.Object({
-    scores: Type.Array(Type.Omit(ScoreboardEntry, ["updated_at"])),
+    entries: Type.Array(ScoreboardEntryWithGraph),
     page_size: Type.Integer(),
     total: Type.Integer(),
   }),
@@ -326,12 +327,7 @@ export const ScoreboardGraphsResponse = Type.Object({
 export type ScoreboardGraphsResponse = Static<typeof ScoreboardGraphsResponse>;
 
 export const ScoreboardTeamResponse = Type.Object({
-  data: Type.Composite([
-    ScoreboardEntry,
-    Type.Object({
-      graph: Type.Array(Type.Tuple([Type.Number(), Type.Number()])),
-    }),
-  ]),
+  data: ScoreboardEntryWithGraph,
 });
 export type ScoreboardTeamResponse = Static<typeof ScoreboardTeamResponse>;
 
