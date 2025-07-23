@@ -32,7 +32,7 @@ class StaticExportHandler {
   private cache = new Map<string, unknown>();
   private baseUrl = STATIC_EXPORT_CONFIG.baseUrl;
   private teamsMap = new Map<number, Team>();
-  private scoreboardMap = new Map<number, ScoreboardEntry>();
+  private scoreboardMap = new Map<number, Map<number, ScoreboardEntry>>(); // division: { team: entry }
   private taggedScoreboardsCache = new Map<string, ScoreboardResponse>();
   private setupPromise: Promise<void> | null = null;
 
@@ -62,15 +62,26 @@ class StaticExportHandler {
     }
     this.teamsMap = new Map(teamsData.data.entries.map((val) => [val.id, val]));
 
-    // TODO: handle multiple divisions
-    const scoreboard = await this.loadStaticFile<ScoreboardResponse>(
-      getDivisionFilePath("1", STATIC_FILES.SCOREBOARD),
+    const divisions = await this.loadStaticFile<DivisionsResponse>(
+      STATIC_FILES.DIVISIONS,
     );
-    if (!scoreboard) {
-      throw new Error("Scoreboard data not available in static export");
+    if (!divisions) {
+      throw new Error("Divisions data not available in static export");
     }
-    this.scoreboardMap = new Map(
-      scoreboard.data.entries.map((val) => [val.team_id, val]),
+
+    await Promise.all(
+      divisions.data.map(async ({ id }) => {
+        const scoreboard = await this.loadStaticFile<ScoreboardResponse>(
+          getDivisionFilePath("1", STATIC_FILES.SCOREBOARD),
+        );
+        if (!scoreboard) {
+          throw new Error("Scoreboard data not available in static export");
+        }
+        this.scoreboardMap.set(
+          id,
+          new Map(scoreboard.data.entries.map((val) => [val.team_id, val])),
+        );
+      }),
     );
   }
 
@@ -288,8 +299,14 @@ class StaticExportHandler {
     _params: URLSearchParams,
   ): Promise<{ data: ScoreboardEntry }> {
     await this.ensureSetup();
-    // TODO: should get division id from team data
-    return { data: this.scoreboardMap.get(parseInt(teamId))! };
+    const division_id = this.teamsMap.get(Number(teamId))?.division_id;
+    const s = this.scoreboardMap.get(division_id!);
+    if (!s) {
+      throw new Error(
+        `Scoreboard data for division ${division_id} not available`,
+      );
+    }
+    return { data: s.get(parseInt(teamId))! };
   }
 
   async handleChallengeDetails(
