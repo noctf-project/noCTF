@@ -347,10 +347,10 @@ export async function routes(fastify: FastifyInstance) {
           { page, page_size },
           (q, l) => teamService.listSummary(q, l),
           {
-            max_page_size: await getMaxPageSize([
-              "bypass.page_size.team",
+            max_page_size: await getMaxPageSize(
+              ["bypass.page_size.team"],
               request.user?.id,
-            ]),
+            ),
           },
         ),
         q.ids && q.ids.length ? 0 : teamService.getCount(q),
