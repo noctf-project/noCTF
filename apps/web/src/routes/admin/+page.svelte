@@ -3,24 +3,28 @@
   import api, { wrapLoadable } from "$lib/api/index.svelte";
   import StatsOverview from "$lib/components/stats/StatsOverview.svelte";
   import ChallengeStatsTable from "$lib/components/stats/ChallengeStatsTable.svelte";
+  import CategoryStatsTable from "$lib/components/stats/CategoryStatsTable.svelte";
   import configState from "$lib/state/config.svelte";
+  import { untrack } from "svelte";
 
-  let viewMode = $state<"overview" | "challenges">("overview");
+  let viewMode = $state<"overview" | "challenges" | "categories">("overview");
   let selectedDivision = $state<number>(1);
 
-  const apiDivisions = $state(wrapLoadable(api.GET("/admin/divisions")));
+  const apiDivisions = $state(wrapLoadable(api.GET("/divisions")));
+  const apiTeamTags = $state(wrapLoadable(api.GET("/team_tags")));
   const apiChallenges = $state(wrapLoadable(api.GET("/challenges")));
-  const apiChallengeStats = $derived(
+  let apiChallengeStats = $state(
     wrapLoadable(
       api.GET("/stats/challenges", {
-        params: { query: { division_id: selectedDivision } },
+        params: { query: { division_id: untrack(() => selectedDivision) } },
       }),
     ),
   );
-  const apiUserStats = $state(wrapLoadable(api.GET("/stats/users")));
+  let apiUserStats = $state(wrapLoadable(api.GET("/stats/users")));
 
-  const divisions = $derived(apiDivisions.r?.data?.data?.tags || []);
+  const divisions = $derived(apiDivisions.r?.data?.data || []);
   const challenges = $derived(apiChallenges.r?.data?.data.challenges || []);
+  const teamTags = $derived(apiTeamTags.r?.data?.data?.tags || []);
 
   const challengeMap = $derived.by(() => {
     const map = new Map();
@@ -36,6 +40,15 @@
   const userStats = $derived(
     apiUserStats.r?.data?.data || { user_count: 0, team_count: 0 },
   );
+
+  function refreshData() {
+    apiUserStats = wrapLoadable(api.GET("/stats/users"));
+    apiChallengeStats = wrapLoadable(
+      api.GET("/stats/challenges", {
+        params: { query: { division_id: untrack(() => selectedDivision) } },
+      }),
+    );
+  }
 
   const loading = $derived(
     apiChallengeStats.loading || apiDivisions.loading || apiChallenges.loading,
@@ -63,6 +76,7 @@
             class="select select-bordered select-sm bg-base-100 pop hover:pop w-full sm:w-auto"
             style="line-height: 100%;"
             bind:value={selectedDivision}
+            onchange={refreshData}
           >
             {#each divisions as division}
               <option value={division.id}>{division.name}</option>
@@ -88,11 +102,28 @@
               : 'bg-base-100'} pop hover:pop"
             onclick={() => (viewMode = "challenges")}
           >
-            <Icon icon="material-symbols:table-rows" class="text-sm" />
+            <Icon icon="material-symbols:quiz" class="text-sm" />
             Challenges
+          </button>
+
+          <button
+            class="btn join-item btn-sm {viewMode === 'categories'
+              ? 'btn-primary'
+              : 'bg-base-100'} pop hover:pop"
+            onclick={() => (viewMode = "categories")}
+          >
+            <Icon icon="material-symbols:category" class="text-sm" />
+            Categories
           </button>
         </div>
       </div>
+      <button
+        class="btn bg-base-100 join-item btn-sm pop hover:pop"
+        onclick={refreshData}
+      >
+        <Icon icon="material-symbols:refresh" class="text-sm" />
+        Refresh
+      </button>
     </div>
   </div>
 
@@ -108,11 +139,19 @@
       <StatsOverview
         {challengeStats}
         {userStats}
+        {teamTags}
         {loading}
         title="Challenge Statistics Overview"
       />
     {:else if viewMode === "challenges"}
       <ChallengeStatsTable
+        {challengeStats}
+        {userStats}
+        {challengeMap}
+        {loading}
+      />
+    {:else if viewMode === "categories"}
+      <CategoryStatsTable
         {challengeStats}
         {userStats}
         {challengeMap}

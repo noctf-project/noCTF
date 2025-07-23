@@ -120,6 +120,12 @@ export const ListUserStatsResponse = Type.Object({
   data: Type.Object({
     user_count: Type.Integer(),
     team_count: Type.Integer(),
+    team_tag_counts: Type.Array(
+      Type.Object({
+        id: Type.Integer(),
+        team_count: Type.Integer(),
+      }),
+    ),
   }),
 });
 export type ListUserStatsResponse = Static<typeof ListUserStatsResponse>;
@@ -469,9 +475,7 @@ export type AdminListTeamTagsResponse = Static<
 >;
 
 export const AdminListDivisionsResponse = Type.Object({
-  data: Type.Object({
-    tags: Type.Array(Division),
-  }),
+  data: Type.Array(Division),
 });
 export type AdminListDivisionsResponse = Static<
   typeof AdminListDivisionsResponse

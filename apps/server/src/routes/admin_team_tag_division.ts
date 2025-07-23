@@ -154,9 +154,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async () => {
       return {
-        data: {
-          tags: await divisionService.list(),
-        },
+        data: await divisionService.list(),
       };
     },
   );

@@ -46,11 +46,10 @@
   import DifficultyChip from "../challenges/DifficultyChip.svelte";
   import type { Difficulty } from "$lib/constants/difficulties";
   import TeamQueryService from "$lib/state/team_query.svelte";
-  import configState from "$lib/state/config.svelte";
   import type { UserStat } from "./StatsOverview.svelte";
 
   const {
-    challengeStats: _challengeStats,
+    challengeStats,
     userStats,
     challengeMap,
     loading = false,
@@ -60,7 +59,7 @@
   let sortDirection = $state<SortDirection>("desc");
 
   let stats = $derived(
-    _challengeStats.map((c) => {
+    challengeStats.map((c) => {
       let x = {
         ...c,
         solve_rate:
@@ -98,6 +97,22 @@
       ) {
         aVal = new Date(aVal).getTime();
         bVal = new Date(bVal).getTime();
+      }
+
+      // sort by time to first blood, not absolute time of first blood
+      if (
+        typeof aVal === "number" &&
+        sortField === "first_solve" &&
+        a.released_at
+      ) {
+        aVal -= new Date(a.released_at).getTime();
+      }
+      if (
+        typeof bVal === "number" &&
+        sortField === "first_solve" &&
+        b.released_at
+      ) {
+        bVal -= new Date(b.released_at).getTime();
       }
 
       if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
@@ -341,15 +356,13 @@
                 <td class="text-center w-48">
                   {#if stat.first_solve}
                     <div class="flex flex-col gap-1 items-center">
-                      <span class="text-sm font-medium">
+                      <span
+                        class="text-sm font-medium"
+                        title={new Date(stat.first_solve).toLocaleString()}
+                      >
                         {#if stat.released_at}
                           {formatTimeDifference(
                             new Date(stat.released_at),
-                            new Date(stat.first_solve),
-                          )}
-                        {:else if configState.siteConfig?.start_time_s}
-                          {formatTimeDifference(
-                            new Date(configState.siteConfig.start_time_s),
                             new Date(stat.first_solve),
                           )}
                         {:else}

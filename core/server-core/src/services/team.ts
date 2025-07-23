@@ -229,6 +229,7 @@ export class TeamService {
   async getCount(params?: {
     flags?: string[];
     division_id?: number;
+    tag_ids?: number[];
     ids?: number[];
   }) {
     return this.teamDAO.getCount(params);
