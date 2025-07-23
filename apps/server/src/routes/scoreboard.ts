@@ -22,7 +22,7 @@ export async function routes(fastify: FastifyInstance) {
   const { scoreboardService, teamService, divisionService, configService } =
     fastify.container.cradle as ServiceCradle;
 
-  const { gateStartTime } = GetUtils(fastify.container.cradle);
+  const { gateStartTime, getMaxPageSize } = GetUtils(fastify.container.cradle);
   const adminPolicy: Policy = ["admin.scoreboard.get"];
 
   fastify.get<{
@@ -59,11 +59,15 @@ export async function routes(fastify: FastifyInstance) {
       }
 
       const page = request.query.page || 1;
-      const page_size =
-        (admin
-          ? request.query.page_size
-          : Math.min(SCOREBOARD_PAGE_SIZE, request.query.page_size)) ||
-        SCOREBOARD_PAGE_SIZE;
+      const page_size = Math.min(
+        request.query.page_size || SCOREBOARD_PAGE_SIZE,
+        await getMaxPageSize(
+          ["bypass.page_size.scoreboard"],
+          request.user?.id,
+          SCOREBOARD_PAGE_SIZE,
+        ),
+      );
+
       const scoreboard = await scoreboardService.getScoreboard(
         id,
         (page - 1) * page_size,

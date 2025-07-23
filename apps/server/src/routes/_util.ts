@@ -29,5 +29,16 @@ export const GetUtils = ({ policyService, configService }: ServiceCradle) => {
     return admin;
   };
 
-  return { gateStartTime };
+  const getMaxPageSize = async (
+    policy: Policy,
+    uid?: number,
+    default_size = 50,
+    max_size = Number.MAX_SAFE_INTEGER,
+  ) => {
+    return (await policyService.evaluate(uid, policy))
+      ? max_size
+      : default_size;
+  };
+
+  return { gateStartTime, getMaxPageSize };
 };
