@@ -302,15 +302,17 @@ export function ComputeScoreboard(
     (a, b) =>
       b.score - a.score || a.last_solve.getTime() - b.last_solve.getTime(),
   );
-  sorted.forEach(
-    (x, i) =>
-      (x.rank =
-        i > 0 &&
-        sorted[i - 1].score === x.score &&
-        sorted[i - 1].last_solve === x.last_solve
-          ? i
-          : i + 1),
-  );
+  sorted.forEach((x, i) => {
+    x.rank =
+      i > 0 &&
+      sorted[i - 1].score === x.score &&
+      sorted[i - 1].last_solve === x.last_solve
+        ? i
+        : i + 1;
+    x.hidden =
+      x.hidden ||
+      (x.score === 0 && !x.awards.length && x.solves.every((s) => s.hidden));
+  });
 
   return {
     scoreboard: sorted,

@@ -302,7 +302,7 @@ export default async function (fastify: FastifyInstance) {
               secret_data: await Generate(password),
             },
           ]);
-          await identityService.revokeUserSessions(identity.user_id);
+          await identityService.revokeUserSessions(identity.user_id, null);
           await tokenService.invalidate("reset_password", token);
           return identity.user_id;
         },
@@ -520,7 +520,7 @@ export default async function (fastify: FastifyInstance) {
           secret_data: await Generate(newPassword),
         },
       ]);
-      await identityService.revokeUserSessions(identity.user_id);
+      await identityService.revokeUserSessions(identity.user_id, null);
       const sessionToken = await identityService.createSession({
         user_id: request.user.id,
         ip: request.ip,

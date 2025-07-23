@@ -12,6 +12,8 @@
   import { onMount } from "svelte";
   import { toasts } from "$lib/stores/toast";
   import Icon from "@iconify/svelte";
+  import { page } from "$app/state";
+  import { goto } from "$app/navigation";
 
   const CHALLENGE_DETAIL_CACHE_TIME = 1000 * 60 * 5; // 5 minutes
 
@@ -46,6 +48,7 @@
     apiChallenges.r?.data
       ? apiChallenges.r?.data.data.challenges.map((c) => ({
           id: c.id,
+          slug: c.slug,
           title: c.title,
           categories: getCategoriesFromTags(c.tags),
           solves: c.solve_count,
@@ -97,11 +100,32 @@
   let modalLoading = $state(false);
   let modalChallData: ChallengeCardData | undefined = $state();
   let modalChallDetails: ChallDetails | undefined = $state();
+  let loadedFromURLParam = $state(false);
+
+  async function updateQueryParam(key: string, value: string) {
+    const url = new URL(page.url);
+    url.searchParams.set(key, value);
+    goto(url.toString(), { replaceState: true });
+  }
+
+  $effect(() => {
+    if (!loadedFromURLParam && allChallenges) {
+      loadedFromURLParam = true;
+      const slugFromURL = page.url.searchParams.get("c");
+      if (slugFromURL) {
+        const challData = allChallenges.find((c) => c.slug === slugFromURL);
+        if (challData) {
+          onChallengeClicked(challData);
+        }
+      }
+    }
+  });
 
   async function onChallengeClicked(challData: ChallengeCardData) {
     modalVisible = true;
     modalChallData = challData;
-    modalChallDetails = undefined; // Reset details while loading/fetching
+    modalChallDetails = undefined;
+    updateQueryParam("c", challData.slug);
     const cached = challDetailsMap[challData.id];
     if (
       cached &&
@@ -152,6 +176,9 @@
 
   function closeModal() {
     modalVisible = false;
+    const url = new URL(page.url);
+    url.searchParams.delete("c");
+    goto(url.toString(), { replaceState: true });
   }
 </script>
 

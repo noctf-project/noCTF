@@ -267,27 +267,24 @@ export const AnyResponse = Type.Object(
 );
 export type AnyResponse = Static<typeof AnyResponse>;
 
-export const AdminGetConfigSchemaResponse = Type.Object(
-  {
-    data: Type.Array(
-      Type.Object({
-        namespace: Type.String(),
-        schema: Type.Any(),
-      }),
-    ),
-  },
-  { additionalProperties: false },
-);
+export const AdminGetConfigSchemaResponse = Type.Object({
+  data: Type.Array(
+    Type.Object({
+      namespace: Type.String(),
+      schema: Type.Any(),
+    }),
+  ),
+});
 export type AdminGetConfigSchemaResponse = Static<
   typeof AdminGetConfigSchemaResponse
 >;
 
-export const SolveChallengeResponse = Type.Object(
-  {
-    data: SubmissionStatus,
-  },
-  { additionalProperties: false },
-);
+export const SolveChallengeResponse = Type.Object({
+  data: Type.Object({
+    status: SubmissionStatus,
+    hidden: Type.Boolean(),
+  }),
+});
 export type SolveChallengeResponse = Static<typeof SolveChallengeResponse>;
 
 export const AdminGetScoringStrategiesResponse = Type.Object(
@@ -383,6 +380,7 @@ export const GetAnnouncementsResponse = Type.Object({
           "id",
           "title",
           "message",
+          "important",
           "created_at",
           "updated_at",
         ]),

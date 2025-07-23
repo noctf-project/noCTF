@@ -10,6 +10,8 @@
   import Pagination from "$lib/components/Pagination.svelte";
   import { countryCodeToFlag } from "$lib/utils/country";
   import authState from "$lib/state/auth.svelte";
+  import { page } from "$app/state";
+  import { goto } from "$app/navigation";
 
   type ScoreboardEntry = {
     team_id: number;
@@ -30,6 +32,7 @@
 
   type ChallengeEntry = {
     id: number;
+    slug: string;
     title: string;
     points: number;
     categories: string[];
@@ -45,7 +48,20 @@
   let currentPage = $state(0);
   let detailedView = $state(false);
   let totalTeams = $state(0);
+
   let selectedTags = $state<number[]>([]);
+
+  $effect(() => {
+    const urlParams = page.url.searchParams.get("tags");
+    if (urlParams) {
+      selectedTags = urlParams
+        .split(",")
+        .map((id) => parseInt(id.trim()))
+        .filter((id) => !isNaN(id));
+    } else {
+      selectedTags = [];
+    }
+  });
 
   const apiChallenges = wrapLoadable(api.GET("/challenges"));
 
@@ -76,6 +92,7 @@
     apiChallenges.r?.data?.data.challenges
       .map((c) => ({
         id: c.id,
+        slug: c.slug,
         title: c.title,
         points: c.value || 0,
         categories: getCategoriesFromTags(c.tags),
@@ -180,17 +197,52 @@
   });
 
   function toggleTagFilter(tagId: number) {
+    let newTags: number[];
     if (selectedTags.includes(tagId)) {
-      selectedTags = selectedTags.filter((id) => id !== tagId);
+      newTags = selectedTags.filter((id) => id !== tagId);
     } else {
-      selectedTags = [...selectedTags, tagId];
+      newTags = [...selectedTags, tagId];
     }
+
+    selectedTags = newTags;
     currentPage = 0;
+
+    const url = new URL(page.url);
+    if (newTags.length > 0) {
+      url.searchParams.set("tags", newTags.join(","));
+    } else {
+      url.searchParams.delete("tags");
+    }
+    goto(url.toString(), { replaceState: true });
   }
 
   function clearTagFilters() {
     selectedTags = [];
     currentPage = 0;
+
+    const url = new URL(page.url);
+    url.searchParams.delete("tags");
+    goto(url.toString(), { replaceState: true });
+  }
+
+  $effect(() => {
+    const viewFromURL = page.url.searchParams.get("view");
+    if (viewFromURL === "detailed") {
+      detailedView = true;
+    }
+  });
+
+  function setDetailedView(value: boolean) {
+    detailedView = value;
+    currentPage = 0;
+
+    const url = new URL(page.url);
+    if (value) {
+      url.searchParams.set("view", "detailed");
+    } else {
+      url.searchParams.delete("view");
+    }
+    goto(url.toString(), { replaceState: true });
   }
 
   const paginatedTeamIds = $derived(Array.from(currentPageTeams.keys()));
@@ -273,12 +325,13 @@
         <div
           class="w-10 h-32 border border-x-base-300 border-transparent bg-base-200 skew-x-[-45deg] translate-x-16"
         ></div>
-        <div
+        <a
           class="absolute bottom-14 left-1.5 px-1 -rotate-45 w-40 z-10 truncate"
+          href="/challenges?c={challenge.slug}"
           title={`${challenge.title} (${challenge.categories.join(", ")})`}
         >
           {challenge.title}
-        </div>
+        </a>
       </div>
     {/each}
   </div>
@@ -329,14 +382,14 @@
           <div class="join">
             <button
               class={`btn btn-sm join-item ${!detailedView ? "btn-primary" : "btn-outline"} pop hover:pop gap-1`}
-              onclick={() => (detailedView = false)}
+              onclick={() => setDetailedView(false)}
             >
               <Icon icon="material-symbols:grid-view" class="text-lg" />
               <span>Compact</span>
             </button>
             <button
               class={`btn btn-sm join-item ${detailedView ? "btn-primary" : "btn-outline"} pop hover:pop gap-1`}
-              onclick={() => (detailedView = true)}
+              onclick={() => setDetailedView(true)}
             >
               <Icon
                 icon="material-symbols:view-agenda-outline"
@@ -401,7 +454,9 @@
 {/snippet}
 
 {#snippet topGraph()}
-  <div class="mx-auto mt-8 min-w-[98%] lg:min-w-[66rem] max-w-[66rem] mb-8">
+  <div
+    class="mx-auto mt-8 min-w-[98%] h-[33rem] lg:min-w-[66rem] max-w-[66rem] mb-8"
+  >
     {#if top10TeamsChartsData}
       {#await top10TeamsChartsData then data}
         <Graph {data} extraClasses="h-[33rem]" />

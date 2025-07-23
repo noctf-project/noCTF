@@ -3,6 +3,7 @@ import { IdParams } from "@noctf/api/params";
 import { SessionQuery } from "@noctf/api/query";
 import {
   AdminQueryUsersRequest,
+  AdminRevokeSessionsRequest,
   AdminUpdateUserRequest,
 } from "@noctf/api/requests";
 import {
@@ -251,6 +252,56 @@ export async function routes(fastify: FastifyInstance) {
           entries,
         },
       };
+    },
+  );
+
+  fastify.post<{
+    Params: IdParams;
+    Body: AdminRevokeSessionsRequest;
+    Reply: BaseResponse;
+  }>(
+    "/admin/users/:id/sessions/revoke",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["admin"],
+        auth: {
+          require: true,
+          policy: ["admin.session.revoke"],
+        },
+        params: IdParams,
+        body: AdminRevokeSessionsRequest,
+        response: {
+          200: BaseResponse,
+        },
+      },
+    },
+    async (request) => {
+      const { id } = request.params;
+      const { app_id } = request.body;
+      const [me, test] = await Promise.all([
+        policyService.evaluate(request.user.id, PRIVILEGED_POLICY),
+        policyService.evaluate(request.params.id, PRIVILEGED_POLICY),
+      ]);
+      if (test && !me)
+        throw new ForbiddenError(
+          "Not allowed to revoke sessions for a user with higher privilege",
+        );
+      await Promise.all([
+        identityService.revokeUserSessions(
+          request.params.id,
+          request.body.app_id,
+        ),
+        auditLogService.log({
+          operation: "session.revoke",
+          actor: {
+            type: ActorType.USER,
+            id: request.user.id,
+          },
+          data: `Admin revoked all user sessions for ${app_id ? "app " + app_id : "website"}`,
+        }),
+      ]);
+      return {};
     },
   );
 

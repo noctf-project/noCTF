@@ -13,6 +13,7 @@ class NotificationState {
   lastChecked = $state<string | null>(null);
   lastSeenTimestamp = $state<string | null>(null);
   unseenCount = $state(0);
+  unseenImportant = $state(false);
   hasMoreAnnouncements = $state(true);
   isLoadingMore = $state(false);
   private pollInterval: ReturnType<typeof setInterval> | null = null;
@@ -119,7 +120,11 @@ class NotificationState {
     const lastSeenDate = new Date(this.lastSeenTimestamp);
     this.unseenCount = this.announcements.filter((announcement) => {
       const announcementDate = new Date(announcement.updated_at);
-      return announcementDate > lastSeenDate;
+      const isUnseen = announcementDate > lastSeenDate;
+      if (isUnseen && announcement.important) {
+        this.unseenImportant = true;
+      }
+      return isUnseen;
     }).length;
   }
 
@@ -161,6 +166,7 @@ class NotificationState {
 
   markAsRead() {
     this.hasUnread = false;
+    this.unseenImportant = false;
     this.saveLastSeenTimestamp();
     this.unseenCount = 0;
   }
