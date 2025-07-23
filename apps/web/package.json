@@ -41,7 +41,7 @@
     "i18n-iso-countries": "^7.14.0",
     "isomorphic-dompurify": "^2.25.0",
     "lru-cache": "^11.0.2",
-    "openapi-fetch": "^0.13.4",
+    "openapi-fetch": "^0.14.0",
     "svelte-jsoneditor": "^3.6.1"
   }
 }
