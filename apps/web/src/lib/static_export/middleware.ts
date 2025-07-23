@@ -456,7 +456,12 @@ class StaticExportHandler {
     const method = request.method.toLowerCase();
 
     try {
-      const body: unknown = JSON.parse((await request.text()) || "{}");
+      let body: unknown = {};
+      try {
+        if (method !== "get") body = await request.json();
+      } catch {
+        console.error("failed to parse request body", request);
+      }
 
       let result: unknown = null;
 
@@ -584,15 +589,4 @@ class StaticExportHandler {
   }
 }
 
-const staticHandler = new StaticExportHandler();
-
-export const staticExportMiddleware: Middleware = {
-  async onRequest({ request }) {
-    if (!IS_STATIC_EXPORT) {
-      console.warn("Static export is disabled but middleware was called");
-      return request;
-    }
-
-    return await staticHandler.handleRequest(request);
-  },
-};
+export const staticHandler = new StaticExportHandler();
