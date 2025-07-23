@@ -7,7 +7,6 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import urljoin
-from itertools import combinations
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -166,36 +165,20 @@ class NoCTFExporter:
                 )
 
     def export_scoreboards(
-        self, divisions: Dict[str, Any], team_tags: Dict[str, Any]
+        self, divisions: Dict[str, Any]
     ) -> None:
         for division in divisions["data"]:
             division_id = division.get("id")
             if not division_id:
                 continue
 
-            no_tags = self._make_request(
+            scoreboard = self._make_request(
                 f"/scoreboard/divisions/{division_id}",
                 params={"page": 1, "page_size": 10000, "graph_interval": 60},
             )
-            if no_tags:
-                self._save_json(no_tags, "scoreboard.json", division_id)
+            if scoreboard:
+                self._save_json(scoreboard, "scoreboard.json", division_id)
                 self.logger.info(f"Exported main scoreboard for division {division_id}")
-
-            # export scoreboard for every combination of tags
-            div_scoreboards = {}
-            tag_ids = [t["id"] for t in team_tags["data"]["tags"]]
-            for l in range(1, len(tag_ids) + 1):
-                for cmb in combinations(tag_ids, l):
-                    key = ",".join(map(str, sorted(list(cmb))))
-                    s = self._make_request(
-                        f"/scoreboard/divisions/{division_id}",
-                        params={"page": 1, "page_size": 10000, "graph_interval": 60, "tags": list(cmb)},
-                    )
-                    div_scoreboards[key] = s
-
-            if div_scoreboards:
-                self._save_json(div_scoreboards, "tagged_scoreboards.json", division_id)
-                self.logger.info(f"Exported scoreboards for division {division_id}")
 
     def export_announcements(self) -> None:
         announcements = self._make_request("/announcements")
@@ -243,7 +226,7 @@ class NoCTFExporter:
 
         self.export_challenge_solves(challenges, divisions)
 
-        self.export_scoreboards(divisions, team_tags)
+        self.export_scoreboards(divisions)
 
         self.export_announcements()
 

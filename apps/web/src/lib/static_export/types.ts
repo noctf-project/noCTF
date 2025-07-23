@@ -63,10 +63,7 @@ export interface PaginatedResponse<T> {
   };
 }
 
-// Tagged scoreboards structure
-export interface TaggedScoreboards {
-  [tagKey: string]: ScoreboardResponse;
-}
+
 
 // Challenge solves structure (keyed by challenge ID)
 export interface ChallengeSolves {

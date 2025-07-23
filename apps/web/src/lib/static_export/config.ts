@@ -46,7 +46,6 @@ export const STATIC_FILES = {
 
   // Division-specific files
   SCOREBOARD: "scoreboard.json",
-  TAGGED_SCOREBOARDS: "tagged_scoreboards.json",
   CHALLENGE_SOLVES: "challenge_solves.json",
   CHALLENGE_STATS: "challenge_stats.json",
 } as const;

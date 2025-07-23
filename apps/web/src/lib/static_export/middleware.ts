@@ -12,7 +12,6 @@ import type {
   UsersQueryRequest,
   UsersQueryResponse,
   ScoreboardResponse,
-  TaggedScoreboards,
   ChallengeSolves,
   ChallengeDetailsResponse,
   AnnouncementsResponse,
@@ -34,7 +33,7 @@ class StaticExportHandler {
   private baseUrl = STATIC_EXPORT_CONFIG.baseUrl;
   private teamsMap = new Map<number, Team>();
   private scoreboardMap = new Map<number, ScoreboardEntry>();
-  // TODO: compute tagged scoreboards
+  private taggedScoreboardsCache = new Map<string, ScoreboardResponse>();
   private setupPromise: Promise<void> | null = null;
 
   constructor() {
@@ -68,7 +67,7 @@ class StaticExportHandler {
       getDivisionFilePath("1", STATIC_FILES.SCOREBOARD),
     );
     if (!scoreboard) {
-      throw new Error("coreboard data not available in static export");
+      throw new Error("Scoreboard data not available in static export");
     }
     this.scoreboardMap = new Map(
       scoreboard.data.entries.map((val) => [val.team_id, val]),
@@ -181,6 +180,39 @@ class StaticExportHandler {
     return { data: paginatedResult };
   }
 
+  private computeTaggedScoreboard(
+    baseScoreboard: ScoreboardResponse,
+    tags: number[],
+  ): ScoreboardResponse {
+    const tagSet = new Set(tags);
+
+    const filteredEntries = baseScoreboard.data.entries.filter((entry) =>
+      entry.tag_ids.some((tagId) => tagSet.has(tagId)),
+    );
+
+    const sortedEntries = filteredEntries.sort((a, b) => {
+      if (a.score !== b.score) {
+        return b.score - a.score;
+      }
+      return (
+        new Date(a.last_solve).getTime() - new Date(b.last_solve).getTime()
+      );
+    });
+
+    const rankedEntries = sortedEntries.map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
+    }));
+
+    return {
+      data: {
+        entries: rankedEntries,
+        page_size: baseScoreboard.data.page_size,
+        total: rankedEntries.length,
+      },
+    };
+  }
+
   async handleScoreboardQuery(
     divisionId: string,
     params: URLSearchParams,
@@ -203,29 +235,28 @@ class StaticExportHandler {
     let baseScoreboard: ScoreboardResponse;
 
     if (tagsParam.length) {
-      const taggedScoreboards = await this.loadStaticFile<TaggedScoreboards>(
-        getDivisionFilePath(divisionId, STATIC_FILES.TAGGED_SCOREBOARDS),
-      );
-      if (!taggedScoreboards) {
-        throw new Error(
-          `Tagged scoreboards not available for division ${divisionId}`,
-        );
-      }
-
-      const tagKey = tagsParam
+      const tags = tagsParam
         .map((v) => parseInt(v))
-        .toSorted()
-        .map((v) => v.toString())
-        .join(",");
+        .filter((v) => !isNaN(v))
+        .sort((a, b) => a - b);
+      const tagKey = `${divisionId}:${tags.join(",")}`;
 
-      const result = taggedScoreboards[tagKey];
-      if (!result) {
-        throw new Error(
-          `No scoreboard found for tags: ${tagKey} in division ${divisionId}`,
+      if (this.taggedScoreboardsCache.has(tagKey)) {
+        baseScoreboard = this.taggedScoreboardsCache.get(tagKey)!;
+      } else {
+        const mainScoreboard = await this.loadStaticFile<ScoreboardResponse>(
+          getDivisionFilePath(divisionId, STATIC_FILES.SCOREBOARD),
         );
-      }
+        if (!mainScoreboard) {
+          throw new Error(
+            `Scoreboard not available for division ${divisionId}`,
+          );
+        }
 
-      baseScoreboard = result;
+        baseScoreboard = this.computeTaggedScoreboard(mainScoreboard, tags);
+
+        this.taggedScoreboardsCache.set(tagKey, baseScoreboard);
+      }
     } else {
       const scoreboard = await this.loadStaticFile<ScoreboardResponse>(
         getDivisionFilePath(divisionId, STATIC_FILES.SCOREBOARD),
