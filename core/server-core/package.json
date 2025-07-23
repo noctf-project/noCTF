@@ -19,7 +19,7 @@
     "ajv": "catalog:",
     "ajv-formats": "catalog:",
     "awilix": "catalog:",
-    "cbor-x": "^1.6.0",
+    "cbor-x": "catalog:",
     "expr-eval": "catalog:",
     "fastify": "catalog:",
     "handlebars": "catalog:",

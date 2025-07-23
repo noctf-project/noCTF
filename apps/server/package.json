@@ -29,6 +29,7 @@
     "@noctf/server-core": "workspace:*",
     "@sinclair/typebox": "catalog:",
     "awilix": "catalog:",
+    "cbor-x": "catalog:",
     "fastify": "catalog:",
     "kysely": "catalog:",
     "nanoid": "catalog:"
