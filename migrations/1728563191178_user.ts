@@ -20,6 +20,7 @@ export async function up(db: Kysely<any>): Promise<void> {
         .unique(),
     )
     .addColumn("bio", "text", (col) => col.notNull().defaultTo(""))
+    .addColumn("country", "char(2)")
     .addColumn("flags", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .addColumn("roles", sql`varchar[]`, (col) => col.notNull().defaultTo("{}"))
     .execute();

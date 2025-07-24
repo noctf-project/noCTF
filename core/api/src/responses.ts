@@ -8,7 +8,6 @@ import {
   PublicChallenge,
   PublicChallengeSummary,
   ScoringStrategy,
-  ScoreboardEntry,
   TeamSummary,
   Solve,
   Submission,

@@ -55,11 +55,13 @@ export class UserService {
       bio,
       flags,
       roles,
+      country,
     }: {
       name?: string;
       bio?: string;
       flags?: string[];
       roles?: string[];
+      country?: string | null;
     },
     { actor, message }: AuditParams = {},
   ) {
@@ -68,6 +70,7 @@ export class UserService {
       bio,
       flags,
       roles,
+      country,
     });
 
     await this.auditLogService.log({
@@ -84,8 +87,10 @@ export class UserService {
       identities,
       roles,
       flags,
+      country,
     }: {
       name: string;
+      country?: string;
       identities: AssociateIdentity[];
       roles?: string[];
       flags?: string[];
@@ -106,7 +111,7 @@ export class UserService {
     const id = await this.databaseClient.transaction(async (tx) => {
       const userDAO = new UserDAO(tx);
       const identityDAO = new UserIdentityDAO(tx);
-      const id = await userDAO.create({ name, roles, flags });
+      const id = await userDAO.create({ name, roles, flags, country });
       for (const identity of identities) {
         await identityDAO.associate({ ...identity, user_id: id });
       }
