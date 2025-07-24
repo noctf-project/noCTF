@@ -152,6 +152,7 @@ class StaticExportHandler {
         id: -1,
         name: "",
         bio: "",
+        country: "",
         roles: [],
         created_at: "",
         team_id: this.viewAs,

@@ -15,14 +15,14 @@ import {
 } from "./datatypes.ts";
 import { SubmissionStatus } from "./enums.ts";
 
-export const UpdateUserRequest = Type.Pick(User, ["bio", "name"], {
+export const UpdateUserRequest = Type.Pick(User, ["bio", "name", "country"], {
   additionalProperties: false,
 });
 export type UpdateUserRequest = Static<typeof UpdateUserRequest>;
 
 export const AdminUpdateUserRequest = Type.Pick(
   User,
-  ["bio", "name", "flags", "roles"],
+  ["bio", "name", "country", "flags", "roles"],
   {
     additionalProperties: false,
   },

@@ -1,11 +1,10 @@
-import { sql, type Insertable, type Updateable } from "kysely";
+import { type Insertable, type Updateable } from "kysely";
 import pg from "pg";
 import type { DB } from "@noctf/schema";
 import { ConflictError, NotFoundError } from "../errors.ts";
 import type { DBType } from "../clients/database.ts";
 import { FilterUndefined } from "../util/filter.ts";
 import type { UserSummary, User } from "@noctf/api/datatypes";
-import { partition } from "../util/object.ts";
 import { NormalizeName } from "../util/string.ts";
 import { SplitYesNoQuery } from "./util.ts";
 
@@ -24,7 +23,7 @@ export class UserDAO {
   async get(id: number): Promise<User | undefined> {
     return await this.db
       .selectFrom("user")
-      .select(["id", "name", "bio", "roles", "flags", "created_at"])
+      .select(["id", "name", "country", "bio", "roles", "flags", "created_at"])
       .where("id", "=", id)
       .executeTakeFirst();
   }
@@ -65,6 +64,7 @@ export class UserDAO {
       .select([
         "user.id",
         "user.name",
+        "user.country",
         "user.bio",
         "user.created_at",
         "user.flags",
@@ -88,15 +88,20 @@ export class UserDAO {
 
   async create({
     name,
+    country,
     bio,
     roles,
     flags,
-  }: Pick<Insertable<DB["user"]>, "name" | "bio" | "roles" | "flags">) {
+  }: Pick<
+    Insertable<DB["user"]>,
+    "name" | "country" | "bio" | "roles" | "flags"
+  >) {
     try {
       const { id } = await this.db
         .insertInto("user")
         .values({
           name,
+          country,
           bio,
           roles,
           flags,
@@ -114,7 +119,10 @@ export class UserDAO {
 
   async update(
     id: number,
-    v: Pick<Updateable<DB["user"]>, "name" | "bio" | "flags" | "roles">,
+    v: Pick<
+      Updateable<DB["user"]>,
+      "name" | "country" | "bio" | "flags" | "roles"
+    >,
   ) {
     const { numUpdatedRows } = await this.db
       .updateTable("user")

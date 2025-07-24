@@ -1,11 +1,14 @@
 <script lang="ts">
   import { toasts } from "$lib/stores/toast";
   import api, { wrapLoadable } from "$lib/api/index.svelte";
+  import { AllCountries, countryCodeToFlag } from "$lib/utils/country";
 
-  let profileForm = $state({
-    name: "",
-    bio: "",
-  });
+  let profileForm: { name: string; bio: string; country: string | null } =
+    $state({
+      name: "",
+      bio: "",
+      country: "",
+    });
 
   let isUpdatingProfile = $state(false);
   let userProfile = $state(wrapLoadable(fetchUserProfile()));
@@ -32,6 +35,7 @@
         body: {
           name: profileForm.name.trim(),
           bio: profileForm.bio,
+          country: profileForm.country || null,
         },
       });
 
@@ -55,6 +59,7 @@
     if (!userProfile.loading && !userProfile.error && userProfile.r) {
       profileForm.name = userProfile.r.data.name;
       profileForm.bio = userProfile.r.data.bio;
+      profileForm.country = userProfile.r.data.country;
     }
   });
 </script>
@@ -80,6 +85,25 @@
         class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
       />
     {/if}
+  </div>
+
+  <div class="form-control w-full">
+    <label for="country" class="label">
+      <span class="label-text">Country</span>
+    </label>
+    <select
+      id="country"
+      bind:value={profileForm.country}
+      class="select select-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+    >
+      <option value="">No country selected</option>
+      {#each Object.keys(AllCountries) as countryCode}
+        <option value={countryCode}>
+          {countryCodeToFlag(countryCode)}
+          {AllCountries[countryCode]}
+        </option>
+      {/each}
+    </select>
   </div>
 
   <div class="form-control w-full">

@@ -101,12 +101,13 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const { name, bio } = request.body;
+      const { name, bio, country } = request.body;
       const ex = await userService.get(request.user.id);
       if (!ex) throw new NotFoundError("User not found");
       const changed = [
         name !== ex.name && "name",
         bio !== ex.bio && "bio",
+        country !== ex.country && "country",
       ].filter((x) => x);
       if (changed.length === 0) return {};
       if (changed.includes("name")) {
@@ -120,6 +121,7 @@ export async function routes(fastify: FastifyInstance) {
         {
           name,
           bio,
+          country,
         },
         {
           actor: {

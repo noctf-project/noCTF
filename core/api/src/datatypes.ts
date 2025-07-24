@@ -73,6 +73,10 @@ export const User = Type.Object({
   id: Type.Number(),
   name: Name,
   bio: Type.String({ maxLength: 256 }),
+  country: Type.Union([
+    Type.String({ minLength: 2, maxLength: 2 }),
+    Type.Null(),
+  ]),
   flags: Type.Array(Type.String()),
   roles: Type.Array(Type.String()),
   created_at: TypeDate,
