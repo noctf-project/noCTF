@@ -8,6 +8,24 @@ import {
   type Difficulty,
 } from "$lib/constants/difficulties";
 
+const CATEGORY_ORDERING = [
+  "survey",
+  "beginner",
+  "pwn",
+  "crypto",
+  "web",
+  "rev",
+  "ai",
+  "osint",
+  "misc",
+];
+export const categoryOrdering = (a?: string, b?: string) => {
+  return (
+    CATEGORY_ORDERING.indexOf(a || "misc") -
+    CATEGORY_ORDERING.indexOf(b || "misc")
+  );
+};
+
 export const categoryToIcon = (category: string) => {
   const c = category.toLowerCase();
   if (!(c in ICON_MAP)) {
