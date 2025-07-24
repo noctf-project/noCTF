@@ -225,6 +225,7 @@
   >
     <div class="flex items-center justify-between mb-3">
       <h2 class="text-xl font-bold truncate" title={member.name}>
+        {member.country ? countryCodeToFlag(member.country) : ""}
         {member.name}
       </h2>
       {#if member.role === "owner"}

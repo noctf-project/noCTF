@@ -107,7 +107,7 @@ export async function routes(fastify: FastifyInstance) {
       const changed = [
         name !== ex.name && "name",
         bio !== ex.bio && "bio",
-        country !== undefined && country !== ex.country && "country",
+        country !== ex.country && "country",
       ].filter((x) => x);
       if (changed.length === 0) return {};
       if (changed.includes("name")) {

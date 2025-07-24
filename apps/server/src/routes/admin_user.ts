@@ -127,7 +127,7 @@ export async function routes(fastify: FastifyInstance) {
       const changed = [
         name !== ex.name && "name",
         bio !== ex.bio && "bio",
-        country !== undefined && country !== ex.country && "country",
+        country !== ex.country && "country",
         sRoles.symmetricDifference(new Set(ex.roles)).size > 0 && "roles",
         sFlags.symmetricDifference(new Set(ex.flags)).size > 0 && "flags",
       ].filter((x) => x);

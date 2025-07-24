@@ -5,6 +5,11 @@
   import api, { wrapLoadable } from "$lib/api/index.svelte";
   import TeamQueryService from "$lib/state/team_query.svelte";
   import SubmissionsTable from "$lib/components/SubmissionsTable.svelte";
+  import {
+    AllCountries,
+    countryCodeToFlag,
+    countryCodeToName,
+  } from "$lib/utils/country";
 
   const userId = Number(page.params.id);
 
@@ -48,6 +53,7 @@
   let editForm = $state({
     name: "",
     bio: "",
+    country: "",
     flags: [] as string[],
     roles: [] as string[],
   });
@@ -83,6 +89,7 @@
       editForm = {
         name: userData.name,
         bio: userData.bio,
+        country: userData.country || "",
         flags: [...userData.flags],
         roles: [...userData.roles],
       };
@@ -100,6 +107,7 @@
         body: {
           name: editForm.name,
           bio: editForm.bio,
+          country: editForm.country || null,
           flags: editForm.flags,
           roles: editForm.roles,
         },
@@ -380,6 +388,40 @@
                     class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 bg-base-200 text-base-content/70"
                     readonly
                   />
+                {/if}
+              </div>
+
+              <div class="form-control w-full">
+                <label for="team-country" class="label">
+                  <span class="label-text">Country</span>
+                </label>
+                {#if editMode}
+                  <select
+                    id="team-country"
+                    bind:value={editForm.country}
+                    class="select select-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+                  >
+                    <option value="">No country selected</option>
+                    {#each Object.keys(AllCountries || {}) as countryCode}
+                      <option value={countryCode}>
+                        {countryCodeToFlag(countryCode)}
+                        {AllCountries[countryCode]}
+                      </option>
+                    {/each}
+                  </select>
+                {:else}
+                  <div
+                    class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0 flex items-center bg-base-200 text-base-content/70"
+                  >
+                    {#if userData.country}
+                      <span class="text-lg mr-2"
+                        >{countryCodeToFlag(userData.country)}</span
+                      >
+                      {countryCodeToName(userData.country)}
+                    {:else}
+                      No country
+                    {/if}
+                  </div>
                 {/if}
               </div>
 
