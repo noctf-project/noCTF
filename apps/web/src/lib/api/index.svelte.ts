@@ -1,12 +1,15 @@
 import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "@noctf/openapi-spec";
 
+import { IS_STATIC_EXPORT, staticHandler } from "$lib/static_export/middleware";
+
 export const SESSION_TOKEN_KEY = "noctf-session-token";
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 const client = createClient<paths>({
   baseUrl: API_BASE_URL,
+  fetch: IS_STATIC_EXPORT ? (r) => staticHandler.handleRequest(r) : undefined,
 });
 
 const authMiddleware: Middleware = {
@@ -17,7 +20,10 @@ const authMiddleware: Middleware = {
     return request;
   },
 };
-client.use(authMiddleware);
+
+if (!IS_STATIC_EXPORT) {
+  client.use(authMiddleware);
+}
 
 type Loadable<T> =
   | {

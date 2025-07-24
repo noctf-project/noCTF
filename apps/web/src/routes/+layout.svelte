@@ -12,7 +12,6 @@
   import "../app.css";
   import configState from "$lib/state/config.svelte";
   import captchaState from "$lib/state/captcha.svelte";
-  import authState from "$lib/state/auth.svelte";
   import notificationState from "$lib/state/notifications.svelte";
 
   let { children } = $props();

@@ -435,12 +435,12 @@
             {/each}
           </div>
         {/if}
-        <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-4 items-center">
           {#if scoreboardLoader.loading && !scoreboardData}
             <div class="skeleton h-4 w-1/2"></div>
           {:else if scoreboardData?.rank && scoreboardData?.score}
             <div
-              class="text-3xl font-black pop bg-primary text-primary-content p-1 px-4 rounded-xl"
+              class="text-3xl font-black pop bg-primary text-primary-content p-1 px-4 rounded-xl w-fit"
             >
               <div class="flex flex-col gap-0 items-center">
                 <div>{ordinal(scoreboardData.rank)}</div>

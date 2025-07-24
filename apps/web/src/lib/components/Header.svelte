@@ -2,6 +2,8 @@
   import { page } from "$app/state";
   import authState from "$lib/state/auth.svelte";
   import configState from "$lib/state/config.svelte";
+  import { IS_STATIC_EXPORT } from "$lib/static_export/middleware";
+  import ViewAsSelector from "./ViewAsSelector.svelte";
   import Icon from "@iconify/svelte";
 
   const isActive = (path: string) => {
@@ -13,48 +15,52 @@
 
 <div class="navbar py-4 lg:py-8 px-4 sm:px-6 lg:px-12 min-h-24 lg:min-h-32">
   <div class="navbar-start">
-    {#if authState.isAuthenticated}
-      <div class="dropdown">
-        <div
-          tabindex="0"
-          role="button"
-          class="btn bg-base-100 pop hover:pop hover:none lg:hidden"
-          aria-label="Open menu"
+    <div class="dropdown">
+      <div
+        tabindex="0"
+        role="button"
+        class="btn bg-base-100 pop hover:pop hover:none lg:hidden"
+        aria-label="Open menu"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 6h16M4 12h8m-8 6h16"
-            />
-          </svg>
-        </div>
-        <ul
-          class="menu menu-sm dropdown-content mt-3 z-[10] p-2 pop bg-base-100 rounded-box w-52"
-          tabindex="-1"
-        >
-          <li>
-            <a href="/challenges" class={isActive("/challenges")}>Challenges</a>
-          </li>
-          <li>
-            <a href="/scoreboard" class={isActive("/scoreboard")}>Scoreboard</a>
-          </li>
-          <li>
-            <a href="/teams" class={isActive("/teams")}>Teams</a>
-          </li>
-          {#if authState.isAdmin}
-            <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
-          {/if}
-        </ul>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h8m-8 6h16"
+          />
+        </svg>
       </div>
-    {/if}
+      <ul
+        class="menu menu-sm dropdown-content mt-3 z-[10] p-2 pop bg-base-100 rounded-box w-52"
+        tabindex="-1"
+      >
+        <li>
+          <a href="/challenges" class={isActive("/challenges")}>Challenges</a>
+        </li>
+        <li>
+          <a href="/scoreboard" class={isActive("/scoreboard")}>Scoreboard</a>
+        </li>
+        <li>
+          <a href="/teams" class={isActive("/teams")}>Teams</a>
+        </li>
+        {#if IS_STATIC_EXPORT}
+          <li>
+            <a href="/stats" class={isActive("/stats")}>Stats</a>
+          </li>
+        {/if}
+        {#if authState.isAdmin}
+          <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
+        {/if}
+      </ul>
+    </div>
+
     <a href="/" class="text-xl font-bold hidden lg:block"
       >{configState.siteConfig?.name || "noCTF"}</a
     >
@@ -79,6 +85,11 @@
       <li>
         <a href="/teams" class={isActive("/teams")}>Teams</a>
       </li>
+      {#if IS_STATIC_EXPORT}
+        <li>
+          <a href="/stats" class={isActive("/stats")}>Stats</a>
+        </li>
+      {/if}
       {#if authState.isAdmin}
         <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
       {/if}
@@ -86,8 +97,12 @@
   </div>
 
   <div class="navbar-end">
-    {#if !authState.isAuthenticated && !page.url.pathname.startsWith("/auth")}
-      <a href="/auth" class="btn btn-primary px-6 sm:px-8 pop hover:pop"
+    {#if IS_STATIC_EXPORT}
+      <ViewAsSelector />
+    {:else if !authState.isAuthenticated && !page.url.pathname.startsWith("/auth")}
+      <a
+        href="/auth"
+        class="btn btn-primary text-primary-content px-6 sm:px-8 pop hover:pop"
         >Login</a
       >
     {:else if authState.isAuthenticated}

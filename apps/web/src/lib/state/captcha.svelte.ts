@@ -1,5 +1,6 @@
 import api from "$lib/api/index.svelte";
 import type { PathResponse } from "$lib/api/types";
+import { STATIC_EXPORT_CONFIG } from "$lib/static_export/config";
 import type { Middleware } from "openapi-fetch";
 
 export type CaptchaConfig = PathResponse<"/captcha", "get">["data"];
@@ -12,7 +13,9 @@ export class CaptchaState {
   reject?: (r: unknown) => void;
 
   constructor() {
-    this.load();
+    if (!STATIC_EXPORT_CONFIG.enabled) {
+      this.load();
+    }
   }
 
   async request() {
@@ -65,4 +68,6 @@ const captchaMiddleware: Middleware = {
     return request;
   },
 };
-api.use(captchaMiddleware);
+if (!STATIC_EXPORT_CONFIG.enabled) {
+  api.use(captchaMiddleware);
+}

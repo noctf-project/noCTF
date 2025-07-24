@@ -1,6 +1,8 @@
 import { goto } from "$app/navigation";
 import api, { SESSION_TOKEN_KEY } from "$lib/api/index.svelte";
+import { STATIC_EXPORT_CONFIG } from "$lib/static_export/config";
 import { toasts } from "$lib/stores/toast";
+import { IS_STATIC_EXPORT, staticHandler } from "$lib/static_export/middleware";
 
 interface User {
   id: number;
@@ -25,9 +27,19 @@ class AuthState {
   constructor() {
     this.loadCachedUser();
     this.fetch().then(() => {
-      // this could be done cleaner, but there are only a few protected pages
-      // so this should be fine for now
       const path = window.location.pathname;
+
+      if (STATIC_EXPORT_CONFIG.enabled) {
+        if (
+          !["/", "/challenges", "/teams", "/scoreboard", "/stats"].includes(
+            path,
+          ) &&
+          !path.startsWith("/teams")
+        ) {
+          return goto("/");
+        }
+      }
+
       if (
         !this.isAuthenticated &&
         (["/team", "/team/edit"].includes(path) || path.startsWith("/settings"))
@@ -76,7 +88,7 @@ class AuthState {
 
   async fetch() {
     const token = localStorage.getItem(SESSION_TOKEN_KEY);
-    if (!token) {
+    if (!token && !IS_STATIC_EXPORT) {
       this.isLoading = false;
       return;
     }
@@ -108,6 +120,9 @@ class AuthState {
     } finally {
       localStorage.removeItem(SESSION_TOKEN_KEY);
       localStorage.removeItem(USER_DATA_KEY);
+      if (STATIC_EXPORT_CONFIG.enabled) {
+        staticHandler.setViewAs(null);
+      }
       this.user = undefined;
     }
     await goto("/");

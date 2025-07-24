@@ -111,136 +111,143 @@
     class="w-full text-center justify-center flex flex-row gap-2 items-center align-middle"
   >
     {title}
-    <div class="tooltip" data-tip={tooltip}>
+    <span class="tooltip tooltip-left" data-tip={tooltip}>
       <Icon icon="material-symbols:help" class="text-sm opacity-60" />
-    </div>
+    </span>
   </div>
 {/snippet}
 
 <div class="card bg-base-100 pop rounded-lg">
   <div class="card-body p-0">
-    <table class="table table-zebra w-full table-fixed">
-      <thead class="bg-base-200">
-        <tr>
-          <th class="text-left w-20 border-r-2 border-base-400">Category</th>
-          <th class="w-16">
-            {@render headerWithTooltip(
-              "Challenges",
-              "Number of challenges in category",
-            )}
-          </th>
-          <th class="text-center w-16">
-            {@render headerWithTooltip(
-              "Avg. points",
-              "Average point value of challenges in category",
-            )}
-          </th>
-          <th class="text-center w-16">
-            {@render headerWithTooltip(
-              "Total points",
-              "Total point value of all challenges in category",
-            )}
-          </th>
-          <th class="text-center w-16">
-            {@render headerWithTooltip(
-              "Avg. solves",
-              "Average number of solves per challenge in category",
-            )}
-          </th>
-          <th class="text-center w-16">
-            {@render headerWithTooltip(
-              "Total solves",
-              "Total number of solves across all challenges in category",
-            )}
-          </th>
-          <th class="text-center w-16">
-            {@render headerWithTooltip(
-              "Total attempts",
-              "Total number of submission attempts across all challenges in category",
-            )}
-          </th>
-          <th class="text-center w-16">
-            {@render headerWithTooltip(
-              "Avg. blood time",
-              "Average time from challenge release to first solve in category",
-            )}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {#if loading}
-          {#each Array(5) as _}
-            <tr>
-              <td class="text-center"
-                ><div class="skeleton h-4 w-8 mx-auto"></div></td
-              >
-              <td class="text-center"
-                ><div class="skeleton h-4 w-8 mx-auto"></div></td
-              >
-              <td class="text-center"
-                ><div class="skeleton h-4 w-8 mx-auto"></div></td
-              >
-              <td class="text-center"
-                ><div class="skeleton h-4 w-8 mx-auto"></div></td
-              >
-              <td class="text-center"
-                ><div class="skeleton h-4 w-12 mx-auto"></div></td
-              >
-              <td class="text-center"
-                ><div class="skeleton h-4 w-16 mx-auto"></div></td
-              >
-              <td class="text-center"
-                ><div class="skeleton h-4 w-16 mx-auto"></div></td
-              >
-            </tr>
-          {/each}
-        {:else if stats.length === 0}
+    <div class="overflow-x-auto">
+      <table class="table table-zebra w-full table-fixed">
+        <thead class="bg-base-200">
           <tr>
-            <td colspan="8" class="text-center py-8 text-base-content/70">
-              No challenge statistics available
-            </td>
+            <th class="text-left w-48">Category</th>
+            <th class="text-center w-24">
+              {@render headerWithTooltip(
+                "Challenges",
+                "Number of challenges in category",
+              )}
+            </th>
+            <th class="text-center w-24">
+              {@render headerWithTooltip(
+                "Avg. points",
+                "Average point value of challenges in category",
+              )}
+            </th>
+            <th class="text-center w-24">
+              {@render headerWithTooltip(
+                "Total points",
+                "Total point value of all challenges in category",
+              )}
+            </th>
+            <th class="text-center w-28">
+              {@render headerWithTooltip(
+                "Avg. solves",
+                "Average number of solves per challenge in category",
+              )}
+            </th>
+            <th class="text-center w-28">
+              {@render headerWithTooltip(
+                "Total solves",
+                "Total number of solves across all challenges in category",
+              )}
+            </th>
+            <th class="text-center w-24">
+              {@render headerWithTooltip(
+                "Total attempts",
+                "Total number of submission attempts across all challenges in category",
+              )}
+            </th>
+            <th class="text-center w-48">
+              {@render headerWithTooltip(
+                "Avg. blood time",
+                "Average time from challenge release to first solve in category",
+              )}
+            </th>
           </tr>
-        {:else}
-          {#each stats as stat (stat.category)}
-            <tr class="hover:bg-base-200/50">
-              <td class="w-full flex flex-row gap-4">
-                <Icon icon={categoryToIcon(stat.category)} class="text-lg" />
-                {stat.category}
-              </td>
-              <td
-                class="text-center font-mono font-bold w-20 border-l-2 border-base-400"
-              >
-                {stat.challenge_count}
-              </td>
-              <td class="text-center font-mono font-bold w-16">
-                {stat.avg_points}
-              </td>
-              <td class="text-center font-mono font-bold w-16">
-                {stat.total_points}
-              </td>
-              <td class="text-center font-mono font-bold w-16">
-                {stat.avg_solves}
-              </td>
-              <td class="text-center font-mono font-bold w-16">
-                {stat.total_solves}
-              </td>
-              <td class="text-center font-mono font-bold w-16">
-                {stat.total_submissions}
-              </td>
-              <td class="text-center font-mono font-bold w-16">
-                {#if !stat.avg_blood_time}
-                  -
-                {:else}
-                  {formatTimeDifference(
-                    new Date(stat.avg_blood_time),
-                    new Date(0),
-                  )}
-                {/if}
+        </thead>
+        <tbody>
+          {#if loading}
+            {#each Array(5) as _}
+              <tr>
+                <td class="text-center"
+                  ><div class="skeleton h-4 w-8 mx-auto"></div></td
+                >
+                <td class="text-center"
+                  ><div class="skeleton h-4 w-8 mx-auto"></div></td
+                >
+                <td class="text-center"
+                  ><div class="skeleton h-4 w-8 mx-auto"></div></td
+                >
+                <td class="text-center"
+                  ><div class="skeleton h-4 w-8 mx-auto"></div></td
+                >
+                <td class="text-center"
+                  ><div class="skeleton h-4 w-12 mx-auto"></div></td
+                >
+                <td class="text-center"
+                  ><div class="skeleton h-4 w-16 mx-auto"></div></td
+                >
+                <td class="text-center"
+                  ><div class="skeleton h-4 w-16 mx-auto"></div></td
+                >
+              </tr>
+            {/each}
+          {:else if stats.length === 0}
+            <tr>
+              <td colspan="8" class="text-center py-8 text-base-content/70">
+                No category statistics available
               </td>
             </tr>
-          {/each}
-        {/if}
-      </tbody>
-    </table>
+          {:else}
+            {#each stats as stat (stat.category)}
+              <tr class="hover:bg-base-200/50">
+                <td class="w-48">
+                  <div class="flex flex-row gap-3 items-center">
+                    <Icon
+                      icon={categoryToIcon(stat.category)}
+                      class="text-lg"
+                    />
+                    <span class="font-medium">{stat.category}</span>
+                  </div>
+                </td>
+                <td class="text-center font-mono font-bold w-24">
+                  {stat.challenge_count}
+                </td>
+                <td class="text-center font-mono font-bold w-24">
+                  {stat.avg_points}
+                </td>
+                <td class="text-center font-mono font-bold w-24">
+                  {stat.total_points}
+                </td>
+                <td class="text-center font-mono font-bold w-28">
+                  {stat.avg_solves}
+                </td>
+                <td class="text-center font-mono font-bold w-28">
+                  {stat.total_solves}
+                </td>
+                <td class="text-center font-mono font-bold w-24">
+                  {stat.total_submissions}
+                </td>
+                <td class="text-center font-mono font-bold w-48">
+                  {#if !stat.avg_blood_time}
+                    <span class="text-base-content/50 text-sm">No solves</span>
+                  {:else}
+                    <span class="text-sm">
+                      {formatTimeDifference(
+                        new Date(stat.avg_blood_time),
+                        new Date(0),
+                      )}
+                    </span>
+                  {/if}
+                </td>
+              </tr>
+            {/each}
+          {/if}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
