@@ -1,4 +1,3 @@
-import type { Middleware } from "openapi-fetch";
 import {
   paginateEntries,
   filterTeams,
@@ -37,10 +36,34 @@ class StaticExportHandler {
   private scoreboardMap = new Map<number, Map<number, ScoreboardEntry>>(); // division: { team: entry }
   private taggedScoreboardsCache = new Map<string, ScoreboardResponse>();
   private setupPromise: Promise<void> | null = null;
-  private viewAs: number | null = 459;
+  private viewAs: number | null = null;
 
   constructor() {
+    this.loadViewAsFromStorage();
     this.ensureSetup();
+  }
+
+  private loadViewAsFromStorage() {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("static_export_view_as");
+      if (stored) {
+        const teamId = parseInt(stored, 10);
+        if (!isNaN(teamId)) {
+          this.viewAs = teamId;
+        }
+      }
+    }
+  }
+
+  setViewAs(teamId: number | null) {
+    this.viewAs = teamId;
+    if (typeof window !== "undefined") {
+      if (teamId === null) {
+        localStorage.removeItem("static_export_view_as");
+      } else {
+        localStorage.setItem("static_export_view_as", teamId.toString());
+      }
+    }
   }
 
   async ensureSetup() {

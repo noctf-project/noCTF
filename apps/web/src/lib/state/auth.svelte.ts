@@ -2,6 +2,7 @@ import { goto } from "$app/navigation";
 import api, { SESSION_TOKEN_KEY } from "$lib/api/index.svelte";
 import { STATIC_EXPORT_CONFIG } from "$lib/static_export/config";
 import { toasts } from "$lib/stores/toast";
+import { IS_STATIC_EXPORT, staticHandler } from "$lib/static_export/middleware";
 
 interface User {
   id: number;
@@ -87,7 +88,7 @@ class AuthState {
 
   async fetch() {
     const token = localStorage.getItem(SESSION_TOKEN_KEY);
-    if (!token) {
+    if (!token && !IS_STATIC_EXPORT) {
       this.isLoading = false;
       return;
     }
@@ -119,6 +120,9 @@ class AuthState {
     } finally {
       localStorage.removeItem(SESSION_TOKEN_KEY);
       localStorage.removeItem(USER_DATA_KEY);
+      if (STATIC_EXPORT_CONFIG.enabled) {
+        staticHandler.setViewAs(null);
+      }
       this.user = undefined;
     }
     await goto("/");

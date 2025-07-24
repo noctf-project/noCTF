@@ -3,6 +3,7 @@
   import authState from "$lib/state/auth.svelte";
   import configState from "$lib/state/config.svelte";
   import { STATIC_EXPORT_CONFIG } from "$lib/static_export/config";
+  import ViewAsSelector from "./ViewAsSelector.svelte";
   import Icon from "@iconify/svelte";
 
   const isActive = (path: string) => {
@@ -87,18 +88,14 @@
   </div>
 
   <div class="navbar-end">
-    {#if !authState.isAuthenticated && !page.url.pathname.startsWith("/auth")}
-      {#if STATIC_EXPORT_CONFIG.enabled}
-        <div class="btn btn-primary text-primary-content px-6 pop hover:pop">
-          View as <Icon icon="mdi:chevron-down" class="text-xl" />
-        </div>
-      {:else}
-        <a
-          href="/auth"
-          class="btn btn-primary text-primary-content px-6 sm:px-8 pop hover:pop"
-          >Login</a
-        >
-      {/if}
+    {#if STATIC_EXPORT_CONFIG.enabled}
+      <ViewAsSelector />
+    {:else if !authState.isAuthenticated && !page.url.pathname.startsWith("/auth")}
+      <a
+        href="/auth"
+        class="btn btn-primary text-primary-content px-6 sm:px-8 pop hover:pop"
+        >Login</a
+      >
     {:else if authState.isAuthenticated}
       <div class="dropdown dropdown-end">
         <div
