@@ -40,7 +40,7 @@ class StaticExportHandler {
 
   constructor() {
     this.loadViewAsFromStorage();
-    this.ensureSetup();
+    if (STATIC_EXPORT_CONFIG.enabled) this.ensureSetup();
   }
 
   private loadViewAsFromStorage() {
