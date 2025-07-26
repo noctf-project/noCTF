@@ -1,3 +1,5 @@
+import { assets } from "$app/paths";
+
 export interface StaticExportConfig {
   enabled: boolean;
   baseUrl: string;
@@ -9,7 +11,7 @@ export const STATIC_EXPORT_CONFIG: StaticExportConfig = {
   enabled: ["1", "true"].includes(
     (import.meta.env.VITE_IS_STATIC_EXPORT || "").toLowerCase(),
   ),
-  baseUrl: "/export",
+  baseUrl: `${assets || ""}/export`,
   defaultPageSize: 60,
   maxPageSize: 1000,
 };
