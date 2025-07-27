@@ -70,7 +70,7 @@ export class StatsService {
     division_id: number,
   ): Promise<ChallengeStat[]> {
     const challenges = await this.challengeService.list({});
-    if (!challenges) return [];
+    if (!challenges.length) return [];
     const start = config.start_time_s
       ? new Date(config.start_time_s * 1000)
       : undefined;
