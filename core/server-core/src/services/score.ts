@@ -14,15 +14,15 @@ const STRATEGIES: Record<string, ScoringStrategy> = {
     description: "Returns a static score. Takes in a singular [base] param.",
   },
   quadratic: {
-    expr: "max(base, (((base - top) / (decay ^ 2)) * (ctx.n ^ 2)) + top)",
+    expr: "max(minimum, ceil((((minimum - initial) / (decay ^ 2)) * (max(0, ctx.n-1) ^ 2)) + initial))",
     description:
-      "Based on CTFd's dynamic scoring formula. base is the minimum score, top is the" +
-      " maximum score, and decay is the number of solves before the score becomes zero.",
+      "Based on CTFd's dynamic scoring formula. initial is the maximum score, " +
+      "and decay is the number of solves before the score becomes zero.",
   },
   exponential: {
-    expr: "base + (top - base) / (1 + (max(0, ctx.n - 1)/k) ^ j)",
+    expr: "minimum + (initial - minimum) / (1 + (max(0, ctx.n - 1)/k) ^ j)",
     description:
-      "Based on the CCC CTF dynamic scoring formula. base is the minimum score, top is" +
+      "Based on the CCC CTF dynamic scoring formula. initial is" +
       " the maximum score, k is the scaling factor and j is the exponent.",
   },
 };
