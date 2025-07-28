@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "noCTF Challenge Configuration",
+  "description": "Schema for noctf.yaml challenge configuration files",
+  "type": "object",
+  "required": ["slug", "title", "categories", "description", "flags"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version",
+      "default": "1.0"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "maxLength": 64,
+      "description": "Unique challenge identifier (lowercase, hyphens allowed)"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 128,
+      "description": "Challenge display name"
+    },
+    "categories": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "maxLength": 64
+      },
+      "description": "Challenge categories"
+    },
+    "description": {
+      "type": "string",
+      "description": "Challenge description"
+    },
+    "difficulty": {
+      "type": "string",
+      "description": "Challenge difficulty level"
+    },
+    "tags": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 64
+      },
+      "description": "Additional public challenge tags/metadata"
+    },
+    "flags": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Simple flag string (case-sensitive)"
+          },
+          {
+            "type": "object",
+            "required": ["data"],
+            "properties": {
+              "data": {
+                "type": "string",
+                "description": "Flag content"
+              },
+              "strategy": {
+                "type": "string",
+                "enum": ["case_sensitive", "case_insensitive", "regex"],
+                "default": "case_sensitive",
+                "description": "Flag matching strategy"
+              }
+            }
+          }
+        ]
+      },
+      "description": "Challenge flags"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Relative path to challenge file"
+      },
+      "description": "Challenge attachment files (relative to noctf.yaml)"
+    },
+    "hidden": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether challenge is hidden"
+    },
+    "visible_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "When challenge becomes visible (ISO 8601 format)"
+    },
+    "scoring": {
+      "type": "object",
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "default": "core:static",
+          "description": "Scoring strategy"
+        },
+        "params": {
+          "type": "object",
+          "description": "Strategy-specific parameters"
+        },
+        "bonus": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Bonus points"
+        }
+      },
+      "description": "Challenge scoring configuration"
+    },
+    "solve": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "default": "flag",
+          "description": "Solve source type"
+        },
+        "input_type": {
+          "type": "string",
+          "enum": ["text", "textarea", "none"],
+          "default": "text",
+          "description": "Type of input required for solving"
+        }
+      },
+      "description": "Challenge solve configuration"
+    },
+    "connection_info": {
+      "type": "string",
+      "description": "Connection information string"
+    }
+  },
+  "additionalProperties": true
+}
