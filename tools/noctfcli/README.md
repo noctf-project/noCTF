@@ -32,7 +32,7 @@ export NOCTF_PASSWORD="your-password"
 
 ## Challenge Format (`noctf.yaml`)
 
-See [`noctf.yaml.schema.json`](./noctf.yaml.schema.json) for the full JSON schema.
+See [`noctf.yaml.schema.json`](./src/noctfcli/schema/noctf.yaml.schema.json) for the full JSON schema.
 
 ```yaml
 version: "1.0"
