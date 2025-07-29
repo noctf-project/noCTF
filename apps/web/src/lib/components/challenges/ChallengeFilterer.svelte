@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ChallengeCardData } from "./ChallengeCard.svelte";
-  import { categoryToIcon } from "$lib/utils/challenges";
+  import { categoryToIcon, categoryOrdering } from "$lib/utils/challenges";
   import Icon from "@iconify/svelte";
   import { untrack } from "svelte";
 
@@ -16,7 +16,9 @@
   );
   const allCount = $derived(allChallenges.length);
   const categories = $derived(
-    new Set(allChallenges.flatMap((c) => c.categories)),
+    new Set(
+      allChallenges.map((c) => c.categories[0]).toSorted(categoryOrdering),
+    ),
   );
 
   let anyFilter = $state(true);
@@ -42,8 +44,8 @@
   };
 
   const getCategoryCounts = (category: string) => {
-    const chals = allChallenges.filter((c) =>
-      c.categories.find((f) => f == category),
+    const chals = allChallenges.filter(
+      (c) => c.categories.indexOf(category) === 0,
     );
     return {
       solved: chals.filter((c) => c.isSolved).length,

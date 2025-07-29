@@ -5,6 +5,7 @@
   import {
     getCategoriesFromTags,
     getDifficultyFromTags,
+    categoryOrdering,
   } from "$lib/utils/challenges";
   import ChallengeCard from "$lib/components/challenges/ChallengeCard.svelte";
   import ChallengeModal from "$lib/components/challenges/ChallengeModal.svelte";
@@ -14,6 +15,7 @@
   import Icon from "@iconify/svelte";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
+  import { DIFFICULTIES, type Difficulty } from "$lib/constants/difficulties";
 
   const CHALLENGE_DETAIL_CACHE_TIME = 1000 * 60 * 5; // 5 minutes
 
@@ -70,24 +72,28 @@
     const grouped: { [category: string]: ChallengeCardData[] } = {};
 
     for (const challenge of challenges) {
-      const categories =
+      const primaryCategory =
         challenge.categories.length > 0
-          ? challenge.categories
-          : ["uncategorized"];
+          ? challenge.categories[0]!
+          : "uncategorized";
 
-      for (const category of categories) {
-        if (!grouped[category]) {
-          grouped[category] = [];
-        }
-        grouped[category].push(challenge);
+      if (!grouped[primaryCategory]) {
+        grouped[primaryCategory] = [];
       }
+      grouped[primaryCategory].push(challenge);
     }
 
     for (const category in grouped) {
-      grouped[category]!.sort((a, b) => (a.points || 0) - (b.points || 0));
+      grouped[category]!.sort(
+        (a, b) =>
+          (a.points || 0) - (b.points || 0) ||
+          (a.solves || 0) - (b.solves || 0) ||
+          (DIFFICULTIES.indexOf(a.difficulty as Difficulty) || 0) -
+            (DIFFICULTIES.indexOf(b.difficulty as Difficulty) || 0),
+      );
     }
 
-    const sortedCategories = Object.keys(grouped).sort();
+    const sortedCategories = Object.keys(grouped).sort(categoryOrdering);
     const sortedGrouped: { [category: string]: ChallengeCardData[] } = {};
     for (const category of sortedCategories) {
       sortedGrouped[category] = grouped[category] || [];
