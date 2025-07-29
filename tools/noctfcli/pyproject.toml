@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "noctfcli"
 version = "0.1.0"
@@ -32,12 +36,11 @@ Documentation = "https://github.com/noctf-project/noctf/tree/main/tools/noctfcli
 [tool.hatch.build.targets.wheel]
 packages = ["src/noctfcli"]
 
-[tool.hatch.build.targets.sdist]
+[tool.hatch.build]
 include = [
     "/src",
-    "/examples",
+    "/src/noctfcli/schema/noctf.yaml.schema.json",
     "/README.md",
-    "/noctf.yaml.schema.json",
 ]
 
 [tool.ruff]

@@ -1,4 +1,5 @@
 from pathlib import Path
+from contextlib import asynccontextmanager
 from typing import Any, Literal, Optional, Union, overload
 
 import httpx
@@ -18,6 +19,8 @@ from .models import (
     ChallengeFileAttachment,
     ChallengeSummary,
 )
+
+from .config import Config
 
 
 class NoCTFClient:
@@ -400,3 +403,26 @@ class NoCTFClient:
             uploaded_files.append(uploaded_file)
 
         return uploaded_files
+
+
+@asynccontextmanager
+async def create_client(config: Config):
+    """Create an authenticated noCTF client instance
+
+    Args:
+        config: noctfcli configuration object
+
+    Returns:
+        Authenticated noCTF client
+    """
+    client = NoCTFClient(
+        config.api_url,
+        timeout=config.timeout,
+        verify_ssl=config.verify_ssl,
+    )
+    email, password = config.get_credentials()
+    await client.login(email, password)
+    try:
+        yield client
+    finally:
+        pass

@@ -21,7 +21,7 @@ class ChallengeValidator:
         """
 
         if schema_path is None:
-            schema_path = Path(__file__).parent.parent.parent / "noctf.yaml.schema.json"
+            schema_path = Path(__file__).parent / "schema" / "noctf.yaml.schema.json"
 
         self.schema_path = schema_path
         self._schema: Optional[dict[str, Any]] = None

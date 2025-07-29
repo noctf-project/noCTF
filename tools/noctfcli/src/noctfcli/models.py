@@ -174,3 +174,17 @@ class ChallengeSummary(BaseModel):
     visible_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
+
+
+class UploadUpdateResultEnum(str, Enum):
+    UPLOADED = "uploaded"
+    UPDATED = "updated"
+    VALIDATED = "validated"
+    SKIPPED = "skipped"
+    FAILED = "failed"
+
+
+class UploadUpdateResult(BaseModel):
+    challenge: str = Field(..., description="Challenge slug")
+    status: UploadUpdateResultEnum = Field(..., description="Result status")
+    error: Optional[str] = Field(default=None, description="Error message")
