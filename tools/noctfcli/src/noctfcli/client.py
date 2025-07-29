@@ -351,7 +351,8 @@ class NoCTFClient:
 
         tags = dict(config.tags)
         tags["categories"] = ",".join(config.categories)
-        tags["difficulty"] = config.difficulty
+        if config.difficulty:
+            tags["difficulty"] = config.difficulty
 
         description = config.description
         if config.connection_info:

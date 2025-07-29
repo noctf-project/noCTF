@@ -63,7 +63,7 @@ class ChallengeConfig(BaseModel):
     title: str = Field(..., description="Challenge display name")
     categories: list[str] = Field(..., description="Challenge categories")
     description: str = Field(..., description="Challenge description")
-    difficulty: str = Field(default="medium", description="Challenge difficulty")
+    difficulty: Optional[str] = Field(..., description="Challenge difficulty")
     tags: dict[str, str] = Field(default_factory=dict, description="Additional tags")
     flags: list[Union[str, Flag]] = Field(..., description="Challenge flags")
     files: list[str] = Field(default_factory=list, description="Challenge files")
