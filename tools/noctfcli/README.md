@@ -73,3 +73,7 @@ Commands:
   upload    Upload all challenge from a directory.
   validate  Validate all noctf.yaml files in a directory.
 ```
+
+## Preprocessor
+
+noctfcli can be built on top of to support CTF-specific challenge management configurations (such as scoring, connection info details, release wave configs). The CLI tool bundled in noctfcli can be passed a preprocessor class which to pre-process the challenge config before it is uploaded to the noCTF instance.
