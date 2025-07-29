@@ -1,22 +1,56 @@
 from pathlib import Path
-from typing import List
 
 import click
 
 from noctfcli.client import create_client
 from noctfcli.exceptions import NotFoundError
 from noctfcli.models import (
-    ChallengeFileAttachment,
+    ChallengeConfig,
     UploadUpdateResult,
     UploadUpdateResultEnum,
 )
-from noctfcli.utils import (
-    find_challenge_files,
-    print_results_summary,
-)
-from noctfcli.validator import ChallengeValidator
+from noctfcli.utils import print_results_summary
 
-from .common import CLIContextObj, console, handle_errors
+from .common import CLIContextObj, ChallengeProcessor, console, handle_errors
+
+
+class UploadProcessor(ChallengeProcessor):
+    def _get_action_verb(self) -> str:
+        return "upload"
+
+    async def _process_single_challenge(
+        self,
+        challenge_config: ChallengeConfig,
+        yaml_path: Path,
+    ) -> UploadUpdateResult:
+        try:
+            await self.client.get_challenge(challenge_config.slug)
+            self.console.print(
+                f"[yellow]Warning: Challenge with slug '{challenge_config.slug}' already exists.[/yellow] [dim]Use 'noctfcli update' to update existing challenges[/dim]",
+            )
+            return UploadUpdateResult(
+                challenge=challenge_config.slug,
+                status=UploadUpdateResultEnum.SKIPPED,
+            )
+        except NotFoundError:
+            pass
+
+        self.console.print(
+            f"[blue]Uploading challenge {challenge_config.slug}...[/blue]",
+        )
+
+        files = await self._upload_files(challenge_config, yaml_path)
+
+        challenge = await self.client.create_challenge(challenge_config, files)
+
+        self.console.print(
+            f"\t[green]Created challenge: {challenge.title}[/green] (ID: {challenge.id}, slug: {challenge.slug})",
+        )
+
+        return UploadUpdateResult(
+            challenge=challenge_config.slug,
+            status=UploadUpdateResultEnum.UPLOADED,
+        )
 
 
 @click.command()
@@ -34,92 +68,8 @@ async def upload(
 ) -> None:
     """Upload all challenge from a directory."""
 
-    results: List[UploadUpdateResult] = []
     async with create_client(ctx.config) as client:
-        validator = ChallengeValidator()
-
-        if dry_run:
-            console.print(
-                "[yellow]Dry run mode - no changes will be made[/yellow]",
-            )
-
-        yaml_files = find_challenge_files(challenges_directory)
-        for yaml_path in yaml_files:
-            try:
-                challenge_config = validator.validate_challenge_complete(yaml_path)
-                if ctx.preprocessor:
-                    challenge_config = ctx.preprocessor.preprocess(challenge_config)
-
-                if dry_run:
-                    console.print(f"Would upload challenge: {challenge_config.title}")
-                    if challenge_config.files:
-                        console.print(
-                            f"Would upload {len(challenge_config.files)} files:",
-                        )
-                        for file_path in challenge_config.files:
-                            console.print(f"  • {yaml_path.parent / file_path}")
-                    continue
-
-                try:
-                    await client.get_challenge(challenge_config.slug)
-                    console.print(
-                        f"[yellow]Warning: Challenge with slug '{challenge_config.slug}' already exists.[/yellow] [dim]Use 'noctfcli update' to update existing challenges[/dim]",
-                    )
-                    results.append(
-                        UploadUpdateResult(
-                            challenge=challenge_config.slug,
-                            status=UploadUpdateResultEnum.SKIPPED,
-                        ),
-                    )
-                    continue
-                except NotFoundError:
-                    pass
-
-                console.print(
-                    f"[blue]Uploading challenge {challenge_config.slug}...[/blue]",
-                )
-
-                uploaded_files = []
-                if challenge_config.files:
-                    console.print(f"\tUploading {len(challenge_config.files)} files...")
-                    base_path = yaml_path.parent
-                    uploaded_files = await client.upload_challenge_files(
-                        challenge_config,
-                        base_path,
-                    )
-                    console.print(
-                        f"\t[green]Uploaded {len(uploaded_files)} files[/green]",
-                    )
-                else:
-                    console.print(
-                        "\tNo files specified in config, not uploading any files",
-                    )
-
-                files = [
-                    ChallengeFileAttachment(id=f.id, is_attachment=True)
-                    for f in uploaded_files
-                ]
-
-                challenge = await client.create_challenge(challenge_config, files)
-
-                results.append(
-                    UploadUpdateResult(
-                        challenge=challenge_config.slug,
-                        status=UploadUpdateResultEnum.UPLOADED,
-                    ),
-                )
-
-                console.print(
-                    f"\t[green]Created challenge: {challenge.title}[/green] (ID: {challenge.id}, slug: {challenge.slug})",
-                )
-            except Exception as e:
-                results.append(
-                    UploadUpdateResult(
-                        challenge=yaml_path.parent.name,
-                        status=UploadUpdateResultEnum.FAILED,
-                        error=str(e),
-                    ),
-                )
-                console.print(f"[red]Error uploading challenge {yaml_path}: {e}[/red]")
+        processor = UploadProcessor(client, console, ctx.preprocessor)
+        results = await processor.process_challenges(challenges_directory, dry_run)
 
     print_results_summary(console, results)
