@@ -1,11 +1,13 @@
+from dataclasses import dataclass
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Type
 
 import click
 from rich.console import Console
 
 from noctfcli import __version__
+from noctfcli.commands.common import CLIContextObj
 from noctfcli.config import Config
 from noctfcli.exceptions import ConfigurationError
 
@@ -15,9 +17,10 @@ from noctfcli.commands.upload import upload
 from noctfcli.commands.update import update
 from noctfcli.commands.validate import validate
 from noctfcli.commands.delete import delete
+from noctfcli.preprocessor import PreprocessorBase
 
 
-def build_cli():
+def build_cli(Preprocessor: Optional[Type[PreprocessorBase]] = None):
     console = Console()
 
     @click.group()
@@ -36,7 +39,8 @@ def build_cli():
 
         try:
             app_config = Config.from_file(config) if config else Config.from_env()
-            ctx.obj = app_config
+            preprocessor = Preprocessor(config) if Preprocessor else None
+            ctx.obj = CLIContextObj(config=app_config, preprocessor=preprocessor)
         except ConfigurationError as e:
             console.print(f"[red]Configuration error:[/red] {e.message}")
             sys.exit(1)

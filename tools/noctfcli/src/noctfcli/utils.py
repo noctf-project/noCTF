@@ -80,7 +80,7 @@ def print_results_summary(console: Console, results: List[UploadUpdateResult]):
         console.print("\n[red]Failed challenges:[/red]")
         for result in results:
             if result.status == UploadUpdateResultEnum.FAILED:
-                error = result.error or "uknonwn error"
+                error = result.error or "unknown error"
                 console.print(f"  - {result.challenge}: {error}")
 
     console.print()

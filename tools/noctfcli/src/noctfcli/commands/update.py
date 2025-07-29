@@ -3,7 +3,6 @@ from typing import List
 
 import click
 
-from noctfcli.config import Config
 from noctfcli.exceptions import NotFoundError
 from noctfcli.validator import ChallengeValidator
 from noctfcli.models import (
@@ -17,10 +16,7 @@ from noctfcli.utils import (
     find_challenge_files,
     print_results_summary,
 )
-from .common import (
-    console,
-    handle_errors,
-)
+from .common import CLIContextObj, console, handle_errors
 
 
 @click.command()
@@ -32,20 +28,22 @@ from .common import (
 @click.pass_obj
 @handle_errors
 async def update(
-    config: Config,
+    ctx: CLIContextObj,
     challenges_directory: Path,
     dry_run: bool,
 ) -> None:
     """Update existing challenges from a directory."""
 
     results: List[UploadUpdateResult] = []
-    async with create_client(config) as client:
+    async with create_client(ctx.config) as client:
         validator = ChallengeValidator()
 
         yaml_files = find_challenge_files(challenges_directory)
         for yaml_path in yaml_files:
             try:
                 challenge_config = validator.validate_challenge_complete(yaml_path)
+                if ctx.preprocessor:
+                    challenge_config = ctx.preprocessor.preprocess(challenge_config)
 
                 if dry_run:
                     console.print(

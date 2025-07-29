@@ -1,11 +1,21 @@
 import asyncio
 import sys
+from dataclasses import dataclass
+from typing import Optional
 from functools import wraps
 
 from rich.console import Console
+from noctfcli.config import Config
 from noctfcli.exceptions import NoCTFError
+from noctfcli.preprocessor import PreprocessorBase
 
 console = Console()
+
+
+@dataclass
+class CLIContextObj:
+    config: Config
+    preprocessor: Optional[PreprocessorBase]
 
 
 def handle_errors(async_func):

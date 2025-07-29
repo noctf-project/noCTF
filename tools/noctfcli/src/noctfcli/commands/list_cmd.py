@@ -1,18 +1,17 @@
 import click
 from rich.table import Table
 
-from noctfcli.config import Config
 from noctfcli.client import create_client
-from .common import console, handle_errors
+from .common import CLIContextObj, console, handle_errors
 
 
 @click.command(name="list")
 @click.pass_obj
 @handle_errors
-async def list_challenges(config: Config) -> None:
+async def list_challenges(ctx: CLIContextObj) -> None:
     """List all challenges."""
 
-    async with create_client(config) as client:
+    async with create_client(ctx.config) as client:
         challenges = await client.list_challenges()
 
         if not challenges:

@@ -3,7 +3,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Optional, Union
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
 class FlagStrategy(str, Enum):
@@ -55,6 +55,8 @@ class SolveConfig(BaseModel):
 
 class ChallengeConfig(BaseModel):
     """Challenge configuration from noctf.yaml."""
+
+    model_config = ConfigDict(extra="allow")
 
     version: str = Field(default="1.0", description="Schema version")
     slug: str = Field(..., description="Unique challenge identifier")
