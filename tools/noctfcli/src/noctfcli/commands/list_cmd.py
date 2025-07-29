@@ -2,6 +2,7 @@ import click
 from rich.table import Table
 
 from noctfcli.client import create_client
+
 from .common import CLIContextObj, console, handle_errors
 
 

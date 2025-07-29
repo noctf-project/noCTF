@@ -3,7 +3,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Optional, Union
 
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class FlagStrategy(str, Enum):
@@ -145,7 +145,8 @@ class Challenge(BaseModel):
     hidden: bool = Field(..., description="Whether challenge is hidden")
     version: int = Field(..., description="Challenge version")
     visible_at: Optional[datetime] = Field(
-        ..., description="When challenge becomes visible"
+        ...,
+        description="When challenge becomes visible",
     )
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")

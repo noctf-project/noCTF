@@ -1,10 +1,11 @@
-from pathlib import Path
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any, Literal, Optional, Union, overload
 
 import httpx
 from pydantic import ValidationError as PydanticValidationError
 
+from .config import Config
 from .exceptions import (
     APIError,
     AuthenticationError,
@@ -19,8 +20,6 @@ from .models import (
     ChallengeFileAttachment,
     ChallengeSummary,
 )
-
-from .config import Config
 
 
 class NoCTFClient:
@@ -122,35 +121,13 @@ class NoCTFClient:
             msg = f"Failed to parse response: {e}"
             raise APIError(msg) from e
 
-    async def login(self, email: str, password: str) -> str:
-        """Login with email and password.
+    def set_token(self, token: str) -> None:
+        """Set authentication token.
 
         Args:
-            email: User email
-            password: User password
-
-        Returns:
-            Authentication token
+            token: Authentication token
         """
-
-        try:
-            login_response = await self._request(
-                "POST",
-                "/auth/email/finish",
-                data={"email": email, "password": password},
-                auth=False,
-            )
-        except NotFoundError:
-            # noCTF returns a 404 on incorrect login, so we raise it again as an AuthenticationError
-            raise AuthenticationError("Failed to login, login details may be incorrect")
-
-        token = login_response.get("data", {}).get("token")
-        if not token:
-            msg = "No token in login response"
-            raise AuthenticationError(msg)
-
         self._token = token
-        return token
 
     async def list_challenges(
         self,
@@ -365,7 +342,8 @@ class NoCTFClient:
             "tags": tags,
             "hidden": config.hidden,
             "visible_at": config.visible_at.isoformat(timespec="milliseconds").replace(
-                "+00:00", "Z"
+                "+00:00",
+                "Z",
             )
             if config.visible_at
             else None,
@@ -420,13 +398,14 @@ async def create_client(config: Config):
     Returns:
         Authenticated noCTF client
     """
+
     client = NoCTFClient(
         config.api_url,
         timeout=config.timeout,
         verify_ssl=config.verify_ssl,
     )
-    email, password = config.get_credentials()
-    await client.login(email, password)
+    token = config.get_token()
+    client.set_token(token)
     try:
         yield client
     finally:

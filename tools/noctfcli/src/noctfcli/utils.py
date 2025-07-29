@@ -1,11 +1,11 @@
-import yaml
 import hashlib
 import os
 from pathlib import Path
-from pathlib import Path
 from typing import Any, Dict, List
 
+import yaml
 from rich.console import Console
+
 from noctfcli.exceptions import ConfigurationError
 from noctfcli.models import UploadUpdateResult, UploadUpdateResultEnum
 
@@ -69,7 +69,7 @@ def print_results_summary(console: Console, results: List[UploadUpdateResult]):
     failed_count = sum(1 for r in results if r.status == UploadUpdateResultEnum.FAILED)
 
     console.print()
-    console.print(f"[bold]Summary:[/bold]")
+    console.print("[bold]Summary:[/bold]")
     console.print(f"  [green]Success: {success_count}[/green]")
 
     if skipped_count > 0:

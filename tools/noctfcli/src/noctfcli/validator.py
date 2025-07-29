@@ -72,7 +72,9 @@ class ChallengeValidator:
         return self.validate_data(data, yaml_path)
 
     def validate_data(
-        self, data: dict[str, Any], source: Optional[Path] = None
+        self,
+        data: dict[str, Any],
+        source: Optional[Path] = None,
     ) -> ChallengeConfig:
         """Validate challenge configuration data.
 
@@ -111,7 +113,9 @@ class ChallengeValidator:
             ) from e
 
     def validate_files_exist(
-        self, config: ChallengeConfig, base_path: Path
+        self,
+        config: ChallengeConfig,
+        base_path: Path,
     ) -> list[str]:
         """Validate that all referenced files exist.
 

@@ -12,38 +12,12 @@ class Config(BaseModel):
     """noctfcli configuration."""
 
     api_url: str = Field(..., description="noCTF API base URL")
-    email: Optional[str] = Field(default=None, description="Admin email")
-    password: Optional[str] = Field(default=None, description="Admin password")
+    token: Optional[str] = Field(default=None, description="Authentication token")
     verify_ssl: bool = Field(default=True, description="Verify SSL certificates")
     timeout: float = Field(default=30.0, description="Request timeout in seconds")
 
     @classmethod
-    def from_env(cls) -> "Config":
-        """Load configuration from environment variables.
-
-        Returns:
-            Configuration instance
-
-        Raises:
-            ConfigurationError: If required configuration is missing
-        """
-
-        api_url = os.getenv("NOCTF_API_URL")
-        if not api_url:
-            raise ConfigurationError(
-                "NOCTF_API_URL environment variable is required",
-            )
-
-        return cls(
-            api_url=api_url,
-            email=os.getenv("NOCTF_EMAIL"),
-            password=os.getenv("NOCTF_PASSWORD"),
-            verify_ssl=os.getenv("NOCTF_VERIFY_SSL", "true").lower() == "true",
-            timeout=float(os.getenv("NOCTF_TIMEOUT", "30.0")),
-        )
-
-    @classmethod
-    def from_file(cls, config_path: Path) -> "Config":
+    def init(cls, config_path: Path) -> "Config":
         """Load configuration from a file.
 
         Args:
@@ -60,28 +34,34 @@ class Config(BaseModel):
             msg = f"Configuration file not found: {config_path}"
             raise ConfigurationError(msg)
 
+        token = os.getenv("NOCTF_TOKEN")
+        if not token:
+            raise ConfigurationError(
+                "NOCTF_TOKEN environment variable is required",
+            )
+
         try:
             with open(config_path) as f:
                 data = yaml.safe_load(f)
-            return cls(**data)
+            return cls(**data, token=token)
         except Exception as e:
             msg = f"Invalid configuration file: {e}"
             raise ConfigurationError(msg) from e
 
-    def get_credentials(self) -> tuple[str, str]:
-        """Get email and password credentials.
+    def get_token(self) -> str:
+        """Get authentication token.
 
         Returns:
-            Tuple of (email, password)
+            Authentication token
 
         Raises:
-            ConfigurationError: If credentials are not configured
+            ConfigurationError: If token is not configured
         """
 
-        if not self.email or not self.password:
+        if not self.token:
             msg = (
-                "Email and password must be configured via environment variables "
-                "NOCTF_EMAIL and NOCTF_PASSWORD or configuration file"
+                "Authentication token must be configured via environment variable "
+                "NOCTF_TOKEN"
             )
             raise ConfigurationError(msg)
-        return self.email, self.password
+        return self.token

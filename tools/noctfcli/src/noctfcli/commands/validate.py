@@ -2,13 +2,13 @@ from pathlib import Path
 from typing import List
 
 import click
-from noctfcli.validator import ChallengeValidator
 
 from noctfcli.models import UploadUpdateResult, UploadUpdateResultEnum
 from noctfcli.utils import (
     find_challenge_files,
     print_results_summary,
 )
+from noctfcli.validator import ChallengeValidator
 
 from .common import console
 

@@ -18,16 +18,12 @@ Using a configuration file:
 ```yaml
 # config.yaml
 api_url: "http://localhost:8000"
-email: "admin@example.com"
-password: "your-password"
 ```
 
-Or using environment variables:
+The `NOCTF_TOKEN` environment variable must be set:
 
 ```bash
-export NOCTF_API_URL="http://localhost:8000"
-export NOCTF_EMAIL="admin@example.com"
-export NOCTF_PASSWORD="your-password"
+export NOCTF_TOKEN="<noctf_instance_admin_session_token>"
 ```
 
 ## Challenge Format (`noctf.yaml`)

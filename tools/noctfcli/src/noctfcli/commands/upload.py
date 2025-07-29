@@ -3,18 +3,19 @@ from typing import List
 
 import click
 
+from noctfcli.client import create_client
 from noctfcli.exceptions import NotFoundError
 from noctfcli.models import (
     ChallengeFileAttachment,
     UploadUpdateResult,
     UploadUpdateResultEnum,
 )
-from noctfcli.client import create_client
-from noctfcli.validator import ChallengeValidator
 from noctfcli.utils import (
     find_challenge_files,
     print_results_summary,
 )
+from noctfcli.validator import ChallengeValidator
+
 from .common import CLIContextObj, console, handle_errors
 
 

@@ -1,6 +1,7 @@
 import click
 
 from noctfcli.client import create_client
+
 from .common import CLIContextObj, console, handle_errors
 
 

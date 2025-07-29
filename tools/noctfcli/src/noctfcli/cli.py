@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 import sys
 from pathlib import Path
 from typing import Optional, Type
@@ -8,15 +7,14 @@ from rich.console import Console
 
 from noctfcli import __version__
 from noctfcli.commands.common import CLIContextObj
-from noctfcli.config import Config
-from noctfcli.exceptions import ConfigurationError
-
+from noctfcli.commands.delete import delete
 from noctfcli.commands.list_cmd import list_challenges
 from noctfcli.commands.show import show
-from noctfcli.commands.upload import upload
 from noctfcli.commands.update import update
+from noctfcli.commands.upload import upload
 from noctfcli.commands.validate import validate
-from noctfcli.commands.delete import delete
+from noctfcli.config import Config
+from noctfcli.exceptions import ConfigurationError
 from noctfcli.preprocessor import PreprocessorBase
 
 
@@ -33,12 +31,12 @@ def build_cli(Preprocessor: Optional[Type[PreprocessorBase]] = None):
     @click.pass_context
     def cli(
         ctx: click.Context,
-        config: Optional[Path],
+        config: Path,
     ) -> None:
         """noctfcli - CLI tool for noCTF challenge management."""
 
         try:
-            app_config = Config.from_file(config) if config else Config.from_env()
+            app_config = Config.init(config)
             preprocessor = Preprocessor(config) if Preprocessor else None
             ctx.obj = CLIContextObj(config=app_config, preprocessor=preprocessor)
         except ConfigurationError as e:
