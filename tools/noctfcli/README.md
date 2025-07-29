@@ -53,25 +53,23 @@ connection_info: nc ${host} ${port}
 
 ## CLI Usage
 
+The `update` and `upload` commands take a directory which will be recursively searched for `noctf.yaml` files to process.
+
 ```
 Usage: noctfcli [OPTIONS] COMMAND [ARGS]...
 
   noctfcli - CLI tool for noCTF challenge management.
 
 Options:
-  --version        Show the version and exit.
-  --config PATH    Configuration file path
-  --api-url TEXT   noCTF API base URL
-  --email TEXT     Admin email
-  --password TEXT  Admin password
-  --no-ssl-verify  Disable SSL verification
-  --help           Show this message and exit.
+  --version      Show the version and exit.
+  --config PATH  Configuration file path
+  --help         Show this message and exit.
 
 Commands:
   delete    Delete a challenge.
   list      List all challenges.
   show      Show detailed information about a challenge.
-  update    Update an existing challenge from noctf.yaml file.
-  upload    Upload a challenge from noctf.yaml file.
-  validate  Validate a noctf.yaml file.
+  update    Update existing challenges from a directory.
+  upload    Upload all challenge from a directory.
+  validate  Validate all noctf.yaml files in a directory.
 ```
