@@ -69,7 +69,8 @@
                 "default": "case_sensitive",
                 "description": "Flag matching strategy"
               }
-            }
+            },
+            "additionalProperties": false
           }
         ]
       },

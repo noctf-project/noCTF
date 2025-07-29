@@ -37,6 +37,11 @@ async def upload(
     async with create_client(ctx.config) as client:
         validator = ChallengeValidator()
 
+        if dry_run:
+            console.print(
+                "[yellow]Dry run mode - no changes will be made[/yellow]",
+            )
+
         yaml_files = find_challenge_files(challenges_directory)
         for yaml_path in yaml_files:
             try:
@@ -45,9 +50,6 @@ async def upload(
                     challenge_config = ctx.preprocessor.preprocess(challenge_config)
 
                 if dry_run:
-                    console.print(
-                        "[yellow]Dry run mode - no changes will be made[/yellow]",
-                    )
                     console.print(f"Would upload challenge: {challenge_config.title}")
                     if challenge_config.files:
                         console.print(
@@ -112,7 +114,7 @@ async def upload(
             except Exception as e:
                 results.append(
                     UploadUpdateResult(
-                        challenge=str(yaml_path),
+                        challenge=yaml_path.parent.name,
                         status=UploadUpdateResultEnum.FAILED,
                         error=str(e),
                     ),

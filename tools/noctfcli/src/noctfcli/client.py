@@ -363,7 +363,11 @@ class NoCTFClient:
             "description": description,
             "tags": tags,
             "hidden": config.hidden,
-            "visible_at": config.visible_at.isoformat() if config.visible_at else None,
+            "visible_at": config.visible_at.isoformat(timespec="milliseconds").replace(
+                "+00:00", "Z"
+            )
+            if config.visible_at
+            else None,
             "private_metadata": {
                 "solve": {
                     "source": config.solve.source,

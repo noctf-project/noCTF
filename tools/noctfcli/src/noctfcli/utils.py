@@ -24,7 +24,7 @@ def find_challenge_files(directory_path: Path) -> List[Path]:
             if file == "noctf.yaml":
                 challenge_files.append(Path(root) / file)
 
-    return sorted(challenge_files)
+    return challenge_files
 
 
 def load_yaml_file(file_path: str) -> Dict[str, Any]:

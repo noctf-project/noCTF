@@ -36,8 +36,8 @@ def validate(challenges_directory: Path) -> None:
             console.print(f"\tTitle: {challenge_config.title}")
             console.print(f"\tSlug: {challenge_config.slug}")
             console.print(f"\tCategories: {challenge_config.categories}")
-            console.print(f"\tFlags: {len(challenge_config.flags)}")
-            console.print(f"\tFiles: {len(challenge_config.files)}")
+            console.print(f"\tFlags: {challenge_config.flags}")
+            console.print(f"\tFiles: {challenge_config.files}")
 
             results.append(
                 UploadUpdateResult(
@@ -49,7 +49,7 @@ def validate(challenges_directory: Path) -> None:
         except Exception as e:
             results.append(
                 UploadUpdateResult(
-                    challenge=str(yaml_path),
+                    challenge=yaml_path.parent.name,
                     status=UploadUpdateResultEnum.FAILED,
                     error=str(e),
                 ),
