@@ -451,7 +451,7 @@ export type OAuthAuthorizeInternalRequest = Static<
 
 export const AdminCreateTeamTagRequest = Type.Pick(
   TeamTag,
-  ["name", "is_joinable"],
+  ["name", "description", "is_joinable"],
   { additionalProperties: false },
 );
 export type AdminCreateTeamTagRequest = Static<
