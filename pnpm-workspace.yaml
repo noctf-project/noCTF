@@ -11,9 +11,10 @@ catalog:
   "@types/node": ^22.7.4
   "@types/pg": ^8.11.10
   "eslint": ^9.17.0
-  "typescript": ^5.7.2
+  "typescript": "5.8.3"
   "cbor-x": ^1.6.0
-  "typescript-eslint": ^8.18.2
+  "typescript-eslint": ^8.38.0
+  "@typescript-eslint/parser": ^8.38.0
   "tsx": ^4.19.1
   "ajv": ^8.17.1
   "ajv-formats": "^3.0.1"

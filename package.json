@@ -15,7 +15,7 @@
   "devDependencies": {
     "@eslint/js": "catalog:",
     "@types/pg": "catalog:",
-    "@typescript-eslint/parser": "^8.20.0",
+    "@typescript-eslint/parser": "catalog:",
     "eslint": "catalog:",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-svelte": "^2.46.1",
@@ -26,7 +26,8 @@
     "prettier": "^3.4.2",
     "prettier-plugin-svelte": "^3.3.3",
     "svelte-eslint-parser": "^0.43.0",
-    "typescript-eslint": "catalog:"
+    "typescript-eslint": "catalog:",
+    "typescript": "catalog:"
   },
   "packageManager": "pnpm@9.12.2+sha512.22721b3a11f81661ae1ec68ce1a7b879425a1ca5b991c975b074ac220b187ce56c708fe5db69f4c962c989452eee76c82877f4ee80f474cebd61ee13461b6228"
 }

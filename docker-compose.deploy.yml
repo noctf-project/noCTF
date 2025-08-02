@@ -1,7 +1,7 @@
 # TODO: make this auto-migrate
 services:
   server:
-    image: noctf/server
+    image: ghcr.io/noctf-project/noctf/server
     build:
       context: .
       dockerfile: Dockerfile
@@ -17,7 +17,7 @@ services:
       HOST: "::"
       ENABLE_SWAGGER: 0
   web:
-    image: noctf/web
+    image: ghcr.io/noctf-project/noctf/web
     build:
       context: .
       dockerfile: Dockerfile
