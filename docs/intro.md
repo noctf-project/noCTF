@@ -9,8 +9,8 @@ any scale — from small community events to large, international CTFs with thou
 
 Originally developed for and first deployed in [DownUnderCTF](https://downunderctf.com), the largest
 CTF in the southern hemisphere, **noCTF** is engineered from day one with performance, scalability,
-and usability in mind. It has since proven itself in production, successfully handling over 5,000
-players over 48 hours, with a peak load of 200 TPS and sustained average of 100 TPS.
+and usability in mind. It has since proven itself in production, successfully supporting over 5,000
+players over 48 hours, with a peak load of over 200 TPS and sustained average of 100 TPS.
 
 ## Key Features
 - **Scalable Architecture:** Built to handle CTFs large, small and in-between.

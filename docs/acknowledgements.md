@@ -14,7 +14,7 @@ The main development team consists of:
 - [Sam Calamos](https://github.com/bluealder)
 
 ## Additional Thanks
-We would also like to thank [Tanto Security](https://tantosec.com) and
+We would like to thank [Tanto Security](https://tantosec.com) and
 [Justin Steven](https://github.com/justinsteven) for kindly providing us with a pentest of the noCTF
 codebase. 
 

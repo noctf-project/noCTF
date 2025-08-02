@@ -43,7 +43,7 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            "https://github.com/noctf-project/noCTF/tree/master/apps/docs/",
+            "https://github.com/noctf-project/noCTF/tree/docs/",
         },
         theme: {
           customCss: "./src/css/custom.css",
