@@ -17,7 +17,7 @@ players over 48 hours, with a peak load of over 200 TPS and sustained average of
 - **Minimal Dependencies:** Easy to deploy with only PostgreSQL, Redis, and NATS as core
 requirements.
 - **Event-Driven Backend:** Fast and efficient thanks to an event-based architecture for real-time
-scoreboard calculations, notifications, and more.
+scoreboard calculations, notifications and more.
 - **Role-Based Access Control:** Granular admin permissions allow secure delegation of
 responsibilities.
 - **Divisions Support:** Native support for multiple scoring brackets or competition tiers.

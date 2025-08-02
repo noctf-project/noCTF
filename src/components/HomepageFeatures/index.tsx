@@ -15,28 +15,31 @@ const FeatureList: FeatureItem[] = [
     Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        noCTF is designed from the ground up to be easily installed and configured to get your CTF
+        competition up and running quickly.
       </>
     ),
   },
   {
-    title: 'Focus on What Matters',
+    title: 'High Performance',
     Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        noCTF's core backend is designed to be high performance, relying on an event-driven design
+        in order to remain fast under high load. Additionally it utilises in-memory caching whenever
+        possible to reduce latency and increase throughput.
       </>
     ),
   },
   {
-    title: 'Powered by React',
+    title: 'Extensible',
     Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+        noCTF is fully written in TypeScript and is designed to be extensible so that CTF organisers
+        are able to modify the source to add any plugins that they require. Additionally the
+        frontend is distributed as a single-page application, allowing for maximum flexibility with
+        theming.
       </>
     ),
   },
