@@ -113,7 +113,6 @@ class LoginState {
         name: this.username.trim(),
         email: this.email, // this email doesn't actually matter since the backend should use the token to get the email
         password: this.password,
-        captcha: "", // Assuming captcha is handled elsewhere or not needed here
       },
     });
 

@@ -46,7 +46,11 @@
     apiChallengeStats.r?.data?.data?.entries || [],
   );
   const userStats = $derived(
-    apiUserStats.r?.data?.data || { user_count: 0, team_count: 0 },
+    apiUserStats.r?.data?.data || {
+      user_count: 0,
+      team_count: 0,
+      team_tag_counts: [],
+    },
   );
 
   function refreshData() {
