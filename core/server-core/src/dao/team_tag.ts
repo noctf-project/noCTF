@@ -19,13 +19,16 @@ export class TeamTagDAO {
   async list(): Promise<TeamTag[]> {
     return this.db
       .selectFrom("team_tag")
-      .select(["id", "name", "is_joinable", "created_at"])
+      .select(["id", "name", "description", "is_joinable", "created_at"])
       .execute();
   }
 
-  async create(v: { name: string; is_joinable: boolean }): Promise<TeamTag> {
+  async create(
+    v: Pick<TeamTag, "name" | "description" | "is_joinable">,
+  ): Promise<TeamTag> {
     const i = {
       name: v.name,
+      description: v.description,
       is_joinable: v.is_joinable,
     };
     try {
@@ -56,11 +59,15 @@ export class TeamTagDAO {
     }
   }
 
-  async update(id: number, v: { name: string; is_joinable: boolean }) {
+  async update(
+    id: number,
+    v: Pick<TeamTag, "name" | "description" | "is_joinable">,
+  ) {
     const { numUpdatedRows } = await this.db
       .updateTable("team_tag")
       .set({
         name: v.name,
+        description: v.description,
         is_joinable: v.is_joinable,
       })
       .where("id", "=", id)

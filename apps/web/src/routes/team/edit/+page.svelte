@@ -17,14 +17,8 @@
     );
   });
 
-  type TeamTag = {
-    id: number;
-    name: string;
-    is_joinable: boolean;
-  };
-
   const apiTeamTags = wrapLoadable(api.GET("/team_tags"));
-  const teamTags: TeamTag[] = $derived(
+  const teamTags = $derived(
     apiTeamTags.r?.data?.data?.tags.filter((t) => t.is_joinable) || [],
   );
 
@@ -226,6 +220,7 @@
                         />
                         <div
                           class={`btn btn-sm ${isSelected ? "btn-primary" : "btn-outline bg-base-100"} pop hover:pop`}
+                          title={tag.description}
                         >
                           {#if isSelected}
                             <Icon

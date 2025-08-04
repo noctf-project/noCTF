@@ -6,6 +6,7 @@
   type TeamTag = {
     id: number;
     name: string;
+    description: string;
     is_joinable: boolean;
     created_at: string;
   };
@@ -18,11 +19,13 @@
 
   let createForm = $state({
     name: "",
+    description: "",
     is_joinable: true,
   });
 
   let editForm = $state({
     name: "",
+    description: "",
     is_joinable: true,
   });
 
@@ -46,6 +49,7 @@
       const response = await api.POST("/admin/team_tags", {
         body: {
           name: createForm.name.trim(),
+          description: createForm.description.trim(),
           is_joinable: createForm.is_joinable,
         },
       });
@@ -71,6 +75,7 @@
   function startEdit(tag: TeamTag) {
     editingTag = tag;
     editForm.name = tag.name;
+    editForm.description = tag.description;
     editForm.is_joinable = tag.is_joinable;
   }
 
@@ -92,6 +97,7 @@
         params: { path: { id: editingTag.id } },
         body: {
           name: editForm.name.trim(),
+          description: editForm.description.trim(),
           is_joinable: editForm.is_joinable,
         },
       });
@@ -178,6 +184,18 @@
               maxlength="64"
             />
           </div>
+          <div class="form-control">
+            <label class="label" for="create-description">
+              <span class="label-text">Tag Description</span>
+            </label>
+            <textarea
+              id="create-description"
+              bind:value={createForm.description}
+              placeholder="Enter tag description"
+              class="input input-bordered focus:outline-none focus:ring-0 focus:ring-offset-0"
+              maxlength="512"
+            ></textarea>
+          </div>
 
           <div class="form-control">
             <label class="label" for="tag-settings">
@@ -232,6 +250,7 @@
               <thead>
                 <tr>
                   <th class="text-left">Name</th>
+                  <th class="text-left w-1/3">Description</th>
                   <th class="text-center">Joinable</th>
                   <th class="text-left">Created</th>
                   <th class="text-right">Actions</th>
@@ -245,11 +264,22 @@
                         <input
                           type="text"
                           bind:value={editForm.name}
-                          class="input input-bordered input-sm w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+                          class="input input-bordered focus:outline-none focus:ring-0 focus:ring-offset-0"
                           maxlength="64"
                         />
                       {:else}
                         <span class="font-medium">{tag.name}</span>
+                      {/if}
+                    </td>
+                    <td>
+                      {#if editingTag?.id === tag.id}
+                        <textarea
+                          bind:value={editForm.description}
+                          class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+                          maxlength="512"
+                        ></textarea>
+                      {:else}
+                        <span class="font-medium">{tag.description}</span>
                       {/if}
                     </td>
                     <td class="text-center">
