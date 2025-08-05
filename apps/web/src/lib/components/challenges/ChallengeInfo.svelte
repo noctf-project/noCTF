@@ -74,7 +74,6 @@
 
     flagSubmitStatus = "submitting";
 
-    // TODO: better progress and error handling
     const r = await api.POST("/challenges/{id}/solves", {
       params: { path: { id: challData!.id } },
       body: {

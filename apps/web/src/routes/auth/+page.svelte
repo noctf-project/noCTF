@@ -33,8 +33,6 @@
     );
   }
 
-  // TODO: Implement when password reset API is available
-
   function handleSubmit(e: Event) {
     e.preventDefault();
     handleEmailCheck();

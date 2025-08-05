@@ -203,15 +203,6 @@
       : undefined,
   );
 
-  const graphs = $derived(
-    Promise.all(
-      apiTeams.map(async ({ team_id, graph: data }) => ({
-        name: (await TeamQueryService.get(team_id))?.name || "unknown",
-        data,
-      })),
-    ),
-  );
-
   const allTeamsToDisplay = $derived.by(() => {
     if (!myTeamEntry || isMyTeamInCurrentPage) {
       return apiTeams;

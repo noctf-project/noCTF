@@ -17,7 +17,7 @@
   const allCount = $derived(allChallenges.length);
   const categories = $derived(
     new Set(
-      allChallenges.map((c) => c.categories[0]).toSorted(categoryOrdering),
+      allChallenges.map((c) => c.categories[0]!).toSorted(categoryOrdering),
     ),
   );
 

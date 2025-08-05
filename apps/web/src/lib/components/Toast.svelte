@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { toasts } from "$lib/stores/toast"; // Assuming this store has { subscribe, remove }
+  import { toasts } from "$lib/stores/toast";
   import { fly } from "svelte/transition";
   import Icon from "@iconify/svelte";
-  import { quintOut } from "svelte/easing"; // Smoother easing
+  import { quintOut } from "svelte/easing";
 
-  // Helper function or object to map toast types to icons and classes
   const toastStyles = {
     success: {
       icon: "material-symbols:check-circle-outline-rounded",
@@ -24,7 +23,6 @@
     },
   };
 
-  // Default style for unknown types
   const defaultStyle = toastStyles.info;
 </script>
 
@@ -60,6 +58,6 @@
 
 <style>
   .toast > :global(div.alert) {
-    width: 100%; /* Ensure alerts take the width defined */
+    width: 100%;
   }
 </style>
