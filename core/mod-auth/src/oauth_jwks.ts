@@ -1,3 +1,4 @@
+import { getPublicKeyAsync } from "@noble/ed25519";
 import type { KeyService } from "@noctf/server-core/services/key";
 import { CryptoKey, importJWK, JWK } from "jose";
 import { createHash } from "node:crypto";
@@ -17,12 +18,12 @@ export class JWKSStore {
   }
 
   private async generateKey() {
-    const key = this.keyService.deriveEd25519Key("auth:jwk");
+    const key = this.keyService.deriveKey("auth:jwk");
     const secret = {
       kty: "OKP",
       crv: "Ed25519",
-      d: Buffer.from(key.secretKey.slice(0, 32)).toString("base64url"),
-      x: Buffer.from(key.secretKey.slice(32, 64)).toString("base64url"),
+      d: key.toString("base64url"),
+      x: Buffer.from(await getPublicKeyAsync(key)).toString("base64url"),
       use: "sig",
       alg: "EdDSA",
     };

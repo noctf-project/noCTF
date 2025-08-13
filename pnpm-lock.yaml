@@ -329,6 +329,9 @@ importers:
       '@fastify/formbody':
         specifier: 'catalog:'
         version: 8.0.2
+      '@noble/ed25519':
+        specifier: ^2.3.0
+        version: 2.3.0
       '@noctf/api':
         specifier: workspace:*
         version: link:../api
@@ -516,9 +519,6 @@ importers:
       redis:
         specifier: ^4.7.0
         version: 4.7.0
-      tweetnacl:
-        specifier: ^1.0.3
-        version: 1.0.3
     devDependencies:
       '@types/mime-types':
         specifier: ^2.1.4
@@ -1300,6 +1300,9 @@ packages:
 
   '@marijn/find-cluster-break@1.0.2':
     resolution: {integrity: sha512-l0h88YhZFyKdXIFNfSWpyjStDjGHwZ/U7iobcK1cQQD8sejsONdQtTVU+1wVN1PBw40PiiHB1vA5S7VTfQiP9g==}
+
+  '@noble/ed25519@2.3.0':
+    resolution: {integrity: sha512-M7dvXL2B92/M7dw9+gzuydL8qn/jiqNHaoR3Q+cb1q1GHV7uwE17WCyFMG+Y+TZb5izcaXk5TdJRrDUxHXL78A==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -5111,6 +5114,8 @@ snapshots:
   '@lukeed/ms@2.0.2': {}
 
   '@marijn/find-cluster-break@1.0.2': {}
+
+  '@noble/ed25519@2.3.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:

@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@fastify/formbody": "catalog:",
+    "@noble/ed25519": "^2.3.0",
     "@noctf/api": "workspace:*",
     "@noctf/schema": "workspace:*",
     "@noctf/server-core": "workspace:*",

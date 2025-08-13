@@ -1,5 +1,5 @@
+import { getPublicKeyAsync } from "@noble/ed25519";
 import { BinaryLike, createHash, createHmac } from "node:crypto";
-import nacl from "tweetnacl";
 
 export class KeyService {
   private readonly secret;
@@ -14,10 +14,5 @@ export class KeyService {
 
   deriveKey(payload: BinaryLike) {
     return createHmac("sha256", this.secret).update(payload).digest();
-  }
-
-  deriveEd25519Key(payload: BinaryLike) {
-    const key = this.deriveKey(payload);
-    return nacl.sign.keyPair.fromSeed(key);
   }
 }
