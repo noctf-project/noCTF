@@ -5,16 +5,16 @@ import {
   ChallengeMetadataWithExpr,
   ComputeFullGraph,
   ComputeScoreboard,
+  PartitionSolvesByChallenge,
 } from "./calc.ts";
 import { HistoryDataPoint } from "../../dao/score_history.ts";
 import { SetupConfig } from "@noctf/api/config";
 import { AwardDAO } from "../../dao/award.ts";
 import { ScoreboardDataLoader } from "./loader.ts";
 import { MinimalTeamInfo, TeamDAO } from "../../dao/team.ts";
-import { RawSolve, SubmissionDAO } from "../../dao/submission.ts";
+import { SubmissionDAO } from "../../dao/submission.ts";
 import { MaxDate } from "../../util/date.ts";
 import { ScoreboardHistory } from "./history.ts";
-import { IsTimeBetweenSeconds } from "../../util/time.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -119,19 +119,12 @@ export class ScoreboardService {
 
     let points: HistoryDataPoint[] = [];
     for (const { id } of divisions) {
-      const [solveList, awardList] = await Promise.all([
+      const [solveList, awardList, { value: setup }] = await Promise.all([
         this.submissionDAO.getSolvesForCalculation(id),
         this.awardDAO.getAllAwards(id),
+        this.configService.get(SetupConfig),
       ]);
-      const solvesByChallenge = new Map<number, RawSolve[]>();
-      solveList.forEach((x) => {
-        let solves = solvesByChallenge.get(x.challenge_id);
-        if (!solves) {
-          solves = [];
-          solvesByChallenge.set(x.challenge_id, solves);
-        }
-        solves.push(x);
-      });
+      const solvesByChallenge = PartitionSolvesByChallenge(solveList, setup);
       points = points.concat(
         ComputeFullGraph(
           new Map(teams.get(id)?.map((x) => [x.id, x])),
@@ -210,7 +203,6 @@ export class ScoreboardService {
       let t = ts;
 
       for (end = start + 1; end < graph[0].length; end++) {
-        score += graph[1][end];
         if ((t += graph[0][end]) > endTime) {
           break;
         }
@@ -224,6 +216,7 @@ export class ScoreboardService {
       x[0] = ts;
       y[0] = score;
     }
+
     return [x, y];
   }
 
@@ -294,25 +287,11 @@ export class ScoreboardService {
       this.configService.get(SetupConfig),
     ]);
 
-    const solvesByChallenge = new Map<number, RawSolve[]>();
-    solveList.forEach((x) => {
-      if (timestamp && x.created_at > timestamp) return;
-      let solves = solvesByChallenge.get(x.challenge_id);
-      if (!solves) {
-        solves = [];
-        solvesByChallenge.set(x.challenge_id, solves);
-      }
-      solves.push({
-        ...x,
-        hidden:
-          x.hidden ||
-          !IsTimeBetweenSeconds(
-            x.created_at,
-            setup.start_time_s,
-            setup.end_time_s,
-          ),
-      });
-    });
+    const solvesByChallenge = PartitionSolvesByChallenge(
+      solveList,
+      setup,
+      timestamp,
+    );
 
     const {
       last_event,

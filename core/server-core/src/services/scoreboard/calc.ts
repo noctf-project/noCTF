@@ -12,6 +12,7 @@ import { MaxDate } from "../../util/date.ts";
 import { MinimalTeamInfo } from "../../dao/team.ts";
 import { RawSolve } from "../../dao/submission.ts";
 import { HistoryDataPoint } from "../../dao/score_history.ts";
+import { IsTimeBetweenSeconds } from "../../util/time.ts";
 
 export type ChallengeMetadataWithExpr = {
   expr: Expression;
@@ -360,4 +361,27 @@ export const GetChangedTeamScores = (
     });
   }
   return output;
+};
+
+export const PartitionSolvesByChallenge = (
+  solveList: RawSolve[],
+  time: { start_time_s?: number; end_time_s?: number },
+  timestamp?: Date,
+) => {
+  const solvesByChallenge = new Map<number, RawSolve[]>();
+  solveList.forEach((x) => {
+    if (timestamp && x.created_at > timestamp) return;
+    let solves = solvesByChallenge.get(x.challenge_id);
+    if (!solves) {
+      solves = [];
+      solvesByChallenge.set(x.challenge_id, solves);
+    }
+    solves.push({
+      ...x,
+      hidden:
+        x.hidden ||
+        !IsTimeBetweenSeconds(x.created_at, time.start_time_s, time.end_time_s),
+    });
+  });
+  return solvesByChallenge;
 };
