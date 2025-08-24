@@ -19,7 +19,7 @@ export type IdOrSlugParams = Static<typeof IdOrSlugParams>;
 
 export const LocalFileParams = Type.Object(
   {
-    ref: Type.String({ maxLength: 64, pattern: "^[A-Za-z0-9_-]+" }),
+    ref: Type.String({ maxLength: 64, pattern: "^[A-Za-z0-9_-]+$" }),
   },
   { additionalProperties: false },
 );
