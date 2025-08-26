@@ -4,6 +4,7 @@ import {
   ComputeFullGraph,
   ComputeScoreboard,
   GetChangedTeamScores,
+  PartitionSolvesByChallenge,
 } from "./calc.ts";
 import {
   Award,
@@ -983,5 +984,204 @@ describe(ComputeFullGraph, () => {
       { score: 501, team_id: 1, updated_at: new Date(2005) },
       { score: 506, team_id: 1, updated_at: new Date(2102) },
     ]);
+  });
+});
+
+describe(PartitionSolvesByChallenge, () => {
+  const baseDate = new Date("2024-01-01T12:00:00Z");
+  const earlierDate = new Date("2024-01-01T10:00:00Z");
+  const laterDate = new Date("2024-01-01T14:00:00Z");
+
+  const mockSolves: RawSolve[] = [
+    {
+      id: 1,
+      challenge_id: 101,
+      user_id: 1,
+      team_id: 1,
+      value: null,
+      created_at: baseDate,
+      updated_at: baseDate,
+      hidden: false,
+    },
+    {
+      id: 2,
+      challenge_id: 101,
+      user_id: 2,
+      team_id: 2,
+      value: null,
+      created_at: laterDate,
+      updated_at: laterDate,
+      hidden: false,
+    },
+    {
+      id: 3,
+      challenge_id: 102,
+      user_id: 1,
+      team_id: 1,
+      value: null,
+      created_at: earlierDate,
+      updated_at: earlierDate,
+      hidden: true,
+    },
+    {
+      id: 4,
+      challenge_id: 102,
+      user_id: 3,
+      team_id: 3,
+      value: null,
+      created_at: baseDate,
+      updated_at: baseDate,
+      hidden: false,
+    },
+  ];
+
+  it("should partition solves by challenge_id", () => {
+    const result = PartitionSolvesByChallenge(mockSolves, {});
+
+    expect(result.size).toBe(2);
+    expect(result.has(101)).toBe(true);
+    expect(result.has(102)).toBe(true);
+    expect(result.get(101)).toHaveLength(2);
+    expect(result.get(102)).toHaveLength(2);
+  });
+
+  it("should filter out solves created after the timestamp parameter", () => {
+    const cutoffDate = new Date("2024-01-01T12:00:00Z");
+    const result = PartitionSolvesByChallenge(mockSolves, {}, cutoffDate);
+
+    const challenge101Solves = result.get(101) || [];
+    const challenge102Solves = result.get(102) || [];
+
+    // Only solves created before or at cutoff should be included
+    expect(challenge101Solves).toHaveLength(1);
+    expect(challenge102Solves).toHaveLength(2);
+  });
+
+  it("should preserve existing hidden property when true", () => {
+    const result = PartitionSolvesByChallenge(mockSolves, {});
+
+    const challenge102Solves = result.get(102) || [];
+    const hiddenSolve = challenge102Solves.find((solve) => solve.id === 3);
+
+    expect(hiddenSolve?.hidden).toBe(true);
+  });
+
+  it("should set hidden based on time range when original hidden is false", () => {
+    const startTime = earlierDate.getTime() / 1000;
+    const endTime = baseDate.getTime() / 1000;
+
+    const result = PartitionSolvesByChallenge(mockSolves, {
+      start_time_s: startTime,
+      end_time_s: endTime,
+    });
+
+    const challenge101Solves = result.get(101) || [];
+    const baseTimeSolve = challenge101Solves.find((solve) => solve.id === 1);
+    const laterTimeSolve = challenge101Solves.find((solve) => solve.id === 2);
+
+    expect(baseTimeSolve?.hidden).toBe(false); // Within time range
+    expect(laterTimeSolve?.hidden).toBe(true); // Outside time range
+  });
+
+  it("should handle empty solve list", () => {
+    const result = PartitionSolvesByChallenge([], {});
+
+    expect(result.size).toBe(0);
+  });
+
+  it("should handle undefined time parameters", () => {
+    const result = PartitionSolvesByChallenge(mockSolves, {
+      start_time_s: undefined,
+      end_time_s: undefined,
+    });
+
+    // All solves should be included and not hidden due to time constraints
+    const challenge101Solves = result.get(101) || [];
+    const challenge102Solves = result.get(102) || [];
+
+    expect(challenge101Solves).toHaveLength(2);
+    expect(challenge102Solves).toHaveLength(2);
+
+    // Only the originally hidden solve should remain hidden
+    const originallyHiddenSolve = challenge102Solves.find(
+      (solve) => solve.id === 3,
+    );
+    const originallyVisibleSolve = challenge102Solves.find(
+      (solve) => solve.id === 4,
+    );
+
+    expect(originallyHiddenSolve?.hidden).toBe(true);
+    expect(originallyVisibleSolve?.hidden).toBe(false);
+  });
+
+  it("should handle only start_time_s parameter", () => {
+    const startTime = baseDate.getTime() / 1000;
+
+    const result = PartitionSolvesByChallenge(mockSolves, {
+      start_time_s: startTime,
+    });
+
+    const challenge101Solves = result.get(101) || [];
+    const earlyTimeSolve = challenge101Solves.find(
+      (solve) => solve.created_at < baseDate && solve.id === 1,
+    );
+    const laterTimeSolve = challenge101Solves.find((solve) => solve.id === 2);
+
+    // Solve before start time should be hidden
+    if (earlyTimeSolve && earlyTimeSolve.created_at < baseDate) {
+      expect(earlyTimeSolve.hidden).toBe(true);
+    }
+    // Solve after start time should not be hidden due to time
+    expect(laterTimeSolve?.hidden).toBe(false);
+  });
+
+  it("should handle only end_time_s parameter", () => {
+    const endTime = baseDate.getTime() / 1000;
+
+    const result = PartitionSolvesByChallenge(mockSolves, {
+      end_time_s: endTime,
+    });
+
+    const challenge101Solves = result.get(101) || [];
+    const baseTimeSolve = challenge101Solves.find((solve) => solve.id === 1);
+    const laterTimeSolve = challenge101Solves.find((solve) => solve.id === 2);
+
+    expect(baseTimeSolve?.hidden).toBe(false); // At end time
+    expect(laterTimeSolve?.hidden).toBe(true); // After end time
+  });
+
+  it("should combine timestamp filter with time range logic", () => {
+    const cutoffDate = new Date("2024-01-01T13:00:00Z");
+    const startTime = baseDate.getTime() / 1000;
+    const endTime = laterDate.getTime() / 1000;
+
+    const result = PartitionSolvesByChallenge(
+      mockSolves,
+      {
+        start_time_s: startTime,
+        end_time_s: endTime,
+      },
+      cutoffDate,
+    );
+
+    // Should exclude solve with id 2 (created at 14:00, after cutoff at 13:00)
+    const challenge101Solves = result.get(101) || [];
+    expect(challenge101Solves).toHaveLength(1);
+    expect(challenge101Solves[0].id).toBe(1);
+  });
+
+  it("should preserve all original solve properties", () => {
+    const result = PartitionSolvesByChallenge(mockSolves, {});
+
+    const challenge101Solves = result.get(101) || [];
+    const firstSolve = challenge101Solves[0];
+
+    expect(firstSolve.id).toBe(mockSolves[0].id);
+    expect(firstSolve.challenge_id).toBe(mockSolves[0].challenge_id);
+    expect(firstSolve.user_id).toBe(mockSolves[0].user_id);
+    expect(firstSolve.team_id).toBe(mockSolves[0].team_id);
+    expect(firstSolve.value).toBe(mockSolves[0].value);
+    expect(firstSolve.created_at).toBe(mockSolves[0].created_at);
+    expect(firstSolve.updated_at).toBe(mockSolves[0].updated_at);
   });
 });

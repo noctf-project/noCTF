@@ -8,10 +8,10 @@ export const IsTimeBetweenSeconds = (
 ) => {
   const ctime =
     typeof time === "number" ? time : Math.floor(time.getTime() / 1000);
-  if (typeof start_s === "number" && ctime <= start_s) {
+  if (typeof start_s === "number" && ctime < start_s) {
     return false;
   }
-  if (typeof end_s === "number" && ctime >= end_s) {
+  if (typeof end_s === "number" && ctime > end_s) {
     return false;
   }
   return true;
