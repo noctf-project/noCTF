@@ -141,18 +141,16 @@ export class AppService {
   }
 
   async create(
-    data: Omit<CreateUpdateAppData, "client_secret_hash"> & {
-      client_secret: string;
-    },
+    data: Omit<CreateUpdateAppData, "client_secret_hash">,
     { actor, message }: AuditParams = {},
-  ): Promise<DBApp> {
-    const { client_secret, ...rest } = data;
+  ): Promise<{ app: DBApp; client_secret: string }> {
+    const client_secret = nanoid();
     const client_secret_hash = createHash("sha256")
       .update(client_secret)
       .digest();
 
     const createData: CreateUpdateAppData = {
-      ...rest,
+      ...data,
       client_secret_hash,
     };
 
@@ -165,35 +163,39 @@ export class AppService {
       data: message,
     });
 
-    return app;
+    return { app, client_secret };
   }
 
   async update(
     id: number,
     data: Omit<CreateUpdateAppData, "client_secret_hash"> & {
-      client_secret?: string;
+      client_secret?: "refresh";
     },
     { actor, message }: AuditParams = {},
-  ): Promise<DBApp> {
+  ): Promise<{ app: DBApp; client_secret?: string }> {
     const { client_secret, ...rest } = data;
 
     const updateData: CreateUpdateAppData = rest;
-    if (client_secret) {
+    let newClientSecret: string | undefined;
+
+    if (client_secret === "refresh") {
+      newClientSecret = nanoid();
       updateData.client_secret_hash = createHash("sha256")
-        .update(client_secret)
+        .update(newClientSecret)
         .digest();
     }
 
     const app = await this.appDAO.update(id, updateData);
 
     await this.auditLogService.log({
-      operation: "app.update",
+      operation:
+        client_secret === "refresh" ? "app.refresh_secret" : "app.update",
       actor,
       entities: [`${EntityType.APP}:${app.id}`],
       data: message,
     });
 
-    return app;
+    return { app, client_secret: newClientSecret };
   }
 
   async delete(

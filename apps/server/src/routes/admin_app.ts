@@ -6,10 +6,12 @@ import {
 import {
   AdminListAppResponse,
   AdminAppResponse,
+  AdminAppWithSecretResponse,
   BaseResponse,
 } from "@noctf/api/responses";
 import { ActorType } from "@noctf/server-core/types/enums";
 import { FastifyInstance } from "fastify";
+import { Type } from "@sinclair/typebox";
 
 export async function routes(fastify: FastifyInstance) {
   const { appService } = fastify.container.cradle;
@@ -41,7 +43,7 @@ export async function routes(fastify: FastifyInstance) {
   );
 
   fastify.post<{
-    Reply: AdminAppResponse;
+    Reply: AdminAppWithSecretResponse;
     Body: AdminCreateAppRequest;
   }>(
     "/admin/apps",
@@ -50,7 +52,7 @@ export async function routes(fastify: FastifyInstance) {
         security: [{ bearer: [] }],
         tags: ["admin"],
         response: {
-          200: AdminAppResponse,
+          200: AdminAppWithSecretResponse,
         },
         body: AdminCreateAppRequest,
         auth: {
@@ -60,7 +62,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const app = await appService.create(request.body, {
+      const { app, client_secret } = await appService.create(request.body, {
         actor: {
           type: ActorType.USER,
           id: request.user.id,
@@ -71,14 +73,14 @@ export async function routes(fastify: FastifyInstance) {
       return {
         data: {
           ...app,
-          client_secret: "***",
+          client_secret,
         },
       };
     },
   );
 
   fastify.put<{
-    Reply: AdminAppResponse;
+    Reply: AdminAppResponse | AdminAppWithSecretResponse;
     Body: AdminUpdateAppRequest;
     Params: IdParams;
   }>(
@@ -88,7 +90,7 @@ export async function routes(fastify: FastifyInstance) {
         security: [{ bearer: [] }],
         tags: ["admin"],
         response: {
-          200: AdminAppResponse,
+          200: Type.Union([AdminAppResponse, AdminAppWithSecretResponse]),
         },
         params: IdParams,
         body: AdminUpdateAppRequest,
@@ -99,18 +101,25 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const app = await appService.update(request.params.id, request.body, {
-        actor: {
-          type: ActorType.USER,
-          id: request.user.id,
+      const { app, client_secret } = await appService.update(
+        request.params.id,
+        request.body,
+        {
+          actor: {
+            type: ActorType.USER,
+            id: request.user.id,
+          },
+          message:
+            request.body.client_secret === "refresh"
+              ? "App client secret refreshed"
+              : "App updated",
         },
-        message: "App updated",
-      });
+      );
 
       return {
         data: {
           ...app,
-          client_secret: "***",
+          client_secret: client_secret || "***",
         },
       };
     },

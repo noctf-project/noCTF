@@ -18,7 +18,6 @@
   type CreateAppData = {
     name: string;
     client_id: string;
-    client_secret: string;
     redirect_uris: string[];
     scopes: string[];
     enabled: boolean;
@@ -30,7 +29,6 @@
     redirect_uris: string[];
     scopes: string[];
     enabled: boolean;
-    client_secret?: string;
   };
 
   let apps = $state(wrapLoadable(fetchApps()));
@@ -38,11 +36,13 @@
   let editingApp = $state<App | null>(null);
   let isUpdating = $state(false);
   let isDeleting = $state<number | null>(null);
+  let isRefreshingSecret = $state<number | null>(null);
+  let generatedSecret = $state<string | null>(null);
+  let showSecret = $state<number | null>(null);
 
   let createForm = $state({
     name: "",
     client_id: "",
-    client_secret: "",
     redirect_uris: "",
     scopes: "",
     enabled: true,
@@ -51,7 +51,6 @@
   let editForm = $state({
     name: "",
     client_id: "",
-    client_secret: "",
     redirect_uris: "",
     scopes: "",
     enabled: true,
@@ -89,7 +88,6 @@
         body: {
           name: createForm.name.trim(),
           client_id: createForm.client_id.trim(),
-          client_secret: createForm.client_secret.trim(),
           redirect_uris: parseArrayField(createForm.redirect_uris),
           scopes: parseArrayField(createForm.scopes),
           enabled: createForm.enabled,
@@ -100,10 +98,11 @@
         throw new Error(response.error?.message || "Unknown error occurred");
       }
 
+      generatedSecret = response.data.data.client_secret;
+      showSecret = response.data.data.id;
       toasts.success("App created successfully!");
       createForm.name = "";
       createForm.client_id = "";
-      createForm.client_secret = "";
       createForm.redirect_uris = "";
       createForm.scopes = "";
       createForm.enabled = true;
@@ -121,7 +120,6 @@
     editingApp = app;
     editForm.name = app.name;
     editForm.client_id = app.client_id;
-    editForm.client_secret = "";
     editForm.redirect_uris = formatArrayField(app.redirect_uris);
     editForm.scopes = formatArrayField(app.scopes);
     editForm.enabled = app.enabled;
@@ -131,10 +129,11 @@
     editingApp = null;
     editForm.name = "";
     editForm.client_id = "";
-    editForm.client_secret = "";
     editForm.redirect_uris = "";
     editForm.scopes = "";
     editForm.enabled = true;
+    showSecret = null;
+    generatedSecret = null;
   }
 
   async function updateApp(): Promise<void> {
@@ -152,10 +151,6 @@
         scopes: parseArrayField(editForm.scopes),
         enabled: editForm.enabled,
       };
-
-      if (editForm.client_secret.trim()) {
-        updateData.client_secret = editForm.client_secret.trim();
-      }
 
       const response = await api.PUT("/admin/apps/{id}", {
         params: { path: { id: editingApp.id } },
@@ -175,6 +170,35 @@
       toasts.error("Failed to update app: " + error);
     } finally {
       isUpdating = false;
+    }
+  }
+
+  async function refreshClientSecret(appId: number): Promise<void> {
+    const confirmed = confirm(
+      "Are you sure you want to refresh the client secret? This will invalidate the current secret.",
+    );
+    if (!confirmed) return;
+
+    try {
+      isRefreshingSecret = appId;
+      const response = await api.PUT("/admin/apps/{id}", {
+        params: { path: { id: appId } },
+        body: { client_secret: "refresh" },
+      });
+
+      if (!response.data) {
+        throw new Error(response.error?.message || "Unknown error occurred");
+      }
+
+      generatedSecret = response.data.data.client_secret;
+      showSecret = appId;
+
+      apps = wrapLoadable(fetchApps());
+    } catch (error) {
+      console.error("Failed to refresh client secret:", error);
+      toasts.error("Failed to refresh client secret: " + error);
+    } finally {
+      isRefreshingSecret = null;
     }
   }
 
@@ -247,21 +271,6 @@
             class="input input-bordered"
             bind:value={createForm.client_id}
             maxlength="128"
-            required
-          />
-        </div>
-
-        <!-- Client Secret -->
-        <div class="form-control lg:col-span-2">
-          <label class="label" for="create-client-secret">
-            <span class="label-text">Client Secret *</span>
-          </label>
-          <input
-            type="password"
-            placeholder="client_secret_here"
-            class="input input-bordered"
-            bind:value={createForm.client_secret}
-            maxlength="255"
             required
           />
         </div>
@@ -381,26 +390,6 @@
                     />
                   </div>
 
-                  <!-- Client Secret -->
-                  <div class="form-control lg:col-span-2">
-                    <label class="label" for="edit-client-secret">
-                      <span class="label-text">Client Secret</span>
-                    </label>
-                    <input
-                      id="edit-client-secret"
-                      type="password"
-                      placeholder="Leave empty to keep current secret"
-                      class="input input-bordered"
-                      bind:value={editForm.client_secret}
-                      maxlength="255"
-                    />
-                    <div class="label">
-                      <span class="label-text-alt"
-                        >Leave empty to keep current secret</span
-                      >
-                    </div>
-                  </div>
-
                   <!-- Redirect URIs -->
                   <div class="form-control">
                     <label class="label" for="edit-redirect-uris">
@@ -486,6 +475,61 @@
                       <code class="text-xs bg-base-200 px-2 py-1 rounded">
                         {app.client_id}
                       </code>
+                    </div>
+
+                    <!-- Client Secret -->
+                    <div>
+                      <h4 class="font-medium text-base-content/80 mb-1">
+                        Client Secret:
+                      </h4>
+                      {#if showSecret === app.id && generatedSecret}
+                        <div class="space-y-2">
+                          <div class="flex items-center gap-2">
+                            <code
+                              class="text-xs bg-base-200 px-2 py-1 rounded flex-1"
+                            >
+                              {generatedSecret}
+                            </code>
+                            <button
+                              class="btn btn-xs btn-ghost pop hover:pop"
+                              onclick={() => {
+                                showSecret = null;
+                                generatedSecret = null;
+                              }}
+                            >
+                              <Icon
+                                icon="material-symbols:close"
+                                class="text-sm"
+                              />
+                            </button>
+                          </div>
+                          <div class="text-xs text-warning">
+                            This secret will only be shown once.
+                          </div>
+                        </div>
+                      {:else}
+                        <div class="flex items-center gap-2">
+                          <code class="text-xs bg-base-200 px-2 py-1 rounded">
+                            ***
+                          </code>
+                          <button
+                            class="btn btn-xs btn-ghost pop hover:pop"
+                            onclick={() => refreshClientSecret(app.id)}
+                            disabled={isRefreshingSecret === app.id}
+                          >
+                            {#if isRefreshingSecret === app.id}
+                              <span class="loading loading-spinner loading-xs"
+                              ></span>
+                            {:else}
+                              <Icon
+                                icon="material-symbols:refresh"
+                                class="text-sm"
+                              />
+                            {/if}
+                            Refresh
+                          </button>
+                        </div>
+                      {/if}
                     </div>
 
                     <!-- Redirect URIs -->

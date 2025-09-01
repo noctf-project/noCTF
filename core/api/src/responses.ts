@@ -516,6 +516,18 @@ export const AdminListAppResponse = Type.Object({
 });
 export type AdminListAppResponse = Static<typeof AdminListAppResponse>;
 
+export const AdminAppWithSecretResponse = Type.Object({
+  data: Type.Composite([
+    App,
+    Type.Object({
+      client_secret: Type.String(),
+    }),
+  ]),
+});
+export type AdminAppWithSecretResponse = Static<
+  typeof AdminAppWithSecretResponse
+>;
+
 export const AdminResetPasswordResponse = Type.Object({
   data: Type.String({ format: "uri" }),
 });
