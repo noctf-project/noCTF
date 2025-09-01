@@ -5,7 +5,6 @@ import type { DB, TeamMemberRole } from "@noctf/schema";
 import { FilterUndefined } from "../util/filter.ts";
 import { BadRequestError, ConflictError, NotFoundError } from "../errors.ts";
 import { sql } from "kysely";
-import { partition } from "../util/object.ts";
 import { PostgresErrorCode, PostgresErrorConfig } from "../util/pgerror.ts";
 import { TryPGConstraintError } from "../util/pgerror.ts";
 import { jsonArrayFrom } from "kysely/helpers/postgres";

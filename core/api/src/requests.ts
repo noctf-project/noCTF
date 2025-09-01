@@ -496,3 +496,33 @@ export const AdminUpdatePolicyRequest = Type.Omit(
   },
 );
 export type AdminUpdatePolicyRequest = Static<typeof AdminUpdatePolicyRequest>;
+
+export const AdminCreateAppRequest = Type.Object(
+  {
+    name: Type.String({ minLength: 1, maxLength: 64 }),
+    client_id: Type.String({ minLength: 1, maxLength: 128 }),
+    client_secret: Type.String({ minLength: 1, maxLength: 255 }),
+    redirect_uris: Type.Array(Type.String()),
+    scopes: Type.Array(Type.String({ minLength: 1, maxLength: 64 })),
+    enabled: Type.Boolean(),
+  },
+  {
+    additionalProperties: false,
+  },
+);
+export type AdminCreateAppRequest = Static<typeof AdminCreateAppRequest>;
+
+export const AdminUpdateAppRequest = Type.Partial(
+  Type.Object({
+    name: Type.String({ minLength: 1, maxLength: 64 }),
+    client_id: Type.String({ minLength: 1, maxLength: 128 }),
+    client_secret: Type.Optional(Type.String({ minLength: 1, maxLength: 255 })),
+    redirect_uris: Type.Array(Type.String()),
+    scopes: Type.Array(Type.String({ minLength: 1, maxLength: 64 })),
+    enabled: Type.Boolean(),
+  }),
+  {
+    additionalProperties: false,
+  },
+);
+export type AdminUpdateAppRequest = Static<typeof AdminUpdateAppRequest>;

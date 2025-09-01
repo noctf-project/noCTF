@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { any, anyString, mock, mockDeep } from "vitest-mock-extended";
+import { any, anyString, mockDeep } from "vitest-mock-extended";
 import { CacheService } from "@noctf/server-core/services/cache";
 import { IdentityService } from "@noctf/server-core/services/identity";
 import {
@@ -14,6 +14,7 @@ import { createHash } from "node:crypto";
 import { nanoid } from "nanoid";
 import { BadRequestError, ForbiddenError } from "../errors.ts";
 import { LockService } from "./lock.ts";
+import { AuditLogService } from "./audit_log.ts";
 
 vi.mock("nanoid", () => ({
   nanoid: vi.fn(),
@@ -38,6 +39,7 @@ describe(AppService, () => {
   const identityService = mockDeep<IdentityService>();
   const lockService = mockDeep<LockService>();
   const databaseClient = mockDeep<DatabaseClient>();
+  const auditLogService = mockDeep<AuditLogService>();
   const appDAO = mockDeep<AppDAO>();
 
   let service: AppService;
@@ -50,6 +52,7 @@ describe(AppService, () => {
       identityService,
       lockService,
       databaseClient,
+      auditLogService,
     });
   });
 

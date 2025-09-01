@@ -199,7 +199,7 @@ export class PolicyService {
       : this.getPoliciesForPublic());
     const set = new Set(prefixes);
     const pass: string[] = [];
-    for (const { permissions, name } of policies) {
+    for (const { permissions } of policies) {
       const results = EvaluatePrefixes(set, permissions);
       Array.prototype.push.apply(pass, results);
     }
