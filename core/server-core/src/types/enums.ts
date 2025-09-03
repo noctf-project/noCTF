@@ -32,4 +32,5 @@ export enum EntityType {
   USER = "user",
   ROLE = "role",
   TEAM = "team",
+  APP = "app",
 }

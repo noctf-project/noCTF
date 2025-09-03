@@ -21,6 +21,7 @@ import {
   Announcement,
   ChallengeStat,
   ScoreboardEntryWithGraph,
+  App,
 } from "./datatypes.ts";
 import { AuthTokenType } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
@@ -504,6 +505,28 @@ export const AdminListPolicyResponse = Type.Object({
   data: Type.Array(PolicyDocument),
 });
 export type AdminListPolicyResponse = Static<typeof AdminListPolicyResponse>;
+
+export const AdminAppResponse = Type.Object({
+  data: App,
+});
+export type AdminAppResponse = Static<typeof AdminAppResponse>;
+
+export const AdminListAppResponse = Type.Object({
+  data: Type.Array(App),
+});
+export type AdminListAppResponse = Static<typeof AdminListAppResponse>;
+
+export const AdminAppWithSecretResponse = Type.Object({
+  data: Type.Composite([
+    App,
+    Type.Object({
+      client_secret: Type.String(),
+    }),
+  ]),
+});
+export type AdminAppWithSecretResponse = Static<
+  typeof AdminAppWithSecretResponse
+>;
 
 export const AdminResetPasswordResponse = Type.Object({
   data: Type.String({ format: "uri" }),

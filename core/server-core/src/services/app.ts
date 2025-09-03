@@ -1,12 +1,18 @@
 import { nanoid } from "nanoid";
-import { AppDAO, DBApp } from "../dao/app.ts";
+import { AppDAO, CreateUpdateAppData, DBApp } from "../dao/app.ts";
 import { ServiceCradle } from "../index.ts";
 import { createHash, createHmac } from "node:crypto";
 import { BadRequestError, ForbiddenError } from "../errors.ts";
+import type { AuditParams } from "../types/audit_log.ts";
+import { EntityType } from "../types/enums.ts";
 
 type Props = Pick<
   ServiceCradle,
-  "cacheService" | "lockService" | "identityService" | "databaseClient"
+  | "cacheService"
+  | "lockService"
+  | "identityService"
+  | "databaseClient"
+  | "auditLogService"
 >;
 
 export interface AuthorizationCodeContext {
@@ -23,6 +29,7 @@ export class AppService {
   private readonly cacheService;
   private readonly identityService;
   private readonly lockService;
+  private readonly auditLogService;
   private readonly appDAO;
 
   constructor({
@@ -30,10 +37,12 @@ export class AppService {
     identityService,
     lockService,
     databaseClient,
+    auditLogService,
   }: Props) {
     this.cacheService = cacheService;
     this.identityService = identityService;
     this.lockService = lockService;
+    this.auditLogService = auditLogService;
     this.appDAO = new AppDAO(databaseClient.get());
   }
 
@@ -125,6 +134,82 @@ export class AppService {
       throw new BadRequestError("invalid_redirect_uri");
     }
     return app;
+  }
+
+  async list(): Promise<DBApp[]> {
+    return await this.appDAO.list();
+  }
+
+  async create(
+    data: Omit<CreateUpdateAppData, "client_secret_hash">,
+    { actor, message }: AuditParams = {},
+  ): Promise<{ app: DBApp; client_secret: string }> {
+    const client_secret = nanoid();
+    const client_secret_hash = createHash("sha256")
+      .update(client_secret)
+      .digest();
+
+    const createData: CreateUpdateAppData = {
+      ...data,
+      client_secret_hash,
+    };
+
+    const app = await this.appDAO.create(createData);
+
+    await this.auditLogService.log({
+      operation: "app.create",
+      actor,
+      entities: [`${EntityType.APP}:${app.id}`],
+      data: message,
+    });
+
+    return { app, client_secret };
+  }
+
+  async update(
+    id: number,
+    data: Omit<CreateUpdateAppData, "client_secret_hash"> & {
+      client_secret?: "refresh";
+    },
+    { actor, message }: AuditParams = {},
+  ): Promise<{ app: DBApp; client_secret?: string }> {
+    const { client_secret, ...rest } = data;
+
+    const updateData: CreateUpdateAppData = rest;
+    let newClientSecret: string | undefined;
+
+    if (client_secret === "refresh") {
+      newClientSecret = nanoid();
+      updateData.client_secret_hash = createHash("sha256")
+        .update(newClientSecret)
+        .digest();
+    }
+
+    const app = await this.appDAO.update(id, updateData);
+
+    await this.auditLogService.log({
+      operation:
+        client_secret === "refresh" ? "app.refresh_secret" : "app.update",
+      actor,
+      entities: [`${EntityType.APP}:${app.id}`],
+      data: message,
+    });
+
+    return { app, client_secret: newClientSecret };
+  }
+
+  async delete(
+    id: number,
+    { actor, message }: AuditParams = {},
+  ): Promise<void> {
+    await this.appDAO.delete(id);
+
+    await this.auditLogService.log({
+      operation: "app.delete",
+      actor,
+      entities: [`${EntityType.APP}:${id}`],
+      data: message,
+    });
   }
 
   private static signCode(

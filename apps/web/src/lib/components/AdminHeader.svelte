@@ -66,15 +66,18 @@
           >
         </li>
         <li>
+          <a
+            href="/admin/announcements"
+            class={isActive("/admin/announcements")}>Announcements</a
+          >
+        </li>
+        <li>
           <a href="/admin/policies" class={isActive("/admin/policies")}
             >Policies</a
           >
         </li>
         <li>
-          <a
-            href="/admin/announcements"
-            class={isActive("/admin/announcements")}>Announcements</a
-          >
+          <a href="/admin/apps" class={isActive("/admin/apps")}>Apps</a>
         </li>
         <li>
           <a href="/admin/audit_logs" class={isActive("/admin/audit_logs")}
@@ -133,19 +136,22 @@
           >
         </li>
         <li>
+          <a
+            href="/admin/announcements"
+            class={isActive("/admin/announcements")}>Announcements</a
+          >
+        </li>
+        <li>
           <a href="/admin/policies" class={isActive("/admin/policies")}
             >Policies</a
           >
         </li>
         <li>
-          <a href="/admin/audit_logs" class={isActive("/admin/audit_logs")}
-            >Audit Logs</a
-          >
+          <a href="/admin/apps" class={isActive("/admin/apps")}>Apps</a>
         </li>
         <li>
-          <a
-            href="/admin/announcements"
-            class={isActive("/admin/announcements")}>Announcements</a
+          <a href="/admin/audit_logs" class={isActive("/admin/audit_logs")}
+            >Audit Logs</a
           >
         </li>
         <li>
