@@ -30,6 +30,7 @@ USER 1000
 CMD ["node", "dist/www.cjs"]
 
 FROM base AS build_web
+ARG VITE_API_BASE_URL="___REPLACEME_API_BASE_URL___"
 RUN pnpm --filter '@noctf/web' build
 FROM joseluisq/static-web-server AS out_web
 COPY --from=build_web /build/apps/web/dist /public

@@ -7,7 +7,7 @@ get-ip() {
 }
 
 start() {
-  docker compose -p "${PROJECT_NAME}" up -d
+  docker compose -f docker-compose.dev.yml -p "${PROJECT_NAME}" up -d
 
   cat << EOF > .env
 POSTGRES_URL=postgres://postgres:noctf@`get-ip postgres`/noctf
@@ -19,7 +19,7 @@ EOF
 
 # For non linux based dev environments
 start-local()  {
-  docker compose -p "${PROJECT_NAME}" up -d
+  docker compose -f docker-compose.dev.yml -p "${PROJECT_NAME}" up -d
 
   cat << EOF > .env
 POSTGRES_URL=postgres://postgres:noctf@localhost:5432/noctf
@@ -30,7 +30,7 @@ EOF
 }
 
 stop() {
-  docker compose -p "${PROJECT_NAME}" stop
+  docker compose -f docker-compose.dev.yml -p "${PROJECT_NAME}" stop
   # Only try to remove .env if it exists
   if [ -f .env ]; then
       rm .env
@@ -39,8 +39,8 @@ stop() {
 }
 
 clean() {
-  docker compose -p "${PROJECT_NAME}" down -v
-  docker compose -p "${PROJECT_NAME}" rm -f -v
+  docker compose -f docker-compose.dev.yml -p "${PROJECT_NAME}" down -v
+  docker compose -f docker-compose.dev.yml -p "${PROJECT_NAME}" rm -f -v
   # Only try to remove .env if it exists
   if [ -f .env ]; then
       rm .env
