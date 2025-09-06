@@ -30,9 +30,12 @@ USER 1000
 CMD ["node", "dist/www.cjs"]
 
 FROM base AS build_web
-ARG VITE_API_BASE_URL="___REPLACEME_API_BASE_URL___"
-RUN pnpm --filter '@noctf/web' build
-FROM joseluisq/static-web-server AS out_web
+RUN VITE_API_BASE_URL="___REPLACEME_NOCTF_API_BASE_URL___" pnpm --filter '@noctf/web' build
+
+FROM joseluisq/static-web-server:2-alpine AS out_web
+COPY --from=build_web /build/apps/web/docker-init /init
 COPY --from=build_web /build/apps/web/dist /public
 COPY --from=build_web /build/apps/web/dist/index.html /public/index.html
 EXPOSE 80/tcp
+ENTRYPOINT [ "/init/setup.sh" ]
+CMD [ "static-web-server" ]
