@@ -8,6 +8,7 @@
   import {
     getCategoriesFromTags,
     getDifficultyFromTags,
+    getCustomTagsFromTags,
   } from "$lib/utils/challenges";
   import type { Difficulty } from "$lib/constants/difficulties";
   import { toasts } from "$lib/stores/toast";
@@ -77,6 +78,7 @@
     visibleAt: visible_at ?? undefined,
     difficulty: getDifficultyFromTags(tags) as Difficulty | "",
     categories: getCategoriesFromTags(tags),
+    customTags: getCustomTagsFromTags(tags),
     score,
     flags: flag as Flag[] ?? [],
     files: challData.r.files.map(({ id, filename }) => ({ id, filename, is_attachment: true })),

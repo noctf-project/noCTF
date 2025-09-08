@@ -47,6 +47,16 @@ export const getCategoriesFromTags = (tags: { [k in string]: string }) => {
   return categories ? categories?.split(",") : ["uncategorized"];
 };
 
+export const getCustomTagsFromTags = (tags: { [k in string]: string }) => {
+  const customTags: { [k in string]: string } = {};
+  for (const [key, value] of Object.entries(tags)) {
+    if (key !== "difficulty" && key !== "categories") {
+      customTags[key] = value;
+    }
+  }
+  return customTags;
+};
+
 export const slugify = (title: string) => {
   const s = title
     .toLowerCase()
