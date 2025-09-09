@@ -39,6 +39,7 @@
     visibleAt?: string;
     difficulty: Difficulty | "";
     categories: string[];
+    customTags: { [key: string]: string };
     score: ScoringStrat;
     flags: Flag[];
     files: ExistingFile[];
@@ -68,6 +69,11 @@
   let catInput = $state<string>("");
   let categories = $state<string[]>(challData?.categories || []);
   let difficulty = $state<Difficulty | "">(challData?.difficulty || "");
+  let customTags = $state<{ [key: string]: string }>(
+    challData?.customTags || {},
+  );
+  let customTagKey = $state<string>("");
+  let customTagValue = $state<string>("");
   let files = $state<File[]>([]);
   let existingFiles = $state<ExistingFile[]>(challData?.files ?? []);
   let flags = $state<Flag[]>(
@@ -124,6 +130,30 @@
     categories = categories.filter((c, _) => c !== cat);
   }
 
+  function handleCustomTagInput(event: KeyboardEvent): void {
+    if (event.key === "Enter" && customTagKey.trim() && customTagValue.trim()) {
+      event.preventDefault();
+      addCustomTag();
+    }
+  }
+  function addCustomTag(): void {
+    if (customTagKey.trim() && customTagValue.trim()) {
+      if (customTagKey === "difficulty" || customTagKey === "categories") {
+        return;
+      }
+      customTags = {
+        ...customTags,
+        [customTagKey.trim()]: customTagValue.trim(),
+      };
+      customTagKey = "";
+      customTagValue = "";
+    }
+  }
+  function removeCustomTag(key: string): void {
+    const { [key]: _removed, ...rest } = customTags;
+    customTags = rest;
+  }
+
   function handleFileSelect(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files) {
@@ -156,6 +186,11 @@
       tags["difficulty"] = difficulty;
     }
     tags["categories"] = categories.join(",");
+    for (const [key, value] of Object.entries(customTags)) {
+      if (key && value) {
+        tags[key] = value;
+      }
+    }
     return tags;
   }
 
@@ -451,6 +486,77 @@
               {/each}
             </div>
           </div>
+        </div>
+
+        <div class="space-y-4">
+          <h2 class="text-lg font-semibold">Custom Tags</h2>
+          <div class="form-control w-full">
+            <label for="custom-tag" class="label">
+              <span class="label-text">Add Custom Tags</span>
+              <span class="label-text-alt"
+                >Press Enter or click Add to save</span
+              >
+            </label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                bind:value={customTagKey}
+                onkeydown={handleCustomTagInput}
+                class="input input-bordered flex-1 focus:outline-none focus:ring-0 focus:ring-offset-0"
+                placeholder="Tag name (e.g., author, year)"
+                aria-label="Custom tag key"
+              />
+              <input
+                type="text"
+                bind:value={customTagValue}
+                onkeydown={handleCustomTagInput}
+                class="input input-bordered flex-1 focus:outline-none focus:ring-0 focus:ring-offset-0"
+                placeholder="Tag value"
+                aria-label="Custom tag value"
+              />
+              <button
+                type="button"
+                onclick={addCustomTag}
+                class="btn btn-outline btn-sm pop hover:pop"
+                disabled={!customTagKey.trim() || !customTagValue.trim()}
+                aria-label="Add custom tag"
+              >
+                <Icon icon="material-symbols:add" class="text-lg" />
+                Add
+              </button>
+            </div>
+          </div>
+          {#if Object.keys(customTags).length > 0}
+            <div class="space-y-2">
+              <h3 class="text-sm font-medium text-base-content/70">
+                Custom Tags
+              </h3>
+              <div
+                class="flex flex-wrap gap-2"
+                role="list"
+                aria-label="Custom tags"
+              >
+                {#each Object.entries(customTags) as [key, value]}
+                  <div
+                    class="badge badge-secondary badge-lg gap-2 pop"
+                    role="listitem"
+                  >
+                    <Icon icon="material-symbols:label" class="text-xs" />
+                    <span class="font-medium">{key}:</span>
+                    {value}
+                    <button
+                      type="button"
+                      onclick={() => removeCustomTag(key)}
+                      class="opacity-60 hover:opacity-100"
+                      aria-label={`Remove custom tag ${key}`}
+                    >
+                      <Icon icon="material-symbols:close" class="text-xs" />
+                    </button>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
         </div>
 
         <div class="space-y-6">
