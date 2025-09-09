@@ -181,6 +181,7 @@ export default async function (fastify: FastifyInstance) {
         tags: ["auth"],
         auth: {
           require: true,
+          policy: ["user.self.authorize"],
         },
         response: {
           200: OAuthAuthorizeInternalResponse,
