@@ -80,6 +80,7 @@ export class EmailService {
 
     await provider.send({
       from: config.from,
+      replyTo: config.replyTo,
       to: await this.lookupAddresses(data.to),
       cc: await this.lookupAddresses(data.cc),
       bcc: await this.lookupAddresses(data.bcc),

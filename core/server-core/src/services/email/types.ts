@@ -10,6 +10,7 @@ export interface EmailProvider {
 
 export interface EmailPayload {
   from: EmailAddress;
+  replyTo?: EmailAddress;
   to?: EmailAddress[];
   cc?: EmailAddress[];
   bcc?: EmailAddress[];
