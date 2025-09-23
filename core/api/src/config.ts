@@ -154,7 +154,13 @@ export type ScoreConfig = Static<typeof ScoreConfig>;
 export const EmailConfig = Type.Object(
   {
     provider: Type.String({ title: "Provider Name" }),
-    from: EmailAddress,
+    from: Type.Composite([EmailAddress], { title: "From Address" }),
+    replyTo: Type.Optional(
+      Type.Composite([EmailAddress], {
+        title: "Reply-To Address",
+        description: "Reply-to is optional",
+      }),
+    ),
     config: Type.Optional(Type.Any({ title: "Provider Specific Config" })),
   },
   { $id: "core.email", additionalProperties: false },

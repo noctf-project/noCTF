@@ -1,4 +1,5 @@
 import { ServiceCradle } from "../../index.ts";
+import { FilterUndefined } from "../../util/filter.ts";
 import { EmailPayload, EmailProvider } from "./types.ts";
 
 type Props = Pick<ServiceCradle, "logger">;
@@ -16,6 +17,6 @@ export class DummyEmailProvider implements EmailProvider {
   async validate(): Promise<void> {}
 
   async send(payload: EmailPayload): Promise<void> {
-    this.logger.info(payload, "New Email Message");
+    this.logger.info(FilterUndefined(payload), "New Email Message");
   }
 }

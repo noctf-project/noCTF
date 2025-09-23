@@ -60,7 +60,7 @@
           const f = new Set(
             Object.keys(categoryFilters).filter((k) => categoryFilters[k]),
           );
-          return f.has(chal.categories[0]!)
+          return f.has(chal.categories[0]!);
         });
     const sorted = filtered.sort((a, b) => b.solves - a.solves);
     onFilter(sorted);

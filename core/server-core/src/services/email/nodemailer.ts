@@ -23,6 +23,7 @@ export class NodeMailerProvider implements EmailProvider {
     await transport.sendMail({
       from: payload.from,
       to: payload.to,
+      replyTo: payload.replyTo,
       cc: payload.cc,
       bcc: payload.bcc,
       subject: payload.subject,
