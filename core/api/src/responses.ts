@@ -370,7 +370,11 @@ export const ListDivisionsResponse = Type.Object({
 export type ListDivisionsResponse = Static<typeof ListDivisionsResponse>;
 
 export const GetSiteConfigResponse = Type.Object({
-  data: SetupConfig,
+  data: Type.Omit(SetupConfig, [
+    "initialized",
+    "allow_late_submissions",
+    "ctftime_division_ids",
+  ]),
 });
 export type GetSiteConfigResponse = Static<typeof GetSiteConfigResponse>;
 

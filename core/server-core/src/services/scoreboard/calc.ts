@@ -63,7 +63,7 @@ function ComputeScoresForChallenge(
       params,
       valid.filter(({ value }) => value === null).length,
     );
-  } catch (err) {
+  } catch (_) {
     return {
       value: null,
       solves: [],
@@ -130,7 +130,7 @@ function ComputeScoreStreamForChallenge(
       valid.filter(({ value }) => value === null).length,
       true,
     );
-  } catch (err) {
+  } catch (_) {
     return [];
   }
   const stream: { team_id: number; delta: number; updated_at: Date }[] = [];

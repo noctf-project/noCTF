@@ -1,4 +1,3 @@
-import type { ScoreboardEntry } from "@noctf/api/datatypes";
 import type { ServiceCradle } from "../../index.ts";
 import { DivisionDAO } from "../../dao/division.ts";
 import {
@@ -124,7 +123,10 @@ export class ScoreboardService {
         this.awardDAO.getAllAwards(id),
         this.configService.get(SetupConfig),
       ]);
-      const solvesByChallenge = PartitionSolvesByChallenge(solveList, setup);
+      const solvesByChallenge = PartitionSolvesByChallenge(
+        solveList,
+        { ...setup, end_time_s: setup.freeze_time_s ?? setup.end_time_s },
+      );
       points = points.concat(
         ComputeFullGraph(
           new Map(teams.get(id)?.map((x) => [x.id, x])),
@@ -289,7 +291,7 @@ export class ScoreboardService {
 
     const solvesByChallenge = PartitionSolvesByChallenge(
       solveList,
-      setup,
+      { ...setup, end_time_s: setup.freeze_time_s ?? setup.end_time_s },
       timestamp,
     );
 

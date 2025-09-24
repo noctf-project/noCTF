@@ -100,6 +100,9 @@ export const SetupConfig = Type.Object(
     end_time_s: Type.Optional(
       Type.Integer({ title: "CTF End Time (Epoch seconds)", minimum: 0 }),
     ),
+    freeze_time_s: Type.Optional(
+      Type.Integer({ title: "CTF Freeze Time (Epoch seconds)", minimum: 0 }),
+    ),
     allow_late_submissions: Type.Optional(
       Type.Boolean({ title: "Allow late submissions?" }),
     ),
