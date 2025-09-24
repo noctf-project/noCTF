@@ -1,4 +1,3 @@
-import { getPublicKeyAsync } from "@noble/ed25519";
 import { BinaryLike, createHash, createHmac } from "node:crypto";
 
 export class KeyService {
