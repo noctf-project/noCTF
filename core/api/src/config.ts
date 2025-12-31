@@ -88,23 +88,24 @@ export const SetupConfig = Type.Object(
     }),
     active: Type.Boolean({
       title: "Global flag to activate/deactivate the CTF",
+      description: "Respects start and end time settings",
     }),
     root_url: Type.String({
       format: "uri",
-      title: "Public URL of the Scoreboard",
+      title: "Public root URL",
     }),
     name: Type.String({ title: "Name of the CTF" }),
     start_time_s: Type.Optional(
-      Type.Integer({ title: "CTF Start Time (Epoch seconds)", minimum: 0 }),
+      Type.Integer({ title: "CTF Start Time (Epoch seconds)", minimum: 0, description: "Requires global flag to be enabled" }),
     ),
     end_time_s: Type.Optional(
       Type.Integer({ title: "CTF End Time (Epoch seconds)", minimum: 0 }),
     ),
     freeze_time_s: Type.Optional(
-      Type.Integer({ title: "CTF Freeze Time (Epoch seconds)", minimum: 0 }),
+      Type.Integer({ title: "CTF Freeze Time (Epoch seconds)", minimum: 0, description: "When to stop updating the scoreboard (defaults to CTF End Time)" }),
     ),
     allow_late_submissions: Type.Optional(
-      Type.Boolean({ title: "Allow late submissions?" }),
+      Type.Boolean({ title: "Allow late submissions?", description: "Late submissions do not update scoreboard" }),
     ),
     default_division_id: Type.Optional(
       Type.Integer({
