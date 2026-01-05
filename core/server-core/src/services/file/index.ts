@@ -34,10 +34,11 @@ export class FileService {
         upload: "local",
         instances: {
           local: {},
+          manual: {},
         },
       },
       (cfg) => {
-        if (!cfg.instances[cfg.upload])
+        if (cfg.instances[cfg.upload] == undefined)
           throw new Error("upload provider is not in instances");
         const keys = Object.keys(cfg.instances);
         for (const name of keys) {
@@ -89,11 +90,37 @@ export class FileService {
     };
   }
 
+  async createManually(filename: string, ref: string, size: number, hashHex: string, provider: string): Promise<FileMetadata> {
+    const mime = lookup(filename) || "application/octet-stream";
+    const hash = Buffer.from(hashHex, "hex");
+    if (hash.length != 32)
+      throw new Error(`Provided hash is not 256-bit`);
+    const metadata = await this.fileDAO.create({
+      hash,
+      ref,
+      size,
+      filename,
+      mime,
+      provider,
+    });
+
+    const instance = await this.getInstance(provider);
+    return {
+      ...metadata,
+      hash: `sha256:${metadata.hash.toString("hex")}`,
+      url: await instance.getURL(ref),
+    };
+  }
+
   async upload(filename: string, readStream: Readable): Promise<FileMetadata> {
     const {
       value: { upload },
     } = await this.configService.get(FileConfig);
     const instance = await this.getInstance(upload);
+  
+    if (instance.upload == undefined)
+      throw new Error(`The selected file provider ${upload} does not support uploading`);
+
     const sHash = new PassThrough();
     const sSize = new PassThrough();
     const sUpload = new PassThrough();

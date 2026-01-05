@@ -525,3 +525,19 @@ export const AdminUpdateAppRequest = Type.Partial(
   },
 );
 export type AdminUpdateAppRequest = Static<typeof AdminUpdateAppRequest>;
+
+export const AdminCreateManualFileRequest = Type.Object({
+  files: Type.Array(
+    Type.Object(
+      {
+        filename: Type.String({ maxLength: 255, pattern: "[a-zA-Z0-9_\\-. ]+" }),
+        url: Type.String({ format: "uri" }),
+        size: Type.Integer({ minimum: 1 }),
+        hash: Type.String({ pattern: "^[0-9a-fA-F]{64}$" })
+      },
+      { additionalProperties: false },
+    )
+  )
+}
+);
+export type AdminCreateManualFileRequest = Static<typeof AdminCreateManualFileRequest>;

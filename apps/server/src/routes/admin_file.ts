@@ -1,7 +1,8 @@
 import { IdParams } from "@noctf/api/params";
 import type { FastifyInstance } from "fastify";
-import { AdminFileMetadataResponse } from "@noctf/api/responses";
+import { AdminFileMetadataResponse, AdminManualFileMetadataResponse } from "@noctf/api/responses";
 import { BadRequestError } from "@noctf/server-core/errors";
+import { AdminCreateManualFileRequest } from "@noctf/api/requests";
 
 export async function routes(fastify: FastifyInstance) {
   const { fileService } = fastify.container.cradle;
@@ -95,6 +96,40 @@ export async function routes(fastify: FastifyInstance) {
 
       return reply.status(201).send({
         data: result,
+      });
+    },
+  );
+
+  fastify.post<{
+    Body: AdminCreateManualFileRequest;
+    Reply: AdminManualFileMetadataResponse;
+  }>(
+    "/admin/files/manual",
+    {
+      schema: {
+        security: [{ bearer: [] }],
+        tags: ["admin"],
+        auth: {
+          require: true,
+          policy: ["admin.file.create"],
+        },
+        body: AdminCreateManualFileRequest,
+        response: {
+          201: AdminManualFileMetadataResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const metadatas = await Promise.all(request.body.files.map((file) => fileService.createManually(
+        file.filename,
+        file.url,
+        file.size,
+        file.hash,
+        "manual"
+      )));
+
+      return reply.status(201).send({
+        data: metadatas,
       });
     },
   );

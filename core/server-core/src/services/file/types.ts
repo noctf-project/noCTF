@@ -14,7 +14,7 @@ export interface FileProvider<T extends FileProviderInstance> {
 }
 
 export interface FileProviderInstance {
-  upload(rs: Readable, pm: Omit<ProviderFileMetadata, "size">): Promise<string>;
+  upload?(rs: Readable, pm: Omit<ProviderFileMetadata, "size">): Promise<string>;
   delete(ref: string): Promise<void>;
   getURL(ref: string): Promise<string>;
   download(
