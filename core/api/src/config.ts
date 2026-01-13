@@ -107,8 +107,7 @@ export const SetupConfig = Type.Object(
     ),
     flag_prefix: Type.String({
       title: "Flag Prefix",
-      description:
-        "Prefix for all flags in the CTF.",
+      description: "Prefix for all flags in the CTF.",
     }),
     freeze_time_s: Type.Optional(
       Type.Integer({
@@ -151,6 +150,7 @@ export const FileConfig = Type.Object(
     upload: Type.String({
       title: "Selected Provider Instance",
       description: "New uploads will use this provider instance",
+      maxLength: 64,
     }),
     instances: Type.Record(Type.String(), Type.Any(), {
       title: "Provider Instances",

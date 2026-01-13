@@ -5,7 +5,7 @@ export type DBFile = {
   id: number;
   filename: string;
   provider: string;
-  hash: Buffer;
+  hash: string;
   size: number; // this will not exceed 2^53 bits or w/e
   ref: string;
   mime: string;

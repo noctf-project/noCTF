@@ -10,13 +10,13 @@ class DevMigrationProvider implements MigrationProvider {
   async getMigrations() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const migrations: Record<string, any> = {};
-    for await (const filename of glob([
-      "src/migrations/*.ts",
-    ])) {
+    for await (const filename of glob(["src/migrations/*.ts"])) {
       if (!basename(filename).match(MIGRATION_FILE_REGEX)) {
         continue;
       }
-      migrations[filename.replace(/^[^\/]+\//, "")] = await import(`./${filename}`);
+      migrations[filename.replace(/^[^\/]+\//, "")] = await import(
+        `./${filename}`
+      );
     }
     return migrations;
   }
