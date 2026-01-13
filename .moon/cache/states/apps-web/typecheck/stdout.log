@@ -1,0 +1,13 @@
+
+> @noctf/web@0.0.1 check /home/tom/code/ctf/noctf/apps/web
+> svelte-kit sync && svelte-check --tsconfig ./tsconfig.json
+
+[1m[33mMissing route file prefix. Did you mean +page.svelte? at /home/tom/code/ctf/noctf/apps/web/src/routes/teams/[id]/page.svelte[22m[39m
+
+====================================
+Loading svelte-check in workspace: /home/tom/code/ctf/noctf/apps/web
+Getting Svelte diagnostics...
+
+====================================
+[32msvelte-check found 0 errors and 0 warnings
+[39m
