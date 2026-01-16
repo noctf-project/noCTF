@@ -189,7 +189,7 @@ export default async function (fastify: FastifyInstance) {
           require: true,
           policy: ["user.self.authorize"],
         },
-      }
+      },
     },
     async (request) => {
       const { response_type, scope, redirect_uri, state, client_id } =
