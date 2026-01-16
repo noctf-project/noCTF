@@ -67,6 +67,11 @@ export default async function (fastify: FastifyInstance) {
         description:
           "Checks if an email exists, returning a message or registration token if not",
         body: InitAuthEmailRequest,
+        response: {
+          200: BaseResponse,
+        },
+      },
+      config: {
         rateLimit: (r: FastifyRequest<{ Body: InitAuthEmailRequest }>) => [
           {
             key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
@@ -74,9 +79,6 @@ export default async function (fastify: FastifyInstance) {
             windowSeconds: 60,
           },
         ],
-        response: {
-          200: BaseResponse,
-        },
       },
     },
     async (request) => {
@@ -121,6 +123,12 @@ export default async function (fastify: FastifyInstance) {
         description:
           "Checks if an email exists, returning a message or registration token if not",
         body: InitAuthEmailRequest,
+        response: {
+          201: FinishAuthResponse,
+          default: BaseResponse,
+        },
+      },
+      config: {
         rateLimit: (r: FastifyRequest<{ Body: InitAuthEmailRequest }>) => [
           {
             key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
@@ -133,10 +141,6 @@ export default async function (fastify: FastifyInstance) {
             windowSeconds: 60,
           },
         ],
-        response: {
-          201: FinishAuthResponse,
-          default: BaseResponse,
-        },
       },
     },
     async (request, reply) => {
@@ -206,6 +210,11 @@ export default async function (fastify: FastifyInstance) {
         tags: ["auth"],
         description: "Reset password",
         body: CreateResetAuthEmailRequest,
+        response: {
+          default: BaseResponse,
+        },
+      },
+      config: {
         rateLimit: (
           r: FastifyRequest<{ Body: CreateResetAuthEmailRequest }>,
         ) => [
@@ -220,9 +229,6 @@ export default async function (fastify: FastifyInstance) {
             windowSeconds: 60,
           },
         ],
-        response: {
-          default: BaseResponse,
-        },
       },
     },
     async (request) => {
@@ -339,6 +345,12 @@ export default async function (fastify: FastifyInstance) {
         tags: ["auth"],
         description: "Log a user in using their email and password",
         body: FinishAuthEmailRequest,
+        response: {
+          200: FinishAuthResponse,
+          default: BaseResponse,
+        },
+      },
+      config: {
         rateLimit: (r) => [
           {
             key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
@@ -346,10 +358,6 @@ export default async function (fastify: FastifyInstance) {
             windowSeconds: 60,
           },
         ],
-        response: {
-          200: FinishAuthResponse,
-          default: BaseResponse,
-        },
       },
     },
     async (request) => {
@@ -385,6 +393,12 @@ export default async function (fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["auth"],
+        body: ChangeAuthEmailRequest,
+        response: {
+          200: BaseResponse,
+        },
+      },
+      config: {
         auth: {
           require: true,
           policy: ["user.self.update"],
@@ -396,10 +410,6 @@ export default async function (fastify: FastifyInstance) {
             windowSeconds: 60,
           },
         ],
-        body: ChangeAuthEmailRequest,
-        response: {
-          200: BaseResponse,
-        },
       },
     },
     async (request) => {
@@ -475,6 +485,12 @@ export default async function (fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["auth"],
+        body: ChangeAuthPasswordRequest,
+        response: {
+          200: FinishAuthResponse,
+        },
+      },
+      config: {
         auth: {
           require: true,
           policy: ["user.self.update"],
@@ -486,10 +502,6 @@ export default async function (fastify: FastifyInstance) {
             windowSeconds: 60,
           },
         ],
-        body: ChangeAuthPasswordRequest,
-        response: {
-          200: FinishAuthResponse,
-        },
       },
     },
     async (request) => {

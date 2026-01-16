@@ -28,6 +28,8 @@ export async function routes(fastify: FastifyInstance) {
           200: AdminListTeamsResponse,
         },
         body: AdminQueryTeamsRequest,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.team.get"],
@@ -66,6 +68,8 @@ export async function routes(fastify: FastifyInstance) {
         },
         body: AdminUpdateTeamRequest,
         params: IdParams,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.team.update"],
@@ -104,6 +108,8 @@ export async function routes(fastify: FastifyInstance) {
           200: BaseResponse,
         },
         params: IdParams,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.team.delete"],
@@ -137,6 +143,8 @@ export async function routes(fastify: FastifyInstance) {
         },
         params: IdParams,
         body: AdminUpdateTeamMemberRequest,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.team.update"],

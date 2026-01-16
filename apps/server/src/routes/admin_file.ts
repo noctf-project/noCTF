@@ -12,13 +12,15 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["admin"],
-        auth: {
-          require: true,
-          policy: ["admin.file.get"],
-        },
         params: IdParams,
         response: {
           200: AdminFileMetadataResponse,
+        },
+      },
+      config: {
+        auth: {
+          require: true,
+          policy: ["admin.file.get"],
         },
       },
     },
@@ -35,11 +37,13 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["admin"],
+        params: IdParams,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.file.delete"],
         },
-        params: IdParams,
       },
     },
     async (request) => {
@@ -54,12 +58,14 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["admin"],
+        response: {
+          201: AdminFileMetadataResponse,
+        },
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.file.create"],
-        },
-        response: {
-          201: AdminFileMetadataResponse,
         },
       },
     },

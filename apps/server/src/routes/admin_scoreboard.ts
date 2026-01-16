@@ -11,13 +11,15 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["admin"],
-        auth: {
-          require: true,
-          policy: ["admin.scoreboard.trigger"],
-        },
         body: AdminScoreboardTriggerRequest,
         response: {
           200: BaseResponse,
+        },
+      },
+      config: {
+        auth: {
+          require: true,
+          policy: ["admin.scoreboard.trigger"],
         },
       },
     },

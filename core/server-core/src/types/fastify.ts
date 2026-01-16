@@ -1,7 +1,6 @@
 import { RateLimitBucket } from "../services/rate_limit.ts";
 import type { TeamService } from "../services/team.ts";
 import type { Policy } from "../util/policy.ts";
-
 declare module "fastify" {
   interface FastifyInstance {
     readonly apiURL: string;
@@ -11,6 +10,8 @@ declare module "fastify" {
     tags?: string[];
     description?: string;
     security?: [{ [key: string]: unknown }];
+  }
+  interface FastifyContextConfig {
     auth?: {
       require?: boolean;
       scopes?: Set<string>;

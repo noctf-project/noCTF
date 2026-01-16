@@ -21,11 +21,13 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["stats"],
         security: [{ bearer: [] }],
-        auth: {
-          policy: ["stats.user"],
-        },
         response: {
           200: ListUserStatsResponse,
+        },
+      },
+      config: {
+        auth: {
+          policy: ["stats.user"],
         },
       },
     },
@@ -46,12 +48,14 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["stats"],
         security: [{ bearer: [] }],
-        auth: {
-          policy: ["stats.challenge"],
-        },
         querystring: DivisionQuery,
         response: {
           200: ListChallengeStatsResponse,
+        },
+      },
+      config: {
+        auth: {
+          policy: ["stats.challenge"],
         },
       },
     },

@@ -33,11 +33,13 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["challenge"],
         security: [{ bearer: [] }],
-        auth: {
-          policy: ["OR", "challenge.get", "admin.challenge.get"],
-        },
         response: {
           200: ListChallengesResponse,
+        },
+      },
+      config: {
+        auth: {
+          policy: ["OR", "challenge.get", "admin.challenge.get"],
         },
       },
     },
@@ -111,13 +113,15 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["challenge"],
         security: [{ bearer: [] }],
-        auth: {
-          policy: ["OR", "challenge.get", "admin.challenge.get"],
-        },
         params: IdParams,
         response: {
           200: GetChallengeResponse,
           default: BaseResponse,
+        },
+      },
+      config: {
+        auth: {
+          policy: ["OR", "challenge.get", "admin.challenge.get"],
         },
       },
     },
@@ -153,13 +157,15 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["challenge"],
         security: [{ bearer: [] }],
-        auth: {
-          policy: ["OR", "scoreboard.get", "admin.challenge.get"],
-        },
         params: IdParams,
         querystring: DivisionQuery,
         response: {
           200: GetChallengeSolvesResponse,
+        },
+      },
+      config: {
+        auth: {
+          policy: ["OR", "scoreboard.get", "admin.challenge.get"],
         },
       },
     },
@@ -211,6 +217,13 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["challenge"],
         security: [{ bearer: [] }],
+        params: IdParams,
+        body: SolveChallengeRequest,
+        response: {
+          200: SolveChallengeResponse,
+        },
+      },
+      config: {
         auth: {
           require: true,
           policy: ["OR", "challenge.solves.create"],
@@ -227,11 +240,6 @@ export async function routes(fastify: FastifyInstance) {
             windowSeconds: 30,
           },
         ],
-        params: IdParams,
-        body: SolveChallengeRequest,
-        response: {
-          200: SolveChallengeResponse,
-        },
       },
     },
     async (request) => {
