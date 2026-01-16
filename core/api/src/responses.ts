@@ -23,7 +23,7 @@ import {
   ScoreboardEntryWithGraph,
   App,
 } from "./datatypes.ts";
-import { AuthTokenType } from "./token.ts";
+import { AuthTokenType, RegisterTokenData } from "./token.ts";
 import { SubmissionStatus } from "./enums.ts";
 import { CaptchaConfig, SetupConfig } from "./config.ts";
 
@@ -445,13 +445,13 @@ export type OAuthAuthorizeInternalResponse = Static<
   typeof OAuthAuthorizeInternalResponse
 >;
 
-export const OAuthTokenResponse = Type.Object({
+export const CreateOAuthTokenResponse = Type.Object({
   access_token: Type.String(),
   id_token: Type.Optional(Type.String()),
   refresh_token: Type.Optional(Type.String()),
   expires_in: Type.Number(),
 });
-export type OAuthTokenResponse = Static<typeof OAuthTokenResponse>;
+export type CreateOAuthTokenResponse = Static<typeof CreateOAuthTokenResponse>;
 
 export const OAuthConfigurationResponse = Type.Object({
   issuer: Type.String({ format: "uri" }),
@@ -537,4 +537,11 @@ export const AdminResetPasswordResponse = Type.Object({
 });
 export type AdminResetPasswordResponse = Static<
   typeof AdminResetPasswordResponse
+>;
+
+export const RegisterAuthTokenResponse = Type.Object({
+  data: Type.Omit(RegisterTokenData, ["type"]),
+});
+export type RegisterAuthTokenResponse = Static<
+  typeof RegisterAuthTokenResponse
 >;

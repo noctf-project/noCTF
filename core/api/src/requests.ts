@@ -422,13 +422,13 @@ export const AdminQueryUsersRequest = Type.Composite([
 ]);
 export type AdminQueryUsersRequest = Static<typeof AdminQueryUsersRequest>;
 
-export const OAuthTokenRequest = Type.Object({
+export const CreateOAuthTokenRequest = Type.Object({
   grant_type: Type.String(),
   response_type: Type.Optional(Type.String()),
   code: Type.String(),
   redirect_uri: Type.String(),
 });
-export type OAuthTokenRequest = Static<typeof OAuthTokenRequest>;
+export type CreateOAuthTokenRequest = Static<typeof CreateOAuthTokenRequest>;
 
 export const OAuthAuthorizeInternalRequest = Type.Object({
   client_id: Type.String(),
@@ -525,3 +525,11 @@ export const AdminUpdateAppRequest = Type.Partial(
   },
 );
 export type AdminUpdateAppRequest = Static<typeof AdminUpdateAppRequest>;
+
+export const RegisterAuthTokenRequest = Type.Object(
+  {
+    token: Type.String(),
+  },
+  { additionalProperties: false },
+);
+export type RegisterAuthTokenRequest = Static<typeof RegisterAuthTokenRequest>;

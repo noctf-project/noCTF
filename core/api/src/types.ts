@@ -30,8 +30,9 @@ export interface RouteDef {
     querystring?: TSchema;
     params?: TSchema;
     headers?: TSchema;
-    response: {
+    response?: {
       [statusCode: number]: TSchema;
+      default?: TSchema;
     };
   };
 }

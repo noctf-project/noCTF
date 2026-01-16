@@ -1,28 +1,18 @@
-import { AssociateRequest } from "@noctf/api/requests";
-import { SuccessResponse } from "@noctf/api/responses";
+import { AssociateIdentity } from "@noctf/api/contract/mod_auth";
 import { FastifyInstance } from "fastify";
 import { ForbiddenError } from "@noctf/server-core/errors";
+import { route } from "@noctf/server-core/util/route";
 
 export default async function (fastify: FastifyInstance) {
   const { identityService, tokenService } = fastify.container.cradle;
 
-  fastify.post<{
-    Body: AssociateRequest;
-    Reply: SuccessResponse;
-  }>(
-    "/auth/associate",
+  route(
+    fastify,
+    AssociateIdentity,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["auth"],
-        auth: {
-          require: true,
-          policy: ["user.self.update"],
-        },
-        body: AssociateRequest,
-        response: {
-          200: SuccessResponse,
-        },
+      auth: {
+        require: true,
+        policy: ["user.self.update"],
       },
     },
     async (request) => {

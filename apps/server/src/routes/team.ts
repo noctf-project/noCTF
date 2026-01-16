@@ -1,31 +1,28 @@
-import type { ServiceCradle } from "@noctf/server-core";
-import type { FastifyInstance } from "fastify";
-import "@noctf/server-core/types/fastify";
+import {
+  CreateTeam,
+  GetMyTeam,
+  JoinTeam,
+  LeaveTeam,
+  ListDivisions,
+  ListTeamTags,
+  QueryTeams,
+  UpdateTeam,
+} from "@noctf/api/contract/team";
 import {
   ConflictError,
   ForbiddenError,
   NotFoundError,
   NotImplementedError,
 } from "@noctf/server-core/errors";
-import {
-  CreateTeamRequest,
-  JoinTeamRequest,
-  QueryTeamsRequest,
-  UpdateTeamRequest,
-} from "@noctf/api/requests";
-import {
-  CreateTeamResponse,
-  ListDivisionsResponse,
-  ListTeamsResponse,
-  ListTeamTagsResponse,
-  MeTeamResponse,
-  UpdateTeamResponse,
-} from "@noctf/api/responses";
 import { ActorType, TeamFlag } from "@noctf/server-core/types/enums";
-import { Policy } from "@noctf/server-core/util/policy";
-import SingleValueCache from "@noctf/server-core/util/single_value_cache";
-import { OffsetPaginate } from "@noctf/server-core/util/paginator";
+import "@noctf/server-core/types/fastify";
 import { GetRouteUserIPKey } from "@noctf/server-core/util/limit_keys";
+import { OffsetPaginate } from "@noctf/server-core/util/paginator";
+import { Policy } from "@noctf/server-core/util/policy";
+import { route } from "@noctf/server-core/util/route";
+import SingleValueCache from "@noctf/server-core/util/single_value_cache";
+import type { ServiceCradle } from "@noctf/server-core";
+import type { FastifyInstance } from "fastify";
 import { GetUtils } from "./_util.ts";
 
 export async function routes(fastify: FastifyInstance) {
@@ -33,7 +30,7 @@ export async function routes(fastify: FastifyInstance) {
   const { teamService, policyService, divisionService } = fastify.container
     .cradle as ServiceCradle;
 
-  const { gateStartTime, getMaxPageSize } = GetUtils(fastify.container.cradle);
+  const { getMaxPageSize } = GetUtils(fastify.container.cradle);
 
   const divisionsGetter = new SingleValueCache(
     () => divisionService.list(),
@@ -41,20 +38,12 @@ export async function routes(fastify: FastifyInstance) {
   );
   const tagsGetter = new SingleValueCache(() => teamService.listTags(), 3000);
 
-  fastify.get<{ Reply: ListDivisionsResponse }>(
-    "/divisions",
+  route(
+    fastify,
+    ListDivisions,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["division"],
-        response: {
-          200: ListDivisionsResponse,
-        },
-      },
-      config: {
-        auth: {
-          policy: ["OR", "team.self.get", "division.get", "scoreboard.get"],
-        },
+      auth: {
+        policy: ["OR", "team.self.get", "division.get", "scoreboard.get"],
       },
     },
     async (request) => {
@@ -87,20 +76,12 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{ Reply: ListTeamTagsResponse }>(
-    "/team_tags",
+  route(
+    fastify,
+    ListTeamTags,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["team"],
-        response: {
-          200: ListTeamTagsResponse,
-        },
-      },
-      config: {
-        auth: {
-          policy: ["team.get"],
-        },
+      auth: {
+        policy: ["team.get"],
       },
     },
     async () => {
@@ -112,22 +93,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{ Body: CreateTeamRequest; Reply: CreateTeamResponse }>(
-    "/teams",
+  route(
+    fastify,
+    CreateTeam,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["team"],
-        body: CreateTeamRequest,
-        response: {
-          201: CreateTeamResponse,
-        },
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["team.create"],
-        },
+      auth: {
+        require: true,
+        policy: ["team.create"],
       },
     },
     async (request, reply) => {
@@ -178,30 +150,21 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{ Body: JoinTeamRequest; Reply: MeTeamResponse }>(
-    "/team/join",
+  route(
+    fastify,
+    JoinTeam,
     {
-      schema: {
-        tags: ["team"],
-        security: [{ bearer: [] }],
-        body: JoinTeamRequest,
-        response: {
-          201: MeTeamResponse,
-        },
+      auth: {
+        require: true,
+        policy: ["team.self.join"],
       },
-      config: {
-        auth: {
-          require: true,
-          policy: ["team.self.join"],
+      rateLimit: (r) => [
+        {
+          key: GetRouteUserIPKey(r),
+          limit: 4,
+          windowSeconds: 60,
         },
-        rateLimit: (r) => [
-          {
-            key: GetRouteUserIPKey(r),
-            limit: 4,
-            windowSeconds: 60,
-          },
-        ],
-      },
+      ],
     },
     async (request, reply) => {
       const id = await teamService.join(
@@ -215,47 +178,34 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.delete(
-    "/team/join",
+  route(
+    fastify,
+    LeaveTeam,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["team"],
+      auth: {
+        require: true,
+        policy: ["team.self.leave"],
       },
-      config: {
-        auth: {
-          require: true,
-          policy: ["team.self.leave"],
+      rateLimit: (r) => [
+        {
+          key: GetRouteUserIPKey(r),
+          limit: 1,
+          windowSeconds: 60,
         },
-        rateLimit: (r) => [
-          {
-            key: GetRouteUserIPKey(r),
-            limit: 1,
-            windowSeconds: 60,
-          },
-        ],
-      },
+      ],
     },
     async () => {
       throw new NotImplementedError();
     },
   );
 
-  fastify.get<{ Reply: MeTeamResponse }>(
-    "/team",
+  route(
+    fastify,
+    GetMyTeam,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["team"],
-        response: {
-          200: MeTeamResponse,
-        },
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["team.self.get"],
-        },
+      auth: {
+        require: true,
+        policy: ["team.self.get"],
       },
     },
     async (request) => {
@@ -269,30 +219,21 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.put<{ Body: UpdateTeamRequest; Reply: UpdateTeamResponse }>(
-    "/team",
+  route(
+    fastify,
+    UpdateTeam,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["team"],
-        body: UpdateTeamRequest,
-        response: {
-          200: UpdateTeamResponse,
-        },
+      auth: {
+        require: true,
+        policy: ["team.self.update"],
       },
-      config: {
-        auth: {
-          require: true,
-          policy: ["team.self.update"],
+      rateLimit: (r) => [
+        {
+          key: GetRouteUserIPKey(r),
+          limit: 3,
+          windowSeconds: 60,
         },
-        rateLimit: (r) => [
-          {
-            key: GetRouteUserIPKey(r),
-            limit: 3,
-            windowSeconds: 60,
-          },
-        ],
-      },
+      ],
     },
     async (request) => {
       const membership = await request.user?.membership;
@@ -333,21 +274,12 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{ Body: QueryTeamsRequest; Reply: ListTeamsResponse }>(
-    "/teams/query",
+  route(
+    fastify,
+    QueryTeams,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["team"],
-        response: {
-          200: ListTeamsResponse,
-        },
-        body: QueryTeamsRequest,
-      },
-      config: {
-        auth: {
-          policy: ["team.get"],
-        },
+      auth: {
+        policy: ["team.get"],
       },
     },
     async (request) => {

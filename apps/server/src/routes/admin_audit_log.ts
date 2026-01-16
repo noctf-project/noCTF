@@ -1,28 +1,19 @@
-import { QueryAuditLogRequest } from "@noctf/api/requests";
-import { QueryAuditLogResponse } from "@noctf/api/responses";
-import type { FastifyInstance } from "fastify";
+import { AdminQueryAuditLog } from "@noctf/api/contract/admin_audit_log";
 import "@noctf/server-core/types/fastify";
+import { route } from "@noctf/server-core/util/route";
+import type { FastifyInstance } from "fastify";
 
 export async function routes(fastify: FastifyInstance) {
   const { auditLogService } = fastify.container.cradle;
 
-  fastify.post<{ Body: QueryAuditLogRequest; Reply: QueryAuditLogResponse }>(
-    "/admin/audit_log/query",
+  route(
+    fastify,
+    AdminQueryAuditLog,
     {
-      schema: {
-        tags: ["admin"],
-        security: [{ bearer: [] }],
-        body: QueryAuditLogRequest,
-        response: {
-          200: QueryAuditLogResponse,
-        },
-      },
-      config: {
-        auth: {
-          require: true,
-          scopes: new Set(["admin"]),
-          policy: ["admin.audit_log.get"],
-        },
+      auth: {
+        require: true,
+        scopes: new Set(["admin"]),
+        policy: ["admin.audit_log.get"],
       },
     },
     async (request) => {

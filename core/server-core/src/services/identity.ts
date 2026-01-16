@@ -10,7 +10,7 @@ import { EncryptJWT, jwtDecrypt } from "jose";
 import { JOSEError, JWTExpired } from "jose/errors";
 import { SessionDAO } from "../dao/session.ts";
 import { nanoid } from "nanoid";
-import { OAuthTokenResponse } from "@noctf/api/responses";
+import { CreateOAuthTokenResponse } from "@noctf/api/responses";
 
 type Props = Pick<
   ServiceCradle,
@@ -77,7 +77,7 @@ export class IdentityService {
       scopes?: string[];
     },
     generateRefreshToken = false,
-  ): Promise<OAuthTokenResponse> {
+  ): Promise<CreateOAuthTokenResponse> {
     const refreshToken = generateRefreshToken ? nanoid() : undefined;
     const expires_at = app_id
       ? null

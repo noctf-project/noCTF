@@ -1,17 +1,17 @@
-import type { ServiceCradle } from "@noctf/server-core";
-import type { FastifyInstance } from "fastify";
-import "@noctf/server-core/types/fastify";
-import { ActorType } from "@noctf/server-core/types/enums";
-import { QueryUsersRequest, UpdateUserRequest } from "@noctf/api/requests";
 import {
-  BaseResponse,
-  ListUserIdentitiesResponse,
-  ListUsersResponse,
-  MeUserResponse,
-} from "@noctf/api/responses";
+  GetMe,
+  GetMeIdentities,
+  QueryUsers,
+  UpdateMe,
+} from "@noctf/api/contract/user";
 import { ConflictError, NotFoundError } from "@noctf/server-core/errors";
-import { Policy } from "@noctf/server-core/util/policy";
+import { ActorType } from "@noctf/server-core/types/enums";
+import "@noctf/server-core/types/fastify";
 import { OffsetPaginate } from "@noctf/server-core/util/paginator";
+import { Policy } from "@noctf/server-core/util/policy";
+import { route } from "@noctf/server-core/util/route";
+import type { ServiceCradle } from "@noctf/server-core";
+import { FastifyInstance } from "fastify";
 import { GetUtils } from "./_util.ts";
 
 export async function routes(fastify: FastifyInstance) {
@@ -22,21 +22,13 @@ export async function routes(fastify: FastifyInstance) {
 
   const { getMaxPageSize } = GetUtils(fastify.container.cradle);
 
-  fastify.get<{ Reply: MeUserResponse }>(
-    "/user/me",
+  route(
+    fastify,
+    GetMe,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["user"],
-        response: {
-          200: MeUserResponse,
-        },
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["user.self.get"],
-        },
+      auth: {
+        require: true,
+        policy: ["user.self.get"],
       },
     },
     async (request) => {
@@ -59,23 +51,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{
-    Reply: ListUserIdentitiesResponse;
-  }>(
-    "/user/me/identities",
+  route(
+    fastify,
+    GetMeIdentities,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["auth"],
-        response: {
-          200: ListUserIdentitiesResponse,
-        },
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["user.self.get"],
-        },
+      auth: {
+        require: true,
+        policy: ["user.self.get"],
       },
     },
     async (request) => {
@@ -88,22 +70,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.put<{ Body: UpdateUserRequest; Reply: BaseResponse }>(
-    "/user/me",
+  route(
+    fastify,
+    UpdateMe,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["user"],
-        body: UpdateUserRequest,
-        response: {
-          200: BaseResponse,
-        },
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["user.self.update"],
-        },
+      auth: {
+        require: true,
+        policy: ["user.self.update"],
       },
     },
     async (request) => {
@@ -141,21 +114,12 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{ Reply: ListUsersResponse; Body: QueryUsersRequest }>(
-    "/users/query",
+  route(
+    fastify,
+    QueryUsers,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["user"],
-        body: QueryUsersRequest,
-        response: {
-          200: ListUsersResponse,
-        },
-      },
-      config: {
-        auth: {
-          policy: ["user.get"],
-        },
+      auth: {
+        policy: ["user.get"],
       },
     },
     async (request) => {

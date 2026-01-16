@@ -1,6 +1,7 @@
 import { RouteDef } from "@noctf/api/types";
 import { Static, TSchema } from "@sinclair/typebox";
 import { FastifyInstance } from "fastify";
+import { RequestConfig } from "../types/fastify.ts";
 
 export type RouteSchema<T extends RouteDef> = {
   Body: T["schema"]["body"] extends TSchema
@@ -12,11 +13,14 @@ export type RouteSchema<T extends RouteDef> = {
   Params: T["schema"]["params"] extends TSchema
     ? Static<T["schema"]["params"]>
     : never;
-  Reply: {
-    [K in keyof T["schema"]["response"] & number as `${K}`]: Static<
-      T["schema"]["response"][K]
-    >;
-  }[`${keyof T["schema"]["response"] & number}`];
+  Reply: T["schema"]["response"] extends TSchema
+    ? {
+        [K in keyof T["schema"]["response"] & number as `${K}`]: Static<
+          T["schema"]["response"][K]
+        >;
+      }[`${keyof T["schema"]["response"] & number}`]
+    : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      any;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,7 +33,7 @@ export function route<
 >(
   fastify: Instance,
   def: Def,
-  config: Options<typeof fastify.route<SchemaDef>>["config"],
+  config: RequestConfig<SchemaDef>,
   handler: Options<typeof fastify.route<SchemaDef>>["handler"],
 ) {
   return fastify.route<SchemaDef>({

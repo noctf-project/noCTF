@@ -1,34 +1,21 @@
+import { SetupConfig } from "@noctf/api/config";
+import { GetChallengeStats, GetUserStats } from "@noctf/api/contract/stats";
+import { BadRequestError, NotFoundError } from "@noctf/server-core/errors";
+import { route } from "@noctf/server-core/util/route";
 import { FastifyInstance } from "fastify";
 import { GetUtils } from "./_util.ts";
-import { SetupConfig } from "@noctf/api/config";
-import {
-  ListUserStatsResponse,
-  ListChallengeStatsResponse,
-} from "@noctf/api/responses";
-import { DivisionQuery } from "@noctf/api/query";
-import { BadRequestError, NotFoundError } from "@noctf/server-core/errors";
 
 export async function routes(fastify: FastifyInstance) {
   const { configService, divisionService, statsService } =
     fastify.container.cradle;
   const { gateStartTime } = GetUtils(fastify.container.cradle);
 
-  fastify.get<{
-    Reply: ListUserStatsResponse;
-  }>(
-    "/stats/users",
+  route(
+    fastify,
+    GetUserStats,
     {
-      schema: {
-        tags: ["stats"],
-        security: [{ bearer: [] }],
-        response: {
-          200: ListUserStatsResponse,
-        },
-      },
-      config: {
-        auth: {
-          policy: ["stats.user"],
-        },
+      auth: {
+        policy: ["stats.user"],
       },
     },
     async () => {
@@ -39,24 +26,12 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{
-    Reply: ListChallengeStatsResponse;
-    Querystring: DivisionQuery;
-  }>(
-    "/stats/challenges",
+  route(
+    fastify,
+    GetChallengeStats,
     {
-      schema: {
-        tags: ["stats"],
-        security: [{ bearer: [] }],
-        querystring: DivisionQuery,
-        response: {
-          200: ListChallengeStatsResponse,
-        },
-      },
-      config: {
-        auth: {
-          policy: ["stats.challenge"],
-        },
+      auth: {
+        policy: ["stats.challenge"],
       },
     },
     async (request) => {

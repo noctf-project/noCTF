@@ -1,20 +1,18 @@
-import type { ServiceCradle } from "@noctf/server-core";
-import type { FastifyInstance } from "fastify";
-import "@noctf/server-core/types/fastify";
+import { SetupConfig } from "@noctf/api/config";
 import {
-  ScoreboardExportCTFTimeResponse,
-  ScoreboardGraphsResponse,
-  ScoreboardResponse,
-  ScoreboardTeamResponse,
-} from "@noctf/api/responses";
-import { IdParams } from "@noctf/api/params";
+  ExportScoreboardCTFTime,
+  GetScoreboard,
+  GetTeamScoreboard,
+} from "@noctf/api/contract/scoreboard";
+import type { ServiceCradle } from "@noctf/server-core";
 import { NotFoundError } from "@noctf/server-core/errors";
-import { ScoreboardQuery, ScoreboardTagsQuery } from "@noctf/api/query";
-import { GetUtils } from "./_util.ts";
-import { Policy } from "@noctf/server-core/util/policy";
+import "@noctf/server-core/types/fastify";
 import { WindowDeltaedTimeSeriesPoints } from "@noctf/server-core/util/graph";
 import { GetRouteUserIPKey } from "@noctf/server-core/util/limit_keys";
-import { SetupConfig } from "@noctf/api/config";
+import { Policy } from "@noctf/server-core/util/policy";
+import { route } from "@noctf/server-core/util/route";
+import type { FastifyInstance } from "fastify";
+import { GetUtils } from "./_util.ts";
 
 export const SCOREBOARD_PAGE_SIZE = 50;
 
@@ -25,26 +23,12 @@ export async function routes(fastify: FastifyInstance) {
   const { gateStartTime, getMaxPageSize } = GetUtils(fastify.container.cradle);
   const adminPolicy: Policy = ["admin.scoreboard.get"];
 
-  fastify.get<{
-    Reply: ScoreboardResponse;
-    Querystring: ScoreboardQuery;
-    Params: IdParams;
-  }>(
-    "/scoreboard/divisions/:id",
+  route(
+    fastify,
+    GetScoreboard,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["scoreboard"],
-        querystring: ScoreboardQuery,
-        params: IdParams,
-        response: {
-          200: ScoreboardResponse,
-        },
-      },
-      config: {
-        auth: {
-          policy: ["scoreboard.get"],
-        },
+      auth: {
+        policy: ["scoreboard.get"],
       },
     },
     async (request) => {
@@ -101,26 +85,12 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{
-    Params: IdParams;
-    Querystring: ScoreboardTagsQuery;
-    Reply: ScoreboardTeamResponse;
-  }>(
-    "/scoreboard/teams/:id",
+  route(
+    fastify,
+    GetTeamScoreboard,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["scoreboard"],
-        querystring: ScoreboardTagsQuery,
-        params: IdParams,
-        response: {
-          200: ScoreboardTeamResponse,
-        },
-      },
-      config: {
-        auth: {
-          policy: ["AND", "team.get", "scoreboard.get"],
-        },
+      auth: {
+        policy: ["AND", "team.get", "scoreboard.get"],
       },
     },
     async (request) => {
@@ -171,32 +141,20 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{
-    Params: IdParams;
-    Response: ScoreboardExportCTFTimeResponse;
-  }>(
-    "/scoreboard/divisions/:id/ctftime",
+  route(
+    fastify,
+    ExportScoreboardCTFTime,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["scoreboard"],
-        params: IdParams,
-        response: {
-          200: ScoreboardExportCTFTimeResponse,
-        },
+      auth: {
+        policy: ["scoreboard.get.ctftime"],
       },
-      config: {
-        auth: {
-          policy: ["scoreboard.get.ctftime"],
+      rateLimit: (r) => [
+        {
+          key: GetRouteUserIPKey(r),
+          limit: 10,
+          windowSeconds: 60,
         },
-        rateLimit: (r) => [
-          {
-            key: GetRouteUserIPKey(r),
-            limit: 10,
-            windowSeconds: 60,
-          },
-        ],
-      },
+      ],
     },
     async (request) => {
       const { value } = await configService.get(SetupConfig);

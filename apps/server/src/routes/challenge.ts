@@ -1,20 +1,19 @@
-import { IdParams } from "@noctf/api/params";
-import {
-  BaseResponse,
-  GetChallengeResponse,
-  GetChallengeSolvesResponse,
-  ListChallengesResponse,
-  SolveChallengeResponse,
-} from "@noctf/api/responses";
-import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
-import type { FastifyInstance, FastifyRequest } from "fastify";
-import { SolveChallengeRequest } from "@noctf/api/requests";
-import { GetUtils } from "./_util.ts";
-import { Policy } from "@noctf/server-core/util/policy";
 import { SetupConfig } from "@noctf/api/config";
-import { DivisionQuery } from "@noctf/api/query";
+import {
+  GetChallenge,
+  GetChallengeSolves,
+  ListChallenges,
+  SolveChallenge,
+} from "@noctf/api/contract/challenge";
+import { IdParams } from "@noctf/api/params";
+import { BaseResponse } from "@noctf/api/responses";
+import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
 import { GetRouteKey } from "@noctf/server-core/util/limit_keys";
+import { Policy } from "@noctf/server-core/util/policy";
+import { route } from "@noctf/server-core/util/route";
 import { IsTimeBetweenSeconds } from "@noctf/server-core/util/time";
+import type { FastifyInstance, FastifyRequest } from "fastify";
+import { GetUtils } from "./_util.ts";
 
 export async function routes(fastify: FastifyInstance) {
   const {
@@ -27,20 +26,12 @@ export async function routes(fastify: FastifyInstance) {
   const { gateStartTime } = GetUtils(fastify.container.cradle);
   const adminPolicy: Policy = ["admin.challenge.get"];
 
-  fastify.get<{ Reply: ListChallengesResponse }>(
-    "/challenges",
+  route(
+    fastify,
+    ListChallenges,
     {
-      schema: {
-        tags: ["challenge"],
-        security: [{ bearer: [] }],
-        response: {
-          200: ListChallengesResponse,
-        },
-      },
-      config: {
-        auth: {
-          policy: ["OR", "challenge.get", "admin.challenge.get"],
-        },
+      auth: {
+        policy: ["OR", "challenge.get", "admin.challenge.get"],
       },
     },
     async (request) => {
@@ -107,22 +98,12 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{ Params: IdParams }>(
-    "/challenges/:id",
+  route(
+    fastify,
+    GetChallenge,
     {
-      schema: {
-        tags: ["challenge"],
-        security: [{ bearer: [] }],
-        params: IdParams,
-        response: {
-          200: GetChallengeResponse,
-          default: BaseResponse,
-        },
-      },
-      config: {
-        auth: {
-          policy: ["OR", "challenge.get", "admin.challenge.get"],
-        },
+      auth: {
+        policy: ["OR", "challenge.get", "admin.challenge.get"],
       },
     },
     async (request, reply) => {
@@ -147,26 +128,12 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{
-    Params: IdParams;
-    Querystring: DivisionQuery;
-    Reply: GetChallengeSolvesResponse;
-  }>(
-    "/challenges/:id/solves",
+  route(
+    fastify,
+    GetChallengeSolves,
     {
-      schema: {
-        tags: ["challenge"],
-        security: [{ bearer: [] }],
-        params: IdParams,
-        querystring: DivisionQuery,
-        response: {
-          200: GetChallengeSolvesResponse,
-        },
-      },
-      config: {
-        auth: {
-          policy: ["OR", "scoreboard.get", "admin.challenge.get"],
-        },
+      auth: {
+        policy: ["OR", "scoreboard.get", "admin.challenge.get"],
       },
     },
     async (request) => {
@@ -207,40 +174,26 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{
-    Body: SolveChallengeRequest;
-    Params: IdParams;
-    Reply: SolveChallengeResponse;
-  }>(
-    "/challenges/:id/solves",
+  route(
+    fastify,
+    SolveChallenge,
     {
-      schema: {
-        tags: ["challenge"],
-        security: [{ bearer: [] }],
-        params: IdParams,
-        body: SolveChallengeRequest,
-        response: {
-          200: SolveChallengeResponse,
-        },
+      auth: {
+        require: true,
+        policy: ["OR", "challenge.solves.create"],
       },
-      config: {
-        auth: {
-          require: true,
-          policy: ["OR", "challenge.solves.create"],
+      rateLimit: async (r: FastifyRequest<{ Params: IdParams }>) => [
+        {
+          key: `${GetRouteKey(r)}:t${(await r.user?.membership)?.team_id || 0}`,
+          limit: 8,
+          windowSeconds: 60,
         },
-        rateLimit: async (r: FastifyRequest<{ Params: IdParams }>) => [
-          {
-            key: `${GetRouteKey(r)}:t${(await r.user?.membership)?.team_id || 0}`,
-            limit: 8,
-            windowSeconds: 60,
-          },
-          {
-            key: `${GetRouteKey(r)}:t${(await r.user?.membership)?.team_id || 0}i${r.params.id}`,
-            limit: 2,
-            windowSeconds: 30,
-          },
-        ],
-      },
+        {
+          key: `${GetRouteKey(r)}:t${(await r.user?.membership)?.team_id || 0}i${r.params.id}`,
+          limit: 2,
+          windowSeconds: 30,
+        },
+      ],
     },
     async (request) => {
       const ctime = Date.now();
