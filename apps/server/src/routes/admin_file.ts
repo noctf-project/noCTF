@@ -1,27 +1,22 @@
-import { IdParams } from "@noctf/api/params";
-import type { FastifyInstance } from "fastify";
-import { AdminFileMetadataResponse } from "@noctf/api/responses";
+import {
+  AdminDeleteFile,
+  AdminGetFileMetadata,
+  AdminUploadFile,
+} from "@noctf/api/contract/admin_file";
 import { BadRequestError } from "@noctf/server-core/errors";
+import { route } from "@noctf/server-core/util/route";
+import type { FastifyInstance } from "fastify";
 
 export async function routes(fastify: FastifyInstance) {
   const { fileService } = fastify.container.cradle;
 
-  fastify.get<{ Params: IdParams; Reply: AdminFileMetadataResponse }>(
-    "/admin/files/:id",
+  route(
+    fastify,
+    AdminGetFileMetadata,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        params: IdParams,
-        response: {
-          200: AdminFileMetadataResponse,
-        },
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.file.get"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.file.get"],
       },
     },
     async (request) => {
@@ -31,19 +26,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.delete<{ Params: IdParams }>(
-    "/admin/files/:id",
+  route(
+    fastify,
+    AdminDeleteFile,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        params: IdParams,
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.file.delete"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.file.delete"],
       },
     },
     async (request) => {
@@ -52,21 +41,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{ Reply: AdminFileMetadataResponse }>(
-    "/admin/files",
+  route(
+    fastify,
+    AdminUploadFile,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        response: {
-          201: AdminFileMetadataResponse,
-        },
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.file.create"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.file.create"],
       },
     },
     async (request, reply) => {

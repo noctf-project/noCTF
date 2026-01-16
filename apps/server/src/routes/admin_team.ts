@@ -1,16 +1,12 @@
-import { IdParams } from "@noctf/api/params";
 import {
-  AdminQueryTeamsRequest,
-  AdminUpdateTeamMemberRequest,
-  AdminUpdateTeamRequest,
-} from "@noctf/api/requests";
-import {
-  AdminListTeamsResponse,
-  BaseResponse,
-  UpdateTeamResponse,
-} from "@noctf/api/responses";
+  AdminDeleteTeam,
+  AdminQueryTeams,
+  AdminUpdateTeam,
+  AdminUpdateTeamMember,
+} from "@noctf/api/contract/admin_team";
 import { ActorType } from "@noctf/server-core/types/enums";
 import { OffsetPaginate } from "@noctf/server-core/util/paginator";
+import { route } from "@noctf/server-core/util/route";
 import { FastifyInstance } from "fastify";
 
 export const PAGE_SIZE = 60;
@@ -18,22 +14,13 @@ export const PAGE_SIZE = 60;
 export async function routes(fastify: FastifyInstance) {
   const { teamService } = fastify.container.cradle;
 
-  fastify.post<{ Reply: AdminListTeamsResponse; Body: AdminQueryTeamsRequest }>(
-    "/admin/teams/query",
+  route(
+    fastify,
+    AdminQueryTeams,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        response: {
-          200: AdminListTeamsResponse,
-        },
-        body: AdminQueryTeamsRequest,
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.team.get"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.team.get"],
       },
     },
     async (request) => {
@@ -53,27 +40,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.put<{
-    Reply: UpdateTeamResponse;
-    Body: AdminUpdateTeamRequest;
-    Params: IdParams;
-  }>(
-    "/admin/teams/:id",
+  route(
+    fastify,
+    AdminUpdateTeam,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        response: {
-          200: UpdateTeamResponse,
-        },
-        body: AdminUpdateTeamRequest,
-        params: IdParams,
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.team.update"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.team.update"],
       },
     },
     async (request) => {
@@ -95,25 +68,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.delete<{
-    Reply: BaseResponse;
-    Params: IdParams;
-  }>(
-    "/admin/teams/:id",
+  route(
+    fastify,
+    AdminDeleteTeam,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        response: {
-          200: BaseResponse,
-        },
-        params: IdParams,
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.team.delete"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.team.delete"],
       },
     },
     async (request) => {
@@ -128,27 +89,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.put<{
-    Body: AdminUpdateTeamMemberRequest;
-    Reply: BaseResponse;
-    Params: IdParams;
-  }>(
-    "/admin/teams/:id/members",
+  route(
+    fastify,
+    AdminUpdateTeamMember,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        response: {
-          200: BaseResponse,
-        },
-        params: IdParams,
-        body: AdminUpdateTeamMemberRequest,
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.team.update"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.team.update"],
       },
     },
     async (request) => {

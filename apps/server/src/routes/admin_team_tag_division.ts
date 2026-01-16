@@ -1,18 +1,15 @@
-import { IdParams } from "@noctf/api/params";
 import {
-  AdminCreateDivisionRequest,
-  AdminCreateTeamTagRequest,
-  AdminUpdateDivisionRequest,
-  AdminUpdateTeamTagRequest,
-} from "@noctf/api/requests";
-import {
-  AdminDivisionResponse,
-  AdminListDivisionsResponse,
-  AdminListTeamTagsResponse,
-  AdminTeamTagResponse,
-  BaseResponse,
-} from "@noctf/api/responses";
+  AdminCreateDivision,
+  AdminCreateTeamTag,
+  AdminDeleteDivision,
+  AdminDeleteTeamTag,
+  AdminListDivisions,
+  AdminListTeamTags,
+  AdminUpdateDivision,
+  AdminUpdateTeamTag,
+} from "@noctf/api/contract/admin_team_tag_division";
 import { ActorType } from "@noctf/server-core/types/enums";
+import { route } from "@noctf/server-core/util/route";
 import { FastifyInstance } from "fastify";
 
 export const PAGE_SIZE = 60;
@@ -20,21 +17,13 @@ export const PAGE_SIZE = 60;
 export async function routes(fastify: FastifyInstance) {
   const { teamService, divisionService } = fastify.container.cradle;
 
-  fastify.get<{ Reply: AdminListTeamTagsResponse }>(
-    "/admin/team_tags",
+  route(
+    fastify,
+    AdminListTeamTags,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        response: {
-          200: AdminListTeamTagsResponse,
-        },
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.team_tag.get"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.team_tag.get"],
       },
     },
     async () => {
@@ -46,25 +35,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{
-    Reply: AdminTeamTagResponse;
-    Body: AdminCreateTeamTagRequest;
-  }>(
-    "/admin/team_tags",
+  route(
+    fastify,
+    AdminCreateTeamTag,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        response: {
-          200: AdminTeamTagResponse,
-        },
-        body: AdminCreateTeamTagRequest,
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.team_tag.manage"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.team_tag.manage"],
       },
     },
     async (request) => {
@@ -80,27 +57,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.put<{
-    Reply: BaseResponse;
-    Body: AdminUpdateTeamTagRequest;
-    Params: IdParams;
-  }>(
-    "/admin/team_tags/:id",
+  route(
+    fastify,
+    AdminUpdateTeamTag,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        response: {
-          200: BaseResponse,
-        },
-        params: IdParams,
-        body: AdminUpdateTeamTagRequest,
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.team_tag.manage"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.team_tag.manage"],
       },
     },
     async (request) => {
@@ -115,22 +78,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.delete<{ Reply: BaseResponse; Params: IdParams }>(
-    "/admin/team_tags/:id",
+  route(
+    fastify,
+    AdminDeleteTeamTag,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        response: {
-          200: BaseResponse,
-        },
-        params: IdParams,
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.division.manage"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.division.manage"],
       },
     },
     async (request) => {
@@ -145,21 +99,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get<{ Reply: AdminListDivisionsResponse }>(
-    "/admin/divisions",
+  route(
+    fastify,
+    AdminListDivisions,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        response: {
-          200: AdminListDivisionsResponse,
-        },
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.division.get"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.division.get"],
       },
     },
     async () => {
@@ -169,25 +115,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{
-    Reply: AdminDivisionResponse;
-    Body: AdminCreateDivisionRequest;
-  }>(
-    "/admin/divisions",
+  route(
+    fastify,
+    AdminCreateDivision,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        response: {
-          200: AdminDivisionResponse,
-        },
-        body: AdminCreateDivisionRequest,
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.division.manage"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.division.manage"],
       },
     },
     async (request) => {
@@ -203,27 +137,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.put<{
-    Reply: BaseResponse;
-    Body: AdminUpdateDivisionRequest;
-    Params: IdParams;
-  }>(
-    "/admin/divisions/:id",
+  route(
+    fastify,
+    AdminUpdateDivision,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        response: {
-          200: BaseResponse,
-        },
-        params: IdParams,
-        body: AdminUpdateDivisionRequest,
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.division.manage"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.division.manage"],
       },
     },
     async (request) => {
@@ -238,22 +158,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.delete<{ Reply: BaseResponse; Params: IdParams }>(
-    "/admin/divisions/:id",
+  route(
+    fastify,
+    AdminDeleteDivision,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        response: {
-          200: BaseResponse,
-        },
-        params: IdParams,
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.division.manage"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.division.manage"],
       },
     },
     async (request) => {

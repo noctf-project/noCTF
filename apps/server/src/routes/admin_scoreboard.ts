@@ -1,26 +1,17 @@
-import type { FastifyInstance } from "fastify";
-import { BaseResponse } from "@noctf/api/responses";
-import { AdminScoreboardTriggerRequest } from "@noctf/api/requests";
+import { AdminScoreboardTrigger } from "@noctf/api/contract/admin_scoreboard";
 import { ScoreboardTriggerEvent } from "@noctf/api/events";
+import { route } from "@noctf/server-core/util/route";
+import type { FastifyInstance } from "fastify";
 
 export async function routes(fastify: FastifyInstance) {
   const { eventBusService } = fastify.container.cradle;
-  fastify.post<{ Body: AdminScoreboardTriggerRequest }>(
-    "/admin/scoreboard/trigger",
+  route(
+    fastify,
+    AdminScoreboardTrigger,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["admin"],
-        body: AdminScoreboardTriggerRequest,
-        response: {
-          200: BaseResponse,
-        },
-      },
-      config: {
-        auth: {
-          require: true,
-          policy: ["admin.scoreboard.trigger"],
-        },
+      auth: {
+        require: true,
+        policy: ["admin.scoreboard.trigger"],
       },
     },
     async (request) => {

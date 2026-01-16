@@ -1,12 +1,3 @@
-import {
-  ChangeAuthEmailRequest,
-  FinishAuthEmailRequest,
-  InitAuthEmailRequest,
-  CreateResetAuthEmailRequest,
-  ApplyResetAuthEmailRequest,
-  ChangeAuthPasswordRequest,
-} from "@noctf/api/requests";
-import { FinishAuthResponse, BaseResponse } from "@noctf/api/responses";
 import { PasswordProvider } from "./password_provider.ts";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import {
@@ -29,7 +20,6 @@ import {
   NotFoundError,
 } from "@noctf/server-core/errors";
 import { Generate } from "./hash_util.ts";
-import { Type } from "@sinclair/typebox";
 import { NormalizeEmail } from "@noctf/server-core/util/string";
 import {
   GetRouteKey,
@@ -37,6 +27,20 @@ import {
   NormalizeIPPrefix,
 } from "@noctf/server-core/util/limit_keys";
 import { TokenService } from "@noctf/server-core/services/token";
+import { route } from "@noctf/server-core/util/route";
+import {
+  ApplyResetEmail,
+  ChangeEmail,
+  ChangePassword,
+  CreateResetEmail,
+  FinishEmailAuth,
+  InitEmailAuth,
+  VerifyEmailAuth,
+} from "@noctf/api/contract/mod_auth";
+import {
+  CreateResetAuthEmailRequest,
+  InitAuthEmailRequest,
+} from "@noctf/api/requests";
 
 const IsEmailAllowed = (allowedDomains: string[] | undefined, email: string) =>
   !allowedDomains?.length ||
@@ -56,30 +60,17 @@ export default async function (fastify: FastifyInstance) {
   } = fastify.container.cradle;
   const passwordProvider = new PasswordProvider(fastify.container.cradle);
 
-  fastify.post<{
-    Body: InitAuthEmailRequest;
-    Reply: BaseResponse;
-  }>(
-    "/auth/email/init",
+  route(
+    fastify,
+    InitEmailAuth,
     {
-      schema: {
-        tags: ["auth"],
-        description:
-          "Checks if an email exists, returning a message or registration token if not",
-        body: InitAuthEmailRequest,
-        response: {
-          200: BaseResponse,
+      rateLimit: (r) => [
+        {
+          key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
+          limit: 10,
+          windowSeconds: 60,
         },
-      },
-      config: {
-        rateLimit: (r: FastifyRequest<{ Body: InitAuthEmailRequest }>) => [
-          {
-            key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
-            limit: 10,
-            windowSeconds: 60,
-          },
-        ],
-      },
+      ],
     },
     async (request) => {
       const {
@@ -112,36 +103,22 @@ export default async function (fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{
-    Body: InitAuthEmailRequest;
-    Reply: FinishAuthResponse | BaseResponse;
-  }>(
-    "/auth/email/verify",
+  route(
+    fastify,
+    VerifyEmailAuth,
     {
-      schema: {
-        tags: ["auth"],
-        description:
-          "Checks if an email exists, returning a message or registration token if not",
-        body: InitAuthEmailRequest,
-        response: {
-          201: FinishAuthResponse,
-          default: BaseResponse,
+      rateLimit: (r) => [
+        {
+          key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
+          limit: 10,
+          windowSeconds: 60,
         },
-      },
-      config: {
-        rateLimit: (r: FastifyRequest<{ Body: InitAuthEmailRequest }>) => [
-          {
-            key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
-            limit: 10,
-            windowSeconds: 60,
-          },
-          {
-            key: `${GetRouteKey(r)}:e:${NormalizeEmail(r.body.email)}`,
-            limit: 5,
-            windowSeconds: 60,
-          },
-        ],
-      },
+        {
+          key: `${GetRouteKey(r)}:e:${NormalizeEmail(r.body.email)}`,
+          limit: 5,
+          windowSeconds: 60,
+        },
+      ],
     },
     async (request, reply) => {
       const {
@@ -200,36 +177,22 @@ export default async function (fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{
-    Body: CreateResetAuthEmailRequest;
-    Reply: BaseResponse;
-  }>(
-    "/auth/email/reset",
+  route(
+    fastify,
+    CreateResetEmail,
     {
-      schema: {
-        tags: ["auth"],
-        description: "Reset password",
-        body: CreateResetAuthEmailRequest,
-        response: {
-          default: BaseResponse,
+      rateLimit: (r) => [
+        {
+          key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
+          limit: 10,
+          windowSeconds: 60,
         },
-      },
-      config: {
-        rateLimit: (
-          r: FastifyRequest<{ Body: CreateResetAuthEmailRequest }>,
-        ) => [
-          {
-            key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
-            limit: 10,
-            windowSeconds: 60,
-          },
-          {
-            key: `${GetRouteKey(r)}:e:${NormalizeEmail(r.body.email)}`,
-            limit: 5,
-            windowSeconds: 60,
-          },
-        ],
-      },
+        {
+          key: `${GetRouteKey(r)}:e:${NormalizeEmail(r.body.email)}`,
+          limit: 5,
+          windowSeconds: 60,
+        },
+      ],
     },
     async (request) => {
       const { enable_login_password } = await passwordProvider.getConfig();
@@ -272,93 +235,64 @@ export default async function (fastify: FastifyInstance) {
     },
   );
 
-  fastify.put<{
-    Body: ApplyResetAuthEmailRequest;
-    Reply: FinishAuthResponse;
-  }>(
-    "/auth/email/reset",
-    {
-      schema: {
-        tags: ["auth"],
-        description: "Reset password",
-        body: ApplyResetAuthEmailRequest,
-        response: {
-          200: FinishAuthResponse,
-        },
-      },
-    },
-    async (request) => {
-      const { token, password } = request.body;
-      const data = await tokenService.lookup("reset_password", token);
-      const id = await lockService.withLease(
-        `token:${TokenService.hash("reset_password", token)}`,
-        async () => {
-          const identity = await identityService.getProviderForUser(
-            data.user_id,
-            "email",
-          );
-          if (identity.updated_at > data.created_at) {
-            throw new ForbiddenError("Invalid token", {
-              cause: new Error("Password reset after token created"),
-            });
-          }
-          await identityService.associateIdentities([
-            {
-              ...identity,
-              secret_data: await Generate(password),
-            },
-          ]);
-          await identityService.revokeUserSessions(identity.user_id, null);
-          await tokenService.invalidate("reset_password", token);
-          return identity.user_id;
-        },
-      );
-      await auditLogService.log({
-        operation: "user.reset_password.finish",
-        actor: {
-          type: ActorType.USER,
-          id,
-        },
-        data: "Password reset using token",
-        entities: [`${EntityType.USER}:${id}`],
-      });
-      const sessionToken = await identityService.createSession({
-        user_id: id,
-        ip: request.ip,
-      });
-      return {
-        data: {
-          type: "session",
-          token: sessionToken.access_token,
-        },
-      };
-    },
-  );
-
-  fastify.post<{
-    Body: FinishAuthEmailRequest;
-    Reply: FinishAuthResponse | BaseResponse;
-  }>(
-    "/auth/email/finish",
-    {
-      schema: {
-        tags: ["auth"],
-        description: "Log a user in using their email and password",
-        body: FinishAuthEmailRequest,
-        response: {
-          200: FinishAuthResponse,
-          default: BaseResponse,
-        },
-      },
-      config: {
-        rateLimit: (r) => [
+  route(fastify, ApplyResetEmail, {}, async (request) => {
+    const { token, password } = request.body;
+    const data = await tokenService.lookup("reset_password", token);
+    const id = await lockService.withLease(
+      `token:${TokenService.hash("reset_password", token)}`,
+      async () => {
+        const identity = await identityService.getProviderForUser(
+          data.user_id,
+          "email",
+        );
+        if (identity.updated_at > data.created_at) {
+          throw new ForbiddenError("Invalid token", {
+            cause: new Error("Password reset after token created"),
+          });
+        }
+        await identityService.associateIdentities([
           {
-            key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
-            limit: 30,
-            windowSeconds: 60,
+            ...identity,
+            secret_data: await Generate(password),
           },
-        ],
+        ]);
+        await identityService.revokeUserSessions(identity.user_id, null);
+        await tokenService.invalidate("reset_password", token);
+        return identity.user_id;
       },
+    );
+    await auditLogService.log({
+      operation: "user.reset_password.finish",
+      actor: {
+        type: ActorType.USER,
+        id,
+      },
+      data: "Password reset using token",
+      entities: [`${EntityType.USER}:${id}`],
+    });
+    const sessionToken = await identityService.createSession({
+      user_id: id,
+      ip: request.ip,
+    });
+    return {
+      data: {
+        type: "session",
+        token: sessionToken.access_token,
+      },
+    };
+  });
+
+  route(
+    fastify,
+    FinishEmailAuth,
+    {
+      rateLimit: (r) => [
+        {
+          key: `${GetRouteKey(r)}:i${NormalizeIPPrefix(r.ip)}`,
+          limit: 30,
+          windowSeconds: 60,
+        },
+      ],
     },
     async (request) => {
       const { enable_login_password } = await passwordProvider.getConfig();
@@ -384,33 +318,21 @@ export default async function (fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{
-    Body: ChangeAuthEmailRequest;
-    Reply: BaseResponse;
-  }>(
-    "/auth/email/change",
+  route(
+    fastify,
+    ChangeEmail,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["auth"],
-        body: ChangeAuthEmailRequest,
-        response: {
-          200: BaseResponse,
-        },
+      auth: {
+        require: true,
+        policy: ["user.self.update"],
       },
-      config: {
-        auth: {
-          require: true,
-          policy: ["user.self.update"],
+      rateLimit: (r) => [
+        {
+          key: GetRouteUserIPKey(r),
+          limit: 5,
+          windowSeconds: 60,
         },
-        rateLimit: (r: FastifyRequest<{ Body: InitAuthEmailRequest }>) => [
-          {
-            key: GetRouteUserIPKey(r),
-            limit: 5,
-            windowSeconds: 60,
-          },
-        ],
-      },
+      ],
     },
     async (request) => {
       const { validate_email } = await passwordProvider.getConfig();
@@ -476,33 +398,21 @@ export default async function (fastify: FastifyInstance) {
     },
   );
 
-  fastify.post<{
-    Body: ChangeAuthPasswordRequest;
-    Reply: FinishAuthResponse;
-  }>(
-    "/auth/password/change",
+  route(
+    fastify,
+    ChangePassword,
     {
-      schema: {
-        security: [{ bearer: [] }],
-        tags: ["auth"],
-        body: ChangeAuthPasswordRequest,
-        response: {
-          200: FinishAuthResponse,
-        },
+      auth: {
+        require: true,
+        policy: ["user.self.update"],
       },
-      config: {
-        auth: {
-          require: true,
-          policy: ["user.self.update"],
+      rateLimit: (r) => [
+        {
+          key: GetRouteUserIPKey(r),
+          limit: 5,
+          windowSeconds: 60,
         },
-        rateLimit: (r) => [
-          {
-            key: GetRouteUserIPKey(r),
-            limit: 5,
-            windowSeconds: 60,
-          },
-        ],
-      },
+      ],
     },
     async (request) => {
       const identity = await identityService.getProviderForUser(

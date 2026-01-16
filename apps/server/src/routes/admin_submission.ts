@@ -1,16 +1,13 @@
 import {
-  AdminQuerySubmissionsRequest,
-  AdminUpdateSubmissionsRequest,
-} from "@noctf/api/requests";
-import {
-  AdminQuerySubmissionsResponse,
-  AdminUpdateSubmissionsResponse,
-} from "@noctf/api/responses";
-import type { FastifyInstance } from "fastify";
-import "@noctf/server-core/types/fastify";
-import type { Policy } from "@noctf/server-core/util/policy";
+  AdminQuerySubmissions,
+  AdminUpdateSubmissions,
+} from "@noctf/api/contract/admin_submission";
 import { ActorType } from "@noctf/server-core/types/enums";
+import "@noctf/server-core/types/fastify";
 import { OffsetPaginate } from "@noctf/server-core/util/paginator";
+import { Policy } from "@noctf/server-core/util/policy";
+import { route } from "@noctf/server-core/util/route";
+import type { FastifyInstance } from "fastify";
 
 export const PAGE_SIZE = 60;
 
@@ -22,25 +19,13 @@ export async function routes(fastify: FastifyInstance) {
     scopes: new Set(["admin"]),
   };
 
-  fastify.post<{
-    Body: AdminQuerySubmissionsRequest;
-    Reply: AdminQuerySubmissionsResponse;
-  }>(
-    "/admin/submissions/query",
+  route(
+    fastify,
+    AdminQuerySubmissions,
     {
-      schema: {
-        tags: ["admin"],
-        security: [{ bearer: [] }],
-        body: AdminQuerySubmissionsRequest,
-        response: {
-          200: AdminQuerySubmissionsResponse,
-        },
-      },
-      config: {
-        auth: {
-          ...auth,
-          policy: ["admin.submission.get"] as Policy,
-        },
+      auth: {
+        ...auth,
+        policy: ["admin.submission.get"] as Policy,
       },
     },
     async (request) => {
@@ -60,25 +45,13 @@ export async function routes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.put<{
-    Body: AdminUpdateSubmissionsRequest;
-    Reply: AdminUpdateSubmissionsResponse;
-  }>(
-    "/admin/submissions",
+  route(
+    fastify,
+    AdminUpdateSubmissions,
     {
-      schema: {
-        tags: ["admin"],
-        security: [{ bearer: [] }],
-        body: AdminUpdateSubmissionsRequest,
-        response: {
-          200: AdminUpdateSubmissionsResponse,
-        },
-      },
-      config: {
-        auth: {
-          ...auth,
-          policy: ["admin.submission.update"] as Policy,
-        },
+      auth: {
+        ...auth,
+        policy: ["admin.submission.update"] as Policy,
       },
     },
     async (request) => ({
