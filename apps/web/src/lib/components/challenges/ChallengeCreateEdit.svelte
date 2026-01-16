@@ -74,6 +74,15 @@
   );
   let customTagKey = $state<string>("");
   let customTagValue = $state<string>("");
+  let manualFiles = $state<{
+    [name: string]: { url: string; size: number; hash: string };
+  }>({});
+  let manualFileName = $state<string>("");
+  let manualFileUrl = $state<string>("");
+  let manualFileSize = $state<string>("");
+  let manualFileHash = $state<string>("");
+  let isAddingManualFile = $state<boolean>(false);
+
   let files = $state<File[]>([]);
   let existingFiles = $state<ExistingFile[]>(challData?.files ?? []);
   let flags = $state<Flag[]>(
@@ -152,6 +161,45 @@
   function removeCustomTag(key: string): void {
     const { [key]: _removed, ...rest } = customTags;
     customTags = rest;
+  }
+
+  function manualFileFieldsCompleted(): boolean {
+    return Boolean(
+      manualFileName.trim() &&
+        manualFileUrl.trim() &&
+        manualFileSize.trim() &&
+        manualFileHash.trim(),
+    );
+  }
+  function closeManualFileFieldsModal(): void {
+    manualFileName = "";
+    manualFileUrl = "";
+    manualFileSize = "";
+    manualFileHash = "";
+    isAddingManualFile = false;
+  }
+  function handleManualFileInput(event: KeyboardEvent): void {
+    if (event.key === "Enter" && manualFileFieldsCompleted()) {
+      event.preventDefault();
+      addManualFile();
+    }
+  }
+  function addManualFile(): void {
+    if (manualFileFieldsCompleted()) {
+      manualFiles = {
+        ...manualFiles,
+        [manualFileName.trim()]: {
+          url: manualFileUrl.trim(),
+          size: Number.parseInt(manualFileSize),
+          hash: manualFileHash.trim(),
+        },
+      };
+      closeManualFileFieldsModal();
+    }
+  }
+  function removeManualFile(name: string): void {
+    const { [name]: _removed, ...rest } = manualFiles;
+    manualFiles = rest;
   }
 
   function handleFileSelect(event: Event): void {
@@ -263,6 +311,29 @@
       challData.version = version;
     }
 
+    if (Object.keys(manualFiles).length > 0) {
+      creationStep = "Uploading manually specified files...";
+      const res = await api.POST("/admin/files/manual", {
+        body: {
+          files: Object.entries(manualFiles).map(([filename, fileInfo]) => ({
+            filename,
+            ...fileInfo,
+          })),
+        },
+      });
+      if (res.error) {
+        // @ts-expect-error openapi-fetch mishandles error??
+        creationError = res.error.message;
+        return;
+      }
+      fileRefsToAdd.push(
+        ...res.data.data.map((metadata) => ({
+          id: metadata.id,
+          is_attachment: true,
+        })),
+      );
+    }
+
     if (files.length > 0) {
       creationStep = "Uploading files...";
       for (const file of files) {
@@ -300,7 +371,11 @@
       }
     }
 
-    if (files.length > 0 || challData?.files?.length != existingFiles.length) {
+    if (
+      files.length > 0 ||
+      Object.keys(manualFiles).length > 0 ||
+      challData?.files?.length != existingFiles.length
+    ) {
       creationStep = "Adding files to challenge...";
       const updateRes = await api.PUT("/admin/challenges/{id}", {
         params: {
@@ -734,6 +809,20 @@
             />
           </div>
 
+          <div class="form-control w-full">
+            <span class="px-1 pb-2 label-text">Or, </span>
+            <button
+              type="button"
+              id="add-manual-file"
+              class="btn btn-outline btn-sm w-fit pop hover:pop gap-2"
+              onclick={() => (isAddingManualFile = true)}
+              aria-label="Open manual file upload modal"
+            >
+              <Icon icon="material-symbols:add-link" class="text-lg" />
+              Manually add file by URL
+            </button>
+          </div>
+
           {#if existingFiles.length > 0 || files.length > 0}
             <div class="space-y-2">
               <h3 class="text-sm font-medium text-base-content/70">
@@ -781,6 +870,38 @@
           {/if}
         </div>
 
+        {#if Object.keys(manualFiles).length > 0}
+          <div class="space-y-2">
+            <h3 class="text-sm font-medium text-base-content/70">
+              New Manually Added Files
+            </h3>
+            <div
+              class="flex flex-wrap gap-2"
+              role="list"
+              aria-label="New Manually Added Files"
+            >
+              {#each Object.entries(manualFiles) as [name, { url, size, hash }]}
+                <div
+                  class="badge badge-secondary badge-lg gap-2 pop"
+                  role="listitem"
+                  title="(url={url}) (size={size}) (hash={hash})"
+                >
+                  <Icon icon="material-symbols:upload" class="text-xs" />
+                  <span class="font-medium">{name}</span>
+                  <button
+                    type="button"
+                    onclick={() => removeManualFile(name)}
+                    class="opacity-60 hover:opacity-100"
+                    aria-label={`Remove manual file ${name}`}
+                  >
+                    <Icon icon="material-symbols:close" class="text-xs" />
+                  </button>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
         <div
           class="flex flex-col sm:flex-row gap-4 justify-end pt-6 border-t border-base-300"
         >
@@ -805,6 +926,81 @@
       </form>
     </div>
   </div>
+
+  {#if isAddingManualFile}
+    <div class="modal modal-open">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Add File from URL</h3>
+        <div class="space-y-4">
+          <div class="form-control w-full">
+            <label for="manual-file-name" class="label"
+              ><span class="label-text">Filename</span></label
+            >
+            <input
+              type="text"
+              id="manual-file-name"
+              bind:value={manualFileName}
+              onkeydown={handleManualFileInput}
+              class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+              placeholder="Filename"
+            />
+          </div>
+          <div class="form-control w-full">
+            <label for="manual-file-url" class="label"
+              ><span class="label-text">File URL</span></label
+            >
+            <input
+              type="text"
+              id="manual-file-url"
+              bind:value={manualFileUrl}
+              onkeydown={handleManualFileInput}
+              class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+              placeholder="https://..."
+            />
+          </div>
+          <div class="form-control w-full">
+            <label for="manual-file-size" class="label"
+              ><span class="label-text">File Size (bytes)</span></label
+            >
+            <input
+              type="text"
+              id="manual-file-size"
+              bind:value={manualFileSize}
+              onkeydown={handleManualFileInput}
+              class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+              placeholder="File Size"
+            />
+          </div>
+          <div class="form-control w-full">
+            <label for="manual-file-hash" class="label"
+              ><span class="label-text">File Hash (sha256)</span></label
+            >
+            <input
+              type="text"
+              id="manual-file-hash"
+              bind:value={manualFileHash}
+              onkeydown={handleManualFileInput}
+              class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+              placeholder="0123456789abcdef..."
+            />
+          </div>
+        </div>
+        <div class="modal-action">
+          <button class="btn btn-ghost" onclick={closeManualFileFieldsModal}
+            >Cancel</button
+          >
+          <button
+            type="button"
+            onclick={addManualFile}
+            class="btn btn-primary"
+            disabled={!manualFileFieldsCompleted()}
+          >
+            Add
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 
   {#if isCreating}
     <div class="modal modal-open">

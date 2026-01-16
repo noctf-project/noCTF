@@ -232,6 +232,14 @@ export type AdminFileMetadataResponse = Static<
   typeof AdminFileMetadataResponse
 >;
 
+export const AdminManualFileMetadataResponse = Type.Object({
+  data: Type.Array(FileMetadata),
+});
+export type AdminManualFileMetadataResponse = Static<
+  typeof AdminManualFileMetadataResponse
+>;
+
+
 export const AdminGetChallengeResponse = Type.Object({
   data: Challenge,
 });
