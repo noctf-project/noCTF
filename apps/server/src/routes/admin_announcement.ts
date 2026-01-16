@@ -30,6 +30,8 @@ export async function routes(fastify: FastifyInstance) {
         response: {
           200: AdminListAnnnouncementsResponse,
         },
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.announcement.get"],
@@ -64,6 +66,8 @@ export async function routes(fastify: FastifyInstance) {
         response: {
           200: AdminGetAnnouncementDeliveryChannelsResponse,
         },
+      },
+      config: {
         auth: {
           require: true,
           policy: [
@@ -94,6 +98,8 @@ export async function routes(fastify: FastifyInstance) {
           200: AdminGetAnnouncementResponse,
         },
         body: AdminCreateAnnouncementRequest,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.announcement.create"],
@@ -135,6 +141,8 @@ export async function routes(fastify: FastifyInstance) {
         },
         params: IdParams,
         body: AdminUpdateAnnouncementRequest,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.announcement.update"],
@@ -174,6 +182,8 @@ export async function routes(fastify: FastifyInstance) {
           200: BaseResponse,
         },
         params: IdParams,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.announcement.delete"],

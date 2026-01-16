@@ -28,7 +28,7 @@ catalog:
   "@fastify/swagger": ^9.3.0
   "@fastify/formbody": "^8.0.2"
   "pino-pretty": ^13.0.0
-  "@sinclair/typebox": ^0.34.13
+  "@sinclair/typebox": ^0.34.30
   "vitest": ^2.1.8
   "nanoid": ^5.0.9
   "p-limit": ^6.2.0

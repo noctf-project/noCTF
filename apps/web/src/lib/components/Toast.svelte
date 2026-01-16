@@ -35,7 +35,10 @@
         transition:fly={{ duration: 350, x: 100, easing: quintOut }}
         class="alert {style.class} shadow-lg flex items-center w-full max-w-xs sm:max-w-sm mt-2"
       >
-        <Icon icon={style.icon} class="text-xl sm:text-2xl flex-shrink-0 mt-px" />
+        <Icon
+          icon={style.icon}
+          class="text-xl sm:text-2xl flex-shrink-0 mt-px"
+        />
 
         <p
           class=" flex-1 whitespace-normal text-sm sm:text-base break-words mr-2 min-w-0"

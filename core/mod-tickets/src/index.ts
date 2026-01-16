@@ -24,6 +24,15 @@ export async function initServer(fastify: FastifyInstance) {
       schema: {
         tags: ["tickets"],
         security: [{ bearer: [] }],
+        body: OpenTicketRequest,
+        response: {
+          "2xx": OpenTicketResponse,
+        },
+      },
+      config: {
+        auth: {
+          require: true,
+        },
         rateLimit: async (r) => [
           {
             key: `${GetRouteKey(r)}:t${(await r.user.membership).team_id}`,
@@ -31,13 +40,6 @@ export async function initServer(fastify: FastifyInstance) {
             limit: 1,
           },
         ],
-        body: OpenTicketRequest,
-        auth: {
-          require: true,
-        },
-        response: {
-          "2xx": OpenTicketResponse,
-        },
       },
     },
     async () => {

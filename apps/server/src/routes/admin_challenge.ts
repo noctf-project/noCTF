@@ -26,12 +26,14 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["admin"],
         security: [{ bearer: [] }],
+        response: {
+          200: AdminGetScoringStrategiesResponse,
+        },
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.challenge.get"],
-        },
-        response: {
-          200: AdminGetScoringStrategiesResponse,
         },
       },
     },
@@ -51,13 +53,15 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["admin"],
         security: [{ bearer: [] }],
-        auth: {
-          require: true,
-          policy: ["admin.challenge.get"],
-        },
         querystring: FilterChallengesQuery,
         response: {
           200: AdminListChallengesResponse,
+        },
+      },
+      config: {
+        auth: {
+          require: true,
+          policy: ["admin.challenge.get"],
         },
       },
     },
@@ -77,13 +81,15 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["admin"],
         security: [{ bearer: [] }],
-        auth: {
-          require: true,
-          policy: ["admin.challenge.create"],
-        },
         body: AdminCreateChallengeRequest,
         response: {
           201: AdminGetChallengeResponse,
+        },
+      },
+      config: {
+        auth: {
+          require: true,
+          policy: ["admin.challenge.create"],
         },
       },
     },
@@ -107,13 +113,15 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["admin"],
         security: [{ bearer: [] }],
-        auth: {
-          require: true,
-          policy: ["admin.challenge.get"],
-        },
         params: IdOrSlugParams,
         response: {
           200: AdminGetChallengeResponse,
+        },
+      },
+      config: {
+        auth: {
+          require: true,
+          policy: ["admin.challenge.get"],
         },
       },
     },
@@ -134,14 +142,16 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["admin"],
         security: [{ bearer: [] }],
-        auth: {
-          require: true,
-          policy: ["admin.challenge.update"],
-        },
         params: IdParams,
         body: AdminUpdateChallengeRequest,
         response: {
           200: AdminUpdateChallengeResponse,
+        },
+      },
+      config: {
+        auth: {
+          require: true,
+          policy: ["admin.challenge.update"],
         },
       },
     },
@@ -172,13 +182,15 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["admin"],
         security: [{ bearer: [] }],
-        auth: {
-          require: true,
-          policy: ["admin.challenge.delete"],
-        },
         params: IdParams,
         response: {
           200: BaseResponse,
+        },
+      },
+      config: {
+        auth: {
+          require: true,
+          policy: ["admin.challenge.delete"],
         },
       },
     },
@@ -194,6 +206,11 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["admin"],
         security: [{ bearer: [] }],
+        response: {
+          200: AnyResponse,
+        },
+      },
+      config: {
         auth: {
           require: true,
           policy: [
@@ -202,9 +219,6 @@ export async function routes(fastify: FastifyInstance) {
             "admin.challenge.get",
             "admin.challenge.update",
           ],
-        },
-        response: {
-          200: AnyResponse,
         },
       },
     },

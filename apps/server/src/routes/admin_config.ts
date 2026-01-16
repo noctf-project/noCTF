@@ -16,10 +16,12 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["admin"],
         security: [{ bearer: [] }],
-        auth: { require: true, policy: ["admin.config.get"] },
         response: {
           200: AdminGetConfigSchemaResponse,
         },
+      },
+      config: {
+        auth: { require: true, policy: ["admin.config.get"] },
       },
     },
     () => ({ data: configService.getSchemas() }),
@@ -36,10 +38,12 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["admin"],
         security: [{ bearer: [] }],
-        auth: { require: true, policy: ["admin.config.get"] },
         response: {
           200: AdminGetConfigValueResponse,
         },
+      },
+      config: {
+        auth: { require: true, policy: ["admin.config.get"] },
       },
     },
     async (request) => {
@@ -60,6 +64,8 @@ export async function routes(fastify: FastifyInstance) {
         tags: ["admin"],
         security: [{ bearer: [] }],
         body: UpdateConfigValueRequest,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.config.update"],

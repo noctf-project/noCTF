@@ -47,11 +47,13 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["division"],
-        auth: {
-          policy: ["OR", "team.self.get", "division.get", "scoreboard.get"],
-        },
         response: {
           200: ListDivisionsResponse,
+        },
+      },
+      config: {
+        auth: {
+          policy: ["OR", "team.self.get", "division.get", "scoreboard.get"],
         },
       },
     },
@@ -94,6 +96,8 @@ export async function routes(fastify: FastifyInstance) {
         response: {
           200: ListTeamTagsResponse,
         },
+      },
+      config: {
         auth: {
           policy: ["team.get"],
         },
@@ -114,13 +118,15 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["team"],
-        auth: {
-          require: true,
-          policy: ["team.create"],
-        },
         body: CreateTeamRequest,
         response: {
           201: CreateTeamResponse,
+        },
+      },
+      config: {
+        auth: {
+          require: true,
+          policy: ["team.create"],
         },
       },
     },
@@ -178,6 +184,12 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["team"],
         security: [{ bearer: [] }],
+        body: JoinTeamRequest,
+        response: {
+          201: MeTeamResponse,
+        },
+      },
+      config: {
         auth: {
           require: true,
           policy: ["team.self.join"],
@@ -189,10 +201,6 @@ export async function routes(fastify: FastifyInstance) {
             windowSeconds: 60,
           },
         ],
-        body: JoinTeamRequest,
-        response: {
-          201: MeTeamResponse,
-        },
       },
     },
     async (request, reply) => {
@@ -213,6 +221,8 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["team"],
+      },
+      config: {
         auth: {
           require: true,
           policy: ["team.self.leave"],
@@ -237,12 +247,14 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["team"],
+        response: {
+          200: MeTeamResponse,
+        },
+      },
+      config: {
         auth: {
           require: true,
           policy: ["team.self.get"],
-        },
-        response: {
-          200: MeTeamResponse,
         },
       },
     },
@@ -263,6 +275,12 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["team"],
+        body: UpdateTeamRequest,
+        response: {
+          200: UpdateTeamResponse,
+        },
+      },
+      config: {
         auth: {
           require: true,
           policy: ["team.self.update"],
@@ -274,10 +292,6 @@ export async function routes(fastify: FastifyInstance) {
             windowSeconds: 60,
           },
         ],
-        body: UpdateTeamRequest,
-        response: {
-          200: UpdateTeamResponse,
-        },
       },
     },
     async (request) => {
@@ -329,6 +343,8 @@ export async function routes(fastify: FastifyInstance) {
           200: ListTeamsResponse,
         },
         body: QueryTeamsRequest,
+      },
+      config: {
         auth: {
           policy: ["team.get"],
         },

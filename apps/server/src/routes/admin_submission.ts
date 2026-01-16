@@ -31,13 +31,15 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["admin"],
         security: [{ bearer: [] }],
-        auth: {
-          ...auth,
-          policy: ["admin.submission.get"] as Policy,
-        },
         body: AdminQuerySubmissionsRequest,
         response: {
           200: AdminQuerySubmissionsResponse,
+        },
+      },
+      config: {
+        auth: {
+          ...auth,
+          policy: ["admin.submission.get"] as Policy,
         },
       },
     },
@@ -67,13 +69,15 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["admin"],
         security: [{ bearer: [] }],
-        auth: {
-          ...auth,
-          policy: ["admin.submission.update"] as Policy,
-        },
         body: AdminUpdateSubmissionsRequest,
         response: {
           200: AdminUpdateSubmissionsResponse,
+        },
+      },
+      config: {
+        auth: {
+          ...auth,
+          policy: ["admin.submission.update"] as Policy,
         },
       },
     },

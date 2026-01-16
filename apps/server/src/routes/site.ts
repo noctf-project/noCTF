@@ -1,5 +1,6 @@
 import { SetupConfig } from "@noctf/api/config";
-import { GetAnnouncementsQuery } from "@noctf/api/query";
+import { Route } from "@noctf/api/contract/util";
+import { GetAnnouncements } from "@noctf/api/contract/site";
 import {
   GetAnnouncementsResponse,
   GetSiteConfigResponse,
@@ -9,6 +10,7 @@ import { AnnouncementService } from "@noctf/server-core/services/announcement";
 import { GetRouteUserIPKey } from "@noctf/server-core/util/limit_keys";
 import { Type } from "@sinclair/typebox";
 import { FastifyInstance } from "fastify";
+import { GetAnnouncementsQuery } from "@noctf/api/query";
 
 export async function routes(fastify: FastifyInstance) {
   const { configService, announcementService, policyService } = fastify
@@ -41,11 +43,14 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["site"],
         security: [{ bearer: [] }],
-        auth: {
-          policy: ["announcement.get"],
-        },
         response: {
           200: GetAnnouncementsResponse,
+        },
+        querystring: GetAnnouncementsQuery,
+      },
+      config: {
+        auth: {
+          policy: ["announcement.get"],
         },
         rateLimit: (r) => [
           {
@@ -54,12 +59,11 @@ export async function routes(fastify: FastifyInstance) {
             windowSeconds: 60,
           },
         ],
-        querystring: GetAnnouncementsQuery,
       },
     },
     async (request) => {
       const visible_to: string[] = [];
-      if (!request.routeOptions.schema?.auth?.require) {
+      if (!request.routeOptions.config.auth?.require) {
         visible_to.push("public");
       }
       if (request.user) {

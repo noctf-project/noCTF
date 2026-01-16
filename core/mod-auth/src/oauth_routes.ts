@@ -179,15 +179,17 @@ export default async function (fastify: FastifyInstance) {
     {
       schema: {
         tags: ["auth"],
-        auth: {
-          require: true,
-          policy: ["user.self.authorize"],
-        },
         response: {
           200: OAuthAuthorizeInternalResponse,
         },
         body: OAuthAuthorizeInternalRequest,
       },
+      config: {
+        auth: {
+          require: true,
+          policy: ["user.self.authorize"],
+        },
+      }
     },
     async (request) => {
       const { response_type, scope, redirect_uri, state, client_id } =

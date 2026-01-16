@@ -23,6 +23,8 @@ export async function routes(fastify: FastifyInstance) {
         response: {
           200: AdminListPolicyResponse,
         },
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.policy.get"],
@@ -49,6 +51,8 @@ export async function routes(fastify: FastifyInstance) {
           200: AdminPolicyResponse,
         },
         body: AdminCreatePolicyRequest,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.policy.manage"],
@@ -83,6 +87,8 @@ export async function routes(fastify: FastifyInstance) {
         },
         params: IdParams,
         body: AdminUpdatePolicyRequest,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.policy.manage"],
@@ -111,6 +117,8 @@ export async function routes(fastify: FastifyInstance) {
           200: BaseResponse,
         },
         params: IdParams,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.policy.manage"],

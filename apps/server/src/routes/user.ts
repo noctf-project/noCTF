@@ -28,12 +28,14 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["user"],
+        response: {
+          200: MeUserResponse,
+        },
+      },
+      config: {
         auth: {
           require: true,
           policy: ["user.self.get"],
-        },
-        response: {
-          200: MeUserResponse,
         },
       },
     },
@@ -65,12 +67,14 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["auth"],
+        response: {
+          200: ListUserIdentitiesResponse,
+        },
+      },
+      config: {
         auth: {
           require: true,
           policy: ["user.self.get"],
-        },
-        response: {
-          200: ListUserIdentitiesResponse,
         },
       },
     },
@@ -90,13 +94,15 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["user"],
-        auth: {
-          require: true,
-          policy: ["user.self.update"],
-        },
         body: UpdateUserRequest,
         response: {
           200: BaseResponse,
+        },
+      },
+      config: {
+        auth: {
+          require: true,
+          policy: ["user.self.update"],
         },
       },
     },
@@ -141,12 +147,14 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["user"],
-        auth: {
-          policy: ["user.get"],
-        },
         body: QueryUsersRequest,
         response: {
           200: ListUsersResponse,
+        },
+      },
+      config: {
+        auth: {
+          policy: ["user.get"],
         },
       },
     },

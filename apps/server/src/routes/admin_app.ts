@@ -25,6 +25,8 @@ export async function routes(fastify: FastifyInstance) {
         response: {
           200: AdminListAppResponse,
         },
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.app.get"],
@@ -55,6 +57,8 @@ export async function routes(fastify: FastifyInstance) {
           200: AdminAppWithSecretResponse,
         },
         body: AdminCreateAppRequest,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.app.manage"],
@@ -94,6 +98,8 @@ export async function routes(fastify: FastifyInstance) {
         },
         params: IdParams,
         body: AdminUpdateAppRequest,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.app.manage"],
@@ -135,6 +141,8 @@ export async function routes(fastify: FastifyInstance) {
           200: BaseResponse,
         },
         params: IdParams,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.app.manage"],

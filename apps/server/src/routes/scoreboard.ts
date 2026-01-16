@@ -35,13 +35,15 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["scoreboard"],
-        auth: {
-          policy: ["scoreboard.get"],
-        },
         querystring: ScoreboardQuery,
         params: IdParams,
         response: {
           200: ScoreboardResponse,
+        },
+      },
+      config: {
+        auth: {
+          policy: ["scoreboard.get"],
         },
       },
     },
@@ -114,6 +116,8 @@ export async function routes(fastify: FastifyInstance) {
         response: {
           200: ScoreboardTeamResponse,
         },
+      },
+      config: {
         auth: {
           policy: ["AND", "team.get", "scoreboard.get"],
         },
@@ -176,7 +180,12 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["scoreboard"],
-        // auth maybe not required since we may want to allow ctftime to query
+        params: IdParams,
+        response: {
+          200: ScoreboardExportCTFTimeResponse,
+        },
+      },
+      config: {
         auth: {
           policy: ["scoreboard.get.ctftime"],
         },
@@ -187,10 +196,6 @@ export async function routes(fastify: FastifyInstance) {
             windowSeconds: 60,
           },
         ],
-        params: IdParams,
-        response: {
-          200: ScoreboardExportCTFTimeResponse,
-        },
       },
     },
     async (request) => {

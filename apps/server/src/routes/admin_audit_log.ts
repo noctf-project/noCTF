@@ -12,14 +12,16 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         tags: ["admin"],
         security: [{ bearer: [] }],
+        body: QueryAuditLogRequest,
+        response: {
+          200: QueryAuditLogResponse,
+        },
+      },
+      config: {
         auth: {
           require: true,
           scopes: new Set(["admin"]),
           policy: ["admin.audit_log.get"],
-        },
-        body: QueryAuditLogRequest,
-        response: {
-          200: QueryAuditLogResponse,
         },
       },
     },

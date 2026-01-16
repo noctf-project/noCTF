@@ -29,6 +29,8 @@ export async function routes(fastify: FastifyInstance) {
         response: {
           200: AdminListTeamTagsResponse,
         },
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.team_tag.get"],
@@ -57,6 +59,8 @@ export async function routes(fastify: FastifyInstance) {
           200: AdminTeamTagResponse,
         },
         body: AdminCreateTeamTagRequest,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.team_tag.manage"],
@@ -91,6 +95,8 @@ export async function routes(fastify: FastifyInstance) {
         },
         params: IdParams,
         body: AdminUpdateTeamTagRequest,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.team_tag.manage"],
@@ -119,6 +125,8 @@ export async function routes(fastify: FastifyInstance) {
           200: BaseResponse,
         },
         params: IdParams,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.division.manage"],
@@ -146,6 +154,8 @@ export async function routes(fastify: FastifyInstance) {
         response: {
           200: AdminListDivisionsResponse,
         },
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.division.get"],
@@ -172,6 +182,8 @@ export async function routes(fastify: FastifyInstance) {
           200: AdminDivisionResponse,
         },
         body: AdminCreateDivisionRequest,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.division.manage"],
@@ -206,6 +218,8 @@ export async function routes(fastify: FastifyInstance) {
         },
         params: IdParams,
         body: AdminUpdateDivisionRequest,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.division.manage"],
@@ -234,6 +248,8 @@ export async function routes(fastify: FastifyInstance) {
           200: BaseResponse,
         },
         params: IdParams,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.division.manage"],

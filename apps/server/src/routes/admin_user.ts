@@ -43,13 +43,15 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["admin"],
-        auth: {
-          require: true,
-          policy: ["admin.user.get"],
-        },
         body: AdminQueryUsersRequest,
         response: {
           200: AdminListUsersResponse,
+        },
+      },
+      config: {
+        auth: {
+          require: true,
+          policy: ["admin.user.get"],
         },
       },
     },
@@ -105,14 +107,16 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["admin"],
-        auth: {
-          require: true,
-          policy: ["admin.user.update"],
-        },
         body: AdminUpdateUserRequest,
         params: IdParams,
         response: {
           200: BaseResponse,
+        },
+      },
+      config: {
+        auth: {
+          require: true,
+          policy: ["admin.user.update"],
         },
       },
     },
@@ -181,6 +185,8 @@ export async function routes(fastify: FastifyInstance) {
           200: BaseResponse,
         },
         params: IdParams,
+      },
+      config: {
         auth: {
           require: true,
           policy: ["admin.user.delete"],
@@ -219,14 +225,16 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["admin"],
-        auth: {
-          require: true,
-          policy: ["admin.session.get"],
-        },
         params: IdParams,
         querystring: SessionQuery,
         response: {
           200: ListSessionsResponse,
+        },
+      },
+      config: {
+        auth: {
+          require: true,
+          policy: ["admin.session.get"],
         },
       },
     },
@@ -267,14 +275,16 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["admin"],
-        auth: {
-          require: true,
-          policy: ["admin.session.revoke"],
-        },
         params: IdParams,
         body: AdminRevokeSessionsRequest,
         response: {
           200: BaseResponse,
+        },
+      },
+      config: {
+        auth: {
+          require: true,
+          policy: ["admin.session.revoke"],
         },
       },
     },
@@ -316,13 +326,15 @@ export async function routes(fastify: FastifyInstance) {
       schema: {
         security: [{ bearer: [] }],
         tags: ["admin"],
-        auth: {
-          require: true,
-          policy: ["AND", "admin.user.update", "admin.identity.update"],
-        },
         params: IdParams,
         response: {
           200: AdminResetPasswordResponse,
+        },
+      },
+      config: {
+        auth: {
+          require: true,
+          policy: ["AND", "admin.user.update", "admin.identity.update"],
         },
       },
     },

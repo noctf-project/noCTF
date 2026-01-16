@@ -123,10 +123,10 @@ export class ScoreboardService {
         this.awardDAO.getAllAwards(id),
         this.configService.get(SetupConfig),
       ]);
-      const solvesByChallenge = PartitionSolvesByChallenge(
-        solveList,
-        { ...setup, end_time_s: setup.freeze_time_s ?? setup.end_time_s },
-      );
+      const solvesByChallenge = PartitionSolvesByChallenge(solveList, {
+        ...setup,
+        end_time_s: setup.freeze_time_s ?? setup.end_time_s,
+      });
       points = points.concat(
         ComputeFullGraph(
           new Map(teams.get(id)?.map((x) => [x.id, x])),
