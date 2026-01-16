@@ -1,4 +1,5 @@
 import { IdParams } from "../params.ts";
+import { AdminUploadFileQuery } from "../query.ts";
 import { AdminFileMetadataResponse } from "../responses.ts";
 import { RouteDef } from "../types.ts";
 
@@ -28,6 +29,7 @@ export const AdminUploadFile = {
   url: "/admin/files",
   schema: {
     tags: ["admin"],
+    querystring: AdminUploadFileQuery,
     response: {
       201: AdminFileMetadataResponse,
     },

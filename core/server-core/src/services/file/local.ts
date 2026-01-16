@@ -13,7 +13,8 @@ import {
   ForbiddenError,
   NotFoundError,
 } from "../../errors.ts";
-import { Readable } from "node:stream";
+import { summarizeFile } from "./summarize.ts";
+import { PassThrough, Readable } from "node:stream";
 import { nanoid } from "nanoid";
 
 export class LocalFileProvider
@@ -78,12 +79,17 @@ export class LocalFileProviderInstance implements FileProviderInstance {
   async upload(
     rs: Readable,
     m: Omit<ProviderFileMetadata, "size">,
-  ): Promise<string> {
+  ): ReturnType<FileProviderInstance["upload"]> {
+    const dup = new PassThrough();
+    rs.pipe(dup);
     const ref = nanoid();
     const fp = join(this.root, LocalFileProviderInstance.OBJECT_PATH, ref);
-    await pipeline(rs, createWriteStream(fp));
+    const [summary, _] = await Promise.all([
+      summarizeFile(dup),
+      pipeline(rs, createWriteStream(fp)),
+    ]);
     await this.setProviderMetadata(ref, { ...m, size: (await stat(fp)).size });
-    return ref;
+    return { ref, ...summary };
   }
 
   async getURL(ref: string) {
