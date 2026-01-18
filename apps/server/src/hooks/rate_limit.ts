@@ -21,7 +21,7 @@ export const RateLimitHook = async (
   if (await policyService.evaluate(request.user?.id, ["bypass.rate_limit"])) {
     return;
   }
-  const config = request.routeOptions.schema?.rateLimit || DEFAULT_CONFIG;
+  const config = request.routeOptions.config?.rateLimit || DEFAULT_CONFIG;
   let buckets: RateLimitBucket[] = [];
   if (typeof config === "function") {
     const derived = await config(request);

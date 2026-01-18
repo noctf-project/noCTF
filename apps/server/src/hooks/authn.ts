@@ -7,7 +7,7 @@ import {
 import { CreateThenable } from "@noctf/server-core/util/promises";
 
 export const AuthnHook = async (request: FastifyRequest) => {
-  const { require, scopes } = request.routeOptions.schema?.auth || {};
+  const { require, scopes } = request.routeOptions.config?.auth || {};
   let token = "";
   if (
     request.headers["authorization"] &&
