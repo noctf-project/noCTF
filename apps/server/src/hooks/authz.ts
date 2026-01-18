@@ -4,7 +4,7 @@ import { ForbiddenError, UnauthorizedError } from "@noctf/server-core/errors";
 export const AuthzHook = async (request: FastifyRequest) => {
   const { policyService } = request.server.container.cradle;
 
-  const policy = request.routeOptions.schema?.auth?.policy;
+  const policy = request.routeOptions.config?.auth?.policy;
   if (!policy) {
     return;
   }
