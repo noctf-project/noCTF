@@ -2,7 +2,7 @@ import { sql, type Kysely } from "kysely";
 import {
   CreateTableWithDefaultTimestamps,
   CreateTriggerUpdatedAt,
-} from "./util";
+} from "../util.ts";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {

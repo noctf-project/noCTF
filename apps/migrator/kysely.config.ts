@@ -8,15 +8,15 @@ const MIGRATION_FILE_REGEX = /^[\d]+_.+\.ts$/;
 
 class DevMigrationProvider implements MigrationProvider {
   async getMigrations() {
-    const migrations = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const migrations: Record<string, any> = {};
     for await (const filename of glob([
-      "migrations/*.ts",
-      "plugins/*/migrations/*.ts",
+      "src/migrations/*.ts",
     ])) {
       if (!basename(filename).match(MIGRATION_FILE_REGEX)) {
         continue;
       }
-      migrations[filename] = await import(`./${filename}`);
+      migrations[filename.replace(/^[^\/]+\//, "")] = await import(`./${filename}`);
     }
     return migrations;
   }

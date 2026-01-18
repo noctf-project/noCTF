@@ -34,7 +34,7 @@ setup_services() {
     echo "Setting up services..."
     echo "Running database migrations..."
     pnpm i
-    pnpm kysely migrate latest
+    pnpm dev:migrate latest
 
     echo "Building database schemas..."
     cd core/schema && pnpm build --env-file ../../.env && cd ../..
