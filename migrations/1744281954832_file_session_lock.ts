@@ -21,7 +21,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("id", "integer", (col) =>
       col.primaryKey().generatedByDefaultAsIdentity(),
     )
-    .addColumn("hash", "bytea", (col) => col.notNull())
+    .addColumn("hash", "varchar(255)", (col) => col.notNull())
     .addColumn("ref", "varchar", (col) => col.notNull())
     .addColumn("filename", "varchar(255)", (col) => col.notNull())
     .addColumn("provider", "varchar(64)", (col) => col.notNull())

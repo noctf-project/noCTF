@@ -64,7 +64,11 @@ export async function routes(fastify: FastifyInstance) {
       data.file.on("limit", () => {
         data.file.emit("end");
       });
-      const result = await fileService.upload(filename, data.file);
+      const result = await fileService.upload(
+        filename,
+        data.file,
+        request.query.provider,
+      );
 
       if (request.raw.readableAborted) {
         fastify.log.warn({ id: result.id }, "File upload aborted");

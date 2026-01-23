@@ -1,0 +1,11 @@
+▲ [WARNING] Duplicate key "pg" in object literal [duplicate-object-key]
+
+    ../../core/server-core/package.json:37:4:
+      37 │     "pg": "catalog:",
+         ╵     ~~~~
+
+  The original key "pg" is here:
+
+    ../../core/server-core/package.json:35:4:
+      35 │     "pg": "catalog:",
+         ╵     ~~~~
