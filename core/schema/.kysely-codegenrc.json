@@ -1,6 +1,0 @@
-{
-  "dialect": "postgres",
-  "outFile": "./dist/index.d.ts",
-  "logLevel": "info",
-  "url": "env(POSTGRES_URL)"
-}

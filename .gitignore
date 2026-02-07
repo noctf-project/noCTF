@@ -1,7 +1,0 @@
-node_modules/
-dist/
-/.env
-core/api-client/src/schema.d.ts
-/apps/server/swagger.json
-venv/
-__pycache__/
