@@ -56,3 +56,12 @@
   width: 14vw;
   min-width: 170px;
 }
+
+.navbar_div {
+  align-items: flex-start;
+}
+
+.navbar_logo {
+  width: 20vw;
+  min-width: 200px;
+}

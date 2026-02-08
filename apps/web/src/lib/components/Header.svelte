@@ -13,7 +13,7 @@
   };
 </script>
 
-<div class="navbar py-4 lg:py-8 px-4 sm:px-6 lg:px-12 min-h-24 lg:min-h-32">
+<div class="navbar py-4 lg:py-8 px-4 sm:px-6 lg:px-12 min-h-24 lg:min-h-32 navbar_div">
   <!--
   <div class="navbar-start hidden">
     <ul
@@ -94,9 +94,10 @@
   </div>
 
   <div class="navbar-center justify-center navbar_logo_div">
-    <a href="/" class="text-xl font-bold"
-      >{"noCTFes"}</a
+    <a href="/" class="text-xl font-bold hidden"
+      >{"noCTF"}</a
     >
+    <img src="https://disorientation.cssa.club/files/logo-web.png" alt="plz show up" class="navbar_logo">
   </div>
 
 
