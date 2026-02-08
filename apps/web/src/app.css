@@ -52,6 +52,12 @@
 }
 
 /* disorientationCTF 2026 - styling */
+
+body {
+  background: #2B2734;
+  color: var(--text_primary);
+}
+
 .challenge_card_button {
   width: 14vw;
   min-width: 170px;
@@ -62,6 +68,6 @@
 }
 
 .navbar_logo {
-  width: 20vw;
+  width: 25vw;
   min-width: 200px;
 }

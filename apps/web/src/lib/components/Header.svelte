@@ -94,10 +94,9 @@
   </div>
 
   <div class="navbar-center justify-center navbar_logo_div">
-    <a href="/" class="text-xl font-bold hidden"
-      >{"noCTF"}</a
-    >
-    <img src="https://disorientation.cssa.club/files/logo-web.png" alt="plz show up" class="navbar_logo">
+    <a href="/" class="text-xl">
+      <img src="https://disorientation.cssa.club/files/logo-web.png" alt="DisorientationCTF" class="navbar_logo">
+      </a>
   </div>
 
 
