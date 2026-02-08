@@ -50,3 +50,9 @@
 .carta-editor .carta-renderer * {
   @apply text-base-content;
 }
+
+/* disorientationCTF 2026 - styling */
+.challenge_card_button {
+  width: 14vw;
+  min-width: 170px;
+}

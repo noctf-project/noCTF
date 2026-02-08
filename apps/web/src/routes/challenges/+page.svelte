@@ -211,7 +211,7 @@
         />
       </div>
 
-      <div class="flex gap-6 h-fit">
+      <div class="flex gap-6 h-fit justify-center">
         {#if challenges !== undefined && Object.keys(challengesByCategory).length > 0}
           {#each Object.entries(challengesByCategory) as [category, categoryChallenges] (category)}
             <div class="flex flex-col gap-2">

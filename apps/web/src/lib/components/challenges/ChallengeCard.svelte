@@ -27,7 +27,7 @@
 </script>
 
 <button
-  class={`text-left card w-60 h-32 pop ${data.isSolved ? "bg-primary text-primary-content" : "bg-base-100"} rounded-lg shadow-black ${data.hidden ? "opacity-40" : ""}`}
+  class={`challenge_card_button text-left card w-60 h-32 pop ${data.isSolved ? "bg-primary text-primary-content" : "bg-base-100"} rounded-lg shadow-black ${data.hidden ? "opacity-40" : ""}`}
   onclick={() => onclick(data)}
 >
   <div class="card-body p-3 flex flex-col">
