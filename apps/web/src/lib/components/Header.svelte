@@ -14,12 +14,38 @@
 </script>
 
 <div class="navbar py-4 lg:py-8 px-4 sm:px-6 lg:px-12 min-h-24 lg:min-h-32">
+  <!--
+  <div class="navbar-start hidden">
+    <ul
+      class="menu menu-horizontal pop p-1 bg-base-100 rounded-lg flex gap-2 items-center"
+    >
+      <li>
+        <a href="/challenges" class={isActive("/challenges")}>Challenges</a>
+      </li>
+      <li>
+        <a href="/scoreboard" class={isActive("/scoreboard")}>Scoreboard</a>
+      </li>
+      <li>
+        <a href="/teams" class={isActive("/teams")}>Teams</a>
+      </li>
+      {#if IS_STATIC_EXPORT}
+        <li>
+          <a href="/stats" class={isActive("/stats")}>Stats</a>
+        </li>
+      {/if}
+      {#if authState.isAdmin}
+        <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
+      {/if}
+    </ul>
+  </div>
+-->
+
   <div class="navbar-start">
     <div class="dropdown">
       <div
         tabindex="0"
         role="button"
-        class="btn bg-base-100 pop hover:pop hover:none lg:hidden"
+        class="btn bg-base-100 pop hover:pop hover:none"
         aria-label="Open menu"
       >
         <svg
@@ -60,43 +86,21 @@
         {/if}
       </ul>
     </div>
-
+<!--
     <a href="/" class="text-xl font-bold hidden lg:block"
-      >{configState.siteConfig?.name || "noCTF"}</a
+      >{"noCTFs"}</a
     >
+  -->
   </div>
 
-  <div class="navbar-center lg:hidden">
+  <div class="navbar-center justify-center navbar_logo_div">
     <a href="/" class="text-xl font-bold"
-      >{configState.siteConfig?.name || "noCTF"}</a
+      >{"noCTFes"}</a
     >
   </div>
 
-  <div class="navbar-center hidden lg:block">
-    <ul
-      class="menu menu-horizontal pop p-1 bg-base-100 rounded-lg flex gap-2 items-center"
-    >
-      <li>
-        <a href="/challenges" class={isActive("/challenges")}>Challenges</a>
-      </li>
-      <li>
-        <a href="/scoreboard" class={isActive("/scoreboard")}>Scoreboard</a>
-      </li>
-      <li>
-        <a href="/teams" class={isActive("/teams")}>Teams</a>
-      </li>
-      {#if IS_STATIC_EXPORT}
-        <li>
-          <a href="/stats" class={isActive("/stats")}>Stats</a>
-        </li>
-      {/if}
-      {#if authState.isAdmin}
-        <li><a href="/admin" class={isActive("/admin")}>Admin Panel</a></li>
-      {/if}
-    </ul>
-  </div>
 
-  <div class="navbar-end">
+  <div class="navbar-end navbar_right">
     {#if IS_STATIC_EXPORT}
       <ViewAsSelector />
     {:else if !authState.isAuthenticated && !page.url.pathname.startsWith("/auth")}
