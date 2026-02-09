@@ -40,7 +40,7 @@
   </div>
 -->
 
-  <div class="navbar-start">
+  <div class="navbar-start navbar_left">
     <div class="dropdown">
       <div
         tabindex="0"
@@ -95,7 +95,7 @@
 
   <div class="navbar-center justify-center navbar_logo_div">
     <a href="/" class="text-xl">
-      <img src="https://disorientation.cssa.club/files/logo-web-large.png" alt="DisorientationCTF" class="navbar_logo">
+      <img src="https://disorientation.cssa.club/files/logo-web-v3.png" alt="DisorientationCTF" class="navbar_logo">
       </a>
   </div>
 

@@ -32,7 +32,7 @@
 >
   <div class="card-body p-3 flex flex-col">
     <div class="flex flex-row justify-between items-center">
-      <div class="card-title line-clamp-1 font-black">
+      <div class="card-title line-clamp-1 font-black press-start-2p challenge_card_title">
         {data.title}
       </div>
       {#if data.hidden}

@@ -58,6 +58,16 @@ body {
   color: var(--text_primary);
 }
 
+.press-start-2p {
+  font-family: "Press Start 2P", system-ui;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.challenge_card_title {
+  font-size: 15px;
+}
+
 .challenge_card_button {
   width: 14vw;
   min-width: 170px;
@@ -67,7 +77,15 @@ body {
   align-items: flex-start;
 }
 
+.navbar_left {
+  margin-top: 1vw;
+}
+
+.navbar_right {
+  margin-top: 1vw;
+}
+
 .navbar_logo {
-  width: 25vw;
+  width: 30vw;
   min-width: 200px;
 }
