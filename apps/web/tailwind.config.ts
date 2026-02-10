@@ -57,7 +57,7 @@ export default {
         dark: {
           primary: "#D79E3A",
           secondary: "#D79E3A",
-          accent: "#40c29d",
+          accent: "#3faf8f",
           neutral: "#2B2734",
           "base-100": "#1b171d",
           "base-200": "#120f13",
