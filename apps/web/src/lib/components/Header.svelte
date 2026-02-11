@@ -190,7 +190,7 @@
     const canvas = document.getElementById("bg_canvas");
     const qq = canvas.getContext("2d");
     qq.fillStyle = "rgb(0 0 255)";
-    qq.strokeStyle = "#12091599";
+    qq.strokeStyle = "#12091544";
 
     var x = 4;
     while (x < 1200) {
