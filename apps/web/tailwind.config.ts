@@ -45,7 +45,7 @@ export default {
           warning: "#f2bb54",
           error: "#c75658",
           "primary-content": "#e6e6f7",
-          "--text_primary": "#D9D3E5e0", /* TODO fix this lol or disable light theme entirely? */
+          "--text_primary": "#D9D3E5", /* TODO fix this lol or disable light theme entirely? */
           "--diff-beginner": "#8cd5fa",
           "--diff-easy": "#a1d593",
           "--diff-medium": "#deb475",
@@ -68,7 +68,7 @@ export default {
           success: "#98cb4b",
           warning: "#ea9545",
           error: "#dc5551",
-          "--text_primary": "#D9D3E5e0",
+          "--text_primary": "#D9D3E5",
           "--diff-beginner": "#64a7ca",
           "--diff-easy": "#4f9840",
           "--diff-medium": "#ae6e24",

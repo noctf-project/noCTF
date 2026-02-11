@@ -63,6 +63,19 @@ body {
   font-style: normal;
 }
 
+.chal_col {
+  align-items: center;
+}
+
+.chal_col_title {
+  width: auto;
+  text-align: center;
+  border-radius: 0;
+  background: #433B52;
+  box-shadow: 7px 7px 0px #1b171d;
+  margin-bottom: 20px;
+}
+
 .challenge_card_title {
   font-size: 15px;
 }
