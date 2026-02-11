@@ -15,6 +15,31 @@
     data: ChallengeCardData;
     onclick: (c: ChallengeCardData) => void;
   }
+
+  export function filterCats(cats: string[]): string[] {
+    let returnCats: string[] = [];
+    cats.forEach((c) => {
+      if (!c.includes("theme")) {
+        returnCats.push(c);
+      }
+    })
+    return returnCats;
+  }
+
+  export function getTheme(cats: string[]): string {
+    let theme: string = "theme-none";
+    cats.forEach((c) => {
+      if (!c.includes("theme")) {
+        theme = c;
+        return;
+      }
+    })
+    return theme;
+  }
+
+  export function themeToSrc(theme: string): string {
+    return "";
+  }
 </script>
 
 <script lang="ts">
@@ -27,9 +52,10 @@
 </script>
 
 <button
-  class={`challenge_card_button text-left card w-60 h-32 pop ${data.isSolved ? "bg-primary text-primary-content" : "bg-base-100"} rounded-lg shadow-black ${data.hidden ? "opacity-40" : ""}`}
+  class={`challenge_card_button ${getTheme(data.categories)} text-left card w-60 h-32 pop ${data.isSolved ? "bg-primary text-primary-content" : "bg-base-100"} rounded-lg shadow-black ${data.hidden ? "opacity-40" : ""}`}
   onclick={() => onclick(data)}
 >
+  <img src={themeToSrc(getTheme(data.categories))} alt="">
   <div class="card-body p-3 flex flex-col">
     <div class="flex flex-row justify-between items-center">
       <div class="card-title line-clamp-1 font-black press-start-2p challenge_card_title">
@@ -49,7 +75,7 @@
       <div
         class={`self-center flex flex-row gap-1 text-2xl ${data.isSolved ? "text-primary-content" : "text-neutral-400"}`}
       >
-        {#each data.categories as cat}
+        {#each filterCats(data.categories) as cat}
           <div class="tooltip" data-tip={cat}>
             <Icon icon={categoryToIcon(cat)} />
           </div>
