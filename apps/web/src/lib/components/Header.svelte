@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
   import authState from "$lib/state/auth.svelte";
-  import configState from "$lib/state/config.svelte";
   import { IS_STATIC_EXPORT } from "$lib/static_export/middleware";
   import ViewAsSelector from "./ViewAsSelector.svelte";
   import Icon from "@iconify/svelte";
@@ -11,7 +10,12 @@
       ? "rounded-md bg-primary hover:bg-primary text-primary-content font-bold px-3 py-2"
       : "px-3 py-2";
   };
+
 </script>
+
+<div class="canvas_holder">
+  <canvas id="bg_canvas" width="1200" height="800"></canvas>
+</div>
 
 <div class="navbar py-4 lg:py-8 px-4 sm:px-6 lg:px-12 min-h-24 lg:min-h-32 navbar_div">
   <!--
@@ -178,4 +182,40 @@
       </div>
     {/if}
   </div>
+
+  <script>
+  /* bg canvas */
+  function drawbg() {
+    console.log("painting bg...");
+    const canvas = document.getElementById("bg_canvas");
+    const qq = canvas.getContext("2d");
+    qq.fillStyle = "rgb(0 0 255)";
+    qq.strokeStyle = "#12091599";
+
+    var x = 4;
+    while (x < 1200) {
+      qq.beginPath();
+      qq.moveTo(x,0);
+      qq.lineTo(x,400);
+      qq.stroke();
+      qq.closePath();
+      x += 20;
+    }
+
+    var y = 4;
+    while (y < 800) {
+        qq.beginPath();
+        qq.moveTo(0,y);
+        qq.lineTo(600,y);
+        qq.stroke();
+        qq.closePath();
+        y += 20;
+    }
+
+    
+
+  }
+
+  drawbg();
+  </script>
 </div>

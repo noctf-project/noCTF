@@ -54,7 +54,6 @@
 /* disorientationCTF 2026 - styling */
 
 body {
-  background: #2B2734;
   color: var(--text_primary);
 }
 
@@ -73,8 +72,24 @@ body {
   min-width: 170px;
 }
 
+.canvas_holder {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100vw;
+  height: 100vh;
+  z-index: -900;
+  background: #2B2734;
+  
+  canvas {
+    height: 3000px;
+    image-rendering: pixelated;
+  }
+}
+
 .navbar_div {
   align-items: flex-start;
+  z-index: 100;
 }
 
 .navbar_left {
@@ -103,7 +118,9 @@ body {
 }
 
 .home_div {
+  z-index: 10;
   height: 80vh;
+  min-height: 700px;
   flex-direction: column;
   justify-content: center;
   align-items: center;
@@ -112,6 +129,7 @@ body {
     width: 60vw;
   }
   .home_info_div {
+    z-index: 10;
     padding-top: 5vh;
     width: 60vw;
     display: flex;
@@ -138,6 +156,7 @@ body {
   }
 
   .sponsors_div {
+    z-index: 10;
     margin-top: 5vh;
     padding: 4px;
     width: 16vw;
