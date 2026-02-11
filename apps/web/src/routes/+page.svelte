@@ -25,4 +25,27 @@
       <img src="https://disorientation.cssa.club/files/tantosec.png" alt="TantoSec - sharper cyber security"/>
     </a>
   </div>
+  <div class="sponsors2_div press-start-2p">
+    <span>CSSA Sponsors</span>
+    <div class="sponsors2_top flex">
+      <a href="https://janestreet.com" title="Jane Street - Partner">
+        <img src="https://disorientation.cssa.club/files/jane-street-web.png" alt="Jane Street - Partner">
+      </a>
+      <a href="https://imc.com" title="IMC - Major Sponsor">
+        <img src="https://disorientation.cssa.club/files/imc-web.png" alt="IMC - Major Sponsor">
+      </a>
+    </div>
+
+    <div class="sponsors2_bottom flex">
+      <a href="https://optiver.com" title="Optiver - Digital Sponsor">
+        <img src="https://disorientation.cssa.club/files/optiver-web.png" alt="Optiver - Digital Sponsor">
+      </a>
+      <a href="https://citadel.com" title="Citadel - Digital Sponsor">
+        <img src="https://disorientation.cssa.club/files/citadel-web.png" alt="Citadel - Digital Sponsor">
+      </a>
+      <a href="https://atlassian.com" title="Atlassian - Digital Sponsor">
+        <img src="https://disorientation.cssa.club/files/atlassian-web.png" alt="Atlassian - Digital Sponsor">
+      </a>
+    </div>
+  </div>
 </div>
