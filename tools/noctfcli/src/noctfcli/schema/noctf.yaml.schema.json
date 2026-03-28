@@ -65,7 +65,7 @@
               },
               "strategy": {
                 "type": "string",
-                "enum": ["case_sensitive", "case_insensitive", "regex"],
+                "enum": ["case_sensitive", "case_insensitive", "regex_sensitive", "regex_insensitive"],
                 "default": "case_sensitive",
                 "description": "Flag matching strategy"
               }

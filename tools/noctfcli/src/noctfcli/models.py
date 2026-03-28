@@ -11,7 +11,8 @@ class FlagStrategy(str, Enum):
 
     CASE_SENSITIVE = "case_sensitive"
     CASE_INSENSITIVE = "case_insensitive"
-    REGEX = "regex"
+    REGEX_SENSITIVE = "regex_sensitive"
+    REGEX_INSENSITIVE = "regex_insensitive"
 
 
 class SolveInputType(str, Enum):
