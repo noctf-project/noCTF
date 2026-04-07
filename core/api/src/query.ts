@@ -47,6 +47,14 @@ export const GetFileQuery = Type.Object(
 );
 export type GetFileQuery = Static<typeof GetFileQuery>;
 
+export const AdminUploadFileQuery = Type.Object(
+  {
+    provider: Type.Optional(Type.String({ maxLength: 64 })),
+  },
+  { additionalProperties: false },
+);
+export type AdminUploadFileQuery = Static<typeof AdminUploadFileQuery>;
+
 export const DivisionQuery = Type.Object(
   {
     division_id: Type.Optional(Type.Integer()),

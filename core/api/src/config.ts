@@ -146,6 +146,7 @@ export const FileConfig = Type.Object(
     upload: Type.String({
       title: "Selected Provider Instance",
       description: "New uploads will use this provider instance",
+      maxLength: 64,
     }),
     instances: Type.Record(Type.String(), Type.Any(), {
       title: "Provider Instances",

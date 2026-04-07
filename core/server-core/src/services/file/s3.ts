@@ -1,5 +1,5 @@
 import { FileMetadata } from "@noctf/api/datatypes";
-import { Readable } from "stream";
+import { PassThrough, Readable } from "stream";
 import { nanoid } from "nanoid";
 import { Client } from "minio";
 import {
@@ -8,6 +8,7 @@ import {
   ProviderFileMetadata,
 } from "./types.ts";
 import { Static, Type } from "@sinclair/typebox";
+import { summarizeFile } from "./summarize.ts";
 
 export const S3FileProviderConfig = Type.Object({
   endPoint: Type.String(),
@@ -48,14 +49,19 @@ export class S3FileProviderInstance implements FileProviderInstance {
   async upload(
     rs: Readable,
     pm: Omit<ProviderFileMetadata, "size">,
-  ): Promise<string> {
+  ): ReturnType<FileProviderInstance["upload"]> {
+    const dup = new PassThrough();
+    rs.pipe(dup);
     const ref = nanoid();
     const path = `${S3FileProviderInstance.PREFIX}${ref}`;
-    await this.client.putObject(this.bucket, path, rs, undefined, {
-      "content-disposition": `attachment; filename=${JSON.stringify(pm.filename)}`,
-      "content-type": pm.mime,
-    });
-    return ref;
+    const [summary, _] = await Promise.all([
+      summarizeFile(dup),
+      this.client.putObject(this.bucket, path, rs, undefined, {
+        "content-disposition": `attachment; filename=${JSON.stringify(pm.filename)}`,
+        "content-type": pm.mime,
+      }),
+    ]);
+    return { ref, ...summary };
   }
 
   async delete(ref: string): Promise<void> {
@@ -81,4 +87,6 @@ export class S3FileProviderInstance implements FileProviderInstance {
   async download(): Promise<[Readable, Omit<FileMetadata, "url">]> {
     throw new Error("Method not implemented.");
   }
+
+  summarize = summarizeFile;
 }
