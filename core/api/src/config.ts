@@ -105,6 +105,11 @@ export const SetupConfig = Type.Object(
     end_time_s: Type.Optional(
       Type.Integer({ title: "CTF End Time (Epoch seconds)", minimum: 0 }),
     ),
+    flag_prefix: Type.String({
+      title: "Flag Prefix",
+      description:
+        "Prefix for all flags in the CTF.",
+    }),
     freeze_time_s: Type.Optional(
       Type.Integer({
         title: "CTF Freeze Time (Epoch seconds)",

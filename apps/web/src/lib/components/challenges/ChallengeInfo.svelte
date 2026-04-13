@@ -33,6 +33,7 @@
   import { toasts } from "$lib/stores/toast";
   import DifficultyChip from "./DifficultyChip.svelte";
   import authState from "$lib/state/auth.svelte";
+  import configState from "$lib/state/config.svelte";
   import { goto } from "$app/navigation";
 
   let { challData, challDetails, loading, onSolve }: ChallengeInfoProps =
@@ -243,7 +244,7 @@
             }}
             type="text"
             disabled={["correct", "submitting"].includes(flagSubmitStatus)}
-            placeholder={"noCTF{...}"}
+            placeholder={(configState.siteConfig?.flag_prefix || "noCTF") + "{...}"}
             required
             class={"w-full input input-bordered flex-grow pop duration-200 transition-colors focus:outline-none focus:pop focus:ring-0 focus:ring-offset-0 " +
               (flagSubmitStatus == "incorrect"
