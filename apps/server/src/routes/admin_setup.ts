@@ -11,6 +11,7 @@ export async function routes(fastify: FastifyInstance) {
       active: false,
       name: "noCTF",
       root_url: "http://localhost:5173",
+      flag_prefix: "noCTF",
       allow_late_submissions: false,
     },
     ({ initialized, end_time_s, freeze_time_s }) => {
