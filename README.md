@@ -24,7 +24,7 @@ pnpm i
 ./dev.sh start-local
 
 # Run the database migrations
-pnpm kysely migrate latest
+pnpm dev:migrate latest
 
 # Build the database schemas
 cd core/schema

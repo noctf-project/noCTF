@@ -1,0 +1,21 @@
+{
+  "name": "@noctf/migrator",
+  "version": "0.1.0",
+  "description": "Database migration runner",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "migrate": "kysely migrate"
+  },
+  "dependencies": {
+    "kysely": "catalog:",
+    "kysely-ctl": "^0.10.1",
+    "pg": "catalog:"
+  },
+  "devDependencies": {
+    "@types/pg": "catalog:"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

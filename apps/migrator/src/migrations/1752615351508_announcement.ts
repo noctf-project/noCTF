@@ -2,7 +2,7 @@ import { sql, type Kysely } from "kysely";
 import {
   CreateTableWithDefaultTimestamps,
   CreateTriggerUpdatedAt,
-} from "./util";
+} from "../util.ts";
 
 export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
