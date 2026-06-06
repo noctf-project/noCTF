@@ -67,6 +67,28 @@ export const slugify = (title: string) => {
   return /^\d/.test(s) ? `n-${s}`.slice(0, 64) : s;
 };
 
+export const filenameFromUrl = (url: string): string => {
+  let pathname = "";
+  let host = "";
+  try {
+    const u = new URL(url);
+    pathname = u.pathname;
+    host = u.hostname;
+  } catch {
+    pathname = url.split(/[?#]/)[0] ?? url;
+  }
+  const segments = pathname.split("/").filter(Boolean);
+  const last = segments[segments.length - 1];
+  if (last) {
+    try {
+      return decodeURIComponent(last);
+    } catch {
+      return last;
+    }
+  }
+  return host || "file";
+};
+
 export const formatFileSize = (bytes: number, decimals: number = 2): string => {
   if (bytes === 0) return "0 B";
 
