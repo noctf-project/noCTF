@@ -93,6 +93,9 @@
   let extHash = $state<string>("");
   let extSize = $state<number | null>(null);
   const extFilenamePreview = $derived(extUrl ? filenameFromUrl(extUrl) : "");
+  const hasPendingExternal = $derived(
+    extUrl.trim() !== "" || extHash.trim() !== "" || extSize != null,
+  );
   let flags = $state<Flag[]>(
     challData?.flags ?? [{ data: "", strategy: "case_sensitive" }],
   );
@@ -192,14 +195,13 @@
 
   function addExternalFile(): void {
     const url = extUrl.trim();
-    const hash = extHash.trim();
-    if (!url || !hash || extSize == null) {
+    if (!url) {
       return;
     }
     externalFiles.push({
       url,
-      hash,
-      size: extSize,
+      hash: extHash.trim() || "none",
+      size: extSize ?? 0,
       filename: filenameFromUrl(url),
     });
     extUrl = "";
@@ -236,6 +238,17 @@
 
     if (flags.filter((f) => f.data).length == 0) {
       if (!confirm("No flags set, are you sure you want to proceed?")) {
+        return;
+      }
+    }
+
+    if (hasPendingExternal) {
+      if (
+        !confirm(
+          "You've entered external file details but haven't clicked \"Add\". " +
+            "Continue without adding this file?",
+        )
+      ) {
         return;
       }
     }
@@ -317,8 +330,7 @@
                 validateStatus: () => true,
                 onUploadProgress: (progress) => {
                   creationFileUploadProgress = Math.round(
-                    (progress.loaded * 100) /
-                      (progress.total ?? 0),
+                    (progress.loaded * 100) / (progress.total ?? 0),
                   );
                 },
               });
@@ -844,14 +856,14 @@
                 type="number"
                 min="0"
                 bind:value={extSize}
-                placeholder="size (bytes)"
+                placeholder="size bytes"
                 class="input input-bordered sm:w-36 focus:outline-none focus:ring-0 focus:ring-offset-0"
                 aria-label="External file size in bytes"
               />
               <button
                 type="button"
                 onclick={addExternalFile}
-                disabled={!extUrl.trim() || !extHash.trim() || extSize == null}
+                disabled={!extUrl.trim()}
                 class="btn btn-outline"
               >
                 <Icon
