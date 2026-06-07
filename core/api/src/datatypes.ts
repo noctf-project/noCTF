@@ -485,3 +485,17 @@ export const ChallengeStat = Type.Object({
   hidden: Type.Boolean(),
 });
 export type ChallengeStat = Static<typeof ChallengeStat>;
+
+export const ExternalFile = Type.Object(
+  {
+    url: Type.String({
+      pattern: "^(https?|ftp):\\/\\/[^\\s/$.?#].[^\\s]*$",
+      description: "Must be a valid URL starting with http, https, or ftp",
+      maxLength: 2048,
+    }),
+    hash: Type.String({ maxLength: 255 }),
+    size: Type.Number(),
+  },
+  { additionalProperties: false },
+);
+export type ExternalFile = Static<typeof ExternalFile>;

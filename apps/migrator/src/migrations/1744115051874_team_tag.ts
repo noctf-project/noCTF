@@ -1,4 +1,4 @@
-import { sql, type Kysely } from "kysely";
+import { type Kysely } from "kysely";
 import {
   CreateTableWithDefaultTimestamps,
   CreateTriggerUpdatedAt,
