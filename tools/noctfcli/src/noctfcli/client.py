@@ -1,3 +1,4 @@
+import json
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Literal, Optional, Union, overload
@@ -19,7 +20,9 @@ from .models import (
     ChallengeFile,
     ChallengeFileAttachment,
     ChallengeSummary,
+    ExternalFileConfig,
 )
+from .utils import filename_from_url
 
 
 class NoCTFClient:
@@ -304,6 +307,46 @@ class NoCTFClient:
             msg = f"Invalid file data: {e}"
             raise ValidationError(msg) from e
 
+    async def upload_external_file(
+        self,
+        external: ExternalFileConfig,
+    ) -> ChallengeFile:
+        """Register a reference to an externally-hosted file.
+
+        Uploads a JSON blob {url, hash, size} via the 'external' provider; the
+        display filename is derived from the URL.
+
+        Args:
+            external: External file reference
+
+        Returns:
+            File metadata
+        """
+
+        filename = filename_from_url(external.url)
+        blob = json.dumps(
+            {
+                "url": external.url,
+                "hash": external.hash,
+                "size": external.size,
+            },
+        ).encode()
+        files = {"file": (filename, blob, "application/json")}
+        response = await self._request(
+            "POST",
+            "/admin/files",
+            params={"provider": "external"},
+            files=files,
+        )
+
+        file_data = response.get("data", {})
+
+        try:
+            return ChallengeFile(**file_data)
+        except PydanticValidationError as e:
+            msg = f"Invalid file data: {e}"
+            raise ValidationError(msg) from e
+
     def _config_to_api_data(
         self,
         config: ChallengeConfig,
@@ -363,6 +406,25 @@ class NoCTFClient:
             },
         }
 
+    async def upload_file_entry(
+        self,
+        entry: Union[str, ExternalFileConfig],
+        base_path: Path,
+    ) -> ChallengeFile:
+        """Upload a single challenge file entry (local path or external ref).
+
+        Args:
+            entry: A local path string or an external file reference
+            base_path: Base path for resolving relative local file paths
+
+        Returns:
+            File metadata
+        """
+
+        if isinstance(entry, ExternalFileConfig):
+            return await self.upload_external_file(entry)
+        return await self.upload_file(base_path / entry)
+
     async def upload_challenge_files(
         self,
         config: ChallengeConfig,
@@ -378,14 +440,9 @@ class NoCTFClient:
             List of uploaded file metadata
         """
 
-        uploaded_files = []
-
-        for file_path_str in config.files:
-            file_path = base_path / file_path_str
-            uploaded_file = await self.upload_file(file_path)
-            uploaded_files.append(uploaded_file)
-
-        return uploaded_files
+        return [
+            await self.upload_file_entry(entry, base_path) for entry in config.files
+        ]
 
 
 @asynccontextmanager

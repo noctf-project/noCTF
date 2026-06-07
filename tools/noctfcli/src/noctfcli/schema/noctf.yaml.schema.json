@@ -79,10 +79,34 @@
     "files": {
       "type": "array",
       "items": {
-        "type": "string",
-        "description": "Relative path to challenge file"
+        "anyOf": [
+          {
+            "type": "string",
+            "description": "Relative path to a local challenge file (relative to noctf.yaml)"
+          },
+          {
+            "type": "object",
+            "description": "Reference to an externally-hosted file",
+            "required": ["url", "hash", "size"],
+            "additionalProperties": false,
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "URL of the file"
+              },
+              "hash": {
+                "type": "string",
+                "description": "File hash (e.g. sha256:<hex>)"
+              },
+              "size": {
+                "type": "integer",
+                "description": "File size in bytes"
+              }
+            }
+          }
+        ]
       },
-      "description": "Challenge attachment files (relative to noctf.yaml)"
+      "description": "Challenge files: local paths or external references"
     },
     "hidden": {
       "type": "boolean",

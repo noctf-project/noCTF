@@ -29,6 +29,14 @@
     filename: string;
     id: number;
     is_attachment: boolean;
+    provider?: string;
+  }
+
+  export interface ExternalFileInput {
+    url: string;
+    hash: string;
+    size: number;
+    filename: string;
   }
 
   export interface ChallData {
@@ -56,7 +64,11 @@
   import { Parser } from "expr-eval";
 
   import api, { SESSION_TOKEN_KEY, wrapLoadable } from "$lib/api/index.svelte";
-  import { categoryToIcon, slugify } from "$lib/utils/challenges";
+  import {
+    categoryToIcon,
+    filenameFromUrl,
+    slugify,
+  } from "$lib/utils/challenges";
   import { CATEGORIES } from "$lib/constants/categories";
 
   const { mode, challData }: Props = $props();
@@ -76,6 +88,14 @@
   let customTagValue = $state<string>("");
   let files = $state<File[]>([]);
   let existingFiles = $state<ExistingFile[]>(challData?.files ?? []);
+  let externalFiles = $state<ExternalFileInput[]>([]);
+  let extUrl = $state<string>("");
+  let extHash = $state<string>("");
+  let extSize = $state<number | null>(null);
+  const extFilenamePreview = $derived(extUrl ? filenameFromUrl(extUrl) : "");
+  const hasPendingExternal = $derived(
+    extUrl.trim() !== "" || extHash.trim() !== "" || extSize != null,
+  );
   let flags = $state<Flag[]>(
     challData?.flags ?? [{ data: "", strategy: "case_sensitive" }],
   );
@@ -173,6 +193,25 @@
     existingFiles = existingFiles.filter((_, i) => i !== index);
   }
 
+  function addExternalFile(): void {
+    const url = extUrl.trim();
+    if (!url) {
+      return;
+    }
+    externalFiles.push({
+      url,
+      hash: extHash.trim() || "none",
+      size: extSize ?? 0,
+      filename: filenameFromUrl(url),
+    });
+    extUrl = "";
+    extHash = "";
+    extSize = null;
+  }
+  function removeExternalFile(index: number): void {
+    externalFiles = externalFiles.filter((_, i) => i !== index);
+  }
+
   function addFlag(): void {
     flags = [...flags, { data: "", strategy: "case_sensitive" }];
   }
@@ -199,6 +238,17 @@
 
     if (flags.filter((f) => f.data).length == 0) {
       if (!confirm("No flags set, are you sure you want to proceed?")) {
+        return;
+      }
+    }
+
+    if (hasPendingExternal) {
+      if (
+        !confirm(
+          "You've entered external file details but haven't clicked \"Add\". " +
+            "Continue without adding this file?",
+        )
+      ) {
         return;
       }
     }
@@ -235,59 +285,23 @@
 
     let challengeId, version;
 
-    if (mode == "create") {
-      const res = await api.POST("/admin/challenges", { body: payload });
-      if (res.error) {
-        // @ts-expect-error openapi-fetch mishandles error??
-        creationError = res.error.message;
-        return;
-      }
-      challengeId = res.data.data.id;
-      version = res.data.data.version;
-    } else {
-      const res = await api.PUT("/admin/challenges/{id}", {
-        params: { path: { id: challData.id } },
-        body: {
-          ...payload,
-          private_metadata: { ...private_metadata, files: fileRefsToAdd },
-          version: challData.version,
-        },
-      });
-      if (res.error) {
-        // @ts-expect-error openapi-fetch mishandles error??
-        creationError = res.error.message;
-        return;
-      }
-      challengeId = challData.id;
-      version = res.data.data.version;
-      challData.version = version;
-    }
-
-    if (files.length > 0) {
-      creationStep = "Uploading files...";
-      for (const file of files) {
-        creationCurrentFile = file.name;
-        const formData = new FormData();
-        formData.append("file", file);
-        const res = await api.POST("/admin/files", {
-          async fetch(input) {
-            const axiosResponse = await axios.post(input.url, formData, {
-              // TODO: this is dodgy, migrate into file
-              headers: {
-                Authorization: `Bearer ${window.localStorage.getItem(SESSION_TOKEN_KEY)}`,
-              },
-              onUploadProgress: (progressEvent_1) => {
-                creationFileUploadProgress = Math.round(
-                  (progressEvent_1.loaded * 100) / (progressEvent_1.total ?? 0),
-                );
-              },
-            });
-            return new Response(JSON.stringify(axiosResponse.data), {
-              status: axiosResponse.status,
-              statusText: axiosResponse.statusText,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              headers: new Headers(axiosResponse.headers as any),
-            });
+    try {
+      if (mode == "create") {
+        const res = await api.POST("/admin/challenges", { body: payload });
+        if (res.error) {
+          // @ts-expect-error openapi-fetch mishandles error??
+          creationError = res.error.message;
+          return;
+        }
+        challengeId = res.data.data.id;
+        version = res.data.data.version;
+      } else {
+        const res = await api.PUT("/admin/challenges/{id}", {
+          params: { path: { id: challData.id } },
+          body: {
+            ...payload,
+            private_metadata: { ...private_metadata, files: fileRefsToAdd },
+            version: challData.version,
           },
         });
         if (res.error) {
@@ -295,36 +309,119 @@
           creationError = res.error.message;
           return;
         }
-        const { id } = res.data.data;
-        fileRefsToAdd.push({ id, is_attachment: true });
+        challengeId = challData.id;
+        version = res.data.data.version;
+        challData.version = version;
       }
-    }
 
-    if (files.length > 0 || challData?.files?.length != existingFiles.length) {
-      creationStep = "Adding files to challenge...";
-      const updateRes = await api.PUT("/admin/challenges/{id}", {
-        params: {
-          path: {
-            id: challengeId,
-          },
-        },
-        body: {
-          version,
-          private_metadata: {
-            ...private_metadata,
-            files: fileRefsToAdd,
-          },
-        },
-      });
-
-      if (updateRes.error) {
-        // @ts-expect-error openapi-fetch mishandles error??
-        creationError = updateRes.error.message;
-        return;
+      if (files.length > 0) {
+        creationStep = "Uploading files...";
+        for (const file of files) {
+          creationCurrentFile = file.name;
+          const formData = new FormData();
+          formData.append("file", file);
+          const res = await api.POST("/admin/files", {
+            async fetch(input) {
+              const axiosResponse = await axios.post(input.url, formData, {
+                // TODO: this is dodgy, migrate into file
+                headers: {
+                  Authorization: `Bearer ${window.localStorage.getItem(SESSION_TOKEN_KEY)}`,
+                },
+                validateStatus: () => true,
+                onUploadProgress: (progress) => {
+                  creationFileUploadProgress = Math.round(
+                    (progress.loaded * 100) / (progress.total ?? 0),
+                  );
+                },
+              });
+              return new Response(JSON.stringify(axiosResponse.data), {
+                status: axiosResponse.status,
+                statusText: axiosResponse.statusText,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                headers: new Headers(axiosResponse.headers as any),
+              });
+            },
+          });
+          if (res.error) {
+            // @ts-expect-error openapi-fetch mishandles error??
+            creationError = res.error.message;
+            return;
+          }
+          const { id } = res.data.data;
+          fileRefsToAdd.push({ id, is_attachment: true });
+        }
       }
-    }
 
-    creationStep = "Done";
+      if (externalFiles.length > 0) {
+        creationStep = "Referencing external files...";
+        for (const ext of externalFiles) {
+          creationCurrentFile = ext.filename;
+          const blob = new Blob(
+            [JSON.stringify({ url: ext.url, hash: ext.hash, size: ext.size })],
+            { type: "application/json" },
+          );
+          const formData = new FormData();
+          formData.append("file", blob, ext.filename);
+          const res = await api.POST("/admin/files", {
+            params: { query: { provider: "external" } },
+            async fetch(input) {
+              const axiosResponse = await axios.post(input.url, formData, {
+                headers: {
+                  Authorization: `Bearer ${window.localStorage.getItem(SESSION_TOKEN_KEY)}`,
+                },
+                validateStatus: () => true,
+              });
+              return new Response(JSON.stringify(axiosResponse.data), {
+                status: axiosResponse.status,
+                statusText: axiosResponse.statusText,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                headers: new Headers(axiosResponse.headers as any),
+              });
+            },
+          });
+          if (res.error) {
+            // @ts-expect-error openapi-fetch mishandles error??
+            creationError = res.error.message;
+            return;
+          }
+          const { id } = res.data.data;
+          fileRefsToAdd.push({ id, is_attachment: true });
+        }
+      }
+
+      if (
+        files.length > 0 ||
+        externalFiles.length > 0 ||
+        challData?.files?.length != existingFiles.length
+      ) {
+        creationStep = "Adding files to challenge...";
+        const updateRes = await api.PUT("/admin/challenges/{id}", {
+          params: {
+            path: {
+              id: challengeId,
+            },
+          },
+          body: {
+            version,
+            private_metadata: {
+              ...private_metadata,
+              files: fileRefsToAdd,
+            },
+          },
+        });
+
+        if (updateRes.error) {
+          // @ts-expect-error openapi-fetch mishandles error??
+          creationError = updateRes.error.message;
+          return;
+        }
+      }
+
+      creationStep = "Done";
+    } catch (e) {
+      creationError =
+        e instanceof Error ? e.message : "An unexpected error occurred";
+    }
   }
 </script>
 
@@ -701,6 +798,7 @@
               <div class="flex flex-wrap gap-2 items-center text-sm">
                 <span class="badge badge-secondary badge-sm gap-2">
                   <Icon icon="material-symbols:folder" class="text-xs" />
+                  <Icon icon="material-symbols:link-rounded" class="text-xs" />
                   existing file
                 </span>
                 <span class="badge badge-primary badge-sm gap-2">
@@ -709,7 +807,7 @@
                 </span>
                 <div
                   class="tooltip"
-                  data-tip="All replaced/new files will be (re)uploaded"
+                  data-tip="Folder/link icon marks existing files (hosted or an external reference). All replaced/new files will be (re)uploaded."
                 >
                   <Icon
                     icon="material-symbols:help"
@@ -734,7 +832,57 @@
             />
           </div>
 
-          {#if existingFiles.length > 0 || files.length > 0}
+          <div class="form-control w-full">
+            <label class="label" for="ext-file-url">
+              <span class="label-text">External file</span>
+            </label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input
+                id="ext-file-url"
+                type="url"
+                bind:value={extUrl}
+                placeholder="https://cdn.example.com/files/binary.zip"
+                class="input input-bordered flex-grow focus:outline-none focus:ring-0 focus:ring-offset-0"
+                aria-label="External file URL"
+              />
+              <input
+                type="text"
+                bind:value={extHash}
+                placeholder="sha256:..."
+                class="input input-bordered sm:w-44 focus:outline-none focus:ring-0 focus:ring-offset-0"
+                aria-label="External file hash"
+              />
+              <input
+                type="number"
+                min="0"
+                bind:value={extSize}
+                placeholder="size bytes"
+                class="input input-bordered sm:w-36 focus:outline-none focus:ring-0 focus:ring-offset-0"
+                aria-label="External file size in bytes"
+              />
+              <button
+                type="button"
+                onclick={addExternalFile}
+                disabled={!extUrl.trim()}
+                class="btn btn-outline"
+              >
+                <Icon
+                  icon="material-symbols:add-link-rounded"
+                  class="text-lg"
+                />
+                Add
+              </button>
+            </div>
+            {#if extFilenamePreview}
+              <span class="label-text-alt mt-1 text-base-content/60">
+                Will be referenced as <span class="font-mono"
+                  >{extFilenamePreview}</span
+                >
+              </span>
+            {/if}
+          </div>
+
+          {#if existingFiles.length > 0 || files.length > 0 || externalFiles.length > 0}
             <div class="space-y-2">
               <h3 class="text-sm font-medium text-base-content/70">
                 Attached Files
@@ -745,9 +893,20 @@
                 aria-label="Uploaded files"
               >
                 {#each existingFiles as file, index}
+                  {@const isExternal = file.provider === "external"}
                   <div class="flex items-center gap-2" role="listitem">
-                    <span class="badge badge-secondary badge-lg gap-2 pop">
-                      <Icon icon="material-symbols:folder" class="text-sm" />
+                    <span
+                      class="badge badge-secondary badge-lg gap-2 pop"
+                      title={isExternal
+                        ? "Existing external file (referenced, not hosted here)"
+                        : "Existing file"}
+                    >
+                      <Icon
+                        icon={isExternal
+                          ? "material-symbols:link-rounded"
+                          : "material-symbols:folder"}
+                        class="text-sm"
+                      />
                       {file.filename}
                       <button
                         type="button"
@@ -770,6 +929,28 @@
                         onclick={() => removeFile(index)}
                         class="opacity-60 hover:opacity-100"
                         aria-label={`Remove ${file.name}`}
+                      >
+                        <Icon icon="material-symbols:close" class="text-xs" />
+                      </button>
+                    </span>
+                  </div>
+                {/each}
+                {#each externalFiles as file, index}
+                  <div class="flex items-center gap-2" role="listitem">
+                    <span
+                      class="badge badge-primary badge-lg gap-2 pop"
+                      title={`New external reference\n${file.url} (${file.hash})`}
+                    >
+                      <Icon
+                        icon="material-symbols:link-rounded"
+                        class="text-sm"
+                      />
+                      {file.filename}
+                      <button
+                        type="button"
+                        onclick={() => removeExternalFile(index)}
+                        class="opacity-60 hover:opacity-100"
+                        aria-label={`Remove ${file.filename}`}
                       >
                         <Icon icon="material-symbols:close" class="text-xs" />
                       </button>

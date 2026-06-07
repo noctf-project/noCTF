@@ -54,6 +54,21 @@ class SolveConfig(BaseModel):
     )
 
 
+class ExternalFileConfig(BaseModel):
+    """Reference to an externally hosted file.
+
+    The file is not uploaded; only its location and integrity metadata are
+    stored. All three fields are required because the CLI does not compute the
+    hash or size of a remote file.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    url: str = Field(..., description="URL of the file")
+    hash: str = Field(..., description="File hash (e.g. sha256:<hex>)")
+    size: int = Field(..., description="File size in bytes")
+
+
 class ChallengeConfig(BaseModel):
     """Challenge configuration from noctf.yaml."""
 
@@ -67,7 +82,10 @@ class ChallengeConfig(BaseModel):
     difficulty: Optional[str] = Field(..., description="Challenge difficulty")
     tags: dict[str, str] = Field(default_factory=dict, description="Additional tags")
     flags: list[Union[str, Flag]] = Field(..., description="Challenge flags")
-    files: list[str] = Field(default_factory=list, description="Challenge files")
+    files: list[Union[str, ExternalFileConfig]] = Field(
+        default_factory=list,
+        description="Challenge files: local path strings or external references",
+    )
     hidden: bool = Field(default=False, description="Whether challenge is hidden")
     visible_at: Optional[datetime] = Field(
         default=None,
@@ -111,8 +129,12 @@ class ChallengeConfig(BaseModel):
         return normalized
 
     def get_file_paths(self, base_path: Path) -> list[Path]:
-        """Get absolute paths for all challenge files."""
-        return [base_path / file_path for file_path in self.files]
+        """Get absolute paths for all local challenge files (excludes external)."""
+        return [
+            base_path / file_path
+            for file_path in self.files
+            if isinstance(file_path, str)
+        ]
 
 
 class ChallengeFile(BaseModel):

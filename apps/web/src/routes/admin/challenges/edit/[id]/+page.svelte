@@ -81,7 +81,7 @@
     customTags: getCustomTagsFromTags(tags),
     score,
     flags: flag as Flag[] ?? [],
-    files: challData.r.files.map(({ id, filename }) => ({ id, filename, is_attachment: true })),
+    files: challData.r.files.map(({ id, filename, provider }) => ({ id, filename, provider, is_attachment: true })),
     version,
   }}
   <ChallengeCreateEdit mode="edit" challData={editChallData} />

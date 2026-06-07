@@ -16,7 +16,7 @@
 }
 
 .markdown-body a {
-    @apply text-primary;
+  @apply text-primary;
 }
 
 .carta-font-code {
