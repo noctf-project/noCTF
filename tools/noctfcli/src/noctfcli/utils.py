@@ -2,6 +2,7 @@ import hashlib
 import os
 from pathlib import Path
 from typing import Any, Dict, List
+from urllib.parse import unquote, urlparse
 
 import yaml
 from rich.console import Console
@@ -50,6 +51,20 @@ def calculate_file_hash(file_path: Path) -> str:
         for chunk in iter(lambda: f.read(4096), b""):
             sha256_hash.update(chunk)
     return sha256_hash.hexdigest()
+
+
+def filename_from_url(url: str) -> str:
+    """Derive a display filename from an external file URL.
+
+    Uses the last non-empty path segment (URL-decoded), falling back to the
+    host and then "file".
+    """
+
+    parsed = urlparse(url)
+    segments = [s for s in parsed.path.split("/") if s]
+    if segments:
+        return unquote(segments[-1])
+    return parsed.hostname or "file"
 
 
 def print_results_summary(console: Console, results: List[UploadUpdateResult]):

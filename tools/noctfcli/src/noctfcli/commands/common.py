@@ -14,6 +14,7 @@ from noctfcli.exceptions import NoCTFError
 from noctfcli.models import (
     ChallengeConfig,
     ChallengeFileAttachment,
+    ExternalFileConfig,
     UploadUpdateResult,
     UploadUpdateResultEnum,
 )
@@ -117,7 +118,10 @@ class ChallengeProcessor(ABC):
                 f"Would upload {len(challenge_config.files)} files:",
             )
             for file_path in challenge_config.files:
-                self.console.print(f"  • {yaml_path.parent / file_path}")
+                if isinstance(file_path, ExternalFileConfig):
+                    self.console.print(f"  • {file_path.url} (external)")
+                else:
+                    self.console.print(f"  • {yaml_path.parent / file_path}")
 
     async def _upload_files(
         self,

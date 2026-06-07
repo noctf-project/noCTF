@@ -7,10 +7,15 @@ from noctfcli.exceptions import NotFoundError
 from noctfcli.models import (
     ChallengeConfig,
     ChallengeFileAttachment,
+    ExternalFileConfig,
     UploadUpdateResult,
     UploadUpdateResultEnum,
 )
-from noctfcli.utils import calculate_file_hash, print_results_summary
+from noctfcli.utils import (
+    calculate_file_hash,
+    filename_from_url,
+    print_results_summary,
+)
 
 from .common import CLIContextObj, ChallengeProcessor, console, handle_errors
 
@@ -77,13 +82,17 @@ class UpdateProcessor(ChallengeProcessor):
         to_upload = []
 
         for f in challenge_config.files:
-            h = calculate_file_hash(yaml_path.parent / f)
-            fn = Path(f).name
+            if isinstance(f, ExternalFileConfig):
+                fn = filename_from_url(f.url)
+                expected_hash = f.hash
+            else:
+                fn = Path(f).name
+                expected_hash = f"sha256:{calculate_file_hash(yaml_path.parent / f)}"
             existing_f = next(
                 (
                     ef
                     for ef in existing_files
-                    if ef.filename == fn and ef.hash == f"sha256:{h}"
+                    if ef.filename == fn and ef.hash == expected_hash
                 ),
                 None,
             )
@@ -110,17 +119,17 @@ class UpdateProcessor(ChallengeProcessor):
             self.console.print(
                 f"\tUploading {len(to_upload)} new/different files...",
             )
-            uploaded_files = await self.client.upload_challenge_files(
-                challenge_config,
-                yaml_path.parent,
-            )
-            self.console.print(
-                f"\t[green]Uploaded {len(uploaded_files)} files[/green]",
-            )
-            for f in uploaded_files:
-                files.append(
-                    ChallengeFileAttachment(id=f.id, is_attachment=True),
+            for entry in to_upload:
+                uploaded = await self.client.upload_file_entry(
+                    entry,
+                    yaml_path.parent,
                 )
+                files.append(
+                    ChallengeFileAttachment(id=uploaded.id, is_attachment=True),
+                )
+            self.console.print(
+                f"\t[green]Uploaded {len(to_upload)} files[/green]",
+            )
         else:
             self.console.print("\tNo new files to upload")
 

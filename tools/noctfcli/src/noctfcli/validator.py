@@ -7,7 +7,7 @@ import yaml
 from pydantic import ValidationError as PydanticValidationError
 
 from .exceptions import ValidationError
-from .models import ChallengeConfig
+from .models import ChallengeConfig, ExternalFileConfig
 
 
 class ChallengeValidator:
@@ -129,10 +129,12 @@ class ChallengeValidator:
 
         missing_files = []
 
-        for file_path_str in config.files:
-            file_path = base_path / file_path_str
+        for entry in config.files:
+            if isinstance(entry, ExternalFileConfig):
+                continue
+            file_path = base_path / entry
             if not file_path.exists():
-                missing_files.append(file_path_str)
+                missing_files.append(entry)
 
         return missing_files
 
