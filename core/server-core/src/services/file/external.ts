@@ -1,10 +1,7 @@
 import { ExternalFile, FileMetadata } from "@noctf/api/datatypes";
 import { Readable } from "stream";
 import type { FileProviderInstance, ProviderFileMetadata } from "./types.ts";
-import {
-  BadRequestError,
-  NotImplementedError,
-} from "../../errors.ts";
+import { BadRequestError, NotImplementedError } from "../../errors.ts";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
 // The practical limit of a URL is around 2048 bytes

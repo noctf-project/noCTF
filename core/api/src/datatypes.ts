@@ -336,7 +336,6 @@ export const Submission = Type.Object({
   team_id: Type.Number(),
   challenge_id: Type.Number(),
   data: Type.String({ maxLength: 512 }),
-  comments: Type.String({ maxLength: 512 }),
   source: Type.String({ maxLength: 64 }),
   hidden: Type.Boolean(),
   value: Type.Union([Type.Null(), Type.Number()]),

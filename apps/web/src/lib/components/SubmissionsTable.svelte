@@ -8,7 +8,6 @@
     team_id: number;
     challenge_id: number;
     data: string;
-    comments: string;
     source: string;
     hidden: boolean;
     value: number | null;

@@ -74,7 +74,6 @@ export class SubmissionDAO {
   async bulkUpdate(
     ids: number[],
     params: {
-      comments?: string;
       hidden?: boolean;
       value?: number | null;
       status?: SubmissionStatus;
@@ -94,9 +93,6 @@ export class SubmissionDAO {
         "status",
         GetSeq(eb).as("seq"),
       ]);
-    if (typeof params.comments === "string") {
-      query = query.set("comments", params.comments);
-    }
     if (typeof params.hidden === "boolean") {
       query = query.set("hidden", params.hidden);
     }
@@ -193,7 +189,6 @@ export class SubmissionDAO {
         "team_id",
         "challenge_id",
         "data",
-        "comments",
         "source",
         "hidden",
         "value",
