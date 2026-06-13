@@ -4,19 +4,18 @@ import { SubmissionDAO } from "../dao/submission.ts";
 import { AuditParams } from "../types/audit_log.ts";
 import { SubmissionUpdateEvent } from "@noctf/api/events";
 import { SubmissionStatus } from "@noctf/api/enums";
+import { SubmissionLogDAO } from "../dao/submission_log.ts";
+import { FilterUndefined } from "../util/filter.ts";
 
-type Props = Pick<
-  ServiceCradle,
-  "auditLogService" | "databaseClient" | "eventBusService"
->;
+type Props = Pick<ServiceCradle, "databaseClient" | "eventBusService">;
 export class SubmissionService {
   private readonly dao;
 
-  private readonly auditLogService;
+  private readonly databaseClient;
   private readonly eventBusService;
 
-  constructor({ databaseClient, auditLogService, eventBusService }: Props) {
-    this.auditLogService = auditLogService;
+  constructor({ databaseClient, eventBusService }: Props) {
+    this.databaseClient = databaseClient;
     this.eventBusService = eventBusService;
     this.dao = new SubmissionDAO(databaseClient.get());
   }
@@ -48,16 +47,24 @@ export class SubmissionService {
     return this.dao.getCount(params);
   }
 
-  async update(r: AdminUpdateSubmissionsRequest, audit?: AuditParams) {
-    const { ids, ...rest } = r;
-    const updates = await this.dao.bulkUpdate(ids, rest);
-    if (updates.length > 0)
-      await this.auditLogService.log({
-        operation: "submission.update",
-        entities: updates.map(({ id }) => `submission:${id}`),
-        actor: audit?.actor,
-        data: audit?.message,
-      });
+  async update(r: AdminUpdateSubmissionsRequest, actor: string) {
+    const { ids, comments, ...rest } = r;
+    const updates = await this.databaseClient.transaction(async (tx) => {
+      const submissionDAO = new SubmissionDAO(tx);
+      const updates = await submissionDAO.bulkUpdate(ids, rest);
+      if (updates.length > 0) {
+        const logDAO = new SubmissionLogDAO(tx);
+        await logDAO.create(
+          updates.map((u) => ({
+            comments,
+            submission_id: u.id,
+            actor,
+            changes: FilterUndefined(rest),
+          })),
+        );
+      }
+      return updates;
+    });
 
     // The DB returns the same seq if we update multiple records for the
     // same challenge to correct at the same time.
@@ -90,7 +97,7 @@ export class SubmissionService {
         hidden,
         seq: status === "correct" ? seq + vSeq : 0,
         is_update: true,
-        comments: rest.comments || "",
+        comments: comments || "",
       });
     }
     return updates.map(({ id }) => id);

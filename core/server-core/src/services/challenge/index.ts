@@ -28,6 +28,7 @@ import { CoreChallengePlugin } from "./core_plugin.ts";
 import { LocalCache } from "../../util/local_cache.ts";
 import type { SerializableMap } from "@noctf/api/types";
 import { SubmissionStatus } from "@noctf/api/enums";
+import { SubmissionLogDAO } from "../../dao/submission_log.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -44,6 +45,7 @@ const SLUG_REGEX = new RegExp(Slug.format!);
 export class ChallengeService {
   private readonly logger;
   private readonly auditLogService;
+  private readonly databaseClient;
   private readonly eventBusService;
   private readonly challengeDAO;
   private readonly submissionDAO;
@@ -75,6 +77,7 @@ export class ChallengeService {
   }: Props) {
     this.logger = logger;
     this.auditLogService = auditLogService;
+    this.databaseClient = databaseClient;
     this.eventBusService = eventBusService;
 
     this.challengeDAO = new ChallengeDAO(databaseClient.get());
@@ -232,17 +235,31 @@ export class ChallengeService {
       );
       const solved = state.status === "correct";
       const { id, created_at, updated_at, seq } =
-        await this.submissionDAO.create({
-          team_id: teamId,
-          user_id: userId,
-          challenge_id: challenge.id,
-          source: challenge.private_metadata.solve.source,
-          data,
-          status: state.status,
-          comments: state.comment,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          metadata: metadata as any,
+        await this.databaseClient.transaction(async (tx) => {
+          const submissionDAO = new SubmissionDAO(tx);
+          const logDAO = new SubmissionLogDAO(tx);
+          const result = await submissionDAO.create({
+            team_id: teamId,
+            user_id: userId,
+            challenge_id: challenge.id,
+            source: challenge.private_metadata.solve.source,
+            data,
+            status: state.status,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            metadata: metadata as any,
+          });
+
+          await logDAO.create([
+            {
+              actor_id: userId,
+              comments: state.comment,
+              submission_id: result.id,
+              changes: { status: state.status, hidden: false },
+            },
+          ]);
+          return result;
         });
+
       await this.eventBusService.publish(SubmissionUpdateEvent, {
         id,
         challenge_id: challenge.id,

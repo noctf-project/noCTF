@@ -55,13 +55,10 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => ({
-      data: await submissionService.update(request.body, {
-        actor: {
-          type: ActorType.USER,
-          id: request.user?.id,
-        },
-        message: "Updated by admin",
-      }),
+      data: await submissionService.update(
+        request.body,
+        `user:${request.user?.id}`,
+      ),
     }),
   );
 }
