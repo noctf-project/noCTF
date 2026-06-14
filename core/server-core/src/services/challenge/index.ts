@@ -251,7 +251,7 @@ export class ChallengeService {
 
           await logDAO.create([
             {
-              actor_id: userId,
+              actor: `user:${userId}`,
               comments: state.comment,
               submission_id: result.id,
               changes: { status: state.status, hidden: false },

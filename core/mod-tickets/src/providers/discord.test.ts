@@ -123,7 +123,8 @@ describe("Discord Tickets Provider", async () => {
         provider,
         user_id,
         created_at: date,
-        secret_data: null,
+        updated_at: date,
+        secret_data: undefined,
       }),
     );
     await provider.open(mockTicket({ team_id: 1 }));
@@ -230,7 +231,8 @@ describe("Discord Tickets Provider", async () => {
           provider,
           user_id,
           created_at: date,
-          secret_data: null,
+          updated_at: date,
+          secret_data: undefined,
         }),
     );
 
@@ -410,7 +412,8 @@ describe("Discord Tickets Provider", async () => {
           provider,
           user_id,
           created_at: date,
-          secret_data: null,
+          updated_at: date,
+          secret_data: undefined,
         }),
     );
     const apiThreadMembers: APIThreadMember[] = [
@@ -531,7 +534,8 @@ describe("Discord Tickets Provider", async () => {
           provider: name,
           user_id: Math.floor(parseInt(id) / 10),
           created_at: date,
-          secret_data: null,
+          updated_at: date,
+          secret_data: undefined,
         }),
     );
 
