@@ -43,7 +43,8 @@ export default async function (fastify: FastifyInstance) {
     identityService,
     tokenService,
   );
-  const jwksStore = new JWKSStore(keyService);
+  // Tokens can be valid for half of this
+  const jwksStore = new JWKSStore(keyService, 7 * 86_400_000);
 
   identityService.register(provider);
   fastify.register(fastifyFormbody);
@@ -53,7 +54,7 @@ export default async function (fastify: FastifyInstance) {
   const signIdToken = async (clientId: string, userId: number) => {
     const membership = await teamService.getMembershipForUser(userId);
     const user = await userService.get(userId);
-    const key = await jwksStore.getKey();
+    const key = await jwksStore.getSigningKey();
 
     return await new SignJWT({
       "noctf.dev/team_id": membership?.team_id.toString(),
@@ -85,8 +86,9 @@ export default async function (fastify: FastifyInstance) {
     };
   });
 
-  route(fastify, GetOAuthJWKS, {}, async () => {
-    return { keys: [(await jwksStore.getKey()).pub] };
+  route(fastify, GetOAuthJWKS, {}, async (_request, reply) => {
+    reply.header('cache-control', 'max-age=3600, public');
+    return { keys: (await jwksStore.getValidKeys()).map(({ pub }) => pub) };
   });
 
   route(fastify, InitOAuth, {}, async (request) => {
