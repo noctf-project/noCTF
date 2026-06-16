@@ -50,6 +50,7 @@
     customTags: { [key: string]: string };
     score: ScoringStrat;
     flags: Flag[];
+    hints: string[];
     files: ExistingFile[];
     version: number;
   }
@@ -99,6 +100,7 @@
   let flags = $state<Flag[]>(
     challData?.flags ?? [{ data: "", strategy: "case_sensitive" }],
   );
+  let hints = $state<string[]>(challData?.hints ?? []);
 
   let isCreating = $state<boolean>(false);
   let creationStep = $state<string>("");
@@ -219,6 +221,13 @@
     flags = flags.filter((_, i) => i !== index);
   }
 
+  function addHint(): void {
+    hints = [...hints, ""];
+  }
+  function removeHint(index: number): void {
+    hints = hints.filter((_, i) => i !== index);
+  }
+
   function createTags() {
     let tags: { [k in string]: string } = {};
     if (difficulty) {
@@ -268,6 +277,7 @@
         params: scoringParams,
       },
       files: [],
+      hints: hints,
     };
     const payload = {
       slug,
@@ -786,6 +796,46 @@
           >
             <Icon icon="material-symbols:add" class="text-lg" />
             Add Flag
+          </button>
+        </div>
+
+        <div class="space-y-6">
+          <h2 class="text-lg font-semibold">Hints</h2>
+          <div role="list" aria-label="Challenge hints" class="space-y-4">
+            {#each hints as hint, index}
+              <div
+                class="flex flex-col sm:flex-row gap-4 p-4 bg-base-200 rounded-lg"
+                role="listitem"
+              >
+                <div class="form-control flex-1">
+                  <label for={`hint-value-${index}`} class="label">
+                    <span class="label-text">Hint {index + 1}</span>
+                  </label>
+                  <div class="rounded-lg bg-base-100 border border-base-300">
+                    <MarkdownEditor {carta} bind:value={hints[index]} mode="tabs" />
+                  </div>
+                </div>
+                <div class="flex justify-end items-end pb-2">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-error pop hover:pop"
+                    onclick={() => removeHint(index)}
+                    aria-label={`Remove hint ${index + 1}`}
+                  >
+                    <Icon icon="material-symbols:delete" class="text-lg" />
+                  </button>
+                </div>
+              </div>
+            {/each}
+          </div>
+          <button
+            type="button"
+            class="btn btn-outline btn-sm pop hover:pop"
+            onclick={addHint}
+            aria-label="Add new hint"
+          >
+            <Icon icon="material-symbols:add" class="text-lg" />
+            Add Hint
           </button>
         </div>
 

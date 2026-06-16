@@ -149,6 +149,7 @@
           const challDetails: ChallDetails = {
             description: r.data.data.description,
             files: r.data.data.metadata.files,
+            hints: r.data.data.metadata.hints,
           };
           challDetailsMap[challData.id] = {
             details: challDetails,

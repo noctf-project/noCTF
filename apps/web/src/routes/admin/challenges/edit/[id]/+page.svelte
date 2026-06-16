@@ -71,6 +71,7 @@
   {@const {
     solve: { flag },
     score,
+    hints,
   } = private_metadata}
   {@const editChallData: ChallData = {
     id, title, description,
@@ -82,6 +83,7 @@
     score,
     flags: flag as Flag[] ?? [],
     files: challData.r.files.map(({ id, filename, provider }) => ({ id, filename, provider, is_attachment: true })),
+    hints: hints ?? [],
     version,
   }}
   <ChallengeCreateEdit mode="edit" challData={editChallData} />

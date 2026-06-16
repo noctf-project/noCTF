@@ -4,6 +4,7 @@
   export interface ChallDetails {
     description: string;
     files: { filename: string; url: string; size: number; hash: string }[];
+    hints: string[];
   }
   export interface ChallengeInfoProps {
     challData?: ChallengeCardData;
@@ -177,6 +178,19 @@
       {:else}
         <div class="max-h-[48vh] overflow-auto w-full">
           <Markdown {carta} value={challDetails!.description} />
+
+          {#if challDetails!.hints.length > 0}
+            <div class="flex flex-col gap-2 mt-4 mb-2">
+              {#each challDetails!.hints as hint, i}
+                <details class="collapse collapse-arrow bg-base-200 border border-base-content/10">
+                  <summary class="collapse-title !min-h-0 py-3 after:!top-[1.6rem] [word-spacing:0.1rem]">Hint {i + 1}</summary>
+                  <div class="collapse-content">
+                    <Markdown {carta} value={hint} />
+                  </div>
+                </details>
+              {/each}
+            </div>
+          {/if}
         </div>
 
         {#if challDetails!.files.length > 0}
