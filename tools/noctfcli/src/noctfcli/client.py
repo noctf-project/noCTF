@@ -403,6 +403,7 @@ class NoCTFClient:
                 "files": [
                     {"id": f.id, "is_attachment": f.is_attachment} for f in files
                 ],
+                "hints": config.hints,
             },
         }
 
