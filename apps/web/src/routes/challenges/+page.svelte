@@ -111,7 +111,7 @@
   async function updateQueryParam(key: string, value: string) {
     const url = new URL(page.url);
     url.searchParams.set(key, value);
-    goto(url.toString(), { replaceState: true });
+    goto(url.toString(), { replaceState: true, noScroll: true });
   }
 
   $effect(() => {
@@ -184,7 +184,7 @@
     modalVisible = false;
     const url = new URL(page.url);
     url.searchParams.delete("c");
-    goto(url.toString(), { replaceState: true });
+    goto(url.toString(), { replaceState: true, noScroll: true });
   }
 </script>
 
