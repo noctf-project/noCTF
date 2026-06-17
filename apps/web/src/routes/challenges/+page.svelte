@@ -184,7 +184,7 @@
     modalVisible = false;
     const url = new URL(page.url);
     url.searchParams.delete("c");
-    goto(url.toString(), { replaceState: true });
+    goto(url.toString(), { replaceState: true, noScroll: true });
   }
 </script>
 
