@@ -8,7 +8,7 @@
     "version": {
       "type": "string",
       "description": "Schema version",
-      "default": "1.0"
+      "default": "1.0.1"
     },
     "slug": {
       "type": "string",
@@ -160,6 +160,24 @@
     "connection_info": {
       "type": "string",
       "description": "Connection information string"
+    },
+    "hints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type":"string",
+            "maxLength": 256,
+            "description": "Hint title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Hint text (markdown)"
+          }
+        }
+      },
+      "description": "Challenge hints"
     }
   },
   "additionalProperties": true

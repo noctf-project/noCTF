@@ -86,6 +86,7 @@ class ChallengeConfig(BaseModel):
         default_factory=list,
         description="Challenge files: local path strings or external references",
     )
+    hints: list[ChallengeHint] = Field(default_factory=list, description="Challenge hints")
     hidden: bool = Field(default=False, description="Whether challenge is hidden")
     visible_at: Optional[datetime] = Field(
         default=None,
@@ -157,6 +158,12 @@ class ChallengeFileAttachment(BaseModel):
     is_attachment: bool = Field(..., description="Whether file is an attachment")
 
 
+class ChallengeHint(BaseModel):
+    """Challenge hint."""
+    title: str = Field(..., description="Hint title")
+    description: str = Field(..., description="Hint text (markdown)")
+
+
 class Challenge(BaseModel):
     """Full challenge data from API."""
 
@@ -187,6 +194,11 @@ class Challenge(BaseModel):
         solve_data = self.private_metadata.get("solve", {})
         flags_data = solve_data.get("flag", [])
         return [Flag(**flag_data) for flag_data in flags_data]
+    
+    @property
+    def hints(self) -> list[ChallengeHint]:
+        """Get challenge hints."""
+        return self.private_metadata.get("hints", [])
 
 
 class ChallengeSummary(BaseModel):
