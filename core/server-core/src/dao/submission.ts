@@ -22,7 +22,7 @@ export type RawSolve = Pick<
 const GetSeq = (eb: ExpressionBuilder<DB, "submission">) =>
   eb
     .case()
-    .when("status", "=", "correct")
+    .when("submission.status", "=", "correct")
     .then(
       eb
         .selectFrom("submission as s")
@@ -71,37 +71,64 @@ export class SubmissionDAO {
       .executeTakeFirst();
   }
 
-  async bulkUpdate(
-    ids: number[],
-    params: {
+  async updateSubmissions(
+    values: {
+      id: number;
       hidden?: boolean;
       value?: number | null;
       status?: SubmissionStatus;
-    },
-  ) {
-    let query = this.db
+    }[],
+  ): Promise<
+    (Pick<
+      Submission,
+      | "id"
+      | "user_id"
+      | "team_id"
+      | "challenge_id"
+      | "hidden"
+      | "created_at"
+      | "updated_at"
+      | "status"
+    > & { seq: number })[]
+  > {
+    const vs = sql.join(
+      values.map(
+        (v) => sql`(
+        ${sql.val(v.id)}::integer,
+        ${sql.val(v.hidden)}::boolean,
+        ${sql.val(v.status)}::submission_status,
+        ${sql.val(v.value)}::integer,
+        ${sql.val(!!v.value || v.value === 0 || v.value === null)}::boolean
+        )`,
+      ),
+    );
+    const query = this.db
       .updateTable("submission")
-      .where("id", "in", ids)
+      .from(
+        sql`(VALUES ${vs})`.as<"v">(
+          sql`v(id, hidden, status, value, update_value)`,
+        ),
+      )
+      .set((eb) => ({
+        hidden: sql`COALESCE(v.hidden, ${eb.ref("submission.hidden")})`,
+        status: sql`COALESCE(v.status, ${eb.ref("submission.status")})`,
+        value: sql`CASE 
+          WHEN v.update_value = TRUE THEN v.value
+          ELSE ${eb.ref("submission.value")}
+        END`,
+      }))
+      .whereRef("submission.id", "=", sql`v.id`)
       .returning((eb) => [
-        "id",
+        "submission.id as id",
+        "submission.hidden as hidden",
+        "submission.status as status",
         "user_id",
         "team_id",
         "challenge_id",
-        "hidden",
         "created_at",
         "updated_at",
-        "status",
         GetSeq(eb).as("seq"),
       ]);
-    if (typeof params.hidden === "boolean") {
-      query = query.set("hidden", params.hidden);
-    }
-    if (typeof params.value === "number" || params.value === null) {
-      query = query.set("value", params.value);
-    }
-    if (params.status) {
-      query = query.set("status", params.status);
-    }
     try {
       return (await query.execute()).map((x) => ({ ...x, seq: Number(x.seq) }));
     } catch (e) {
