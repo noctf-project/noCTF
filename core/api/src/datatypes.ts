@@ -123,12 +123,10 @@ export enum ChallengeSolveInputType {
 
 export const ChallengeHint = Type.Object({
   title: Type.String({ maxLength: 256 }),
-  description: Type.String()
+  description: Type.String(),
 });
 
-export type ChallengeHint = Static<
-  typeof ChallengeHint
->;
+export type ChallengeHint = Static<typeof ChallengeHint>;
 
 export const ChallengePrivateMetadataBase = Type.Object(
   {
