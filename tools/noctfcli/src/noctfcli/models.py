@@ -86,7 +86,7 @@ class ChallengeConfig(BaseModel):
         default_factory=list,
         description="Challenge files: local path strings or external references",
     )
-    hints: list[str] = Field(default_factory=list, description="Challenge hints")
+    hints: list[ChallengeHint] = Field(default_factory=list, description="Challenge hints")
     hidden: bool = Field(default=False, description="Whether challenge is hidden")
     visible_at: Optional[datetime] = Field(
         default=None,
