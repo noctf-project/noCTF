@@ -138,6 +138,7 @@ export class CoreChallengePlugin implements ChallengePlugin {
           })
           .filter((v): v is Exclude<typeof v, null> => !!v),
       ),
+      hints: m.hints || [],
     };
   };
 

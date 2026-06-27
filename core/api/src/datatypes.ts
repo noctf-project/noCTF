@@ -159,6 +159,7 @@ export const ChallengePrivateMetadataBase = Type.Object(
         { additionalProperties: false },
       ),
     ),
+    hints: Type.Optional(Type.Array(Type.String())),
   },
   { additionalProperties: true },
 );
@@ -180,6 +181,7 @@ export const ChallengePublicMetadataBase = Type.Object(
         is_attachment: Type.Boolean(),
       }),
     ),
+    hints: Type.Array(Type.String()),
   },
   { additionalProperties: true },
 );
