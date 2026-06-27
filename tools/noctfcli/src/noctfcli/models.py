@@ -158,6 +158,12 @@ class ChallengeFileAttachment(BaseModel):
     is_attachment: bool = Field(..., description="Whether file is an attachment")
 
 
+class ChallengeHint(BaseModel):
+    """Challenge hint."""
+    title: str = Field(..., description="Hint title")
+    description: str = Field(..., description="Hint text (markdown)")
+
+
 class Challenge(BaseModel):
     """Full challenge data from API."""
 
@@ -190,7 +196,7 @@ class Challenge(BaseModel):
         return [Flag(**flag_data) for flag_data in flags_data]
     
     @property
-    def hints(self) -> list[str]:
+    def hints(self) -> list[ChallengeHint]:
         """Get challenge hints."""
         return self.private_metadata.get("hints", [])
 
