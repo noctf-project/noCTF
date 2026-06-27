@@ -120,6 +120,16 @@ export enum ChallengeSolveInputType {
   TextArea = "textarea",
   None = "none",
 }
+
+export const ChallengeHint = Type.Object({
+  title: Type.String({ maxLength: 256 }),
+  description: Type.String()
+});
+
+export type ChallengeHint = Static<
+  typeof ChallengeHint
+>;
+
 export const ChallengePrivateMetadataBase = Type.Object(
   {
     solve: Type.Object(
@@ -159,7 +169,7 @@ export const ChallengePrivateMetadataBase = Type.Object(
         { additionalProperties: false },
       ),
     ),
-    hints: Type.Optional(Type.Array(Type.String())),
+    hints: Type.Optional(Type.Array(ChallengeHint)),
   },
   { additionalProperties: true },
 );
@@ -181,7 +191,7 @@ export const ChallengePublicMetadataBase = Type.Object(
         is_attachment: Type.Boolean(),
       }),
     ),
-    hints: Type.Array(Type.String()),
+    hints: Type.Array(ChallengeHint),
   },
   { additionalProperties: true },
 );
