@@ -69,6 +69,12 @@ class ExternalFileConfig(BaseModel):
     size: int = Field(..., description="File size in bytes")
 
 
+class ChallengeHint(BaseModel):
+    """Challenge hint."""
+    title: str = Field(..., description="Hint title")
+    description: str = Field(..., description="Hint text (markdown)")
+
+
 class ChallengeConfig(BaseModel):
     """Challenge configuration from noctf.yaml."""
 
@@ -156,12 +162,6 @@ class ChallengeFileAttachment(BaseModel):
 
     id: int = Field(..., description="File ID")
     is_attachment: bool = Field(..., description="Whether file is an attachment")
-
-
-class ChallengeHint(BaseModel):
-    """Challenge hint."""
-    title: str = Field(..., description="Hint title")
-    description: str = Field(..., description="Hint text (markdown)")
 
 
 class Challenge(BaseModel):
