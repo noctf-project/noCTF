@@ -42,7 +42,8 @@ export type MinimalScoreboardEntry = Pick<
   ScoreboardEntry,
   "team_id" | "score" | "updated_at" | "last_solve" | "hidden"
 >;
-function ComputeScoresForChallenge(
+
+function ComputeScoresForDynamicChallenge(
   { metadata, expr }: ChallengeMetadataWithExpr,
   teams: Map<number, MinimalTeamInfo>,
   solves: RawSolve[],
@@ -89,20 +90,91 @@ function ComputeScoresForChallenge(
     },
   );
   const rh: Solve[] = hidden.map(
-    ({ team_id, user_id, created_at, updated_at }) => {
+    ({ team_id, user_id, created_at, updated_at, value }) => {
       last_event = MaxDate(last_event, updated_at);
       return {
         team_id,
         user_id,
         challenge_id: metadata.id,
         hidden: true,
-        value: base,
+        value: value !== null ? value : base,
         created_at,
       };
     },
   );
   return {
     value: base,
+    solves: rv.concat(rh),
+    last_event: MaxDate(last_event, metadata.updated_at),
+  };
+}
+
+function ComputeScoresForWeightedChallenge(
+  { metadata, expr }: ChallengeMetadataWithExpr,
+  teams: Map<number, MinimalTeamInfo>,
+  solves: RawSolve[],
+) {
+  const {
+    score: { params, bonus },
+  } = metadata.private_metadata as ChallengePrivateMetadataBase;
+
+  const [valid, hidden] = partition(
+    solves,
+    ({ team_id, hidden }) =>
+      !(teams.get(team_id)?.flags.includes("hidden") || hidden),
+  );
+
+  let last_event = new Date(0);
+  const rv: Solve[] = valid.map(
+    ({ team_id, user_id, created_at, updated_at, value, weight }) => {
+      last_event = MaxDate(last_event, updated_at);
+      return {
+        team_id,
+        user_id,
+        challenge_id: metadata.id,
+        bonus: value === null ? 1 : undefined, // this is temporarily set to if team is eligible for bonus
+        hidden: false,
+        value:
+          value !== null
+            ? value
+            : EvaluateScoringExpression(expr, params, weight),
+        created_at,
+      };
+    },
+  );
+  rv.sort((a, b) => b.value - a.value);
+
+  // apply the bonus and unset the sentinel
+  let bonusIdx = 0;
+  for (const v of rv) {
+    if (!bonus?.[bonusIdx]) {
+      v.bonus = undefined;
+      continue;
+    }
+    if (v.bonus) {
+      v.bonus = bonus[bonusIdx++];
+      v.value += v.bonus;
+    }
+  }
+
+  const rh: Solve[] = hidden.map(
+    ({ team_id, user_id, created_at, updated_at, value, weight }) => {
+      last_event = MaxDate(last_event, updated_at);
+      return {
+        team_id,
+        user_id,
+        challenge_id: metadata.id,
+        hidden: true,
+        value:
+          value !== null
+            ? value
+            : EvaluateScoringExpression(expr, params, weight),
+        created_at,
+      };
+    },
+  );
+  return {
+    value: 0,
     solves: rv.concat(rh),
     last_event: MaxDate(last_event, metadata.updated_at),
   };
@@ -171,13 +243,34 @@ export function ComputeFullGraph(
   awards: Award[],
   sampleRateMs = 1000,
 ): HistoryDataPoint[] {
-  const stream = challenges.flatMap((x) =>
+  const [weighted, dynamic] = partition(
+    challenges,
+    (c) => c.metadata.private_metadata.score.is_weighted,
+  );
+  const dynamicStream = dynamic.flatMap((x) =>
     ComputeScoreStreamForChallenge(
       x,
       teams,
       solvesByChallenge.get(x.metadata.id) || [],
     ),
   );
+
+  // TODO: this code doesn't currently do event-by-event submission log.
+  const weightedStream = weighted.flatMap((x) =>
+    ComputeScoresForWeightedChallenge(
+      x,
+      teams,
+      solvesByChallenge.get(x.metadata.id) || [],
+    )
+      .solves.filter((x) => !x.hidden)
+      .map((x) => ({
+        team_id: x.team_id,
+        delta: x.value,
+        updated_at: x.created_at, // TODO: this is technically wrong
+      })),
+  );
+
+  const stream = dynamicStream.concat(weightedStream);
   for (const { team_id, value, created_at } of awards) {
     const hidden = teams.get(team_id)?.flags.includes("hidden");
     if (hidden) continue;
@@ -240,11 +333,20 @@ export function ComputeScoreboard(
     ]),
   );
   const computed = challenges.map((x) => {
-    const result = ComputeScoresForChallenge(
-      x,
-      teams,
-      solvesByChallenge.get(x.metadata.id) || [],
-    );
+    let result;
+    if (x.metadata.private_metadata.score.is_weighted) {
+      result = ComputeScoresForWeightedChallenge(
+        x,
+        teams,
+        solvesByChallenge.get(x.metadata.id) || [],
+      );
+    } else {
+      result = ComputeScoresForDynamicChallenge(
+        x,
+        teams,
+        solvesByChallenge.get(x.metadata.id) || [],
+      );
+    }
     return [x.metadata.id, result] as [number, ChallengeSolvesResult];
   });
   const challengeScores: ComputedChallengeScoreData[] = [];
