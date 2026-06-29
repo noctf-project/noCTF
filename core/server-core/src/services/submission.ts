@@ -6,6 +6,7 @@ import { SubmissionUpdateEvent } from "@noctf/api/events";
 import { SubmissionStatus } from "@noctf/api/enums";
 import { SubmissionLogDAO } from "../dao/submission_log.ts";
 import { FilterUndefined } from "../util/filter.ts";
+import { BadRequestError } from "../errors.ts";
 
 type Props = Pick<ServiceCradle, "databaseClient" | "eventBusService">;
 export class SubmissionService {
@@ -48,19 +49,44 @@ export class SubmissionService {
   }
 
   async update(r: AdminUpdateSubmissionsRequest, actor: string) {
-    const { ids, comments, ...rest } = r;
+    const { submissions } = r;
+    const map = submissions.reduce((prev, cur) => {
+      prev.set(cur.id, cur);
+      return prev;
+    }, new Map<number, AdminUpdateSubmissionsRequest["submissions"][0]>());
+    if (map.size !== submissions.length) {
+      throw new BadRequestError("Duplicate items detected in update");
+    }
+
     const updates = await this.databaseClient.transaction(async (tx) => {
       const submissionDAO = new SubmissionDAO(tx);
-      const updates = await submissionDAO.bulkUpdate(ids, rest);
+      const updates = await submissionDAO.updateSubmissions(submissions);
+      if (updates.length !== submissions.length) {
+        const updatedIds = new Set(updates.map((u) => u.id));
+        const missingIds = submissions
+          .map((s) => s.id)
+          .filter((id) => !updatedIds.has(id));
+        throw new BadRequestError(
+          `Not all submissions found, missing: ${missingIds.join(", ")}`,
+        );
+      }
       if (updates.length > 0) {
         const logDAO = new SubmissionLogDAO(tx);
         await logDAO.create(
-          updates.map((u) => ({
-            comments,
-            submission_id: u.id,
-            actor,
-            changes: FilterUndefined(rest),
-          })),
+          updates.map((u) => {
+            const {
+              id: _id,
+              comments,
+              ...c
+            } = map.get(u.id) ||
+            ({} as AdminUpdateSubmissionsRequest["submissions"][0]);
+            return {
+              comments: comments,
+              submission_id: u.id,
+              actor,
+              changes: FilterUndefined(c),
+            };
+          }),
         );
       }
       return updates;
@@ -81,11 +107,8 @@ export class SubmissionService {
       updated_at,
       seq,
     } of updates) {
-      let vSeq = seqMap.get(id);
-      if (!vSeq) {
-        vSeq = 1;
-        seqMap.set(id, vSeq);
-      }
+      const vSeq = (seqMap.get(challenge_id) || 0) + 1;
+      seqMap.set(challenge_id, vSeq);
       await this.eventBusService.publish(SubmissionUpdateEvent, {
         id,
         user_id: user_id || undefined,
@@ -97,7 +120,7 @@ export class SubmissionService {
         hidden,
         seq: status === "correct" ? seq + vSeq : 0,
         is_update: true,
-        comments: comments || "",
+        comments: map.get(id)?.comments || "",
       });
     }
     return updates.map(({ id }) => id);

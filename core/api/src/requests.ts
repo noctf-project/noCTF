@@ -7,6 +7,7 @@ import {
   Division,
   Name,
   PolicyDocument,
+  Submission,
   Team,
   TeamMemberType,
   TeamTag,
@@ -244,11 +245,16 @@ export type AdminUpdateAnnouncementRequest = Static<
 
 export const AdminUpdateSubmissionsRequest = Type.Object(
   {
-    ids: Type.Array(Type.Number(), { minItems: 1 }),
-    status: Type.Optional(SubmissionStatus),
-    hidden: Type.Optional(Type.Boolean()),
-    value: Type.Optional(Type.Union([Type.Null(), Type.Number()])),
-    comments: Type.Optional(Type.String({ maxLength: 512 })),
+    submissions: Type.Array(
+      Type.Composite([
+        Type.Object({
+          id: Type.Integer(),
+          comments: Type.Optional(Type.String({ maxLength: 512 })),
+        }),
+        Type.Partial(Type.Pick(Submission, ["status", "hidden", "value"])),
+      ]),
+      { minItems: 1, maxItems: 1000 },
+    ),
   },
   { additionalProperties: false },
 );
