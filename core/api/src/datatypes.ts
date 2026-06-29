@@ -160,6 +160,7 @@ export const ChallengePrivateMetadataBase = Type.Object(
       {
         params: Type.Record(Type.String(), Type.Number()),
         strategy: Type.String(),
+        is_weighted: Type.Boolean(),
         bonus: Type.Optional(Type.Array(Type.Number())),
       },
       { additionalProperties: false },
@@ -355,6 +356,7 @@ export const Submission = Type.Object({
   source: Type.String({ maxLength: 64 }),
   hidden: Type.Boolean(),
   value: NullableInteger(),
+  weight: Type.Integer(),
   status: SubmissionStatus,
   created_at: TypeDate,
   updated_at: TypeDate,

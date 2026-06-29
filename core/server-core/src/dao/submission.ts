@@ -17,6 +17,7 @@ export type RawSolve = Pick<
   | "created_at"
   | "updated_at"
   | "value"
+  | "weight"
 >;
 
 const GetSeq = (eb: ExpressionBuilder<DB, "submission">) =>
@@ -75,8 +76,9 @@ export class SubmissionDAO {
     values: {
       id: number;
       hidden?: boolean;
-      value?: number | null;
+      weight?: number;
       status?: SubmissionStatus;
+      value?: number | null;
     }[],
   ): Promise<
     (Pick<
@@ -96,6 +98,7 @@ export class SubmissionDAO {
         (v) => sql`(
         ${sql.val(v.id)}::integer,
         ${sql.val(v.hidden)}::boolean,
+        ${sql.val(v.weight)}::integer,
         ${sql.val(v.status)}::submission_status,
         ${sql.val(v.value)}::integer,
         ${sql.val(!!v.value || v.value === 0 || v.value === null)}::boolean
@@ -106,11 +109,12 @@ export class SubmissionDAO {
       .updateTable("submission")
       .from(
         sql`(VALUES ${vs})`.as<"v">(
-          sql`v(id, hidden, status, value, update_value)`,
+          sql`v(id, hidden, weight, status, value, update_value)`,
         ),
       )
       .set((eb) => ({
         hidden: sql`COALESCE(v.hidden, ${eb.ref("submission.hidden")})`,
+        weight: sql`COALESCE(v.weight, ${eb.ref("submission.weight")})`,
         status: sql`COALESCE(v.status, ${eb.ref("submission.status")})`,
         value: sql`CASE 
           WHEN v.update_value = TRUE THEN v.value
@@ -219,6 +223,7 @@ export class SubmissionDAO {
         "source",
         "hidden",
         "value",
+        "weight",
         "status",
         "created_at",
         "updated_at",
@@ -258,6 +263,7 @@ export class SubmissionDAO {
         "s.created_at as created_at",
         "s.updated_at as updated_at",
         "s.value as value",
+        "s.weight as weight",
       ])
       .where("s.status", "=", "correct")
       .orderBy("s.created_at", params?.sort || "asc");

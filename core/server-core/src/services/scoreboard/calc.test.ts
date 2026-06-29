@@ -235,6 +235,7 @@ describe(ComputeScoreboard, () => {
             team_id: 1,
             user_id: 1,
             value: null,
+            weight: 0,
           },
           {
             challenge_id: 1,
@@ -245,6 +246,7 @@ describe(ComputeScoreboard, () => {
             team_id: 2,
             user_id: 2,
             value: 100,
+            weight: 0,
           },
         ],
       ],
@@ -375,6 +377,7 @@ describe(ComputeScoreboard, () => {
             team_id: 1,
             user_id: 1,
             value: null,
+            weight: 0,
           },
           {
             challenge_id: 1,
@@ -385,6 +388,7 @@ describe(ComputeScoreboard, () => {
             team_id: 3,
             user_id: 3,
             value: null,
+            weight: 0,
           },
           {
             challenge_id: 1,
@@ -395,6 +399,7 @@ describe(ComputeScoreboard, () => {
             team_id: 2,
             user_id: 2,
             value: null,
+            weight: 0,
           },
         ],
       ],
@@ -537,6 +542,7 @@ describe(ComputeScoreboard, () => {
             team_id: 1,
             user_id: 1,
             value: null,
+            weight: 0,
           },
         ],
       ],
@@ -642,6 +648,589 @@ describe(ComputeScoreboard, () => {
       ]),
     });
   });
+
+  it("Weighted challenge: each solve scored by its own weight", () => {
+    vi.mocked(
+      EvaluateScoringExpression as (
+        expr: Expression,
+        params: Record<string, number>,
+        n: number,
+      ) => number,
+    ).mockImplementation((_expr, _params, n) => n * 10);
+    const weightedChallenge: ChallengeMetadata = {
+      ...challenge1,
+      id: 2,
+      private_metadata: {
+        score: {
+          params: {},
+          is_weighted: true,
+        },
+      } as Pick<
+        ChallengePrivateMetadataBase,
+        "score"
+      > as ChallengePrivateMetadataBase,
+    };
+    const solvesByChallenge = new Map<number, RawSolve[]>([
+      [
+        2,
+        [
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 1,
+            created_at: new Date(1) as unknown as Timestamp & Date,
+            updated_at: new Date(1) as unknown as Timestamp & Date,
+            team_id: 1,
+            user_id: 1,
+            value: null,
+            weight: 10,
+          },
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 2,
+            created_at: new Date(2) as unknown as Timestamp & Date,
+            updated_at: new Date(2) as unknown as Timestamp & Date,
+            team_id: 2,
+            user_id: 2,
+            value: null,
+            weight: 50,
+          },
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 3,
+            created_at: new Date(3) as unknown as Timestamp & Date,
+            updated_at: new Date(3) as unknown as Timestamp & Date,
+            team_id: 3,
+            user_id: 3,
+            value: null,
+            weight: 80,
+          },
+        ],
+      ],
+    ]);
+    const result = ComputeScoreboard(
+      new Map([
+        [1, { id: 1, flags: [], division_id: 1, tag_ids: [] }],
+        [2, { id: 2, flags: [], division_id: 1, tag_ids: [] }],
+        [3, { id: 3, flags: [], division_id: 1, tag_ids: [] }],
+      ]),
+      [
+        {
+          metadata: weightedChallenge,
+          expr: mockDeep<Expression>(),
+        },
+      ],
+      solvesByChallenge,
+      [],
+    );
+    expect(result.scoreboard).toEqual([
+      expect.objectContaining({
+        team_id: 3,
+        score: 800,
+        rank: 1,
+        solves: [
+          expect.objectContaining({
+            challenge_id: 2,
+            value: 800,
+            hidden: false,
+            bonus: undefined,
+          }),
+        ],
+      }),
+      expect.objectContaining({
+        team_id: 2,
+        score: 500,
+        rank: 2,
+        solves: [
+          expect.objectContaining({
+            challenge_id: 2,
+            value: 500,
+            hidden: false,
+            bonus: undefined,
+          }),
+        ],
+      }),
+      expect.objectContaining({
+        team_id: 1,
+        score: 100,
+        rank: 3,
+        solves: [
+          expect.objectContaining({
+            challenge_id: 2,
+            value: 100,
+            hidden: false,
+            bonus: undefined,
+          }),
+        ],
+      }),
+    ]);
+    expect(result.challenges.get(2)?.value).toBe(0);
+    expect(EvaluateScoringExpression).toHaveBeenCalledTimes(3);
+  });
+
+  it("Weighted challenge: value overrides bypass weight calculation", () => {
+    vi.mocked(
+      EvaluateScoringExpression as (
+        expr: Expression,
+        params: Record<string, number>,
+        n: number,
+      ) => number,
+    ).mockReturnValue(500);
+    const weightedChallenge: ChallengeMetadata = {
+      ...challenge1,
+      id: 2,
+      private_metadata: {
+        score: {
+          params: {},
+          is_weighted: true,
+        },
+      } as Pick<
+        ChallengePrivateMetadataBase,
+        "score"
+      > as ChallengePrivateMetadataBase,
+    };
+    const solvesByChallenge = new Map<number, RawSolve[]>([
+      [
+        2,
+        [
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 1,
+            created_at: new Date(1) as unknown as Timestamp & Date,
+            updated_at: new Date(1) as unknown as Timestamp & Date,
+            team_id: 1,
+            user_id: 1,
+            value: null,
+            weight: 50,
+          },
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 2,
+            created_at: new Date(2) as unknown as Timestamp & Date,
+            updated_at: new Date(2) as unknown as Timestamp & Date,
+            team_id: 2,
+            user_id: 2,
+            value: 200,
+            weight: 99,
+          },
+        ],
+      ],
+    ]);
+    const result = ComputeScoreboard(
+      new Map([
+        [1, { id: 1, flags: [], division_id: 1, tag_ids: [] }],
+        [2, { id: 2, flags: [], division_id: 1, tag_ids: [] }],
+      ]),
+      [
+        {
+          metadata: weightedChallenge,
+          expr: mockDeep<Expression>(),
+        },
+      ],
+      solvesByChallenge,
+      [],
+    );
+    expect(result.scoreboard).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          team_id: 1,
+          score: 500,
+        }),
+        expect.objectContaining({
+          team_id: 2,
+          score: 200,
+        }),
+      ]),
+    );
+    expect(EvaluateScoringExpression).toHaveBeenCalledTimes(1);
+  });
+
+  it("Weighted challenge: bonuses go to top-scoring eligible solves by rank", () => {
+    vi.mocked(
+      EvaluateScoringExpression as (
+        expr: Expression,
+        params: Record<string, number>,
+        n: number,
+      ) => number,
+    ).mockImplementation((_expr, _params, n) => n * 10);
+    const weightedChallenge: ChallengeMetadata = {
+      ...challenge1,
+      id: 2,
+      private_metadata: {
+        score: {
+          params: {},
+          is_weighted: true,
+          bonus: [50, 25],
+        },
+      } as Pick<
+        ChallengePrivateMetadataBase,
+        "score"
+      > as ChallengePrivateMetadataBase,
+    };
+    const solvesByChallenge = new Map<number, RawSolve[]>([
+      [
+        2,
+        [
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 1,
+            created_at: new Date(1) as unknown as Timestamp & Date,
+            updated_at: new Date(1) as unknown as Timestamp & Date,
+            team_id: 1,
+            user_id: 1,
+            value: null,
+            weight: 80,
+          },
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 2,
+            created_at: new Date(2) as unknown as Timestamp & Date,
+            updated_at: new Date(2) as unknown as Timestamp & Date,
+            team_id: 2,
+            user_id: 2,
+            value: null,
+            weight: 50,
+          },
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 3,
+            created_at: new Date(3) as unknown as Timestamp & Date,
+            updated_at: new Date(3) as unknown as Timestamp & Date,
+            team_id: 3,
+            user_id: 3,
+            value: null,
+            weight: 10,
+          },
+        ],
+      ],
+    ]);
+    const result = ComputeScoreboard(
+      new Map([
+        [1, { id: 1, flags: [], division_id: 1, tag_ids: [] }],
+        [2, { id: 2, flags: [], division_id: 1, tag_ids: [] }],
+        [3, { id: 3, flags: [], division_id: 1, tag_ids: [] }],
+      ]),
+      [
+        {
+          metadata: weightedChallenge,
+          expr: mockDeep<Expression>(),
+        },
+      ],
+      solvesByChallenge,
+      [],
+    );
+    expect(result.scoreboard).toEqual([
+      expect.objectContaining({
+        team_id: 1,
+        score: 850,
+        rank: 1,
+        solves: [
+          expect.objectContaining({
+            value: 850,
+            bonus: 50,
+          }),
+        ],
+      }),
+      expect.objectContaining({
+        team_id: 2,
+        score: 525,
+        rank: 2,
+        solves: [
+          expect.objectContaining({
+            value: 525,
+            bonus: 25,
+          }),
+        ],
+      }),
+      expect.objectContaining({
+        team_id: 3,
+        score: 100,
+        rank: 3,
+        solves: [
+          expect.objectContaining({
+            value: 100,
+            bonus: undefined,
+          }),
+        ],
+      }),
+    ]);
+  });
+
+  it("Weighted challenge: value override solves are ineligible for bonus", () => {
+    vi.mocked(
+      EvaluateScoringExpression as (
+        expr: Expression,
+        params: Record<string, number>,
+        n: number,
+      ) => number,
+    ).mockReturnValue(500);
+    const weightedChallenge: ChallengeMetadata = {
+      ...challenge1,
+      id: 2,
+      private_metadata: {
+        score: {
+          params: {},
+          is_weighted: true,
+          bonus: [50],
+        },
+      } as Pick<
+        ChallengePrivateMetadataBase,
+        "score"
+      > as ChallengePrivateMetadataBase,
+    };
+    const solvesByChallenge = new Map<number, RawSolve[]>([
+      [
+        2,
+        [
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 1,
+            created_at: new Date(1) as unknown as Timestamp & Date,
+            updated_at: new Date(1) as unknown as Timestamp & Date,
+            team_id: 1,
+            user_id: 1,
+            value: 999,
+            weight: 99,
+          },
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 2,
+            created_at: new Date(2) as unknown as Timestamp & Date,
+            updated_at: new Date(2) as unknown as Timestamp & Date,
+            team_id: 2,
+            user_id: 2,
+            value: null,
+            weight: 50,
+          },
+        ],
+      ],
+    ]);
+    const result = ComputeScoreboard(
+      new Map([
+        [1, { id: 1, flags: [], division_id: 1, tag_ids: [] }],
+        [2, { id: 2, flags: [], division_id: 1, tag_ids: [] }],
+      ]),
+      [
+        {
+          metadata: weightedChallenge,
+          expr: mockDeep<Expression>(),
+        },
+      ],
+      solvesByChallenge,
+      [],
+    );
+    expect(result.scoreboard).toEqual([
+      expect.objectContaining({
+        team_id: 1,
+        score: 999,
+        rank: 1,
+        solves: [
+          expect.objectContaining({
+            value: 999,
+            bonus: undefined,
+          }),
+        ],
+      }),
+      expect.objectContaining({
+        team_id: 2,
+        score: 550,
+        rank: 2,
+        solves: [
+          expect.objectContaining({
+            value: 550,
+            bonus: 50,
+          }),
+        ],
+      }),
+    ]);
+  });
+
+  it("Weighted challenge: hidden teams partitioned out", () => {
+    vi.mocked(
+      EvaluateScoringExpression as (
+        expr: Expression,
+        params: Record<string, number>,
+        n: number,
+      ) => number,
+    ).mockImplementation((_expr, _params, n) => n * 10);
+    const weightedChallenge: ChallengeMetadata = {
+      ...challenge1,
+      id: 2,
+      private_metadata: {
+        score: {
+          params: {},
+          is_weighted: true,
+        },
+      } as Pick<
+        ChallengePrivateMetadataBase,
+        "score"
+      > as ChallengePrivateMetadataBase,
+    };
+    const solvesByChallenge = new Map<number, RawSolve[]>([
+      [
+        2,
+        [
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 1,
+            created_at: new Date(1) as unknown as Timestamp & Date,
+            updated_at: new Date(1) as unknown as Timestamp & Date,
+            team_id: 1,
+            user_id: 1,
+            value: null,
+            weight: 50,
+          },
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 2,
+            created_at: new Date(2) as unknown as Timestamp & Date,
+            updated_at: new Date(2) as unknown as Timestamp & Date,
+            team_id: 2,
+            user_id: 2,
+            value: null,
+            weight: 80,
+          },
+        ],
+      ],
+    ]);
+    const result = ComputeScoreboard(
+      new Map([
+        [1, { id: 1, flags: [], division_id: 1, tag_ids: [] }],
+        [2, { id: 2, flags: ["hidden"], division_id: 1, tag_ids: [] }],
+      ]),
+      [
+        {
+          metadata: weightedChallenge,
+          expr: mockDeep<Expression>(),
+        },
+      ],
+      solvesByChallenge,
+      [],
+    );
+    expect(result.scoreboard).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          team_id: 1,
+          score: 500,
+          hidden: false,
+        }),
+        expect.objectContaining({
+          team_id: 2,
+          score: 0,
+          hidden: true,
+        }),
+      ]),
+    );
+    // hidden team's solve should still have been computed
+    const hiddenTeamSolve = result.challenges
+      .get(2)
+      ?.solves.find((s) => s.team_id === 2);
+    expect(hiddenTeamSolve).toEqual(
+      expect.objectContaining({
+        value: 800,
+        hidden: true,
+      }),
+    );
+  });
+
+  it("Mixed weighted and dynamic challenges in same scoreboard", () => {
+    vi.mocked(
+      EvaluateScoringExpression as (
+        expr: Expression,
+        params: Record<string, number>,
+        n: number,
+      ) => number,
+    ).mockImplementation((_expr, _params, n) => {
+      // dynamic challenge calls with n=1 (solve count), weighted calls with weight
+      // we return n * 100 so dynamic(1)=100, weighted(30)=300
+      return n * 100;
+    });
+    const dynamicChallenge: ChallengeMetadata = {
+      ...challenge1,
+      id: 1,
+    };
+    const weightedChallenge: ChallengeMetadata = {
+      ...challenge1,
+      id: 2,
+      private_metadata: {
+        score: {
+          params: {},
+          is_weighted: true,
+        },
+      } as Pick<
+        ChallengePrivateMetadataBase,
+        "score"
+      > as ChallengePrivateMetadataBase,
+    };
+    const solvesByChallenge = new Map<number, RawSolve[]>([
+      [
+        1,
+        [
+          {
+            challenge_id: 1,
+            hidden: false,
+            id: 1,
+            created_at: new Date(1) as unknown as Timestamp & Date,
+            updated_at: new Date(1) as unknown as Timestamp & Date,
+            team_id: 1,
+            user_id: 1,
+            value: null,
+            weight: 0,
+          },
+        ],
+      ],
+      [
+        2,
+        [
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 2,
+            created_at: new Date(2) as unknown as Timestamp & Date,
+            updated_at: new Date(2) as unknown as Timestamp & Date,
+            team_id: 1,
+            user_id: 1,
+            value: null,
+            weight: 30,
+          },
+        ],
+      ],
+    ]);
+    const result = ComputeScoreboard(
+      new Map([[1, { id: 1, flags: [], division_id: 1, tag_ids: [] }]]),
+      [
+        {
+          metadata: dynamicChallenge,
+          expr: mockDeep<Expression>(),
+        },
+        {
+          metadata: weightedChallenge,
+          expr: mockDeep<Expression>(),
+        },
+      ],
+      solvesByChallenge,
+      [],
+    );
+    expect(result.scoreboard).toEqual([
+      expect.objectContaining({
+        team_id: 1,
+        score: 3100,
+      }),
+    ]);
+    expect(result.challenges.get(1)?.value).toBe(100);
+    expect(result.challenges.get(2)?.value).toBe(0);
+  });
 });
 
 describe(ComputeFullGraph, () => {
@@ -708,6 +1297,7 @@ describe(ComputeFullGraph, () => {
         team_id: 1,
         title: "test",
         value: 1,
+        weight: 0,
       },
       {
         created_at: new Date(2102),
@@ -715,6 +1305,7 @@ describe(ComputeFullGraph, () => {
         team_id: 1,
         title: "test2",
         value: 5,
+        weight: 0,
       },
       {
         created_at: new Date(3234),
@@ -722,6 +1313,7 @@ describe(ComputeFullGraph, () => {
         team_id: 2,
         title: "test",
         value: 3,
+        weight: 0,
       },
     ];
     const challenges = [
@@ -743,6 +1335,7 @@ describe(ComputeFullGraph, () => {
             team_id: 1,
             user_id: 1,
             value: null,
+            weight: 0,
           },
         ],
       ],
@@ -834,6 +1427,7 @@ describe(ComputeFullGraph, () => {
             team_id: 1,
             user_id: 1,
             value: null,
+            weight: 0,
           },
           {
             challenge_id: 1,
@@ -844,6 +1438,7 @@ describe(ComputeFullGraph, () => {
             team_id: 2,
             user_id: 2,
             value: null,
+            weight: 0,
           },
         ],
       ],
@@ -942,6 +1537,7 @@ describe(ComputeFullGraph, () => {
             team_id: 1,
             user_id: 1,
             value: null,
+            weight: 0,
           },
           {
             challenge_id: 1,
@@ -952,6 +1548,7 @@ describe(ComputeFullGraph, () => {
             team_id: 2,
             user_id: 2,
             value: null,
+            weight: 0,
           },
         ],
       ],
@@ -967,6 +1564,7 @@ describe(ComputeFullGraph, () => {
             team_id: 1,
             user_id: 1,
             value: null,
+            weight: 0,
           },
         ],
       ],
@@ -985,6 +1583,167 @@ describe(ComputeFullGraph, () => {
       { score: 506, team_id: 1, updated_at: new Date(2102) },
     ]);
   });
+
+  it("Weighted challenge solves appear as flat deltas in graph", () => {
+    vi.mocked(
+      EvaluateScoringExpression as (
+        expr: Expression,
+        params: Record<string, number>,
+        n: number,
+      ) => number,
+    ).mockReturnValue(500);
+    const weightedChallenge: ChallengeMetadata = {
+      ...challenge1,
+      id: 2,
+      private_metadata: {
+        score: {
+          params: {},
+          is_weighted: true,
+        },
+      } as Pick<
+        ChallengePrivateMetadataBase,
+        "score"
+      > as ChallengePrivateMetadataBase,
+    };
+    const teams = new Map<number, MinimalTeamInfo>([
+      [1, { id: 1, division_id: 1, tag_ids: [], flags: [] }],
+      [2, { id: 2, division_id: 1, tag_ids: [], flags: [] }],
+    ]);
+    const solvesByChallenge = new Map<number, RawSolve[]>([
+      [
+        2,
+        [
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 1,
+            created_at: new Date(1203) as unknown as Timestamp & Date,
+            updated_at: new Date(1203) as unknown as Timestamp & Date,
+            team_id: 1,
+            user_id: 1,
+            value: null,
+            weight: 50,
+          },
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 2,
+            created_at: new Date(2001) as unknown as Timestamp & Date,
+            updated_at: new Date(2001) as unknown as Timestamp & Date,
+            team_id: 2,
+            user_id: 2,
+            value: null,
+            weight: 80,
+          },
+        ],
+      ],
+    ]);
+    const result = ComputeFullGraph(
+      teams,
+      [
+        {
+          metadata: weightedChallenge,
+          expr: mockDeep<Expression>(),
+        },
+      ],
+      solvesByChallenge,
+      [],
+      1,
+    );
+    expect(result).toEqual([
+      { score: 500, team_id: 1, updated_at: new Date(1203) },
+      { score: 500, team_id: 2, updated_at: new Date(2001) },
+    ]);
+  });
+
+  it("Mixed weighted and dynamic challenges produce combined graph", () => {
+    vi.mocked(
+      EvaluateScoringExpression as (
+        expr: Expression,
+        params: Record<string, number>,
+        n: number,
+        all?: boolean,
+      ) => number | [number, number][],
+    ).mockImplementation((_expr, _params, _n, all) => {
+      if (all) {
+        return [
+          [2, 500],
+          [2, 400],
+        ] as [number, number][];
+      }
+      return 300;
+    });
+    const weightedChallenge: ChallengeMetadata = {
+      ...challenge1,
+      id: 2,
+      private_metadata: {
+        score: {
+          params: {},
+          is_weighted: true,
+        },
+      } as Pick<
+        ChallengePrivateMetadataBase,
+        "score"
+      > as ChallengePrivateMetadataBase,
+    };
+    const teams = new Map<number, MinimalTeamInfo>([
+      [1, { id: 1, division_id: 1, tag_ids: [], flags: [] }],
+    ]);
+    const solvesByChallenge = new Map<number, RawSolve[]>([
+      [
+        1,
+        [
+          {
+            challenge_id: 1,
+            hidden: false,
+            id: 1,
+            created_at: new Date(1000) as unknown as Timestamp & Date,
+            updated_at: new Date(1000) as unknown as Timestamp & Date,
+            team_id: 1,
+            user_id: 1,
+            value: null,
+            weight: 0,
+          },
+        ],
+      ],
+      [
+        2,
+        [
+          {
+            challenge_id: 2,
+            hidden: false,
+            id: 2,
+            created_at: new Date(2000) as unknown as Timestamp & Date,
+            updated_at: new Date(2000) as unknown as Timestamp & Date,
+            team_id: 1,
+            user_id: 1,
+            value: null,
+            weight: 30,
+          },
+        ],
+      ],
+    ]);
+    const result = ComputeFullGraph(
+      teams,
+      [
+        {
+          metadata: challenge1,
+          expr: mockDeep<Expression>(),
+        },
+        {
+          metadata: weightedChallenge,
+          expr: mockDeep<Expression>(),
+        },
+      ],
+      solvesByChallenge,
+      [],
+      1,
+    );
+    expect(result).toEqual([
+      { score: 500, team_id: 1, updated_at: new Date(1000) },
+      { score: 800, team_id: 1, updated_at: new Date(2000) },
+    ]);
+  });
 });
 
 describe(PartitionSolvesByChallenge, () => {
@@ -999,6 +1758,7 @@ describe(PartitionSolvesByChallenge, () => {
       user_id: 1,
       team_id: 1,
       value: null,
+      weight: 0,
       created_at: baseDate,
       updated_at: baseDate,
       hidden: false,
@@ -1009,6 +1769,7 @@ describe(PartitionSolvesByChallenge, () => {
       user_id: 2,
       team_id: 2,
       value: null,
+      weight: 0,
       created_at: laterDate,
       updated_at: laterDate,
       hidden: false,
@@ -1019,6 +1780,7 @@ describe(PartitionSolvesByChallenge, () => {
       user_id: 1,
       team_id: 1,
       value: null,
+      weight: 0,
       created_at: earlierDate,
       updated_at: earlierDate,
       hidden: true,
@@ -1029,6 +1791,7 @@ describe(PartitionSolvesByChallenge, () => {
       user_id: 3,
       team_id: 3,
       value: null,
+      weight: 0,
       created_at: baseDate,
       updated_at: baseDate,
       hidden: false,
