@@ -145,7 +145,7 @@ export class CoreChallengePlugin implements ChallengePlugin {
   validate = async (m: ChallengePrivateMetadataBase) => {
     try {
       const expr = await this.scoreService.getExpr(m.score.strategy);
-      EvaluateScoringExpression(expr, m.score.params, 0);
+      EvaluateScoringExpression(expr, m.score.params, { n: 0, w: 0 });
     } catch (e) {
       throw new ValidationError(
         `Failed to evaluate scoring algorithm ${m.score.strategy}: ` +

@@ -355,6 +355,7 @@ export const Submission = Type.Object({
   source: Type.String({ maxLength: 64 }),
   hidden: Type.Boolean(),
   value: NullableInteger(),
+  weight: Type.Integer(),
   status: SubmissionStatus,
   created_at: TypeDate,
   updated_at: TypeDate,
