@@ -4,6 +4,7 @@ import {
   ChallengePrivateMetadataBase,
   ScoreboardEntry,
   Solve,
+  Submission,
 } from "@noctf/api/datatypes";
 import { Expression } from "expr-eval";
 import { partition } from "../../util/object.ts";
@@ -42,6 +43,54 @@ export type MinimalScoreboardEntry = Pick<
   ScoreboardEntry,
   "team_id" | "score" | "updated_at" | "last_solve" | "hidden"
 >;
+
+type SubContext = { n: number; w: number };
+
+const CACHE_CAP = 1_000_000;
+
+// This function caches a single score since in most cases the score doesn't really change.
+function MemoizeScore(
+  expr: Expression,
+  params: ChallengePrivateMetadataBase["score"]["params"],
+) {
+  const vars = expr.variables({ withMembers: true });
+  const has = [vars.includes("ctx.n") && "n", vars.includes("ctx.w") && "w"];
+  const count = has.reduce((p, c) => (p += c ? 1 : 0), 0);
+  const k = new Uint16Array(count * 2);
+  function cacheKey(ctx: Record<string, number>) {
+    // short circuit
+    if (!k.length) return 0;
+
+    let c = 0;
+    for (const h of has) {
+      if (!h) continue;
+      const n = ctx[h] || 0;
+      k[c++] = (n >>> 16) & 0xffff;
+      k[c++] = n & 0xffff;
+      if (c === k.length) break;
+    }
+    return String.fromCharCode(...k);
+  }
+
+  const cache = new Map<string | number, number>();
+  const ctx: SubContext = { n: 0, w: 0 };
+  let value: number | undefined = undefined;
+
+  return (n: number, w: number) => {
+    if (ctx.n === n && ctx.w === w && value !== undefined) return value;
+    ctx.n = n;
+    ctx.w = w;
+    const key = cacheKey(ctx);
+    value = cache.get(key);
+    if (value !== undefined) return value;
+
+    value = EvaluateScoringExpression(expr, params, ctx);
+    // This shouldn't happen generally but we don't want the server to crash
+    if (cache.size >= CACHE_CAP) cache.clear();
+    cache.set(key, value);
+    return value;
+  };
+}
 function ComputeScoresForChallenge(
   { metadata, expr }: ChallengeMetadataWithExpr,
   teams: Map<number, MinimalTeamInfo>,
@@ -56,25 +105,15 @@ function ComputeScoresForChallenge(
     ({ team_id, hidden }) =>
       !(teams.get(team_id)?.flags.includes("hidden") || hidden),
   );
-  let base: number;
-  try {
-    base = EvaluateScoringExpression(
-      expr,
-      params,
-      valid.filter(({ value }) => value === null).length,
-    );
-  } catch {
-    return {
-      value: null,
-      solves: [],
-      last_event: new Date(0),
-    };
-  }
+
+  const n = valid.filter(({ value }) => value === null).length;
+
+  const memo = MemoizeScore(expr, params);
 
   let last_event = new Date(0);
   let bonusIdx = 0;
   const rv: Solve[] = valid.map(
-    ({ team_id, user_id, created_at, updated_at, value }) => {
+    ({ team_id, user_id, created_at, updated_at, value, weight }) => {
       last_event = MaxDate(last_event, updated_at);
       const b = value !== null ? undefined : bonus?.[bonusIdx++];
       return {
@@ -83,26 +122,29 @@ function ComputeScoresForChallenge(
         challenge_id: metadata.id,
         bonus: b,
         hidden: false,
-        value: value !== null ? value : base + ((b && Math.round(b)) || 0),
+        value:
+          value !== null
+            ? value
+            : memo(n, weight) + ((b && Math.round(b)) || 0),
         created_at,
       };
     },
   );
   const rh: Solve[] = hidden.map(
-    ({ team_id, user_id, created_at, updated_at }) => {
+    ({ team_id, user_id, created_at, updated_at, weight }) => {
       last_event = MaxDate(last_event, updated_at);
       return {
         team_id,
         user_id,
         challenge_id: metadata.id,
         hidden: true,
-        value: base,
+        value: memo(n, weight),
         created_at,
       };
     },
   );
   return {
-    value: base,
+    value: memo(n, 0), // by default, w is zero
     solves: rv.concat(rh),
     last_event: MaxDate(last_event, metadata.updated_at),
   };
@@ -122,44 +164,33 @@ function ComputeScoreStreamForChallenge(
     ({ team_id, hidden }) =>
       !(teams.get(team_id)?.flags.includes("hidden") || hidden),
   );
-  let base: [number, number][];
-  try {
-    base = EvaluateScoringExpression(
-      expr,
-      params,
-      valid.filter(({ value }) => value === null).length,
-      true,
-    );
-  } catch {
-    return [];
-  }
+
+  const memo = MemoizeScore(expr, params);
   const stream: { team_id: number; delta: number; updated_at: Date }[] = [];
+  const teamScores = new Map<number, { score: number; w: number }>();
   let bonusIdx = 0;
-  let baseIdx = 0;
-  let baseCount = 1;
-  const dyn = new Set<number>();
-  valid.forEach(({ team_id, created_at, value }) => {
+  let n = 0;
+  valid.forEach(({ team_id, created_at, value, weight }) => {
     const b = value !== null ? undefined : bonus?.[bonusIdx++];
-    if (baseCount >= base[baseIdx][0] && baseIdx < base.length - 1) {
-      baseCount = 1;
-      baseIdx += 1;
-      dyn.forEach((team_id) =>
-        stream.push({
-          team_id,
-          delta: base[baseIdx][1] - base[baseIdx - 1][1],
-          updated_at: created_at,
-        }),
-      );
-    } else {
-      baseCount++;
+    if (value === null) {
+      n++;
+      // n changed: emit retroactive score adjustments for all previous solvers
+      for (const [tid, state] of teamScores) {
+        const updated = memo(n, state.w);
+        const delta = updated - state.score;
+        if (delta !== 0) {
+          stream.push({ team_id: tid, delta, updated_at: created_at });
+          state.score = updated;
+        }
+      }
     }
-    dyn.add(team_id);
-    stream.push({
-      team_id,
-      delta:
-        value !== null ? value : base[baseIdx][1] + ((b && Math.round(b)) || 0),
-      updated_at: created_at,
-    });
+    const score =
+      value !== null ? value : memo(n, weight) + ((b && Math.round(b)) || 0);
+    stream.push({ team_id, delta: score, updated_at: created_at });
+    // Only track dynamic solves for future retroactive adjustments
+    if (value === null) {
+      teamScores.set(team_id, { score: memo(n, weight), w: weight });
+    }
   });
   return stream;
 }

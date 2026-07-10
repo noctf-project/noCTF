@@ -4,7 +4,7 @@ import type { Expression } from "expr-eval";
 import { Parser } from "expr-eval";
 import type { ServiceCradle } from "../index.ts";
 import type { ScoringStrategy } from "@noctf/api/datatypes";
-import { ValidationError } from "../errors.ts";
+import { ApplicationError, ValidationError } from "../errors.ts";
 
 type Props = Pick<ServiceCradle, "configService" | "logger">;
 
@@ -32,50 +32,25 @@ const parser = new Parser({
     assignment: false,
     concatenate: false,
     fndef: false,
+    factorial: false, // DoS vector
+    in: false,
   },
 });
 
 export function EvaluateScoringExpression(
   expr: Expression,
   params: Record<string, number>,
-  n: number,
-): number;
-export function EvaluateScoringExpression(
-  expr: Expression,
-  params: Record<string, number>,
-  n: number,
-  all: true,
-): [number, number][];
-export function EvaluateScoringExpression(
-  expr: Expression,
-  params: Record<string, number>,
-  n: number,
-  all?: boolean,
-): number | [number, number][] {
-  if (!all) {
-    return Math.round(
-      expr.evaluate({
-        ...params,
-        ctx: { n },
-      }),
-    );
-  }
-  const results: [number, number][] = [];
-  for (let i = 0; i <= n; i++) {
-    const result = Math.round(
-      expr.evaluate({
-        ...params,
-        ctx: { n: i },
-      }),
-    );
-    if (!results.length || results[results.length - 1][1] !== result) {
-      results.push([1, result]);
-    } else {
-      results[results.length - 1][0]++;
-    }
-  }
-  return results;
+  ctx: { n: number; w: number },
+): number {
+  return Math.round(
+    expr.evaluate({
+      ...params,
+      ctx,
+    }),
+  );
 }
+
+const VALID_CTX = new Set(["n", "w"]);
 
 export class ScoreService {
   private readonly configService;
@@ -94,8 +69,20 @@ export class ScoreService {
     await this.configService.register(ScoreConfig, { strategies: {} }, (v) => {
       for (const strategy of Object.keys(v.strategies)) {
         try {
-          parser.parse(v.strategies[strategy]!.expr);
+          const expr = parser.parse(v.strategies[strategy]!.expr);
+          const vars = new Set(
+            expr
+              .variables({ withMembers: true })
+              .filter((v) => v.startsWith("ctx."))
+              .map((v) => v.substring(4)),
+          );
+          if (!vars.isSubsetOf(VALID_CTX)) {
+            throw new ValidationError(
+              `Scoring strategy ${strategy} has unknown context variables`,
+            );
+          }
         } catch (e) {
+          if (e instanceof ApplicationError) throw e;
           throw new ValidationError(
             `Scoring strategy ${strategy} failed to parse`,
           );
