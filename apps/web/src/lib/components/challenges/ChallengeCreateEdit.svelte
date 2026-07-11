@@ -50,7 +50,7 @@
     customTags: { [key: string]: string };
     score: ScoringStrat;
     flags: Flag[];
-    hints: string[];
+    hints: { title: string; description: string }[];
     files: ExistingFile[];
     version: number;
   }
@@ -100,7 +100,7 @@
   let flags = $state<Flag[]>(
     challData?.flags ?? [{ data: "", strategy: "case_sensitive" }],
   );
-  let hints = $state<string[]>(challData?.hints ?? []);
+  let hints = $state<ChallData["hints"]>(challData?.hints ?? []);
 
   let isCreating = $state<boolean>(false);
   let creationStep = $state<string>("");
@@ -222,7 +222,7 @@
   }
 
   function addHint(): void {
-    hints = [...hints, ""];
+    hints = [...hints, { title: "", description: "" }];
   }
   function removeHint(index: number): void {
     hints = hints.filter((_, i) => i !== index);
@@ -802,17 +802,32 @@
         <div class="space-y-6">
           <h2 class="text-lg font-semibold">Hints</h2>
           <div role="list" aria-label="Challenge hints" class="space-y-4">
-            {#each hints as hint, index}
+            {#each hints as _hint, index}
               <div
                 class="flex flex-col sm:flex-row gap-4 p-4 bg-base-200 rounded-lg"
                 role="listitem"
               >
                 <div class="form-control flex-1">
-                  <label for={`hint-value-${index}`} class="label">
-                    <span class="label-text">Hint {index + 1}</span>
+                  <label for={`hint-title-${index}`} class="label">
+                    <span class="label-text">Hint Title</span>
+                  </label>
+                  <input
+                    type="text"
+                    id={`hint-title-${index}`}
+                    bind:value={hints[index]!.title}
+                    class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
+                    placeholder="Hint title"
+                    aria-label={`Hint ${index + 1} title`}
+                  />
+                  <label for={`hint-description-${index}`} class="label">
+                    <span class="label-text">Hint Description</span>
                   </label>
                   <div class="rounded-lg bg-base-100 border border-base-300">
-                    <MarkdownEditor {carta} bind:value={hints[index]} mode="tabs" />
+                    <MarkdownEditor
+                      {carta}
+                      bind:value={hints[index]!.description}
+                      mode="tabs"
+                    />
                   </div>
                 </div>
                 <div class="flex justify-end items-end pb-2">
