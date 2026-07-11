@@ -111,7 +111,7 @@
   async function updateQueryParam(key: string, value: string) {
     const url = new URL(page.url);
     url.searchParams.set(key, value);
-    goto(url.toString(), { replaceState: true });
+    goto(url.toString(), { replaceState: true, noScroll: true });
   }
 
   $effect(() => {
@@ -185,7 +185,7 @@
     modalVisible = false;
     const url = new URL(page.url);
     url.searchParams.delete("c");
-    goto(url.toString(), { replaceState: true });
+    goto(url.toString(), { replaceState: true, noScroll: true });
   }
 </script>
 
@@ -215,10 +215,10 @@
         />
       </div>
 
-      <div class="flex flex-wrap gap-6 h-fit">
+      <div class="flex flex-col gap-6 h-fit w-full">
         {#if challenges !== undefined && Object.keys(challengesByCategory).length > 0}
           {#each Object.entries(challengesByCategory) as [category, categoryChallenges] (category)}
-            <div class="flex flex-col gap-2">
+            <div class="flex flex-col gap-2 w-full">
               <h1
                 class="text-2xl text-center w-full md:text-left p-3 rounded font-bold top-0 py-2 z-10"
               >

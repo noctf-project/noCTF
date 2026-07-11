@@ -244,7 +244,7 @@
     } else {
       url.searchParams.delete("tags");
     }
-    goto(url.toString(), { replaceState: true });
+    goto(url.toString(), { replaceState: true, noScroll: true });
   }
 
   function clearTagFilters() {
@@ -253,7 +253,7 @@
 
     const url = new URL(page.url);
     url.searchParams.delete("tags");
-    goto(url.toString(), { replaceState: true });
+    goto(url.toString(), { replaceState: true, noScroll: true });
   }
 
   $effect(() => {
@@ -273,7 +273,7 @@
     } else {
       url.searchParams.delete("view");
     }
-    goto(url.toString(), { replaceState: true });
+    goto(url.toString(), { replaceState: true, noScroll: true });
   }
 
   const paginatedTeamIds = $derived(Array.from(currentPageTeams.keys()));
