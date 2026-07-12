@@ -15,19 +15,12 @@ import {
 import { mockDeep } from "vitest-mock-extended";
 import { Expression } from "expr-eval";
 import { Timestamp } from "@noctf/schema";
-import { EvaluateScoringExpression } from "../score.ts";
 import { HistoryDataPoint } from "../../dao/score_history.ts";
 import { MinimalTeamInfo } from "../../dao/team.ts";
 import { RawSolve } from "../../dao/submission.ts";
 
-vi.mock(import("../score.ts"));
-
 function MockEvaluateSolves(series: [number, number][]) {
-  return (
-    _expr: Expression,
-    _params: Record<string, number>,
-    { n }: { n: number },
-  ) => {
+  return ({ n }: { n: number }) => {
     let remain = n;
     for (const s of series) {
       if (remain - s[0] >= 0) {
@@ -41,11 +34,7 @@ function MockEvaluateSolves(series: [number, number][]) {
 }
 
 function MockEvaluateSolvesWithWeight(fn: (n: number, w: number) => number) {
-  return (
-    _expr: Expression,
-    _params: Record<string, number>,
-    ctx: { n: number; w: number },
-  ) => fn(ctx.n, ctx.w);
+  return (ctx: { n: number; w: number }) => fn(ctx.n, ctx.w);
 }
 
 describe(GetChangedTeamScores, () => {
@@ -214,8 +203,12 @@ describe(GetChangedTeamScores, () => {
 
 describe(ComputeScoreboard, () => {
   const expr = mockDeep<Expression>();
+  const mockToJSFunction = vi.fn();
   beforeEach(() => {
     expr.variables.mockReturnValue(["ctx.n"]);
+    expr.simplify.mockReturnValue({
+      toJSFunction: mockToJSFunction,
+    } as any);
   });
   const challenge1: ChallengeMetadata = {
     id: 1,
@@ -250,7 +243,7 @@ describe(ComputeScoreboard, () => {
   });
 
   it("Value overrides for solves do not count towards dynamic scoring", () => {
-    vi.mocked(EvaluateScoringExpression).mockReturnValue(1);
+    mockToJSFunction.mockReturnValue(() => 1);
     const solvesByChallenge = new Map<number, RawSolve[]>([
       [
         1,
@@ -376,11 +369,11 @@ describe(ComputeScoreboard, () => {
         ],
       ]),
     });
-    vi.mocked(EvaluateScoringExpression).mockReturnValue(1);
+    mockToJSFunction.mockReturnValue(() => 1);
   });
 
   it("Calculates challenge scores, uses the last valid solve date as the date", () => {
-    vi.mocked(EvaluateScoringExpression).mockReturnValue(1);
+    mockToJSFunction.mockReturnValue(() => 1);
     const solvesByChallenge = new Map<number, RawSolve[]>([
       [
         1,
@@ -539,7 +532,7 @@ describe(ComputeScoreboard, () => {
   });
 
   it("Calculates challenge scores and adds awards to date", () => {
-    vi.mocked(EvaluateScoringExpression).mockReturnValue(1);
+    mockToJSFunction.mockReturnValue(() => 1);
     const solvesByChallenge = new Map<number, RawSolve[]>([
       [
         1,
@@ -663,8 +656,12 @@ describe(ComputeScoreboard, () => {
 
 describe(ComputeFullGraph, () => {
   const expr = mockDeep<Expression>();
+  const mockToJSFunction = vi.fn();
   beforeEach(() => {
     expr.variables.mockReturnValue(["ctx.n"]);
+    expr.simplify.mockReturnValue({
+      toJSFunction: mockToJSFunction,
+    } as any);
   });
 
   const challenge1: ChallengeMetadata = {
@@ -707,7 +704,7 @@ describe(ComputeFullGraph, () => {
   });
 
   it("should compute score history with a single solve and awards", () => {
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
+    mockToJSFunction.mockReturnValue(
       MockEvaluateSolves([
         [2, 500],
         [2, 400],
@@ -794,7 +791,7 @@ describe(ComputeFullGraph, () => {
   });
 
   it("should compute score history with retroactive score adjustment on tier change", () => {
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
+    mockToJSFunction.mockReturnValue(
       MockEvaluateSolves([
         [2, 500],
         [2, 400],
@@ -895,7 +892,7 @@ describe(ComputeFullGraph, () => {
   });
 
   it("should ignore hidden teams and results", () => {
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
+    mockToJSFunction.mockReturnValue(
       MockEvaluateSolves([
         [2, 500],
         [2, 400],
@@ -1002,6 +999,12 @@ describe(ComputeFullGraph, () => {
 
 describe("Solve count and weight scoring", () => {
   const expr = mockDeep<Expression>();
+  const mockToJSFunction = vi.fn();
+  beforeEach(() => {
+    expr.simplify.mockReturnValue({
+      toJSFunction: mockToJSFunction,
+    } as any);
+  });
   const challenge1: ChallengeMetadata = {
     id: 1,
     slug: "",
@@ -1028,7 +1031,7 @@ describe("Solve count and weight scoring", () => {
   it("solves with different weights produce different scores when expression uses ctx.w", () => {
     // score = 1000 - (n * 10) + (w * 5)
     expr.variables.mockReturnValue(["ctx.n", "ctx.w"]);
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
+    mockToJSFunction.mockReturnValue(
       MockEvaluateSolvesWithWeight((n, w) => 1000 - n * 10 + w * 5),
     );
 
@@ -1103,7 +1106,7 @@ describe("Solve count and weight scoring", () => {
 
   it("weight=0 for all solves uses only solve count (n)", () => {
     expr.variables.mockReturnValue(["ctx.n"]);
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
+    mockToJSFunction.mockReturnValue(
       MockEvaluateSolvesWithWeight((n, _w) => 500 - n * 50),
     );
 
@@ -1156,7 +1159,7 @@ describe("Solve count and weight scoring", () => {
 
   it("value overrides bypass weight-based scoring", () => {
     expr.variables.mockReturnValue(["ctx.n", "ctx.w"]);
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
+    mockToJSFunction.mockReturnValue(
       MockEvaluateSolvesWithWeight((n, w) => 100 + w * 10 - n),
     );
 
@@ -1211,7 +1214,7 @@ describe("Solve count and weight scoring", () => {
 
   it("hidden solves receive weight-based scores but do not contribute to team score", () => {
     expr.variables.mockReturnValue(["ctx.n", "ctx.w"]);
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
+    mockToJSFunction.mockReturnValue(
       MockEvaluateSolvesWithWeight((n, w) => 200 + w * 3 - n * 10),
     );
 
@@ -1251,7 +1254,7 @@ describe("Solve count and weight scoring", () => {
 
   it("challenge value defaults to w=0 when computing display value", () => {
     expr.variables.mockReturnValue(["ctx.n", "ctx.w"]);
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
+    mockToJSFunction.mockReturnValue(
       MockEvaluateSolvesWithWeight((n, w) => 500 - n * 10 + w * 100),
     );
 
@@ -1292,7 +1295,7 @@ describe("Solve count and weight scoring", () => {
 
   it("ComputeFullGraph emits retroactive adjustments with weights", () => {
     expr.variables.mockReturnValue(["ctx.n", "ctx.w"]);
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
+    mockToJSFunction.mockReturnValue(
       MockEvaluateSolvesWithWeight((n, w) => 1000 - n * 100 + w * 10),
     );
 
@@ -1352,6 +1355,12 @@ describe("Solve count and weight scoring", () => {
 
 describe("MemoizeScore black-box cache", () => {
   const expr = mockDeep<Expression>();
+  const mockToJSFunction = vi.fn();
+  beforeEach(() => {
+    expr.simplify.mockReturnValue({
+      toJSFunction: mockToJSFunction,
+    } as any);
+  });
   const challenge1: ChallengeMetadata = {
     id: 1,
     slug: "",
@@ -1378,12 +1387,10 @@ describe("MemoizeScore black-box cache", () => {
   it("cache returns consistent results for identical (n, w) inputs", () => {
     expr.variables.mockReturnValue(["ctx.n", "ctx.w"]);
     let callCount = 0;
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
-      (_expr, _params, ctx: { n: number; w: number }) => {
-        callCount++;
-        return 100 * ctx.n + ctx.w;
-      },
-    );
+    mockToJSFunction.mockReturnValue((ctx: { n: number; w: number }) => {
+      callCount++;
+      return 100 * ctx.n + ctx.w;
+    });
 
     // Two solves with the same weight => same (n, w) pair
     const solvesByChallenge = new Map<number, RawSolve[]>([
@@ -1436,7 +1443,7 @@ describe("MemoizeScore black-box cache", () => {
 
   it("cache differentiates between different (n, w) pairs", () => {
     expr.variables.mockReturnValue(["ctx.n", "ctx.w"]);
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
+    mockToJSFunction.mockReturnValue(
       MockEvaluateSolvesWithWeight((n, w) => n * 100 + w),
     );
 
@@ -1507,7 +1514,7 @@ describe("MemoizeScore black-box cache", () => {
 
   it("cache works when expression uses only ctx.n (no ctx.w)", () => {
     expr.variables.mockReturnValue(["ctx.n"]);
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
+    mockToJSFunction.mockReturnValue(
       MockEvaluateSolvesWithWeight((n, _w) => 1000 - n * 100),
     );
 
@@ -1561,7 +1568,7 @@ describe("MemoizeScore black-box cache", () => {
 
   it("cache works when expression uses only ctx.w (no ctx.n)", () => {
     expr.variables.mockReturnValue(["ctx.w"]);
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
+    mockToJSFunction.mockReturnValue(
       MockEvaluateSolvesWithWeight((_n, w) => w * 50),
     );
 
@@ -1614,7 +1621,7 @@ describe("MemoizeScore black-box cache", () => {
 
   it("cache works when expression uses neither ctx.n nor ctx.w (static)", () => {
     expr.variables.mockReturnValue([]);
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
+    mockToJSFunction.mockReturnValue(
       MockEvaluateSolvesWithWeight((_n, _w) => 42),
     );
 
@@ -1668,7 +1675,7 @@ describe("MemoizeScore black-box cache", () => {
 
   it("recomputing scoreboard with a fresh MemoizeScore produces same results", () => {
     expr.variables.mockReturnValue(["ctx.n", "ctx.w"]);
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
+    mockToJSFunction.mockReturnValue(
       MockEvaluateSolvesWithWeight((n, w) => 500 - n * 25 + w * 3),
     );
 
@@ -1742,7 +1749,7 @@ describe("MemoizeScore black-box cache", () => {
 
   it("cache handles many distinct weight values correctly across challenges", () => {
     expr.variables.mockReturnValue(["ctx.n", "ctx.w"]);
-    vi.mocked(EvaluateScoringExpression).mockImplementation(
+    mockToJSFunction.mockReturnValue(
       MockEvaluateSolvesWithWeight((n, w) => n + w),
     );
 

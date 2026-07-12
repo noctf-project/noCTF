@@ -4,11 +4,9 @@ import {
   ChallengePrivateMetadataBase,
   ScoreboardEntry,
   Solve,
-  Submission,
 } from "@noctf/api/datatypes";
 import { Expression } from "expr-eval";
 import { partition } from "../../util/object.ts";
-import { EvaluateScoringExpression } from "../score.ts";
 import { MaxDate } from "../../util/date.ts";
 import { MinimalTeamInfo } from "../../dao/team.ts";
 import { RawSolve } from "../../dao/submission.ts";
@@ -57,14 +55,18 @@ function MemoizeScore(
   const has = [vars.includes("ctx.n") && "n", vars.includes("ctx.w") && "w"];
   const count = has.reduce((p, c) => (p += c ? 1 : 0), 0);
   const k = new Uint16Array(count * 2);
+
   function cacheKey(ctx: Record<string, number>) {
-    // short circuit
     if (!k.length) return 0;
 
     let c = 0;
     for (const h of has) {
       if (!h) continue;
-      const n = ctx[h] || 0;
+
+      // >>> 0 casts any signed int32 (including negative numbers)
+      // into its exact 32-bit unsigned bit pattern equivalence.
+      const n = (ctx[h] || 0) >>> 0;
+
       k[c++] = (n >>> 16) & 0xffff;
       k[c++] = n & 0xffff;
       if (c === k.length) break;
@@ -76,6 +78,7 @@ function MemoizeScore(
   const ctx: SubContext = { n: 0, w: 0 };
   let value: number | undefined = undefined;
 
+  const exprFn = expr.simplify(params).toJSFunction("ctx");
   return (n: number, w: number) => {
     if (ctx.n === n && ctx.w === w && value !== undefined) return value;
     ctx.n = n;
@@ -84,7 +87,7 @@ function MemoizeScore(
     value = cache.get(key);
     if (value !== undefined) return value;
 
-    value = EvaluateScoringExpression(expr, params, ctx);
+    value = Math.round(exprFn(ctx));
     // This shouldn't happen generally but we don't want the server to crash
     if (cache.size >= CACHE_CAP) cache.clear();
     cache.set(key, value);
