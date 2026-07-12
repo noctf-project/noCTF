@@ -262,7 +262,6 @@ export class NotificationService {
               user_name: user?.name || "",
               id: event.id,
               seq: event.seq,
-              comments: event.comments,
               status: event.status,
               is_update: event.is_update,
               created_at: event.created_at,

@@ -53,7 +53,7 @@ export async function routes(fastify: FastifyInstance) {
       const scoreObj = await scoreboardService.getChallengesSummary(
         team?.division_id || 1, // TODO: configurable default
       );
-      const solves = new Set<number>();
+      const solves = new Map<number, number>();
 
       // Does not need to rely on scoreboard calcs
       if (team) {
@@ -62,14 +62,16 @@ export async function routes(fastify: FastifyInstance) {
           team.team_id,
         );
         if (entry) {
-          entry.solves.forEach(({ challenge_id }) => solves.add(challenge_id));
+          entry.solves.forEach(({ challenge_id, value }) =>
+            solves.set(challenge_id, value),
+          );
         }
       }
       const values = Object.fromEntries(
         challenges.map((c) => [
           c.id,
           {
-            value: scoreObj[c.id]?.value || 0,
+            value: scoreObj[c.id]?.value || solves.get(c.id) || 0,
             solve_count: scoreObj[c.id]?.solve_count || 0,
             solved_by_me: solves.has(c.id),
           },

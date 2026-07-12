@@ -1,12 +1,17 @@
 import { AdminUpdateSubmissionsRequest } from "@noctf/api/requests";
 import { ServiceCradle } from "../index.ts";
-import { SubmissionDAO } from "../dao/submission.ts";
+import {
+  RawSolve,
+  ReturnedSubmissionUpdate,
+  SubmissionDAO,
+} from "../dao/submission.ts";
 import { AuditParams } from "../types/audit_log.ts";
 import { SubmissionUpdateEvent } from "@noctf/api/events";
 import { SubmissionStatus } from "@noctf/api/enums";
 import { SubmissionLogDAO } from "../dao/submission_log.ts";
 import { FilterUndefined } from "../util/filter.ts";
 import { BadRequestError } from "../errors.ts";
+import { Submission } from "@noctf/schema";
 
 type Props = Pick<ServiceCradle, "databaseClient" | "eventBusService">;
 export class SubmissionService {
@@ -48,8 +53,10 @@ export class SubmissionService {
     return this.dao.getCount(params);
   }
 
-  async update(r: AdminUpdateSubmissionsRequest, actor: string) {
-    const { submissions } = r;
+  async update(
+    submissions: AdminUpdateSubmissionsRequest["submissions"],
+    actor: string,
+  ) {
     const map = submissions.reduce((prev, cur) => {
       prev.set(cur.id, cur);
       return prev;
@@ -91,10 +98,55 @@ export class SubmissionService {
       }
       return updates;
     });
+    updates.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
+    await this.sendUpdateEvents(updates);
+    return updates;
+  }
 
+  async upsertWeights(
+    challenge_id: number,
+    items: Pick<RawSolve, "team_id" | "weight">[],
+    actor: string,
+  ) {
+    const map = new Map<number, (typeof items)[number]>();
+    const values = items.map((v) => {
+      map.set(v.team_id, v);
+      return {
+        team_id: v.team_id,
+        weight: v.weight,
+        challenge_id,
+      };
+    });
+    if (map.size !== items.length) {
+      throw new BadRequestError("Duplicate items detected in update");
+    }
+
+    const updates = await this.databaseClient.transaction(async (tx) => {
+      const submissionDAO = new SubmissionDAO(tx);
+      const updates = await submissionDAO.upsertWeights(values);
+      if (updates.length > 0) {
+        const logDAO = new SubmissionLogDAO(tx);
+        await logDAO.create(
+          updates.map((u) => {
+            return {
+              comments: "",
+              submission_id: u.id,
+              actor,
+              changes: { weight: map.get(u.id)?.weight },
+            };
+          }),
+        );
+      }
+      return updates;
+    });
+    updates.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
+    await this.sendUpdateEvents(updates);
+    return updates;
+  }
+
+  private async sendUpdateEvents(updates: ReturnedSubmissionUpdate[]) {
     // The DB returns the same seq if we update multiple records for the
     // same challenge to correct at the same time.
-    updates.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
     const seqMap = new Map<number, number>();
     for (const {
       id,
@@ -120,9 +172,7 @@ export class SubmissionService {
         hidden,
         seq: status === "correct" ? seq + vSeq : 0,
         is_update: true,
-        comments: map.get(id)?.comments || "",
       });
     }
-    return updates.map(({ id }) => id);
   }
 }

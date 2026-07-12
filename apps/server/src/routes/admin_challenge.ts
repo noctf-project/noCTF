@@ -6,13 +6,26 @@ import {
   AdminGetScoringStrategies,
   AdminListChallenges,
   AdminUpdateChallenge,
+  AdminUpdateChallengeWeights,
 } from "@noctf/api/contract/admin_challenge";
+import {
+  ApplicationError,
+  BadRequestError,
+  UnauthorizedError,
+} from "@noctf/server-core/errors";
 import { ActorType } from "@noctf/server-core/types/enums";
 import { route } from "@noctf/server-core/util/route";
+import { createVerifier, httpbis } from "http-message-signatures";
 import type { FastifyInstance } from "fastify";
+import {
+  PayloadDigestPreParsingHook,
+  PayloadDigestPreValidationHook,
+} from "../hooks/payload.ts";
+import { verify } from "crypto";
 
 export async function routes(fastify: FastifyInstance) {
-  const { challengeService, scoreService } = fastify.container.cradle;
+  const { challengeService, scoreService, submissionService } =
+    fastify.container.cradle;
 
   route(
     fastify,
@@ -143,6 +156,60 @@ export async function routes(fastify: FastifyInstance) {
       return {
         data: challengeService.getPrivateMetadataSchema(),
       };
+    },
+  );
+
+  route(
+    fastify,
+    AdminUpdateChallengeWeights,
+    {
+      auth: {
+        // This endpoint uses HMAC-based auth specific to each challenge
+        require: false,
+      },
+    },
+    {
+      preParsing: PayloadDigestPreParsingHook,
+      preValidation: PayloadDigestPreValidationHook,
+      handler: async (request) => {
+        if (!request.digests) {
+          throw new UnauthorizedError("No content-digest provided");
+        }
+        const challenge = await challengeService.get(request.params.id);
+        const verified = await httpbis.verifyMessage(
+          {
+            keyLookup: async () => {
+              const key = challenge.private_metadata.solve.weight_update_key;
+              if (!key) {
+                throw new UnauthorizedError("Invalid signature");
+              }
+              return {
+                verify: createVerifier(key, "hmac-sha256"),
+              };
+            },
+            tolerance: 10,
+            requiredFields: [
+              "@method",
+              "@path",
+              "@authority",
+              "content-digest",
+            ],
+          },
+          {
+            method: request.method,
+            url: new URL(request.url, `${request.protocol}://${request.host}`),
+            headers: request.headers,
+          },
+        );
+        if (!verified) throw new UnauthorizedError("Invalid signature");
+        return {
+          data: await submissionService.upsertWeights(
+            request.params.id,
+            request.body.items,
+            "api:weight_update",
+          ),
+        };
+      },
     },
   );
 }

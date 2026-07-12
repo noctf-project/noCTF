@@ -25,6 +25,12 @@ const STRATEGIES: Record<string, ScoringStrategy> = {
       "Based on the CCC CTF dynamic scoring formula. initial is" +
       " the maximum score, k is the scaling factor and j is the exponent.",
   },
+  bounded_weight: {
+    expr: "max(lower, min(upper, ctx.w))",
+    description:
+      "A simple formula to clamp an externally provided weight between" +
+      " a lower and upper bound.",
+  },
 };
 
 const parser = new Parser({

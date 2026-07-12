@@ -36,6 +36,8 @@ declare module "fastify" {
   }
 
   interface FastifyRequest {
+    // Won't exist on every request
+    digests?: Record<string, Buffer>;
     user?: {
       app?: number;
       id: number;

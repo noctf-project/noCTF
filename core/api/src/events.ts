@@ -14,7 +14,6 @@ export const SubmissionUpdateEvent = Type.Object(
     seq: Type.Integer(),
     is_update: Type.Boolean(),
     status: SubmissionStatus,
-    comments: Type.String(),
   },
   { $id: "events.submission.update" },
 );

@@ -1,12 +1,14 @@
 import {
   AdminCreateChallengeRequest,
   AdminUpdateChallengeRequest,
+  AdminUpdateChallengeWeightsRequest,
 } from "../requests.ts";
 import {
   AdminGetChallengeResponse,
   AdminGetScoringStrategiesResponse,
   AdminListChallengesResponse,
   AdminUpdateChallengeResponse,
+  AdminUpdateChallengeWeightsResponse,
   AnyResponse,
   BaseResponse,
 } from "../responses.ts";
@@ -93,6 +95,19 @@ export const AdminGetChallengePrivateMetadataSchema = {
     tags: ["admin"],
     response: {
       200: AnyResponse,
+    },
+  },
+} as const satisfies RouteDef;
+
+export const AdminUpdateChallengeWeights = {
+  method: "PUT",
+  url: "/admin/challenges/:id/weights",
+  schema: {
+    tags: ["admin"],
+    params: IdParams,
+    body: AdminUpdateChallengeWeightsRequest,
+    response: {
+      200: AdminUpdateChallengeWeightsResponse,
     },
   },
 } as const satisfies RouteDef;

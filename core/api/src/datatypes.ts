@@ -153,6 +153,9 @@ export const ChallengePrivateMetadataBase = Type.Object(
             input_type: Type.Enum(ChallengeSolveInputType),
           }),
         ),
+        weight_update_key: Type.Optional(
+          Type.String({ maxLength: 128, minLength: 8 }),
+        ),
       },
       { additionalProperties: false },
     ),
@@ -355,7 +358,7 @@ export const Submission = Type.Object({
   source: Type.String({ maxLength: 64 }),
   hidden: Type.Boolean(),
   value: NullableInteger(),
-  weight: Type.Integer(),
+  weight: Type.Integer({ minimum: -1 << 31, maximum: ~(-1 << 31) }),
   status: SubmissionStatus,
   created_at: TypeDate,
   updated_at: TypeDate,
