@@ -217,6 +217,24 @@
     new Map(allTeamsToDisplay.map((team) => [team.team_id, team])),
   );
 
+  // hack: heuristic to get challenges that are externally weighted (different
+  // score per team)
+  const weightedChallengeIds: Set<number> = $derived.by(() => {
+    const bases = new Map<number, Set<number>>();
+    for (const entry of allTeamsToDisplay) {
+      for (const { challenge_id, value, bonus } of entry.solves) {
+        let set = bases.get(challenge_id);
+        if (!set) bases.set(challenge_id, (set = new Set()));
+        set.add(value - (bonus || 0));
+      }
+    }
+    const weighted = new Set<number>();
+    for (const [id, set] of bases) {
+      if (set.size > 1) weighted.add(id);
+    }
+    return weighted;
+  });
+
   $effect(() => {
     if (apiScoreboard.r?.data?.data?.total !== undefined) {
       totalTeams = apiScoreboard.r.data.data.total;
@@ -709,7 +727,10 @@
                     <th
                       class="border border-base-300 bg-base-200 py-2 px-1 text-center font-bold min-w-10 max-w-10 h-10 text-sm"
                     >
-                      {challenge.points}
+                      {weightedChallengeIds.has(challenge.id) ||
+                      !challenge.points
+                        ? "-"
+                        : challenge.points}
                     </th>
                   {/each}
                 </tr>
