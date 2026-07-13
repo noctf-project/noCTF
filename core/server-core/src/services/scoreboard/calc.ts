@@ -78,7 +78,7 @@ function MemoizeScore(
   const ctx: SubContext = { n: 0, w: 0 };
   let value: number | undefined = undefined;
 
-  const exprFn = expr.simplify(params).toJSFunction("ctx");
+  const simplified = expr.simplify(params);
   return (n: number, w: number) => {
     if (ctx.n === n && ctx.w === w && value !== undefined) return value;
     ctx.n = n;
@@ -87,7 +87,7 @@ function MemoizeScore(
     value = cache.get(key);
     if (value !== undefined) return value;
 
-    value = Math.round(exprFn(ctx));
+    value = Math.round(simplified.evaluate({ ctx }));
     // This shouldn't happen generally but we don't want the server to crash
     if (cache.size >= CACHE_CAP) cache.clear();
     cache.set(key, value);
