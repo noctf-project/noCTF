@@ -52,6 +52,12 @@ class SolveConfig(BaseModel):
         default=SolveInputType.TEXT,
         description="Type of input required for solving",
     )
+    weight_update_key: Optional[str] = Field(
+        default=None,
+        min_length=8,
+        max_length=128,
+        description="Secret key for verifying weight update requests"
+    )
 
 
 class ExternalFileConfig(BaseModel):

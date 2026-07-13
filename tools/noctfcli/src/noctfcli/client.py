@@ -394,6 +394,11 @@ class NoCTFClient:
                 "solve": {
                     "source": config.solve.source,
                     "flag": flags,
+                    **(
+                        {"weight_update_key": config.solve.weight_update_key}
+                        if config.solve.weight_update_key
+                        else {}
+                    ),
                 },
                 "score": {
                     "params": config.scoring.params,
