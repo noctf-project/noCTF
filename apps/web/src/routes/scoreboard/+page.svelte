@@ -362,7 +362,7 @@
       <span
         class={`text-xs ${solved ? "text-primary" : "opacity-30"} font-medium`}
       >
-        {challenge.points}
+        {solved ? solved.value : challenge.points}
       </span>
     </div>
   </td>
