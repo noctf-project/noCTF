@@ -150,6 +150,7 @@
             description: r.data.data.description,
             files: r.data.data.metadata.files,
             hints: r.data.data.metadata.hints,
+            inputType: r.data.data.metadata.solve.input_type,
           };
           challDetailsMap[challData.id] = {
             details: challDetails,
