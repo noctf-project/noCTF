@@ -37,19 +37,6 @@ const parser = new Parser({
   },
 });
 
-export function EvaluateScoringExpression(
-  expr: Expression,
-  params: Record<string, number>,
-  ctx: { n: number; w: number },
-): number {
-  return Math.round(
-    expr.evaluate({
-      ...params,
-      ctx,
-    }),
-  );
-}
-
 const VALID_CTX = new Set(["n", "w"]);
 
 export class ScoreService {
