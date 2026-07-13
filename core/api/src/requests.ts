@@ -370,6 +370,19 @@ export type AdminUpdateChallengeRequest = Static<
   typeof AdminUpdateChallengeRequest
 >;
 
+export const AdminUpdateChallengeWeightsRequest = Type.Object(
+  {
+    items: Type.Array(Type.Pick(Submission, ["team_id", "weight"]), {
+      minItems: 1,
+      maxItems: 1000,
+    }),
+  },
+  { additionalProperties: false },
+);
+export type AdminUpdateChallengeWeightsRequest = Static<
+  typeof AdminUpdateChallengeWeightsRequest
+>;
+
 export const SolveChallengeRequest = Type.Object(
   {
     data: Type.String({ maxLength: 512 }),

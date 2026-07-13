@@ -1,7 +1,7 @@
 import type { DB } from "@noctf/schema";
 import { sql, type Insertable } from "kysely";
 import { DBType } from "../clients/database.ts";
-import { ChallengeStat, LimitOffset, Submission } from "@noctf/api/datatypes";
+import { LimitOffset, Submission } from "@noctf/api/datatypes";
 import { SubmissionStatus } from "@noctf/api/enums";
 import { PostgresErrorCode, TryPGConstraintError } from "../util/pgerror.ts";
 import { ConflictError } from "../errors.ts";
@@ -19,6 +19,18 @@ export type RawSolve = Pick<
   | "value"
   | "weight"
 >;
+
+export type ReturnedSubmissionUpdate = Pick<
+  Submission,
+  | "id"
+  | "hidden"
+  | "status"
+  | "user_id"
+  | "team_id"
+  | "challenge_id"
+  | "created_at"
+  | "updated_at"
+> & { seq: number };
 
 const GetSeq = (eb: ExpressionBuilder<DB, "submission">) =>
   eb
@@ -80,19 +92,7 @@ export class SubmissionDAO {
       status?: SubmissionStatus;
       value?: number | null;
     }[],
-  ): Promise<
-    (Pick<
-      Submission,
-      | "id"
-      | "user_id"
-      | "team_id"
-      | "challenge_id"
-      | "hidden"
-      | "created_at"
-      | "updated_at"
-      | "status"
-    > & { seq: number })[]
-  > {
+  ): Promise<ReturnedSubmissionUpdate[]> {
     const vs = sql.join(
       values.map(
         (v) => sql`(
@@ -344,5 +344,56 @@ export class SubmissionDAO {
       correct_count: Number(x.correct_count),
       incorrect_count: Number(x.incorrect_count),
     }));
+  }
+
+  async upsertWeights(
+    values: {
+      challenge_id: number;
+      team_id: number;
+      weight: number;
+    }[],
+  ): Promise<ReturnedSubmissionUpdate[]> {
+    return (
+      await this.db
+        .insertInto("submission")
+        .values(
+          values.map((v) => ({
+            status: "correct",
+            challenge_id: v.challenge_id,
+            team_id: v.team_id,
+            weight: v.weight,
+            source: "weight",
+          })),
+        )
+        .onConflict((oc) =>
+          oc
+            .columns(["challenge_id", "team_id"])
+            .where(sql`status`, "in", sql`('queued', 'correct')`)
+            .doUpdateSet((eb) => ({
+              status: "correct",
+              weight: eb.ref("excluded.weight"),
+              user_id: null,
+            }))
+            .where((eb) =>
+              eb.or([
+                eb("submission.status", "!=", "correct"),
+                eb("submission.weight", "!=", eb.ref("excluded.weight")),
+                eb("submission.user_id", "!=", null),
+              ]),
+            ),
+        )
+        .returning((eb) => [
+          "submission.id as id",
+          "submission.hidden as hidden",
+          "submission.status as status",
+          "user_id",
+          "team_id",
+          "challenge_id",
+          "created_at",
+          "updated_at",
+          GetSeq(eb).as("seq"),
+        ])
+        .execute()
+    ).map((x) => ({ ...x, seq: Number(x.seq) }));
   }
 }

@@ -266,6 +266,13 @@ export type AdminUpdateChallengeResponse = Static<
   typeof AdminUpdateChallengeResponse
 >;
 
+export const AdminUpdateChallengeWeightsResponse = Type.Object({
+  data: Type.Array(Type.Pick(Submission, ["id", "team_id"])),
+});
+export type AdminUpdateChallengeWeightsResponse = Static<
+  typeof AdminUpdateChallengeWeightsResponse
+>;
+
 export const AnyResponse = Type.Object(
   {
     data: Type.Any(),
@@ -348,7 +355,7 @@ export type AdminQuerySubmissionsResponse = Static<
 >;
 
 export const AdminUpdateSubmissionsResponse = Type.Object({
-  data: Type.Array(Type.Number()),
+  data: Type.Array(Type.Pick(Submission, ["id"])),
 });
 export type AdminUpdateSubmissionsResponse = Static<
   typeof AdminUpdateSubmissionsResponse

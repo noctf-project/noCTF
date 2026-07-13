@@ -56,7 +56,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => ({
       data: await submissionService.update(
-        request.body,
+        request.body.submissions,
         `user:${request.user?.id}`,
       ),
     }),

@@ -31,6 +31,7 @@
     "awilix": "catalog:",
     "cbor-x": "catalog:",
     "fastify": "catalog:",
+    "http-message-signatures": "^1.0.6",
     "kysely": "catalog:",
     "nanoid": "catalog:"
   },
