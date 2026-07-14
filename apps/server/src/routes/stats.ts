@@ -38,7 +38,6 @@ export async function routes(fastify: FastifyInstance) {
       const ctime = Date.now();
       const admin = await gateStartTime(
         ["admin.challenge.get"],
-        ctime,
         request.user?.id,
       );
 

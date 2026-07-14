@@ -9,11 +9,29 @@ export type FilterChallengesQuery = Static<typeof FilterChallengesQuery>;
 export const PaginatedQuery = Type.Object(
   {
     page: Type.Optional(Type.Integer({ minimum: 1 })),
-    page_size: Type.Optional(Type.Integer()),
+    page_size: Type.Optional(Type.Integer({ minimum: 1 })),
   },
   { additionalProperties: false },
 );
 export type PaginatedQuery = Static<typeof PaginatedQuery>;
+
+export const AdminListChallengeWeightsQuery = Type.Composite(
+  [
+    PaginatedQuery,
+    Type.Object({
+      team_id: Type.Optional(
+        Type.Array(Type.Integer({ minimum: 0, maximum: ~0 >>> 0 }), {
+          uniqueItems: true,
+          maxItems: 50,
+        }),
+      ),
+    }),
+  ],
+  { additionalProperties: false },
+);
+export type AdminListChallengeWeightsQuery = Static<
+  typeof AdminListChallengeWeightsQuery
+>;
 
 export const ScoreboardQuery = Type.Composite(
   [

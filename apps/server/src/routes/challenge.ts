@@ -36,8 +36,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
-
+      const admin = await gateStartTime(adminPolicy, request.user?.id);
       const challengesPromise = challengeService.list(
         admin ? {} : { hidden: false, visible_at: new Date(ctime + 60000) },
         {
@@ -110,7 +109,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const ctime = Date.now();
-      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
+      const admin = await gateStartTime(adminPolicy, request.user?.id);
       const { id } = request.params;
 
       // Cannot cache directly as could be rendered with team_id as param
@@ -140,7 +139,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
+      const admin = await gateStartTime(adminPolicy, request.user?.id);
       const { id } = request.params;
 
       // Cannot cache directly as could be rendered with team_id as param
@@ -199,7 +198,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const ctime = Date.now();
-      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
+      const admin = await gateStartTime(adminPolicy, request.user?.id);
       const { id } = request.params;
 
       const { value: config } = await configService.get(SetupConfig);
