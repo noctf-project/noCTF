@@ -5,6 +5,7 @@
     description: string;
     files: { filename: string; url: string; size: number; hash: string }[];
     hints: { title: string; description: string }[];
+    inputType?: string;
   }
   export interface ChallengeInfoProps {
     challData?: ChallengeCardData;
@@ -233,6 +234,7 @@
       {/if}
     </div>
 
+    {#if challDetails?.inputType !== "none"}
     {#if challData?.isSolved}
       <div class="flex gap-2">
         <input
@@ -312,6 +314,7 @@
           class="btn pop hover:pop btn-primary">Submit</button
         >
       </form>
+    {/if}
     {/if}
   </div>
   {#if scoreModalVisible}
