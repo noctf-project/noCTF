@@ -103,7 +103,22 @@ export class SubmissionService {
     return updates;
   }
 
-  async upsertWeights(
+  async listWeights(
+    params?: {
+      created_at?: [Date | null, Date | null];
+      user_id?: number[];
+      team_id?: number[];
+      status?: SubmissionStatus[];
+      hidden?: boolean;
+      challenge_id?: number[];
+      data?: string;
+    },
+    limit?: { limit?: number; offset?: number },
+  ) {
+    return await this.dao.listWeights(params, limit);
+  }
+
+  async upsertWeightsForChallenge(
     challenge_id: number,
     items: Pick<RawSolve, "team_id" | "weight">[],
     actor: string,

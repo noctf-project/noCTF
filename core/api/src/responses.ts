@@ -266,11 +266,17 @@ export type AdminUpdateChallengeResponse = Static<
   typeof AdminUpdateChallengeResponse
 >;
 
-export const AdminUpdateChallengeWeightsResponse = Type.Object({
-  data: Type.Array(Type.Pick(Submission, ["id", "team_id"])),
+export const AdminListChallengeWeightsResponse = Type.Object({
+  data: Type.Object({
+    entries: Type.Array(
+      Type.Pick(Submission, ["id", "team_id", "created_at", "updated_at"]),
+    ),
+    page_size: Type.Integer(),
+    total: Type.Integer(),
+  }),
 });
-export type AdminUpdateChallengeWeightsResponse = Static<
-  typeof AdminUpdateChallengeWeightsResponse
+export type AdminListChallengeWeightsResponse = Static<
+  typeof AdminListChallengeWeightsResponse
 >;
 
 export const AnyResponse = Type.Object(

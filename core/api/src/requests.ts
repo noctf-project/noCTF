@@ -157,7 +157,7 @@ export const QueryAuditLogRequest = Type.Object(
     actor: Type.Optional(Type.Array(Type.String())),
     entities: Type.Optional(Type.Array(Type.String())),
     operation: Type.Optional(Type.Array(Type.String())),
-    page_size: Type.Optional(Type.Number()),
+    page_size: Type.Optional(Type.Number({ minimum: 1 })),
   },
   { additionalProperties: false },
 );
@@ -166,7 +166,7 @@ export type QueryAuditLogRequest = Static<typeof QueryAuditLogRequest>;
 export const AdminQuerySubmissionsRequest = Type.Object(
   {
     page: Type.Optional(Type.Integer({ minimum: 1 })),
-    page_size: Type.Optional(Type.Integer()),
+    page_size: Type.Optional(Type.Integer({ minimum: 1 })),
     created_at: Type.Optional(
       Type.Tuple([
         Type.Union([TypeDate, Type.Null()]),
@@ -374,7 +374,6 @@ export const AdminUpdateChallengeWeightsRequest = Type.Object(
   {
     items: Type.Array(Type.Pick(Submission, ["team_id", "weight"]), {
       minItems: 1,
-      maxItems: 1000,
     }),
   },
   { additionalProperties: false },
@@ -395,7 +394,7 @@ export const QueryTeamsRequest = Type.Object(
   {
     division_id: Type.Optional(Type.Integer()),
     page: Type.Optional(Type.Integer({ minimum: 1 })),
-    page_size: Type.Optional(Type.Integer()),
+    page_size: Type.Optional(Type.Integer({ minimum: 1 })),
     name: Type.Optional(Type.String({ maxLength: 64 })),
     ids: Type.Optional(Type.Array(Type.Integer(), { maxItems: 50 })),
   },
@@ -418,7 +417,7 @@ export type AdminQueryTeamsRequest = Static<typeof AdminQueryTeamsRequest>;
 export const QueryUsersRequest = Type.Object(
   {
     page: Type.Optional(Type.Integer({ minimum: 1 })),
-    page_size: Type.Optional(Type.Integer()),
+    page_size: Type.Optional(Type.Integer({ minimum: 1 })),
     name: Type.Optional(Type.String({ maxLength: 64 })),
     ids: Type.Optional(Type.Array(Type.Integer(), { maxItems: 50 })),
   },

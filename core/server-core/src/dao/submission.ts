@@ -32,6 +32,11 @@ export type ReturnedSubmissionUpdate = Pick<
   | "updated_at"
 > & { seq: number };
 
+export type SubmissionWeight = Pick<
+  Submission,
+  "id" | "team_id" | "challenge_id" | "weight" | "created_at" | "updated_at"
+>;
+
 const GetSeq = (eb: ExpressionBuilder<DB, "submission">) =>
   eb
     .case()
@@ -344,6 +349,24 @@ export class SubmissionDAO {
       correct_count: Number(x.correct_count),
       incorrect_count: Number(x.incorrect_count),
     }));
+  }
+
+  async listWeights(
+    filters: Parameters<SubmissionDAO["listQuery"]>[0],
+    limit?: LimitOffset,
+  ): Promise<SubmissionWeight[]> {
+    const query = this.listQuery(filters, limit)
+      .select([
+        "id",
+        "team_id",
+        "challenge_id",
+        "weight",
+        "created_at",
+        "updated_at",
+      ])
+      .orderBy("id asc");
+
+    return query.execute();
   }
 
   async upsertWeights(

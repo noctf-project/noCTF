@@ -34,7 +34,6 @@ export async function routes(fastify: FastifyInstance) {
     async (request) => {
       const admin = await gateStartTime(
         adminPolicy,
-        Date.now(),
         request.user?.id,
       );
       const id = request.params.id;
@@ -94,8 +93,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const ctime = Date.now();
-      const admin = await gateStartTime(adminPolicy, ctime, request.user?.id);
+      const admin = await gateStartTime(adminPolicy, request.user?.id);
 
       const team = await teamService.get(request.params.id);
       const membership = await request.user?.membership;

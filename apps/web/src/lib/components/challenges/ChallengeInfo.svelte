@@ -235,86 +235,86 @@
     </div>
 
     {#if challDetails?.inputType !== "none"}
-    {#if challData?.isSolved}
-      <div class="flex gap-2">
-        <input
-          type="text"
-          placeholder={"You've solved this challenge!"}
-          class="input input-bordered flex-grow !bg-base-100"
-          disabled
-        />
-      </div>
-    {:else if !authState.isPartOfTeam}
-      <div class="flex justify-center">
-        <button
-          class="btn btn-primary pop hover:pop"
-          onclick={() => {
-            goto("/team");
-          }}>Join or create a team to submit flags</button
-        >
-      </div>
-    {:else}
-      <form class="flex gap-2 w-full">
-        <div class="relative w-full">
+      {#if challData?.isSolved}
+        <div class="flex gap-2">
           <input
-            bind:value={flagInput}
-            oninput={() => {
-              if (flagSubmitStatus !== "correct") {
-                flagSubmitStatus = "waiting";
-              }
-            }}
             type="text"
-            disabled={["correct", "submitting"].includes(flagSubmitStatus)}
-            placeholder={(configState.siteConfig?.flag_prefix || "noCTF") +
-              "{...}"}
-            required
-            class={"w-full input input-bordered flex-grow pop duration-200 transition-colors focus:outline-none focus:pop focus:ring-0 focus:ring-offset-0 " +
-              (flagSubmitStatus == "incorrect"
-                ? "bg-error shake text-base-content/30"
-                : "bg-base-100")}
+            placeholder={"You've solved this challenge!"}
+            class="input input-bordered flex-grow !bg-base-100"
+            disabled
           />
-          {#if flagSubmitStatus == "correct"}
-            <div
-              class="absolute inset-0 overflow-hidden rounded-lg pointer-events-none pop"
-            >
-              <div
-                class="absolute left-0 top-0 h-full bg-success"
-                style="width: {correctAnim.current * 100}%"
-              ></div>
-            </div>
-
-            <div
-              class="absolute inset-0 flex items-center justify-center"
-              transition:fade={{ duration: 400 }}
-            >
-              <span
-                class="text-success-content font-bold"
-                in:fly={{ y: 40, duration: 400 }}
-              >
-                Correct! 🎉
-              </span>
-            </div>
-          {:else if flagSubmitStatus == "incorrect"}
-            <div
-              class="absolute inset-0 flex items-center justify-center pointer-events-none"
-              transition:fade={{ duration: 400 }}
-            >
-              <span
-                class="text-error-content font-bold"
-                in:fly={{ y: 40, duration: 400 }}
-              >
-                Incorrect...
-              </span>
-            </div>
-          {/if}
         </div>
-        <button
-          type="submit"
-          onclick={submitFlag}
-          class="btn pop hover:pop btn-primary">Submit</button
-        >
-      </form>
-    {/if}
+      {:else if !authState.isPartOfTeam}
+        <div class="flex justify-center">
+          <button
+            class="btn btn-primary pop hover:pop"
+            onclick={() => {
+              goto("/team");
+            }}>Join or create a team to submit flags</button
+          >
+        </div>
+      {:else}
+        <form class="flex gap-2 w-full">
+          <div class="relative w-full">
+            <input
+              bind:value={flagInput}
+              oninput={() => {
+                if (flagSubmitStatus !== "correct") {
+                  flagSubmitStatus = "waiting";
+                }
+              }}
+              type="text"
+              disabled={["correct", "submitting"].includes(flagSubmitStatus)}
+              placeholder={(configState.siteConfig?.flag_prefix || "noCTF") +
+                "{...}"}
+              required
+              class={"w-full input input-bordered flex-grow pop duration-200 transition-colors focus:outline-none focus:pop focus:ring-0 focus:ring-offset-0 " +
+                (flagSubmitStatus == "incorrect"
+                  ? "bg-error shake text-base-content/30"
+                  : "bg-base-100")}
+            />
+            {#if flagSubmitStatus == "correct"}
+              <div
+                class="absolute inset-0 overflow-hidden rounded-lg pointer-events-none pop"
+              >
+                <div
+                  class="absolute left-0 top-0 h-full bg-success"
+                  style="width: {correctAnim.current * 100}%"
+                ></div>
+              </div>
+
+              <div
+                class="absolute inset-0 flex items-center justify-center"
+                transition:fade={{ duration: 400 }}
+              >
+                <span
+                  class="text-success-content font-bold"
+                  in:fly={{ y: 40, duration: 400 }}
+                >
+                  Correct! 🎉
+                </span>
+              </div>
+            {:else if flagSubmitStatus == "incorrect"}
+              <div
+                class="absolute inset-0 flex items-center justify-center pointer-events-none"
+                transition:fade={{ duration: 400 }}
+              >
+                <span
+                  class="text-error-content font-bold"
+                  in:fly={{ y: 40, duration: 400 }}
+                >
+                  Incorrect...
+                </span>
+              </div>
+            {/if}
+          </div>
+          <button
+            type="submit"
+            onclick={submitFlag}
+            class="btn pop hover:pop btn-primary">Submit</button
+          >
+        </form>
+      {/if}
     {/if}
   </div>
   {#if scoreModalVisible}
