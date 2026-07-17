@@ -13,6 +13,7 @@ import { SimpleMutex } from "nats/lib/nats-base-client/util.js";
 import { decode, encode } from "cbor-x";
 import { Compress, Decompress } from "../util/message_compression.ts";
 import { Static, TSchema } from "@sinclair/typebox";
+import { RunInParallelWithLimit } from "../util/semaphore.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -159,10 +160,23 @@ export class EventBusService {
     if (!this.natsClient) {
       await this.init();
     }
-    await this.natsClient.publish(
+    this.natsClient.publish(
       typeof subject === "string" ? subject : subject.$id!,
       await Compress(encode(data)),
     );
+  }
+
+  async publishBatch<T extends TSchema | string>(
+    subject: T,
+    data: (T extends TSchema ? Static<T> : unknown)[],
+  ) {
+    if (!this.natsClient) {
+      await this.init();
+    }
+    const sub = typeof subject === "string" ? subject : subject.$id!;
+    await RunInParallelWithLimit(data, 8, async (item) => {
+      this.natsClient.publish(sub, await Compress(encode(item)));
+    });
   }
 
   private async listen<T>(
