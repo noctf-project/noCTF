@@ -163,6 +163,8 @@ export class SubmissionService {
     // The DB returns the same seq if we update multiple records for the
     // same challenge to correct at the same time.
     const seqMap = new Map<number, number>();
+    const messages = new Array(updates.length);
+    let i = 0;
     for (const {
       id,
       status,
@@ -176,7 +178,7 @@ export class SubmissionService {
     } of updates) {
       const vSeq = (seqMap.get(challenge_id) || 0) + 1;
       seqMap.set(challenge_id, vSeq);
-      await this.eventBusService.publish(SubmissionUpdateEvent, {
+      messages[i++] = {
         id,
         user_id: user_id || undefined,
         team_id,
@@ -187,7 +189,8 @@ export class SubmissionService {
         hidden,
         seq: status === "correct" ? seq + vSeq : 0,
         is_update: true,
-      });
+      };
     }
+    await this.eventBusService.publishBatch(SubmissionUpdateEvent, messages);
   }
 }

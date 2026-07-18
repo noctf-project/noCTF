@@ -32,10 +32,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const admin = await gateStartTime(
-        adminPolicy,
-        request.user?.id,
-      );
+      const admin = await gateStartTime(adminPolicy, request.user?.id);
       const id = request.params.id;
       if (!admin && id !== (await request.user?.membership)?.division_id) {
         const division = await divisionService.get(id);
