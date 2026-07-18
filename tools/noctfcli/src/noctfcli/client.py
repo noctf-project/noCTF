@@ -395,6 +395,16 @@ class NoCTFClient:
                     "source": config.solve.source,
                     "flag": flags,
                     **(
+                        {
+                            "manual": {
+                                "allow_cancel": config.solve.allow_cancel,
+                                "input_type": config.solve.input_type.value,
+                            },
+                        }
+                        if config.solve.source == "manual"
+                        else {}
+                    ),
+                    **(
                         {"weight_update_key": config.solve.weight_update_key}
                         if config.solve.weight_update_key
                         else {}

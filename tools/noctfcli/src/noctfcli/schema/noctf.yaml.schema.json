@@ -3,7 +3,7 @@
   "title": "noCTF Challenge Configuration",
   "description": "Schema for noctf.yaml challenge configuration files",
   "type": "object",
-  "required": ["slug", "title", "categories", "description", "flags"],
+  "required": ["slug", "title", "categories", "description"],
   "properties": {
     "version": {
       "type": "string",
@@ -48,7 +48,6 @@
     },
     "flags": {
       "type": "array",
-      "minItems": 1,
       "items": {
         "oneOf": [
           {
@@ -153,6 +152,11 @@
           "enum": ["text", "textarea", "none"],
           "default": "text",
           "description": "Type of input required for solving"
+        },
+        "allow_cancel": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether a queued manual solve can be cancelled"
         }
       },
       "description": "Challenge solve configuration"

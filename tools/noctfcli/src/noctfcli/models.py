@@ -3,7 +3,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class FlagStrategy(str, Enum):
@@ -19,7 +19,7 @@ class SolveInputType(str, Enum):
     """Types of input for solving challenges."""
 
     TEXT = "text"
-    FILE = "file"
+    TEXTAREA = "textarea"
     NONE = "none"
 
 
@@ -52,12 +52,26 @@ class SolveConfig(BaseModel):
         default=SolveInputType.TEXT,
         description="Type of input required for solving",
     )
+    allow_cancel: bool = Field(
+        default=False,
+        description="Whether a queued manual solve can be cancelled",
+    )
     weight_update_key: Optional[str] = Field(
         default=None,
         min_length=8,
         max_length=128,
         description="Secret key for verifying weight update requests"
     )
+
+    @model_validator(mode="after")
+    def validate_input_type(self) -> "SolveConfig":
+        """A flag source always renders a text input, so reject a conflict."""
+        if self.source == "flag" and self.input_type != SolveInputType.TEXT:
+            msg = (
+                f"solve.source 'flag', requires solve.input_type 'text'"
+            )
+            raise ValueError(msg)
+        return self
 
 
 class ExternalFileConfig(BaseModel):
@@ -93,7 +107,10 @@ class ChallengeConfig(BaseModel):
     description: str = Field(..., description="Challenge description")
     difficulty: Optional[str] = Field(..., description="Challenge difficulty")
     tags: dict[str, str] = Field(default_factory=dict, description="Additional tags")
-    flags: list[Union[str, Flag]] = Field(..., description="Challenge flags")
+    flags: list[Union[str, Flag]] = Field(
+        default_factory=list,
+        description="Challenge flags (required when solve.source is 'flag')",
+    )
     files: list[Union[str, ExternalFileConfig]] = Field(
         default_factory=list,
         description="Challenge files: local path strings or external references",
@@ -140,6 +157,14 @@ class ChallengeConfig(BaseModel):
             else:
                 normalized.append(flag)
         return normalized
+
+    @model_validator(mode="after")
+    def validate_flags_present(self) -> "ChallengeConfig":
+        """Only a flag source consumes flags, and requires them."""
+        if self.solve.source == "flag" and not self.flags:
+            msg = "at least one flag is required when solve.source is 'flag'"
+            raise ValueError(msg)
+        return self
 
     def get_file_paths(self, base_path: Path) -> list[Path]:
         """Get absolute paths for all local challenge files (excludes external)."""
