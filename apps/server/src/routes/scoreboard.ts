@@ -32,17 +32,13 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const admin = await gateStartTime(
-        adminPolicy,
-        request.user?.id,
-      );
+      const admin = await gateStartTime(adminPolicy, request.user?.id);
       const id = request.params.id;
       if (!admin && id !== (await request.user?.membership)?.division_id) {
         const division = await divisionService.get(id);
         if (!division?.is_visible)
           throw new NotFoundError("Division not found");
       }
-
       const page = request.query.page || 1;
       const page_size = Math.min(
         request.query.page_size || SCOREBOARD_PAGE_SIZE,
@@ -59,9 +55,15 @@ export async function routes(fastify: FastifyInstance) {
         page * page_size - 1,
         request.query.tags,
       );
+
+      const membership = await request.user?.membership;
       const graphs = request.query.graph_interval
         ? await scoreboardService.getTeamScoreHistory(
-            scoreboard.entries.map(({ team_id }) => team_id),
+            scoreboard.entries
+              .filter(
+                (x) => !x.hidden || membership?.team_id === x.team_id || admin,
+              )
+              .map((x) => x.team_id),
           )
         : new Map();
 
