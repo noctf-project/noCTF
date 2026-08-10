@@ -219,7 +219,7 @@ export const GetChallengeResponse = Type.Object({
 export type GetChallengeResponse = Static<typeof GetChallengeResponse>;
 
 export const GetChallengeSolvesResponse = Type.Object({
-  data: Type.Array(Type.Pick(Solve, ["team_id", "created_at"])),
+  data: Type.Array(Type.Pick(Solve, ["team_id", "created_at", "value"])),
 });
 export type GetChallengeSolvesResponse = Static<
   typeof GetChallengeSolvesResponse
