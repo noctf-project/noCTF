@@ -196,7 +196,9 @@
     apiTop10.r?.data
       ? Promise.all(
           apiTop10.r?.data.data.entries.map(async ({ team_id, graph }) => ({
-            name: (await TeamQueryService.get(team_id))?.name,
+            name:
+              (await TeamQueryService.get(team_id).catch(() => null))?.name ||
+              "",
             data: graph,
           })),
         )
