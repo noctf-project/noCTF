@@ -17,6 +17,7 @@
   interface ScoreEntry {
     teamId: number;
     time: Date;
+    value: number;
   }
 </script>
 
@@ -52,7 +53,16 @@
   let scoreModalVisible = $state(false);
   let scoresLoading = $state(false);
   let showHash = $state(false);
-  let scoresData: ScoreEntry[] | undefined = $state(undefined);
+  let scoresData = $state<ScoreEntry[] | undefined>(undefined);
+
+  let showScores = $derived(
+    !!scoresData && new Set(scoresData.map((s) => s.value)).size > 1,
+  );
+  let displayedScores = $derived(
+    showScores
+      ? [...scoresData!].sort((a, b) => b.value - a.value)
+      : scoresData,
+  );
 
   let knowsSolvesClick = localStorage.getItem("knowsSolvesClick") == "1";
   let showHint = $state(!knowsSolvesClick);
@@ -110,9 +120,10 @@
       });
       scoresLoading = false;
       if (r.data) {
-        scoresData = r.data.data.map(({ team_id, created_at }) => ({
+        scoresData = r.data.data.map(({ team_id, created_at, value }) => ({
           teamId: team_id,
           time: new Date(created_at),
+          value,
         }));
       }
     }
@@ -338,13 +349,19 @@
               <tr>
                 <th class="border-base-400 border-b w-8">#</th>
                 <th class="border-base-400 border-b w-full">Team</th>
+                {#if showScores}
+                  <th
+                    class="border-base-400 border-b whitespace-nowrap w-14 px-1 text-right"
+                    >Score</th
+                  >
+                {/if}
                 <th class="border-base-400 border-b whitespace-nowrap w-20"
                   >Solved</th
                 >
               </tr>
             </thead>
             <tbody>
-              {#each scoresData! as { teamId, time }, index}
+              {#each displayedScores! as { teamId, time, value }, index}
                 <tr class="border-base-300 border-b">
                   <td class="font-medium text-left">
                     {#if index <= 2}
@@ -366,6 +383,11 @@
                       </a>
                     {/await}
                   </td>
+                  {#if showScores}
+                    <td class="font-medium whitespace-nowrap px-1 text-right">
+                      {value}
+                    </td>
+                  {/if}
                   <td
                     class="text-neutral-400 whitespace-nowrap tooltip tooltip-left"
                     data-tip={`${time.toLocaleDateString()} ${time.toLocaleTimeString()}`}
