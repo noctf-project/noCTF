@@ -208,7 +208,7 @@ describe(ComputeScoreboard, () => {
     expr.variables.mockReturnValue(["ctx.n"]);
     expr.simplify.mockReturnValue({
       evaluate: mockEvaluate,
-    } as any);
+    } as unknown as Expression);
   });
   const challenge1: ChallengeMetadata = {
     id: 1,
@@ -661,7 +661,7 @@ describe(ComputeFullGraph, () => {
     expr.variables.mockReturnValue(["ctx.n"]);
     expr.simplify.mockReturnValue({
       evaluate: mockEvaluate,
-    } as any);
+    } as unknown as Expression);
   });
 
   const challenge1: ChallengeMetadata = {
@@ -1003,7 +1003,7 @@ describe("Solve count and weight scoring", () => {
   beforeEach(() => {
     expr.simplify.mockReturnValue({
       evaluate: mockEvaluate,
-    } as any);
+    } as unknown as Expression);
   });
   const challenge1: ChallengeMetadata = {
     id: 1,
@@ -1351,6 +1351,79 @@ describe("Solve count and weight scoring", () => {
       { score: 830, team_id: 2, updated_at: new Date(2000) },
     ]);
   });
+
+  it("assigns bounty bonuses to highest-scoring weighted solves rather than arrival order", () => {
+    expr.variables.mockReturnValue(["ctx.w"]);
+    mockEvaluate.mockImplementation(
+      MockEvaluateSolvesWithWeight((_n, w) => w * 10),
+    );
+
+    // Team 1 solves first with lower weight (w=5 -> score 50)
+    // Team 2 solves second with higher weight (w=10 -> score 100)
+    const solvesByChallenge = new Map<number, RawSolve[]>([
+      [
+        1,
+        [
+          {
+            challenge_id: 1,
+            hidden: false,
+            id: 1,
+            created_at: new Date(1000) as unknown as Timestamp & Date,
+            updated_at: new Date(1000) as unknown as Timestamp & Date,
+            team_id: 1,
+            user_id: 1,
+            value: null,
+            weight: 5,
+          },
+          {
+            challenge_id: 1,
+            hidden: false,
+            id: 2,
+            created_at: new Date(2000) as unknown as Timestamp & Date,
+            updated_at: new Date(2000) as unknown as Timestamp & Date,
+            team_id: 2,
+            user_id: 2,
+            value: null,
+            weight: 10,
+          },
+        ],
+      ],
+    ]);
+
+    const result = ComputeScoreboard(
+      new Map([
+        [1, { id: 1, flags: [], division_id: 1, tag_ids: [] }],
+        [2, { id: 2, flags: [], division_id: 1, tag_ids: [] }],
+      ]),
+      [
+        {
+          metadata: {
+            ...challenge1,
+            private_metadata: {
+              ...challenge1.private_metadata,
+              score: {
+                ...challenge1.private_metadata.score,
+                bonus: [50, 20], // 1st bounty = 50, 2nd bounty = 20
+              },
+            },
+          },
+          expr,
+        },
+      ],
+      solvesByChallenge,
+      [],
+    );
+
+    const team1 = result.scoreboard.find((s) => s.team_id === 1)!;
+    const team2 = result.scoreboard.find((s) => s.team_id === 2)!;
+
+    // Team 2 had higher base score (100 vs 50), so Team 2 gets 1st bounty (50) -> total 150
+    // Team 1 gets 2nd bounty (20) -> total 70
+    expect(team2.score).toBe(150);
+    expect(team2.solves[0].bonus).toBe(50);
+    expect(team1.score).toBe(70);
+    expect(team1.solves[0].bonus).toBe(20);
+  });
 });
 
 describe("MemoizeScore black-box cache", () => {
@@ -1359,7 +1432,7 @@ describe("MemoizeScore black-box cache", () => {
   beforeEach(() => {
     expr.simplify.mockReturnValue({
       evaluate: mockEvaluate,
-    } as any);
+    } as unknown as Expression);
   });
   const challenge1: ChallengeMetadata = {
     id: 1,
@@ -1441,6 +1514,8 @@ describe("MemoizeScore black-box cache", () => {
     // Both should get memo(2, 5) = 200 + 5 = 205
     expect(team1.score).toBe(205);
     expect(team2.score).toBe(205);
+    // 1 call for (n=2, w=5) [memoized on team2] and 1 call for challenge card (n=2, w=0)
+    expect(callCount).toBe(2);
   });
 
   it("cache differentiates between different (n, w) pairs", () => {
