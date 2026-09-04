@@ -44,54 +44,31 @@ export type MinimalScoreboardEntry = Pick<
 
 type SubContext = { n: number; w: number };
 
-const CACHE_CAP = 1_000_000;
-
 // This function caches a single score since in most cases the score doesn't really change.
 function MemoizeScore(
   expr: Expression,
   params: ChallengePrivateMetadataBase["score"]["params"],
 ) {
-  const vars = expr.variables({ withMembers: true });
-  const has = [vars.includes("ctx.n") && "n", vars.includes("ctx.w") && "w"];
-  const count = has.reduce((p, c) => (p += c ? 1 : 0), 0);
-  const k = new Uint16Array(count * 2);
-
-  function cacheKey(ctx: Record<string, number>) {
-    if (!k.length) return 0;
-
-    let c = 0;
-    for (const h of has) {
-      if (!h) continue;
-
-      // >>> 0 casts any signed int32 (including negative numbers)
-      // into its exact 32-bit unsigned bit pattern equivalence.
-      const n = (ctx[h] || 0) >>> 0;
-
-      k[c++] = (n >>> 16) & 0xffff;
-      k[c++] = n & 0xffff;
-      if (c === k.length) break;
-    }
-    return String.fromCharCode(...k);
-  }
-
-  const cache = new Map<string | number, number>();
+  const cache = new Map<string, number>();
   const ctx: SubContext = { n: 0, w: 0 };
-  let value: number | undefined = undefined;
-
+  let lastN = -1;
+  let lastW = -1;
+  let lastVal: number | undefined;
   const simplified = expr.simplify(params);
+
   return (n: number, w: number) => {
-    if (ctx.n === n && ctx.w === w && value !== undefined) return value;
+    if (n === lastN && w === lastW && lastVal !== undefined) return lastVal;
+    lastN = n;
+    lastW = w;
+    const key = `${n}:${w}`;
+    lastVal = cache.get(key);
+    if (lastVal !== undefined) return lastVal;
+
     ctx.n = n;
     ctx.w = w;
-    const key = cacheKey(ctx);
-    value = cache.get(key);
-    if (value !== undefined) return value;
-
-    value = Math.round(simplified.evaluate({ ctx }));
-    // This shouldn't happen generally but we don't want the server to crash
-    if (cache.size >= CACHE_CAP) cache.clear();
-    cache.set(key, value);
-    return value;
+    lastVal = Math.round(simplified.evaluate({ ctx }));
+    cache.set(key, lastVal);
+    return lastVal;
   };
 }
 function ComputeScoresForChallenge(
@@ -110,29 +87,50 @@ function ComputeScoresForChallenge(
   );
 
   const n = valid.filter(({ value }) => value === null).length;
-
   const memo = MemoizeScore(expr, params);
 
   let last_event = new Date(0);
-  let bonusIdx = 0;
-  const rv: Solve[] = valid.map(
-    ({ team_id, user_id, created_at, updated_at, value, weight }) => {
-      last_event = MaxDate(last_event, updated_at);
-      const b = value !== null ? undefined : bonus?.[bonusIdx++];
+
+  const withBase = valid.map((s) => {
+    last_event = MaxDate(last_event, s.updated_at);
+    return {
+      ...s,
+      baseScore: s.value !== null ? s.value : memo(n, s.weight),
+    };
+  });
+
+  const bonusMap = new Map<number, number>();
+  if (bonus && bonus.length > 0) {
+    const eligible = withBase
+      .filter((s) => s.value === null)
+      .sort(
+        (a, b) =>
+          b.baseScore - a.baseScore ||
+          a.created_at.getTime() - b.created_at.getTime(),
+      );
+
+    eligible.forEach((item, rank) => {
+      if (bonus[rank] !== undefined) {
+        bonusMap.set(item.team_id, bonus[rank]);
+      }
+    });
+  }
+
+  const rv: Solve[] = withBase.map(
+    ({ team_id, user_id, created_at, baseScore, value }) => {
+      const b = value !== null ? undefined : bonusMap.get(team_id);
       return {
         team_id,
         user_id,
         challenge_id: metadata.id,
         bonus: b,
         hidden: false,
-        value:
-          value !== null
-            ? value
-            : memo(n, weight) + ((b && Math.round(b)) || 0),
+        value: baseScore + ((b && Math.round(b)) || 0),
         created_at,
       };
     },
   );
+
   const rh: Solve[] = hidden.map(
     ({ team_id, user_id, created_at, updated_at, weight }) => {
       last_event = MaxDate(last_event, updated_at);
@@ -146,6 +144,7 @@ function ComputeScoresForChallenge(
       };
     },
   );
+
   return {
     value: memo(n, 0), // by default, w is zero
     solves: rv.concat(rh),
