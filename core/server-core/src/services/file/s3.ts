@@ -51,13 +51,15 @@ export class S3FileProviderInstance implements FileProviderInstance {
     rs: Readable,
     pm: Omit<ProviderFileMetadata, "size">,
   ): ReturnType<FileProviderInstance["upload"]> {
-    const dup = new PassThrough();
-    rs.pipe(dup);
+    const dupSummary = new PassThrough();
+    const dupUpload = new PassThrough();
+    rs.pipe(dupSummary);
+    rs.pipe(dupUpload);
     const ref = nanoid();
     const path = `${S3FileProviderInstance.PREFIX}${ref}`;
     const [summary, _] = await Promise.all([
-      summarizeFile(dup),
-      this.client.putObject(this.bucket, path, rs, undefined, {
+      summarizeFile(dupSummary),
+      this.client.putObject(this.bucket, path, dupUpload, undefined, {
         "content-disposition": `attachment; filename=${JSON.stringify(pm.filename)}`,
         "content-type": pm.mime,
       }),
