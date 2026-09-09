@@ -67,8 +67,13 @@ export class LocalFileProviderInstance implements FileProviderInstance {
         unlink(join(this.root, LocalFileProviderInstance.METADATA_PATH, ref)),
         unlink(join(this.root, LocalFileProviderInstance.OBJECT_PATH, ref)),
       ]);
-    } catch (e) {
-      if (e.code === "ENOENT") {
+    } catch (e: unknown) {
+      if (
+        typeof e === "object" &&
+        e !== null &&
+        "code" in e &&
+        (e as { code: unknown }).code === "ENOENT"
+      ) {
         throw new NotFoundError("File not found");
       }
       throw e;
@@ -80,13 +85,15 @@ export class LocalFileProviderInstance implements FileProviderInstance {
     rs: Readable,
     m: Omit<ProviderFileMetadata, "size">,
   ): ReturnType<FileProviderInstance["upload"]> {
-    const dup = new PassThrough();
-    rs.pipe(dup);
+    const dupSummary = new PassThrough();
+    const dupDisk = new PassThrough();
+    rs.pipe(dupSummary);
+    rs.pipe(dupDisk);
     const ref = nanoid();
     const fp = join(this.root, LocalFileProviderInstance.OBJECT_PATH, ref);
     const [summary, _] = await Promise.all([
-      summarizeFile(dup),
-      pipeline(rs, createWriteStream(fp)),
+      summarizeFile(dupSummary),
+      pipeline(dupDisk, createWriteStream(fp)),
     ]);
     await this.setProviderMetadata(ref, { ...m, size: (await stat(fp)).size });
     return { ref, ...summary };
@@ -160,8 +167,8 @@ export class LocalFileProviderInstance implements FileProviderInstance {
           ),
         ),
       };
-    } catch (e) {
-      if (e.code === "ENOENT") {
+    } catch (e: unknown) {
+      if ((e as { code?: string }).code === "ENOENT") {
         throw new NotFoundError("File not found");
       }
       throw e;
