@@ -12,6 +12,7 @@ import { MinimalTeamInfo } from "../../dao/team.ts";
 import { RawSolve } from "../../dao/submission.ts";
 import { HistoryDataPoint } from "../../dao/score_history.ts";
 import { IsTimeBetweenSeconds } from "../../util/time.ts";
+import { topK } from "../../util/arrays.ts";
 
 export type ChallengeMetadataWithExpr = {
   expr: Expression;
@@ -95,21 +96,21 @@ function ComputeScoresForChallenge(
     last_event = MaxDate(last_event, s.updated_at);
     return {
       ...s,
+      created_at_ms: s.created_at.getTime(),
       baseScore: s.value !== null ? s.value : memo(n, s.weight),
     };
   });
 
   const bonusMap = new Map<number, number>();
   if (bonus && bonus.length > 0) {
-    const eligible = withBase
-      .filter((s) => s.value === null)
-      .sort(
-        (a, b) =>
-          b.baseScore - a.baseScore ||
-          a.created_at.getTime() - b.created_at.getTime(),
-      );
+    const eligible = withBase.filter((s) => s.value === null);
+    const topEligible = topK(
+      eligible,
+      bonus.length,
+      (a, b) => b.baseScore - a.baseScore || a.created_at_ms - b.created_at_ms,
+    );
 
-    eligible.forEach((item, rank) => {
+    topEligible.forEach((item, rank) => {
       if (bonus[rank] !== undefined) {
         bonusMap.set(item.team_id, bonus[rank]);
       }
@@ -168,29 +169,58 @@ function ComputeScoreStreamForChallenge(
   );
 
   const memo = MemoizeScore(expr, params);
-  const stream: { team_id: number; delta: number; updated_at: Date }[] = [];
+  const stream: {
+    team_id: number;
+    delta: number;
+    updated_at: Date;
+    updated_at_ms: number;
+  }[] = [];
   const teamScores = new Map<number, { score: number; w: number }>();
+  const distinctWeights = new Set<number>();
   let bonusIdx = 0;
   let n = 0;
   valid.forEach(({ team_id, created_at, value, weight }) => {
+    const updated_at_ms = created_at.getTime();
     const b = value !== null ? undefined : bonus?.[bonusIdx++];
     if (value === null) {
       n++;
-      // n changed: emit retroactive score adjustments for all previous solvers
-      for (const [tid, state] of teamScores) {
-        const updated = memo(n, state.w);
-        const delta = updated - state.score;
-        if (delta !== 0) {
-          stream.push({ team_id: tid, delta, updated_at: created_at });
-          state.score = updated;
+      // Check if any distinct weight produces a non-zero delta
+      let anyChanged = false;
+      for (const w of distinctWeights) {
+        if (memo(n, w) !== memo(n - 1, w)) {
+          anyChanged = true;
+          break;
+        }
+      }
+
+      if (anyChanged) {
+        // n changed: emit retroactive score adjustments for previous solvers whose score changed
+        for (const [tid, state] of teamScores) {
+          const updated = memo(n, state.w);
+          const delta = updated - state.score;
+          if (delta !== 0) {
+            stream.push({
+              team_id: tid,
+              delta,
+              updated_at: created_at,
+              updated_at_ms,
+            });
+            state.score = updated;
+          }
         }
       }
     }
     const score =
       value !== null ? value : memo(n, weight) + ((b && Math.round(b)) || 0);
-    stream.push({ team_id, delta: score, updated_at: created_at });
+    stream.push({
+      team_id,
+      delta: score,
+      updated_at: created_at,
+      updated_at_ms,
+    });
     // Only track dynamic solves for future retroactive adjustments
     if (value === null) {
+      distinctWeights.add(weight);
       teamScores.set(team_id, { score: memo(n, weight), w: weight });
     }
   });
@@ -218,22 +248,20 @@ export function ComputeFullGraph(
       team_id,
       delta: value,
       updated_at: created_at,
+      updated_at_ms: created_at.getTime(),
     });
   }
-  stream.sort((a, b) => {
-    const t = a.team_id - b.team_id;
-    if (t !== 0) return t;
-    return a.updated_at.getTime() - b.updated_at.getTime();
-  });
+  stream.sort(
+    (a, b) => a.team_id - b.team_id || a.updated_at_ms - b.updated_at_ms,
+  );
   const scores = new Map<number, number>();
   const points: HistoryDataPoint[] = [];
   let lastUpdated: number | undefined;
-  for (const { team_id, delta, updated_at } of stream) {
+  for (const { team_id, delta, updated_at_ms } of stream) {
     const score = (scores.get(team_id) || 0) + delta;
     scores.set(team_id, score);
     const last = points[points.length - 1];
-    const sampled =
-      Math.floor(updated_at.getTime() / sampleRateMs) * sampleRateMs;
+    const sampled = Math.floor(updated_at_ms / sampleRateMs) * sampleRateMs;
     if (last && last.team_id === team_id && lastUpdated === sampled) {
       last.score = score;
     } else {
@@ -334,13 +362,15 @@ export function ComputeScoreboard(
 
   const sorted = scoreboard.sort(
     (a, b) =>
-      b.score - a.score || a.last_solve.getTime() - b.last_solve.getTime(),
+      b.score - a.score ||
+      a.last_solve.getTime() - b.last_solve.getTime() ||
+      a.team_id - b.team_id, // this should never happen but used to preserve stability
   );
   sorted.forEach((x, i) => {
     x.rank =
       i > 0 &&
       sorted[i - 1].score === x.score &&
-      sorted[i - 1].last_solve === x.last_solve
+      sorted[i - 1].last_solve.getTime() === x.last_solve.getTime()
         ? i
         : i + 1;
     x.hidden =

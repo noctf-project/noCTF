@@ -242,6 +242,55 @@ describe(ComputeScoreboard, () => {
     });
   });
 
+  it("Correctly assigns tied rank when multiple teams have the same score and same last_solve timestamp", () => {
+    mockEvaluate.mockReturnValue(100);
+    const teams = new Map<number, MinimalTeamInfo>([
+      [1, { id: 1, name: "team1", flags: [], tag_ids: [] }],
+      [2, { id: 2, name: "team2", flags: [], tag_ids: [] }],
+    ]);
+    const challenges: ChallengeMetadataWithExpr[] = [
+      { metadata: challenge1, expr },
+    ];
+    // Both teams solved at the exact same timestamp, but distinct Date object instances
+    const solvesByChallenge = new Map<number, RawSolve[]>([
+      [
+        1,
+        [
+          {
+            id: 1,
+            challenge_id: 1,
+            team_id: 1,
+            user_id: 1,
+            value: null,
+            weight: 0,
+            hidden: false,
+            created_at: new Date(5000) as unknown as Timestamp & Date,
+            updated_at: new Date(5000) as unknown as Timestamp & Date,
+          },
+          {
+            id: 2,
+            challenge_id: 1,
+            team_id: 2,
+            user_id: 2,
+            value: null,
+            weight: 0,
+            hidden: false,
+            created_at: new Date(5000) as unknown as Timestamp & Date,
+            updated_at: new Date(5000) as unknown as Timestamp & Date,
+          },
+        ],
+      ],
+    ]);
+
+    const result = ComputeScoreboard(teams, challenges, solvesByChallenge, []);
+    expect(result.scoreboard).toHaveLength(2);
+    expect(result.scoreboard[0].score).toBe(100);
+    expect(result.scoreboard[1].score).toBe(100);
+    // Both teams must be tied at rank 1
+    expect(result.scoreboard[0].rank).toBe(1);
+    expect(result.scoreboard[1].rank).toBe(1);
+  });
+
   it("Value overrides for solves do not count towards dynamic scoring", () => {
     mockEvaluate.mockReturnValue(1);
     const solvesByChallenge = new Map<number, RawSolve[]>([

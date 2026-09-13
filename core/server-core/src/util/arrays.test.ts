@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { bisectLeft, bisectRight, insort } from "./arrays.ts";
+import { bisectLeft, bisectRight, insort, topK } from "./arrays.ts";
 
 describe("bisectLeft", () => {
   it("should find the leftmost insertion point in a simple array", () => {
@@ -134,5 +134,41 @@ describe("insort", () => {
     const arr = [1, 2, 2, 2, 5];
     const newArr = insort(arr, 2);
     expect(newArr).toEqual([1, 2, 2, 2, 2, 5]);
+  });
+});
+
+describe("topK", () => {
+  const numCmp = (a: number, b: number) => a - b; // ascending
+
+  it("should return empty array when k <= 0 or arr is empty", () => {
+    expect(topK([], 3, numCmp)).toEqual([]);
+    expect(topK([1, 2, 3], 0, numCmp)).toEqual([]);
+    expect(topK([1, 2, 3], -1, numCmp)).toEqual([]);
+  });
+
+  it("should return sorted array if arr.length <= k", () => {
+    expect(topK([5, 2, 8], 5, numCmp)).toEqual([2, 5, 8]);
+    expect(topK([5, 2, 8], 3, numCmp)).toEqual([2, 5, 8]);
+  });
+
+  it("should return top k smallest elements when arr.length > k", () => {
+    const arr = [10, 3, 5, 1, 9, 2, 8, 4, 7, 6];
+    expect(topK(arr, 3, numCmp)).toEqual([1, 2, 3]);
+  });
+
+  it("should work with custom objects and descending comparator", () => {
+    const items = [
+      { id: 1, score: 100, time: 10 },
+      { id: 2, score: 200, time: 20 },
+      { id: 3, score: 200, time: 15 },
+      { id: 4, score: 50, time: 5 },
+      { id: 5, score: 150, time: 12 },
+    ];
+    // Higher score first, then earlier time
+    const cmp = (a: (typeof items)[0], b: (typeof items)[0]) =>
+      b.score - a.score || a.time - b.time;
+
+    const top3 = topK(items, 3, cmp);
+    expect(top3.map((x) => x.id)).toEqual([3, 2, 5]);
   });
 });
