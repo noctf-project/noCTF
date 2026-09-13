@@ -32,7 +32,7 @@ server.ready(async () => {
     new SingletonWorker({
       lockService: lockService,
       logger: logger,
-      intervalSeconds: 120,
+      intervalSeconds: 60,
       name: "scoreboard_periodic",
       handler: () => RunLockedScoreboardCalculator(server.container.cradle),
     }),

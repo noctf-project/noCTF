@@ -251,8 +251,12 @@
     try {
       const result = await api.PUT("/admin/submissions", {
         body: {
-          ids: [submissionId],
-          hidden: !currentlyHidden,
+          submissions: [
+            {
+              id: submissionId,
+              hidden: !currentlyHidden,
+            },
+          ],
         },
       });
 

@@ -54,9 +54,13 @@ export async function routes(fastify: FastifyInstance) {
         (page - 1) * page_size,
         page * page_size - 1,
         request.query.tags,
+        admin ? "latest" : undefined,
       );
 
       const membership = await request.user?.membership;
+      const freezeTime = admin
+        ? undefined
+        : await scoreboardService.getFreezeTime();
       const graphs = request.query.graph_interval
         ? await scoreboardService.getTeamScoreHistory(
             scoreboard.entries
@@ -64,6 +68,7 @@ export async function routes(fastify: FastifyInstance) {
                 (x) => !x.hidden || membership?.team_id === x.team_id || admin,
               )
               .map((x) => x.team_id),
+            freezeTime ?? undefined,
           )
         : new Map();
 
@@ -105,7 +110,12 @@ export async function routes(fastify: FastifyInstance) {
         const division = await divisionService.get(team.division_id);
         if (!division?.is_visible) throw new NotFoundError("Team not found");
       }
-      const entry = await scoreboardService.getTeam(team.division_id, team.id);
+      const pointer = admin ? "latest" : undefined;
+      const entry = await scoreboardService.getTeam(
+        team.division_id,
+        team.id,
+        pointer,
+      );
       if (!entry) {
         throw new NotFoundError("Team not found");
       }
@@ -114,15 +124,17 @@ export async function routes(fastify: FastifyInstance) {
           team.division_id,
           team.id,
           request.query.tags,
+          pointer,
         );
         if (rank == null) {
           throw new NotFoundError("Team not found");
         }
         entry.rank = rank;
       }
-      const graph = await scoreboardService.getTeamScoreHistory([
-        request.params.id,
-      ]);
+      const graph = await scoreboardService.getTeamScoreHistory(
+        [request.params.id],
+        entry.updated_at,
+      );
       const solves = admin
         ? entry.solves
         : entry.solves.filter(({ hidden }) => !hidden);

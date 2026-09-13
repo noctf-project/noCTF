@@ -10,6 +10,7 @@
   import Pagination from "$lib/components/Pagination.svelte";
   import { countryCodeToFlag } from "$lib/utils/country";
   import authState from "$lib/state/auth.svelte";
+  import configState from "$lib/state/config.svelte";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
 
@@ -77,6 +78,7 @@
             page: currentPage + 1,
             page_size: TEAMS_PER_PAGE,
             tags: selectedTags.length > 0 ? selectedTags : undefined,
+            graph_interval: 60,
           },
         },
       }),
@@ -84,6 +86,23 @@
   );
 
   let initialLoadComplete = $state(false);
+  let freezeTime = $derived.by(() => {
+    const freezeTimeS = configState.siteConfig?.freeze_time_s;
+    if (!freezeTimeS) return null;
+    return new Date(freezeTimeS * 1000);
+  });
+  let isFrozen = $derived(
+    Boolean(freezeTime && Date.now() >= freezeTime.getTime()),
+  );
+  let isLive = $derived.by(() => {
+    if (!isFrozen || !freezeTime) return false;
+    const entries = apiScoreboard.r?.data?.data?.entries;
+    if (!entries?.length) return false;
+    // If any entry has updated_at after freeze_time, the user is viewing live data
+    return entries.some(
+      (e) => new Date(e.updated_at).getTime() > freezeTime!.getTime(),
+    );
+  });
   const loading = $derived(
     (apiChallenges.loading || apiScoreboard.loading || apiTeamTags.loading) &&
       !initialLoadComplete,
@@ -132,6 +151,7 @@
             params: {
               query: {
                 tags: selectedTags.length > 0 ? selectedTags : undefined,
+                graph_interval: 60,
               },
             },
           }),
@@ -175,35 +195,6 @@
     };
   });
 
-  const apiTop10 = $derived(
-    wrapLoadable(
-      api.GET("/scoreboard/divisions/{id}", {
-        params: {
-          path: { id: division },
-          query: {
-            page: 1,
-            page_size: 10,
-            tags: selectedTags.length > 0 ? selectedTags : undefined,
-            graph_interval: 60,
-          },
-        },
-      }),
-    ),
-  );
-
-  let top10TeamsChartsData: Promise<TeamChartData[]> | undefined = $derived(
-    apiTop10.r?.data
-      ? Promise.all(
-          apiTop10.r?.data.data.entries.map(async ({ team_id, graph }) => ({
-            name:
-              (await TeamQueryService.get(team_id).catch(() => null))?.name ||
-              "",
-            data: graph || [[], []],
-          })),
-        )
-      : undefined,
-  );
-
   const allTeamsToDisplay = $derived.by(() => {
     if (!myTeamEntry || isMyTeamInCurrentPage) {
       return apiTeams;
@@ -213,6 +204,19 @@
       ? [myTeamEntry, ...apiTeams]
       : [...apiTeams, myTeamEntry];
   });
+
+  let scoreboardChartsData: Promise<TeamChartData[]> | undefined = $derived(
+    apiScoreboard.r?.data
+      ? Promise.all(
+          allTeamsToDisplay.map(async ({ team_id, graph }) => ({
+            name:
+              (await TeamQueryService.get(team_id).catch(() => null))?.name ||
+              "",
+            data: graph || [[], []],
+          })),
+        )
+      : undefined,
+  );
 
   const currentPageTeams: Map<number, ScoreboardEntry> = $derived(
     new Map(allTeamsToDisplay.map((team) => [team.team_id, team])),
@@ -480,8 +484,8 @@
   <div
     class="mx-auto mt-8 min-w-[98%] h-[33rem] lg:min-w-[66rem] max-w-[66rem] mb-8"
   >
-    {#if top10TeamsChartsData}
-      {#await top10TeamsChartsData then data}
+    {#if scoreboardChartsData}
+      {#await scoreboardChartsData then data}
         <Graph {data} extraClasses="h-[33rem]" />
       {/await}
     {:else}
@@ -644,6 +648,32 @@
     : "lg:w-10/12 w-11/12 mx-auto mt-8 pb-4"}
 >
   <div class="text-center text-4xl font-black pb-2">Scoreboard</div>
+  {#if isFrozen}
+    {#if isLive}
+      <div
+        class="alert alert-warning pop py-2 px-4 mb-4 flex items-center justify-center gap-2 max-w-2xl mx-auto text-sm font-medium"
+      >
+        <Icon
+          icon="material-symbols:admin-panel-settings"
+          class="text-xl flex-shrink-0"
+        />
+        <span
+          >The scoreboard is frozen for participants. You have permission to
+          view the live, unfrozen scoreboard.</span
+        >
+      </div>
+    {:else}
+      <div
+        class="alert alert-info pop py-2 px-4 mb-4 flex items-center justify-center gap-2 max-w-xl mx-auto text-sm font-medium"
+      >
+        <Icon icon="material-symbols:ac-unit" class="text-xl flex-shrink-0" />
+        <span
+          >The scoreboard is frozen. Standings will be revealed after the
+          competition concludes.</span
+        >
+      </div>
+    {/if}
+  {/if}
   {#if loading}
     <div class="flex flex-col items-center gap-4 mt-16">
       <div class="loading loading-spinner loading-lg text-primary"></div>

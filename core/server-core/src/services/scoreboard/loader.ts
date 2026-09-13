@@ -10,7 +10,6 @@ import { Compress, Decompress } from "../../util/message_compression.ts";
 import { Coleascer } from "../../util/coleascer.ts";
 import { RunInParallelWithLimit } from "../../util/semaphore.ts";
 import { MinimalTeamInfo } from "../../dao/team.ts";
-import { LocalCache } from "../../util/local_cache.ts";
 
 const SCRIPT_PREPARE_RANK = `
 local dest_key = KEYS[1]
@@ -43,22 +42,18 @@ end
 local teams = redis.call('ZRANGE', ranks_key, ARGV[1], ARGV[2])
 local ret = {}
 ret[1] = redis.call('ZCARD', ranks_key)
-ret[2] = redis.call('HMGET', teams_key, unpack(teams))
+if #teams > 0 then
+  ret[2] = redis.call('HMGET', teams_key, unpack(teams))
+else
+  ret[2] = {}
+end
 return ret`;
 
-const SCOREBOARD_EXPIRE_TIME = 300;
+const SCOREBOARD_EXPIRE_TIME = 600;
 const CACHE_NAMESPACE = "core:svc:score:data";
 
 export class ScoreboardDataLoader {
   constructor(private readonly factory: RedisClientFactory) {}
-
-  private readonly latestPointerCache = new LocalCache<
-    number,
-    ScoreboardVersionData | null
-  >({
-    max: 256,
-    ttl: 1000,
-  });
 
   private readonly getScoreboardCoaleascer = new Coleascer<{
     total: number;
@@ -98,20 +93,19 @@ export class ScoreboardDataLoader {
   }
 
   async getScoreboard(
-    pointer: number,
     division_id: number,
+    version: number,
     start: number,
     end: number,
     tags?: number[],
   ): Promise<{ total: number; entries: ScoreboardEntry[] }> {
-    const version = await this.getCorrectedPointer(pointer, division_id);
     if (!version) return { total: 0, entries: [] };
     const sTags = [...new Set(tags)].sort();
 
     return this.getScoreboardCoaleascer.get(
-      `${version}:${division_id}:${start}:${end}:${sTags.join()}`,
+      `${division_id}:${version}:${start}:${end}:${sTags.join()}`,
       async () => {
-        const keys = this.getCacheKeys(version, division_id);
+        const keys = this.getCacheKeys(division_id, version);
         const set = sTags.length
           ? `${keys.ranktag}:${sTags.join(",")}`
           : keys.rank;
@@ -156,8 +150,8 @@ export class ScoreboardDataLoader {
   }
 
   async getRanks(
-    pointer: number,
     division_id: number,
+    version: number,
     start: number,
     end: number,
     tags?: number[],
@@ -175,9 +169,8 @@ export class ScoreboardDataLoader {
         number[],
       ];
     };
-    const version = await this.getCorrectedPointer(pointer, division_id);
     if (!version) return [0, []];
-    const keys = this.getCacheKeys(version, division_id);
+    const keys = this.getCacheKeys(division_id, version);
 
     let result: [number, number[]] | null;
     if (!tags || !tags.length) {
@@ -196,16 +189,15 @@ export class ScoreboardDataLoader {
   }
 
   async getChallengeSolves(
-    pointer: number,
     division_id: number,
+    version: number,
     challenge: number,
   ): Promise<Solve[]> {
-    const version = await this.getCorrectedPointer(pointer, division_id);
     if (!version) return [];
-    const keys = this.getCacheKeys(version, division_id);
+    const keys = this.getCacheKeys(division_id, version);
 
     return this.getChallengesCoalescer.get(
-      `${version}:${division_id}:${challenge}`,
+      `${division_id}:${version}:${challenge}`,
       async () => {
         const client = await this.factory.getClient();
         const compressed = await client.hGet(
@@ -219,15 +211,14 @@ export class ScoreboardDataLoader {
   }
 
   async getTeam(
-    pointer: number,
     division_id: number,
+    version: number,
     team: number,
   ): Promise<ScoreboardEntry | null> {
-    const version = await this.getCorrectedPointer(pointer, division_id);
     if (!version) return null;
-    const keys = this.getCacheKeys(version, division_id);
+    const keys = this.getCacheKeys(division_id, version);
     return this.getTeamCoalescer.get(
-      `${version}:${division_id}:${team}`,
+      `${division_id}:${version}:${team}`,
       async () => {
         const client = await this.factory.getClient();
         const compressed = await client.hGet(
@@ -241,17 +232,16 @@ export class ScoreboardDataLoader {
   }
 
   async getTeamRank(
-    pointer: number,
     division_id: number,
+    version: number,
     team: number,
     tags?: number[],
   ): Promise<number | null> {
-    const version = await this.getCorrectedPointer(pointer, division_id);
     if (!version) return null;
     const sTags = [...new Set(tags)].sort();
-    const keys = this.getCacheKeys(version, division_id);
+    const keys = this.getCacheKeys(division_id, version);
     return this.getTeamRankCoalescer.get(
-      `${version}:${division_id}:${team}:rank:${sTags.join()}`,
+      `${division_id}:${version}:${team}:rank:${sTags.join()}`,
       async () => {
         const client = await this.factory.getClient();
         const set = sTags.length
@@ -276,14 +266,14 @@ export class ScoreboardDataLoader {
   }
 
   async saveIndexed(
-    version: number,
     division_id: number,
+    version: number,
     scoreboard: ScoreboardEntry[],
     challenges: Map<number, ComputedChallengeScoreData>,
-    latest?: boolean,
+    pointerName?: string,
   ): Promise<ScoreboardVersionData> {
     const client = await this.factory.getClient();
-    const keys = this.getCacheKeys(version, division_id);
+    const keys = this.getCacheKeys(division_id, version);
 
     const teams = (
       await RunInParallelWithLimit(scoreboard, 8, async (x) => {
@@ -341,44 +331,86 @@ export class ScoreboardDataLoader {
     }
     await multi.exec();
     const out = { division_id, version };
-    if (latest) this.saveLatestPointer(out);
+    if (pointerName) await this.savePointer(division_id, pointerName, version);
     return out;
   }
 
-  async touch(pointer: number, division_id: number): Promise<void> {
-    const version = await this.getCorrectedPointer(pointer, division_id);
-    if (!version) return;
-    const keys = this.getCacheKeys(version, division_id);
+  async expireVersions(
+    division_id: number,
+    versions: number[],
+    ttl = 10,
+  ): Promise<void> {
+    const valid = versions.filter((v) => Boolean(v));
+    if (!valid.length) return;
+
     const multi = (await this.factory.getClient()).multi();
-    for (const key of Object.values(keys)) {
-      multi.expire(key, SCOREBOARD_EXPIRE_TIME);
+    for (const v of valid) {
+      for (const key of Object.values(this.getCacheKeys(division_id, v))) {
+        multi.expire(key, ttl);
+      }
     }
     await multi.exec();
   }
 
-  async getLatestPointer(division_id: number, cached = true) {
-    if (!cached) this.latestPointerCache.delete(division_id);
-    return (
-      await this.latestPointerCache.load(division_id, async () => {
-        const client = await this.factory.getClient();
-        const result = await client.get(
-          `${this.getDivisionString(division_id)}:latest`,
-        );
-        return result ? (JSON.parse(result) as ScoreboardVersionData) : null;
-      })
-    )?.version;
+  async getPointers(
+    division_id: number,
+    names: string[],
+  ): Promise<Record<string, number>> {
+    if (!names.length) return {};
+    const client = await this.factory.getClient();
+    const divPrefix = this.getDivisionString(division_id);
+    const keys = names.map((name) => `${divPrefix}:p:${name}`);
+    const results = await client.mGet(keys);
+    const out: Record<string, number> = {};
+    results.forEach((res, i) => {
+      if (res) {
+        out[names[i]] = (JSON.parse(res) as ScoreboardVersionData).version;
+      }
+    });
+    return out;
+  }
+
+  async savePointer(division_id: number, name: string, version: number) {
+    const client = await this.factory.getClient();
+    const data: ScoreboardVersionData = { division_id, version };
+    const key = `${this.getDivisionString(division_id)}:p:${name}`;
+    await client.set(key, JSON.stringify(data), { EX: SCOREBOARD_EXPIRE_TIME });
+  }
+
+  async touchDivision(
+    division_id: number,
+    pointers: Record<string, number>,
+  ): Promise<void> {
+    const names = Object.keys(pointers);
+    const versions = [...new Set(Object.values(pointers))].filter((v) =>
+      Boolean(v),
+    );
+    if (!names.length && !versions.length) return;
+
+    const client = await this.factory.getClient();
+    const multi = client.multi();
+    const divPrefix = this.getDivisionString(division_id);
+
+    for (const name of names) {
+      multi.expire(`${divPrefix}:p:${name}`, SCOREBOARD_EXPIRE_TIME);
+    }
+    for (const v of versions) {
+      for (const key of Object.values(this.getCacheKeys(division_id, v))) {
+        multi.expire(key, SCOREBOARD_EXPIRE_TIME);
+      }
+    }
+    await multi.exec();
   }
 
   async getChallengeSummary(
-    pointer: number,
     division_id: number,
+    version: number,
   ): Promise<Record<number, ChallengeSummary>> {
-    const version = await this.getCorrectedPointer(pointer, division_id);
     if (!version) return {};
     return await this.getSummaryCoalescer.get(
-      `${version}:${division_id}`,
+      `${division_id}:${version}`,
       async () => {
-        const keys = this.getCacheKeys(version, division_id);
+        const keys = this.getCacheKeys(division_id, version);
         const client = await this.factory.getClient();
         const compressed = await client.get(
           client.commandOptions({ returnBuffers: true }),
@@ -389,20 +421,11 @@ export class ScoreboardDataLoader {
     );
   }
 
-  private async saveLatestPointer(data: ScoreboardVersionData) {
-    const client = await this.factory.getClient();
-    await client.set(
-      `${this.getDivisionString(data.division_id)}:latest`,
-      JSON.stringify(data),
-      { EX: SCOREBOARD_EXPIRE_TIME },
-    );
-  }
-
   private getDivisionString(division: number) {
     return `${CACHE_NAMESPACE}:d:${division}`;
   }
 
-  private getCacheKeys(version: number, division: number) {
+  private getCacheKeys(division: number, version: number) {
     const root = `${this.getDivisionString(division)}:v:${version}`;
     return {
       rank: `${root}:rank`,
@@ -411,12 +434,6 @@ export class ScoreboardDataLoader {
       csummary: `${root}:csummary`,
       ranktag: `${root}:ranktag`,
     };
-  }
-
-  private async getCorrectedPointer(pointer: number, division_id: number) {
-    return !pointer || pointer > Date.now()
-      ? await this.getLatestPointer(division_id)
-      : pointer;
   }
 
   private async createTaggedRankTable(
