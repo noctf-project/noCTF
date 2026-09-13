@@ -6,6 +6,12 @@ packages:
   # deployable applications
   - "apps/*"
 
+allowBuilds:
+  '@parcel/watcher': true
+  '@sveltejs/kit': true
+  cbor-extract: true
+  esbuild: true
+
 catalog:
   "@eslint/js": ^9.17.0
   "@types/node": ^22.7.4
