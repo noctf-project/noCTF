@@ -17,9 +17,7 @@ import { summarizeFile } from "./summarize.ts";
 import { PassThrough, Readable } from "node:stream";
 import { nanoid } from "nanoid";
 
-export class LocalFileProvider
-  implements FileProvider<LocalFileProviderInstance>
-{
+export class LocalFileProvider implements FileProvider<LocalFileProviderInstance> {
   name = "local";
 
   private readonly secret;

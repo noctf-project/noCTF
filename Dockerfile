@@ -1,4 +1,4 @@
-ARG NODE_VERSION=24-slim
+ARG NODE_VERSION=26-slim
 
 
 # use a staging image to cache dependencies better

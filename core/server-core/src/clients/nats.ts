@@ -1,5 +1,5 @@
-import type { NatsConnection } from "nats";
-import NATS from "nats";
+import type { NatsConnection } from "@nats-io/transport-node";
+import { connect } from "@nats-io/transport-node";
 import type { Logger } from "../types/primitives.ts";
 
 export class NATSClientFactory {
@@ -19,7 +19,7 @@ export class NATSClientFactory {
     }
     const u = new URL(this.url);
     this.logger.info(`Connecting to NATS at ${u.host}:${u.port || 4222}`);
-    this.client = await NATS.connect({
+    this.client = await connect({
       servers: this.url,
     });
     return this.client;

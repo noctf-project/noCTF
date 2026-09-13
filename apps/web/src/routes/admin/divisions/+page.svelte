@@ -249,8 +249,7 @@
               placeholder="Enter division description"
               class="textarea textarea-bordered focus:outline-none focus:ring-0 focus:ring-offset-0"
               maxlength="512"
-              rows="3"
-            ></textarea>
+              rows="3"></textarea>
           </div>
 
           <div class="form-control">
@@ -376,8 +375,7 @@
                           bind:value={editForm.description}
                           class="textarea textarea-bordered textarea-sm w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
                           maxlength="512"
-                          rows="2"
-                        ></textarea>
+                          rows="2"></textarea>
                       {:else}
                         <span class="text-sm text-base-content/70 line-clamp-2"
                           >{division.description}</span

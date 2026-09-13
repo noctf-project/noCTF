@@ -193,8 +193,7 @@
               bind:value={createForm.description}
               placeholder="Enter tag description"
               class="input input-bordered focus:outline-none focus:ring-0 focus:ring-offset-0"
-              maxlength="512"
-            ></textarea>
+              maxlength="512"></textarea>
           </div>
 
           <div class="form-control">
@@ -276,8 +275,7 @@
                         <textarea
                           bind:value={editForm.description}
                           class="input input-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
-                          maxlength="512"
-                        ></textarea>
+                          maxlength="512"></textarea>
                       {:else}
                         <span class="font-medium">{tag.description}</span>
                       {/if}

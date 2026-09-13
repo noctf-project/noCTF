@@ -4,29 +4,41 @@ import { EventBusService } from "./event_bus.ts";
 import { NATSClientFactory } from "../clients/nats.ts";
 import { MetricsClient } from "../clients/metrics.ts";
 import { Logger } from "../types/primitives.ts";
-import type { NatsConnection, JetStreamClient, JetStreamManager } from "nats";
+import type { NatsConnection } from "@nats-io/transport-node";
+import type { JetStreamClient, JetStreamManager } from "@nats-io/jetstream";
 import { Type } from "@sinclair/typebox";
+
+vi.mock("@nats-io/jetstream", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@nats-io/jetstream")>();
+  return {
+    ...actual,
+    jetstream: vi.fn(),
+    jetstreamManager: vi.fn(),
+  };
+});
 
 describe(EventBusService, () => {
   let natsClientFactory: DeepMockProxy<NATSClientFactory>;
   let logger: DeepMockProxy<Logger>;
   let metricsClient: DeepMockProxy<MetricsClient>;
   let natsClient: DeepMockProxy<NatsConnection>;
-  let jetstream: DeepMockProxy<JetStreamClient>;
+  let jsMock: DeepMockProxy<JetStreamClient>;
   let jsm: DeepMockProxy<JetStreamManager>;
   let service: EventBusService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     natsClientFactory = mockDeep<NATSClientFactory>();
     logger = mockDeep<Logger>();
     metricsClient = mockDeep<MetricsClient>();
     natsClient = mockDeep<NatsConnection>();
-    jetstream = mockDeep<JetStreamClient>();
+    jsMock = mockDeep<JetStreamClient>();
     jsm = mockDeep<JetStreamManager>();
 
+    const jetstreamModule = await import("@nats-io/jetstream");
+    vi.mocked(jetstreamModule.jetstream).mockReturnValue(jsMock);
+    vi.mocked(jetstreamModule.jetstreamManager).mockResolvedValue(jsm);
+
     natsClientFactory.getClient.mockResolvedValue(natsClient);
-    natsClient.jetstream.mockReturnValue(jetstream);
-    jetstream.jetstreamManager.mockResolvedValue(jsm);
 
     service = new EventBusService({
       natsClientFactory,

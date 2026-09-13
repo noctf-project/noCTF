@@ -185,8 +185,7 @@
                 bind:value={bio}
                 maxlength="256"
                 class="textarea input-bordered h-32 w-full focus:outline-none focus:ring-0 focus:ring-offset-0 pt-2"
-                placeholder="Describe your team..."
-              ></textarea>
+                placeholder="Describe your team..."></textarea>
               <span class="label-text-alt text-right mt-1"
                 >{bio.length}/256</span
               >
