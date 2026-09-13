@@ -1,0 +1,43 @@
+name: ci-tests
+
+on:
+  pull_request:
+    branches: [ master ]
+  push:
+    branches: [ master ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: CI Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format Check
+        run: pnpm format:check
+
+      # TODO: Add lint step (e.g. `pnpm lint`) once existing eslint errors are resolved
+
+      - name: Unit Tests
+        run: pnpm test:unit
+
+      - name: Integration Tests
+        run: pnpm test:integ
