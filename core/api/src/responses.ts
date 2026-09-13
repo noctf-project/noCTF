@@ -199,16 +199,7 @@ export type MeUserResponse = Static<typeof MeUserResponse>;
 
 export const ListChallengesResponse = Type.Object({
   data: Type.Object({
-    challenges: Type.Array(
-      Type.Composite([
-        PublicChallengeSummary,
-        Type.Object({
-          value: Type.Union([Type.Number(), Type.Null()]),
-          solve_count: Type.Number(),
-          solved_by_me: Type.Boolean(),
-        }),
-      ]),
-    ),
+    challenges: Type.Array(PublicChallengeSummary),
   }),
 });
 export type ListChallengesResponse = Static<typeof ListChallengesResponse>;

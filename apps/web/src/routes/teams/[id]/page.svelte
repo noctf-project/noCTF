@@ -72,14 +72,28 @@
         (m) => m.user_id === authState.user?.id && m.role === "owner",
       ),
   );
-  let scoreboardLoader = wrapLoadable(
-    api.GET("/scoreboard/teams/{id}", {
-      params: {
-        path: { id: teamId },
-        query: { graph_interval: 60 },
-      },
-    }),
-  );
+  let scoreboardLoader = $derived.by(() => {
+    if (!authState.isLoading) {
+      if (authState.user?.team_id === teamId) {
+        return wrapLoadable(
+          api.GET("/team/scoreboard", {
+            params: {
+              query: { graph_interval: 60 },
+            },
+          }),
+        );
+      } else {
+        return wrapLoadable(
+          api.GET("/scoreboard/teams/{id}", {
+            params: {
+              path: { id: teamId },
+              query: { graph_interval: 60 },
+            },
+          }),
+        );
+      }
+    }
+  });
   const challengesLoader = wrapLoadable(api.GET("/challenges"));
   let memberLoaders = $derived(
     team?.members?.map(({ user_id }) =>
@@ -91,8 +105,8 @@
   const teamTags = $derived(teamTagsLoader.r?.data?.data?.tags || []);
 
   let scoreboardData = $derived.by(() => {
-    if (scoreboardLoader.loading || !team) return undefined;
-    const data = scoreboardLoader.r?.data?.data;
+    if (scoreboardLoader?.loading || !team) return undefined;
+    const data = scoreboardLoader?.r?.data?.data;
     return (
       data || {
         team_id: team?.id,
@@ -123,7 +137,7 @@
 
   let membersLoading = $derived(
     teamLoader?.loading ||
-      scoreboardLoader.loading ||
+      scoreboardLoader?.loading ||
       !memberLoaders ||
       memberLoaders.some((loader) => loader.loading),
   );
@@ -437,7 +451,7 @@
           </div>
         {/if}
         <div class="flex flex-col gap-4 items-center">
-          {#if scoreboardLoader.loading && !scoreboardData}
+          {#if scoreboardLoader?.loading && !scoreboardData}
             <div class="skeleton h-4 w-1/2"></div>
           {:else if scoreboardData?.rank && scoreboardData?.score}
             <div

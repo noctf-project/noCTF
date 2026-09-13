@@ -1,6 +1,7 @@
 import {
   CreateTeam,
   GetMyTeam,
+  GetMyTeamScoreboard,
   JoinTeam,
   LeaveTeam,
   ListDivisions,
@@ -21,14 +22,16 @@ import { OffsetPaginate } from "@noctf/server-core/util/paginator";
 import { Policy } from "@noctf/server-core/util/policy";
 import { route } from "@noctf/server-core/util/route";
 import SingleValueCache from "@noctf/server-core/util/single_value_cache";
+import { WindowDeltaedTimeSeriesPoints } from "@noctf/server-core/util/graph";
 import type { ServiceCradle } from "@noctf/server-core";
 import type { FastifyInstance } from "fastify";
 import { GetUtils } from "./_util.ts";
+import { ScoreboardEntryWithGraph } from "@noctf/api/datatypes";
 
 export async function routes(fastify: FastifyInstance) {
   const adminPolicy: Policy = ["admin.team.get"];
-  const { teamService, policyService, divisionService } = fastify.container
-    .cradle as ServiceCradle;
+  const { teamService, policyService, divisionService, scoreboardService } =
+    fastify.container.cradle as ServiceCradle;
 
   const { getMaxPageSize } = GetUtils(fastify.container.cradle);
 
@@ -215,6 +218,72 @@ export async function routes(fastify: FastifyInstance) {
       }
       return {
         data: await teamService.get(membership.team_id),
+      };
+    },
+  );
+
+  route(
+    fastify,
+    GetMyTeamScoreboard,
+    {
+      auth: {
+        require: true,
+        policy: ["team.self.get"],
+      },
+    },
+    async (request) => {
+      const membership = await request.user?.membership;
+      if (!membership) {
+        throw new NotFoundError("You are not currently part of a team");
+      }
+      const entry = await scoreboardService.getTeam(
+        membership.division_id,
+        membership.team_id,
+      );
+      if (!entry) {
+        return {
+          data: {
+            team_id: membership.team_id,
+            tag_ids: [],
+            score: 0,
+            rank: 0,
+            last_solve: new Date(0),
+            updated_at: new Date(0),
+            hidden: false,
+            solves: [],
+            awards: [],
+            graph: [[], []],
+          } as ScoreboardEntryWithGraph,
+        };
+      }
+
+      if (request.query.tags) {
+        const rank = await scoreboardService.getTeamRank(
+          membership.division_id,
+          membership.team_id,
+          request.query.tags,
+        );
+        if (rank != null) {
+          entry.rank = rank;
+        }
+      }
+
+      let graph: [number[], number[]] | undefined;
+      if (request.query.graph_interval) {
+        const history = await scoreboardService.getTeamScoreHistory([
+          membership.team_id,
+        ]);
+        graph = WindowDeltaedTimeSeriesPoints(
+          history.get(membership.team_id) || [[], []],
+          request.query.graph_interval,
+        );
+      }
+
+      return {
+        data: {
+          ...entry,
+          graph,
+        },
       };
     },
   );

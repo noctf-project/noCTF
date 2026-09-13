@@ -6,7 +6,6 @@ import {
   SolveChallenge,
 } from "@noctf/api/contract/challenge";
 import { IdParams } from "@noctf/api/params";
-import { BaseResponse } from "@noctf/api/responses";
 import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
 import { GetRouteKey } from "@noctf/server-core/util/limit_keys";
 import { Policy } from "@noctf/server-core/util/policy";
@@ -52,27 +51,13 @@ export async function routes(fastify: FastifyInstance) {
       const scoreObj = await scoreboardService.getChallengesSummary(
         team?.division_id || 1, // TODO: configurable default
       );
-      const solves = new Map<number, number>();
 
-      // Does not need to rely on scoreboard calcs
-      if (team) {
-        const entry = await scoreboardService.getTeam(
-          team.division_id,
-          team.team_id,
-        );
-        if (entry) {
-          entry.solves.forEach(({ challenge_id, value }) =>
-            solves.set(challenge_id, value),
-          );
-        }
-      }
       const values = Object.fromEntries(
         challenges.map((c) => [
           c.id,
           {
-            value: scoreObj[c.id]?.value || solves.get(c.id) || 0,
+            value: scoreObj[c.id]?.value || 0,
             solve_count: scoreObj[c.id]?.solve_count || 0,
-            solved_by_me: solves.has(c.id),
           },
         ]),
       );
