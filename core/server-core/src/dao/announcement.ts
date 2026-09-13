@@ -159,7 +159,7 @@ export class AnnouncementDAO {
       query = query.where(
         "visible_to",
         "&&",
-        sql<string[]>`ARRAY[${sql.join(visible_to)}]`,
+        sql<string[]>`ARRAY[${sql.join(visible_to)}]::varchar[]`,
       );
     }
     return query;
