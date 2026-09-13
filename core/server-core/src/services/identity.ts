@@ -266,7 +266,7 @@ export class IdentityService {
   async listProvidersForUser(
     ids: number | number[],
     withSecret?: boolean,
-  ): Promise<any[]> {
+  ): Promise<unknown[]> {
     const q = typeof ids === "number" ? [ids] : ids;
     if (withSecret === true) {
       return this.identityDAO.listProvidersForUser(q, true);

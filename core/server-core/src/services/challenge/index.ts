@@ -35,13 +35,12 @@ type Props = Pick<
   | "logger"
   | "auditLogService"
   | "databaseClient"
-  | "cacheService"
   | "eventBusService"
   | "fileService"
   | "scoreService"
 >;
 
-const SLUG_REGEX = new RegExp(Slug.format!);
+const SLUG_REGEX = new RegExp(Slug.pattern!);
 export class ChallengeService {
   private readonly logger;
   private readonly auditLogService;
@@ -254,7 +253,7 @@ export class ChallengeService {
               actor: `user:${userId}`,
               comments: state.comment,
               submission_id: result.id,
-              changes: { status: state.status, hidden: false },
+              changes: { status: state.status, hidden: false, weight: 0 },
             },
           ]);
           return result;

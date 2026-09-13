@@ -5,13 +5,11 @@ import {
   ReturnedSubmissionUpdate,
   SubmissionDAO,
 } from "../dao/submission.ts";
-import { AuditParams } from "../types/audit_log.ts";
 import { SubmissionUpdateEvent } from "@noctf/api/events";
 import { SubmissionStatus } from "@noctf/api/enums";
 import { SubmissionLogDAO } from "../dao/submission_log.ts";
 import { FilterUndefined } from "../util/filter.ts";
 import { BadRequestError } from "../errors.ts";
-import { Submission } from "@noctf/schema";
 
 type Props = Pick<ServiceCradle, "databaseClient" | "eventBusService">;
 export class SubmissionService {
@@ -147,7 +145,7 @@ export class SubmissionService {
               comments: "",
               submission_id: u.id,
               actor,
-              changes: { weight: map.get(u.id)?.weight },
+              changes: { weight: map.get(u.team_id)?.weight },
             };
           }),
         );
