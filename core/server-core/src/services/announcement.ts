@@ -1,4 +1,3 @@
-import TTLCache from "@isaacs/ttlcache";
 import { AnnouncementDAO } from "../dao/announcement.ts";
 import { ServiceCradle } from "../index.ts";
 import SingleValueCache from "../util/single_value_cache.ts";
@@ -14,11 +13,7 @@ import { FilterUndefined } from "../util/filter.ts";
 
 type Props = Pick<
   ServiceCradle,
-  | "auditLogService"
-  | "databaseClient"
-  | "challengeService"
-  | "configService"
-  | "eventBusService"
+  "auditLogService" | "databaseClient" | "configService" | "eventBusService"
 >;
 
 const ANNOUNCEMENT_CACHE_SIZE = 1024;

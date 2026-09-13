@@ -65,7 +65,7 @@ export class NotificationService {
 
   private readonly templateCache = new TTLCache<
     string,
-    HandlebarsTemplateDelegate<any>
+    HandlebarsTemplateDelegate<unknown>
   >({
     max: 256,
     ttl: Infinity,
