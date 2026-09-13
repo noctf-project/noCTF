@@ -151,7 +151,6 @@
             params: {
               query: {
                 tags: selectedTags.length > 0 ? selectedTags : undefined,
-                graph_interval: 60,
               },
             },
           }),
@@ -208,7 +207,7 @@
   let scoreboardChartsData: Promise<TeamChartData[]> | undefined = $derived(
     apiScoreboard.r?.data
       ? Promise.all(
-          allTeamsToDisplay.map(async ({ team_id, graph }) => ({
+          apiTeams.map(async ({ team_id, graph }) => ({
             name:
               (await TeamQueryService.get(team_id).catch(() => null))?.name ||
               "",
