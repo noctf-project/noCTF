@@ -116,7 +116,7 @@
         ...rest,
         created_at: new Date(created_at),
       })),
-      graph: s.graph,
+      graph: s.graph || [[], []],
     })) || [],
   );
 
@@ -128,9 +128,8 @@
   let apiMyTeam = $derived(
     authState.user?.team_id && !isMyTeamInCurrentPage
       ? wrapLoadable(
-          api.GET("/scoreboard/teams/{id}", {
+          api.GET("/team/scoreboard", {
             params: {
-              path: { id: authState.user.team_id },
               query: {
                 tags: selectedTags.length > 0 ? selectedTags : undefined,
               },
@@ -172,7 +171,7 @@
         ...rest,
         created_at: new Date(created_at),
       })),
-      graph: teamData.graph,
+      graph: teamData.graph || [[], []],
     };
   });
 
@@ -199,7 +198,7 @@
             name:
               (await TeamQueryService.get(team_id).catch(() => null))?.name ||
               "",
-            data: graph,
+            data: graph || [[], []],
           })),
         )
       : undefined,

@@ -10,8 +10,10 @@ import {
   ListTeamsResponse,
   ListTeamTagsResponse,
   MeTeamResponse,
+  ScoreboardTeamResponse,
   UpdateTeamResponse,
 } from "../responses.ts";
+import { ScoreboardTagsQuery } from "../query.ts";
 import { RouteDef } from "../types.ts";
 
 export const ListDivisions = {
@@ -75,6 +77,18 @@ export const GetMyTeam = {
     tags: ["team"],
     response: {
       200: MeTeamResponse,
+    },
+  },
+} as const satisfies RouteDef;
+
+export const GetMyTeamScoreboard = {
+  method: "GET",
+  url: "/team/scoreboard",
+  schema: {
+    tags: ["team"],
+    querystring: ScoreboardTagsQuery,
+    response: {
+      200: ScoreboardTeamResponse,
     },
   },
 } as const satisfies RouteDef;

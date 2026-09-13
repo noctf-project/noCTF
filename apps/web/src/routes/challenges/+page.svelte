@@ -16,10 +16,16 @@
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import { DIFFICULTIES, type Difficulty } from "$lib/constants/difficulties";
+  import authState from "$lib/state/auth.svelte";
 
   const CHALLENGE_DETAIL_CACHE_TIME = 1000 * 60 * 5; // 5 minutes
 
   let apiChallenges = $state(wrapLoadable(api.GET("/challenges")));
+  let teamScoreboard = $state(
+    authState.user?.team_id
+      ? wrapLoadable(api.GET("/team/scoreboard"))
+      : undefined,
+  );
   let challDetailsMap: {
     [id in number]: {
       details: ChallDetails;
@@ -29,8 +35,23 @@
 
   const refreshChallenges = async () => {
     try {
-      const r = await api.GET("/challenges");
-      apiChallenges.r = r;
+      const pChallenges = api.GET("/challenges");
+      const pScoreboard = authState.user?.team_id
+        ? api.GET("/team/scoreboard")
+        : undefined;
+
+      const [rChallenges, rScoreboard] = await Promise.all([
+        pChallenges,
+        pScoreboard,
+      ]);
+      apiChallenges.r = rChallenges;
+      if (rScoreboard?.data) {
+        if (teamScoreboard) {
+          teamScoreboard.r = rScoreboard;
+        } else {
+          teamScoreboard = wrapLoadable(Promise.resolve(rScoreboard));
+        }
+      }
     } catch (e) {
       console.error("Challenge refresh failed", e);
       toasts.error("Failed to connect to the server - please try again later");
@@ -46,19 +67,31 @@
     };
   });
 
+  let teamSolvesMap = $derived.by(() => {
+    const solves = teamScoreboard?.r?.data?.data?.solves;
+    if (!solves) return new Map<number, { value: number; hidden: boolean }>();
+    return new Map(
+      solves.map((s) => [s.challenge_id, { value: s.value, hidden: s.hidden }]),
+    );
+  });
+
   let allChallenges: ChallengeCardData[] | undefined = $derived(
     apiChallenges.r?.data
-      ? apiChallenges.r?.data.data.challenges.map((c) => ({
-          id: c.id,
-          slug: c.slug,
-          title: c.title,
-          categories: getCategoriesFromTags(c.tags),
-          solves: c.solve_count,
-          points: c.value || 0,
-          isSolved: c.solved_by_me,
-          difficulty: getDifficultyFromTags(c.tags),
-          hidden: c.hidden,
-        }))
+      ? apiChallenges.r?.data.data.challenges.map((c) => {
+          const userSolve = teamSolvesMap.get(c.id);
+          return {
+            id: c.id,
+            slug: c.slug,
+            title: c.title,
+            categories: getCategoriesFromTags(c.tags),
+            solves: c.solve_count,
+            points: userSolve?.value ?? c.value ?? 0,
+            isSolved: !!userSolve,
+            isSolveHidden: userSolve?.hidden ?? false,
+            difficulty: getDifficultyFromTags(c.tags),
+            hidden: c.hidden,
+          };
+        })
       : undefined,
   );
 

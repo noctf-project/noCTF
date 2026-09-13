@@ -251,11 +251,17 @@ export const ChallengeSummary = Type.Omit(ChallengeMetadata, [
 ]);
 export type ChallengeSummary = Static<typeof ChallengeSummary>;
 
-export const PublicChallengeSummary = Type.Omit(ChallengeSummary, [
-  "created_at",
-  "updated_at",
-  "visible_at",
-  "version",
+export const PublicChallengeSummary = Type.Composite([
+  Type.Omit(ChallengeSummary, [
+    "created_at",
+    "updated_at",
+    "visible_at",
+    "version",
+  ]),
+  Type.Object({
+    value: Type.Union([Type.Number(), Type.Null()]),
+    solve_count: Type.Number(),
+  }),
 ]);
 export type PublicChallengeSummary = Static<typeof PublicChallengeSummary>;
 
@@ -328,7 +334,9 @@ export type ScoreboardEntry = Static<typeof ScoreboardEntry>;
 export const ScoreboardEntryWithGraph = Type.Composite([
   ScoreboardEntry,
   Type.Object({
-    graph: Type.Tuple([Type.Array(Type.Number()), Type.Array(Type.Number())]),
+    graph: Type.Optional(
+      Type.Tuple([Type.Array(Type.Number()), Type.Array(Type.Number())]),
+    ),
   }),
 ]);
 export type ScoreboardEntryWithGraph = Static<typeof ScoreboardEntryWithGraph>;

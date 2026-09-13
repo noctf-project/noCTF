@@ -7,6 +7,7 @@
     solves: number;
     points: number;
     isSolved: boolean;
+    isSolveHidden?: boolean;
     difficulty?: string;
     hidden: boolean;
   }
@@ -36,7 +37,9 @@
         {data.title}
       </div>
       {#if data.hidden}
-        <Icon class="text-lg" icon="material-symbols:visibility-off" />
+        <div class="tooltip" data-tip="Challenge is hidden from public">
+          <Icon class="text-lg" icon="material-symbols:visibility-off" />
+        </div>
       {/if}
     </div>
     <div class="flex flex-row items-center gap-3">
@@ -70,7 +73,19 @@
               : "material-symbols:stars-outline-rounded"}
             class="text-3xl"
           />
-          {data.points}
+          {#if data.isSolveHidden}
+            <div class="flex flex-row items-center gap-1">
+              <s class="opacity-75">{data.points}</s>
+              <div class="tooltip" data-tip="Submission is hidden">
+                <Icon
+                  icon="material-symbols:visibility-off"
+                  class="text-base opacity-75"
+                />
+              </div>
+            </div>
+          {:else}
+            {data.points}
+          {/if}
         </div>
       </div>
     </div>
