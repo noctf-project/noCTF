@@ -254,7 +254,7 @@ export class ChallengeService {
               actor: `user:${userId}`,
               comments: state.comment,
               submission_id: result.id,
-              changes: { status: state.status, hidden: false },
+              changes: { status: state.status, hidden: false, weight: 0 },
             },
           ]);
           return result;

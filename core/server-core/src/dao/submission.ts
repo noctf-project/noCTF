@@ -65,6 +65,8 @@ const GetSeq = (eb: ExpressionBuilder<DB, "submission">) =>
 export class SubmissionDAO {
   constructor(private readonly db: DBType) {}
 
+  // Note: submission lacks FK constraints so history is preserved if entities are deleted.
+  // Callers are responsible for verifying referenced IDs exist before inserting.
   async create(v: Insertable<DB["submission"]>) {
     const data = await this.db
       .insertInto("submission")

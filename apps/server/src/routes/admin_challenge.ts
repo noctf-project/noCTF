@@ -9,11 +9,7 @@ import {
   AdminUpdateChallenge,
   AdminUpdateChallengeWeights,
 } from "@noctf/api/contract/admin_challenge";
-import {
-  ApplicationError,
-  BadRequestError,
-  UnauthorizedError,
-} from "@noctf/server-core/errors";
+import { BadRequestError, UnauthorizedError } from "@noctf/server-core/errors";
 import { ActorType } from "@noctf/server-core/types/enums";
 import { route } from "@noctf/server-core/util/route";
 import { createVerifier, httpbis } from "http-message-signatures";
@@ -22,7 +18,6 @@ import {
   PayloadDigestPreParsingHook,
   PayloadDigestPreValidationHook,
 } from "../hooks/payload.ts";
-import { GetUtils } from "./_util.ts";
 import { OffsetPaginate } from "@noctf/server-core/util/paginator";
 
 const MAX_PAGE_SIZE_WEIGHTS = 2000;
@@ -30,8 +25,6 @@ const MAX_PAGE_SIZE_WEIGHTS = 2000;
 export async function routes(fastify: FastifyInstance) {
   const { challengeService, scoreService, submissionService } =
     fastify.container.cradle;
-
-  const { isCompetitionActive } = GetUtils(fastify.container.cradle);
 
   route(
     fastify,
@@ -249,14 +242,6 @@ export async function routes(fastify: FastifyInstance) {
           );
         }
         await validateWeightKey(request, true);
-
-        if (!isCompetitionActive()) {
-          throw new ApplicationError(
-            410,
-            "CompetitionNotActive",
-            "The competition is currently not active",
-          );
-        }
 
         const entries = await submissionService.upsertWeightsForChallenge(
           request.params.id,
