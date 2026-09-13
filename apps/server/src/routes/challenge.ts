@@ -6,7 +6,6 @@ import {
   SolveChallenge,
 } from "@noctf/api/contract/challenge";
 import { IdParams } from "@noctf/api/params";
-import { BaseResponse } from "@noctf/api/responses";
 import { ForbiddenError, NotFoundError } from "@noctf/server-core/errors";
 import { GetRouteKey } from "@noctf/server-core/util/limit_keys";
 import { Policy } from "@noctf/server-core/util/policy";

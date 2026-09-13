@@ -171,10 +171,15 @@
               : "border-y border-base-300 py-2 px-3"}
           >
             <div class="flex flex-col">
-              <span class="font-medium">
-                {challengeMap.get(submission.challenge_id) ||
-                  `Challenge ${submission.challenge_id}`}
-              </span>
+              {#if challengeMap.get(submission.challenge_id)}
+                <span class="font-medium">
+                  {challengeMap.get(submission.challenge_id)}
+                </span>
+              {:else}
+                <span class="text-base-content/60 italic">
+                  Deleted Challenge
+                </span>
+              {/if}
               <span class="text-sm text-base-content/60 font-mono"
                 >ID: {submission.challenge_id}</span
               >
@@ -204,9 +209,13 @@
                     >
                   </div>
                 {:catch}
-                  <span class="text-base-content/60"
-                    >User {submission.user_id}</span
-                  >
+                  <div class="flex flex-col">
+                    <span class="text-base-content/60 italic">Deleted User</span
+                    >
+                    <span class="text-sm text-base-content/60 font-mono"
+                      >ID: {submission.user_id}</span
+                    >
+                  </div>
                 {/await}
               {:else}
                 <span class="text-base-content/60 italic">System</span>
@@ -236,9 +245,12 @@
                   >
                 </div>
               {:catch}
-                <span class="text-base-content/60"
-                  >Team {submission.team_id}</span
-                >
+                <div class="flex flex-col">
+                  <span class="text-base-content/60 italic">Deleted Team</span>
+                  <span class="text-sm text-base-content/60 font-mono"
+                    >ID: {submission.team_id}</span
+                  >
+                </div>
               {/await}
             </td>
           {/if}

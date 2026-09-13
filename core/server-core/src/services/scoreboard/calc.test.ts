@@ -245,8 +245,8 @@ describe(ComputeScoreboard, () => {
   it("Correctly assigns tied rank when multiple teams have the same score and same last_solve timestamp", () => {
     mockEvaluate.mockReturnValue(100);
     const teams = new Map<number, MinimalTeamInfo>([
-      [1, { id: 1, name: "team1", flags: [], tag_ids: [] }],
-      [2, { id: 2, name: "team2", flags: [], tag_ids: [] }],
+      [1, { id: 1, division_id: 1, flags: [], tag_ids: [] }],
+      [2, { id: 2, division_id: 1, flags: [], tag_ids: [] }],
     ]);
     const challenges: ChallengeMetadataWithExpr[] = [
       { metadata: challenge1, expr },
