@@ -79,11 +79,13 @@ export class UserDAO {
   async getCount(
     params?: Parameters<UserDAO["listQuery"]>[0],
   ): Promise<number> {
-    return (
-      await this.listQuery(params)
-        .select(this.db.fn.countAll().as("count"))
-        .executeTakeFirstOrThrow()
-    ).count as number;
+    return Number(
+      (
+        await this.listQuery(params)
+          .select(this.db.fn.countAll().as("count"))
+          .executeTakeFirstOrThrow()
+      ).count,
+    );
   }
 
   async create({

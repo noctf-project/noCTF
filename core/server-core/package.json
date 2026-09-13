@@ -4,6 +4,7 @@
   "description": "core noCTF internal APIs",
   "scripts": {
     "test:unit": "vitest --coverage",
+    "test:integ": "vitest --config vitest.integ.config.ts",
     "build": "tsc",
     "release": "pnpm run build && pnpm run test:unit --run",
     "dev": "echo 'Nothing to do' && exit"
