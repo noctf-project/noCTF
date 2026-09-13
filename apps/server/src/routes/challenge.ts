@@ -50,6 +50,7 @@ export async function routes(fastify: FastifyInstance) {
 
       const scoreObj = await scoreboardService.getChallengesSummary(
         team?.division_id || 1, // TODO: configurable default
+        admin ? "latest" : undefined,
       );
 
       const values = Object.fromEntries(
@@ -154,7 +155,11 @@ export async function routes(fastify: FastifyInstance) {
 
       return {
         data: (
-          await scoreboardService.getChallengeSolves(divisionId, id)
+          await scoreboardService.getChallengeSolves(
+            divisionId,
+            id,
+            admin ? "latest" : undefined,
+          )
         ).filter(({ hidden }) => !hidden),
       };
     },

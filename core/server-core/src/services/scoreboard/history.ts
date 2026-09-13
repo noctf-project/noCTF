@@ -36,7 +36,7 @@ export class ScoreboardHistory {
     await this.scoreHistoryDAO.add(
       diff
         .filter((x) => !hidden.has(x.team_id))
-        .map(({ updated_at, ...rest }) => rest),
+        .map(({ updated_at: _updated_at, ...rest }) => rest),
     );
     const encoded = await Compress(encode(minimal));
     const multi = (await this.redisClientFactory.getClient()).multi();
@@ -143,7 +143,7 @@ export class ScoreboardHistory {
       throw e;
     }
     const multi = client.multi();
-    client.hSet(
+    multi.hSet(
       CACHE_DATA_HASH_KEY,
       fetched
         .entries()
@@ -167,7 +167,7 @@ export class ScoreboardHistory {
     if (!cached) return this.scoreHistoryDAO.listMostRecentByDivision(division);
     try {
       return decode(await Decompress(cached));
-    } catch (e) {
+    } catch {
       return this.scoreHistoryDAO.listMostRecentByDivision(division);
     }
   }

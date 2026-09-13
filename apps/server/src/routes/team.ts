@@ -239,7 +239,9 @@ export async function routes(fastify: FastifyInstance) {
       const entry = await scoreboardService.getTeam(
         membership.division_id,
         membership.team_id,
+        "latest",
       );
+
       if (!entry) {
         return {
           data: {
@@ -257,27 +259,38 @@ export async function routes(fastify: FastifyInstance) {
         };
       }
 
-      if (request.query.tags) {
-        const rank = await scoreboardService.getTeamRank(
-          membership.division_id,
-          membership.team_id,
-          request.query.tags,
-        );
-        if (rank != null) {
-          entry.rank = rank;
-        }
+      const admin = await policyService.evaluate(request.user?.id, adminPolicy);
+      const freezeTime = await scoreboardService.getFreezeTime();
+      const pointer = admin ? "latest" : undefined;
+      const isFrozenNonAdmin = Boolean(freezeTime && !admin);
+
+      const [rank, history] = await Promise.all([
+        isFrozenNonAdmin || request.query.tags
+          ? scoreboardService.getTeamRank(
+              membership.division_id,
+              membership.team_id,
+              request.query.tags,
+              pointer,
+            )
+          : null,
+        request.query.graph_interval
+          ? scoreboardService.getTeamScoreHistory(
+              [membership.team_id],
+              admin ? undefined : (freezeTime ?? entry.updated_at),
+            )
+          : null,
+      ]);
+
+      if (isFrozenNonAdmin || request.query.tags) {
+        entry.rank = rank ?? 0;
       }
 
-      let graph: [number[], number[]] | undefined;
-      if (request.query.graph_interval) {
-        const history = await scoreboardService.getTeamScoreHistory([
-          membership.team_id,
-        ]);
-        graph = WindowDeltaedTimeSeriesPoints(
-          history.get(membership.team_id) || [[], []],
-          request.query.graph_interval,
-        );
-      }
+      const graph = history
+        ? WindowDeltaedTimeSeriesPoints(
+            history.get(membership.team_id) || [[], []],
+            request.query.graph_interval,
+          )
+        : undefined;
 
       return {
         data: {

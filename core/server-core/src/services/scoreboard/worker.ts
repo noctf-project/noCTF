@@ -2,6 +2,7 @@ import {
   ChallengeUpdateEvent,
   SubmissionUpdateEvent,
   ScoreboardTriggerEvent,
+  ConfigUpdateEvent,
 } from "@noctf/api/events";
 import { ServiceCradle } from "../../index.ts";
 
@@ -33,7 +34,10 @@ export const ScoreboardCalculatorWorker = async (
   c: Props,
 ) => {
   await c.eventBusService.subscribe<
-    SubmissionUpdateEvent | ChallengeUpdateEvent
+    | SubmissionUpdateEvent
+    | ChallengeUpdateEvent
+    | ScoreboardTriggerEvent
+    | ConfigUpdateEvent
   >(
     signal,
     "ScoreboardWorker",
@@ -41,6 +45,7 @@ export const ScoreboardCalculatorWorker = async (
       SubmissionUpdateEvent.$id!,
       ChallengeUpdateEvent.$id!,
       ScoreboardTriggerEvent.$id!,
+      ConfigUpdateEvent.$id!,
     ],
     {
       concurrency: 1,
@@ -51,9 +56,25 @@ export const ScoreboardCalculatorWorker = async (
               .recompute_graph,
           });
         }
+        if (data.subject === ConfigUpdateEvent.$id!) {
+          const cfg = data.data as ConfigUpdateEvent;
+          if (cfg.namespace === "setup") {
+            return await RunLockedScoreboardCalculator(c, {
+              updated_at: cfg.updated_at,
+            });
+          }
+          return;
+        }
         let updated_at = new Date(data.timestamp);
-        if (data.data.updated_at) updated_at = data.data.updated_at;
         const sub = data.data as SubmissionUpdateEvent;
+        if (
+          data.subject === SubmissionUpdateEvent.$id! ||
+          data.subject === ChallengeUpdateEvent.$id!
+        ) {
+          if ("updated_at" in data.data && data.data.updated_at) {
+            updated_at = data.data.updated_at;
+          }
+        }
         if (
           data.subject === SubmissionUpdateEvent.$id! &&
           !sub.is_update &&
