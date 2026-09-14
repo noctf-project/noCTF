@@ -246,6 +246,7 @@
         <div class="flex gap-2">
           <input
             type="text"
+            aria-label="Flag input"
             placeholder={"You've solved this challenge!"}
             class="input input-bordered flex-grow !bg-base-100"
             disabled
@@ -264,6 +265,7 @@
         <form class="flex gap-2 w-full">
           <div class="relative w-full">
             <input
+              aria-label="Flag input"
               bind:value={flagInput}
               oninput={() => {
                 if (flagSubmitStatus !== "correct") {

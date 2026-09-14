@@ -28,6 +28,10 @@
 
   let isExpanded = $state(true);
 
+  if (value === undefined || value === null) {
+    value = {};
+  }
+
   $effect(() => {
     if (value === undefined || value === null) {
       value = {};
@@ -92,7 +96,7 @@
     </div>
   </div>
 
-  {#if isExpanded}
+  {#if isExpanded && value && typeof value === "object"}
     <div class="space-y-4 ml-6">
       {#if schema?.properties && typeof schema.properties === "object"}
         {#each Object.entries(schema.properties) as [propertyName, propertySchema]}

@@ -1,6 +1,6 @@
 <script>
   import FormPage from "./form.svelte";
-  import TeamPage from "../teams/[id]/page.svelte";
+  import TeamPage from "$lib/components/TeamPage.svelte";
   import authState from "$lib/state/auth.svelte";
   import { onMount } from "svelte";
 

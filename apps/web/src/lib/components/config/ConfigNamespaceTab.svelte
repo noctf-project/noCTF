@@ -5,6 +5,10 @@
   import Icon from "@iconify/svelte";
   import SchemaForm from "./SchemaForm.svelte";
   import JsonConfigEditor from "./JsonConfigEditor.svelte";
+  import {
+    initializeDataFromSchema,
+    cleanDataForSubmission,
+  } from "./schema-utils";
 
   type ConfigNamespace = {
     namespace: string;
@@ -31,122 +35,41 @@
     loadConfigData();
   });
 
-  function initializeDataFromSchema(data: any): Record<string, any> {
-    const initialized =
-      typeof data === "object" && data !== null ? { ...data } : {};
-
-    if (schema?.properties) {
-      for (const [key, property] of Object.entries(schema.properties)) {
-        if (property && typeof property === "object") {
-          const prop = property as any;
-          if (
-            prop.type === "object" &&
-            (initialized[key] === undefined || initialized[key] === null)
-          ) {
-            initialized[key] = {};
-          }
-          if (
-            prop.type === "array" &&
-            (initialized[key] === undefined || initialized[key] === null)
-          ) {
-            initialized[key] = [];
-          }
-        }
-      }
-    }
-
-    return initialized;
-  }
-
-  function cleanDataForSubmission(data: any, schemaProps?: any): any {
-    if (!data || typeof data !== "object") {
-      return data;
-    }
-
-    if (Array.isArray(data)) {
-      return data
-        .map((item) => cleanDataForSubmission(item))
-        .filter((item) => !isEmptyValue(item));
-    }
-
-    const cleaned: any = {};
-    const requiredFields = schema?.required || [];
-
-    for (const [key, value] of Object.entries(data)) {
-      const isRequired = requiredFields.includes(key);
-      const propertySchema = schemaProps?.[key] || schema?.properties?.[key];
-
-      if (isRequired) {
-        if (
-          propertySchema?.type === "object" ||
-          (propertySchema?.type === "array" && Array.isArray(value))
-        ) {
-          cleaned[key] = cleanDataForSubmission(
-            value,
-            propertySchema?.properties,
-          );
-        } else {
-          cleaned[key] = value;
-        }
-      } else {
-        if (!isEmptyValue(value)) {
-          if (
-            propertySchema?.type === "object" ||
-            (propertySchema?.type === "array" && Array.isArray(value))
-          ) {
-            const cleanedValue = cleanDataForSubmission(
-              value,
-              propertySchema?.properties,
-            );
-            if (!isEmptyValue(cleanedValue)) {
-              cleaned[key] = cleanedValue;
-            }
-          } else {
-            cleaned[key] = value;
-          }
-        }
-      }
-    }
-
-    return cleaned;
-  }
-
-  function isEmptyValue(value: any): boolean {
-    if (value === null || value === undefined) return true;
-    if (typeof value === "string" && value.trim() === "") return true;
-    if (Array.isArray(value) && value.length === 0) return true;
-    if (typeof value === "object" && Object.keys(value).length === 0)
-      return true;
-    return false;
-  }
-
   async function loadConfigData() {
+    const targetNamespace = namespace.namespace;
     try {
       isLoading = true;
       const response = await api.GET("/admin/config/{namespace}", {
-        params: { path: { namespace: namespace.namespace } },
+        params: { path: { namespace: targetNamespace } },
       });
+
+      if (namespace.namespace !== targetNamespace) {
+        return;
+      }
 
       if (response.data) {
         const configValue = response.data.data.value;
-        originalData = initializeDataFromSchema(configValue);
-        editData = initializeDataFromSchema(configValue);
+        originalData = initializeDataFromSchema(configValue, schema);
+        editData = initializeDataFromSchema(configValue, schema);
         version = response.data.data.version;
       } else {
         toasts.error(
-          `Failed to load config for ${namespace.namespace}: ${response.error?.message}`,
+          `Failed to load config for ${targetNamespace}: ${response.error?.message}`,
         );
       }
     } catch (error) {
+      if (namespace.namespace !== targetNamespace) return;
       console.error("Failed to load config data:", error);
-      toasts.error(`Failed to load config for ${namespace.namespace}`);
+      toasts.error(`Failed to load config for ${targetNamespace}`);
     } finally {
-      isLoading = false;
+      if (namespace.namespace === targetNamespace) {
+        isLoading = false;
+      }
     }
   }
 
   function startEdit() {
-    editData = initializeDataFromSchema(originalData);
+    editData = initializeDataFromSchema(originalData, schema);
     isEditing = true;
   }
 
@@ -158,7 +81,11 @@
   async function saveConfig() {
     try {
       isSaving = true;
-      const cleanedData = cleanDataForSubmission(editData, schema?.properties);
+      const cleanedData = cleanDataForSubmission(
+        editData,
+        schema?.properties,
+        schema?.required,
+      );
       const response = await api.PUT("/admin/config/{namespace}", {
         params: { path: { namespace: namespace.namespace } },
         body: {

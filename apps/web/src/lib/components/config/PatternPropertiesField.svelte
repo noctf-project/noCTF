@@ -28,6 +28,10 @@
   let editingKey = $state<string | null>(null);
   let editingKeyName = $state("");
 
+  if (value === undefined || value === null) {
+    value = {};
+  }
+
   $effect(() => {
     if (value === undefined || value === null) {
       value = {};
