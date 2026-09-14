@@ -5,6 +5,7 @@
   import api, { wrapLoadable } from "$lib/api/index.svelte";
   import TeamQueryService from "$lib/state/team_query.svelte";
   import SubmissionsTable from "$lib/components/SubmissionsTable.svelte";
+  import { SvelteMap } from "svelte/reactivity";
   import {
     AllCountries,
     countryCodeToFlag,
@@ -37,8 +38,9 @@
   const challenges = wrapLoadable(api.GET("/challenges"));
 
   const challengeMap = $derived.by(() => {
-    if (!challenges.r?.data?.data?.challenges) return new Map();
-    const map = new Map();
+    if (!challenges.r?.data?.data?.challenges)
+      return new SvelteMap<number, string>();
+    const map = new SvelteMap<number, string>();
     challenges.r.data.data.challenges.forEach((challenge) => {
       map.set(challenge.id, challenge.title);
     });
@@ -406,7 +408,7 @@
                     class="select select-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
                   >
                     <option value="">No country selected</option>
-                    {#each Object.keys(AllCountries || {}) as countryCode}
+                    {#each Object.keys(AllCountries || {}) as countryCode (countryCode)}
                       <option value={countryCode}>
                         {countryCodeToFlag(countryCode)}
                         {AllCountries[countryCode]}
@@ -519,7 +521,7 @@
                   class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg"
                 >
                   {#if userData.identities && userData.identities.length > 0}
-                    {#each userData.identities as identity}
+                    {#each userData.identities as identity (identity)}
                       <div class="badge badge-info gap-2 pop">
                         <Icon
                           icon={getProviderIcon(identity.provider)}
@@ -549,7 +551,7 @@
                   <div
                     class="flex flex-wrap gap-2 p-3 bg-base-200 rounded-lg min-h-[60px]"
                   >
-                    {#each availableFlags as flag}
+                    {#each availableFlags as flag (flag.name)}
                       {@const isSelected = editForm.flags.includes(flag.name)}
                       <label class="cursor-pointer">
                         <input
@@ -569,7 +571,7 @@
                       </label>
                     {/each}
 
-                    {#each customFlags as flagName}
+                    {#each customFlags as flagName (flagName)}
                       <div
                         class="btn btn-sm badge-warning text-white pop relative group"
                       >
@@ -628,7 +630,7 @@
                     class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg"
                   >
                     {#if userData.flags && userData.flags.length > 0}
-                      {#each userData.flags as flagName}
+                      {#each userData.flags as flagName (flagName)}
                         {@const flagConfig = getFlagConfig(flagName)}
                         {@const isCustomFlag =
                           !predefinedFlagNames.includes(flagName)}
@@ -663,7 +665,7 @@
                   <div
                     class="flex flex-wrap gap-2 p-3 bg-base-200 rounded-lg min-h-[60px]"
                   >
-                    {#each availableRoles as role}
+                    {#each availableRoles as role (role.name)}
                       {@const isSelected = editForm.roles.includes(role.name)}
                       <label class="cursor-pointer">
                         <input
@@ -683,7 +685,7 @@
                       </label>
                     {/each}
 
-                    {#each customRoles as roleName}
+                    {#each customRoles as roleName (roleName)}
                       <div
                         class="btn btn-sm badge-primary text-white pop relative group"
                       >
@@ -742,7 +744,7 @@
                     class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg"
                   >
                     {#if userData.roles && userData.roles.length > 0}
-                      {#each userData.roles as roleName}
+                      {#each userData.roles as roleName (roleName)}
                         {@const roleConfig = getRoleConfig(roleName)}
                         {@const isCustomRole =
                           !predefinedRoleNames.includes(roleName)}
@@ -838,7 +840,7 @@
                 </tr>
               </thead>
               <tbody>
-                {#each sessionData as session}
+                {#each sessionData as session (session.id)}
                   <tr class="bg-base-100 hover:bg-base-300/30">
                     <td class="border-y border-base-300 py-2 px-3 text-center">
                       {session.id}

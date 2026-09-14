@@ -13,6 +13,7 @@
   import configState from "$lib/state/config.svelte";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
+  import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
   type ScoreboardEntry = {
     team_id: number;
@@ -223,16 +224,16 @@
 
   // hack: heuristic to get challenges that are externally weighted (different
   // score per team)
-  const weightedChallengeIds: Set<number> = $derived.by(() => {
-    const bases = new Map<number, Set<number>>();
+  const weightedChallengeIds: SvelteSet<number> = $derived.by(() => {
+    const bases = new SvelteMap<number, SvelteSet<number>>();
     for (const entry of allTeamsToDisplay) {
       for (const { challenge_id, value, bonus } of entry.solves) {
         let set = bases.get(challenge_id);
-        if (!set) bases.set(challenge_id, (set = new Set()));
+        if (!set) bases.set(challenge_id, (set = new SvelteSet()));
         set.add(value - (bonus || 0));
       }
     }
-    const weighted = new Set<number>();
+    const weighted = new SvelteSet<number>();
     for (const [id, set] of bases) {
       if (set.size > 1) weighted.add(id);
     }
@@ -346,7 +347,7 @@
 
 {#snippet challengeTitles()}
   <div class="flex ml-[37rem]">
-    {#each challenges as challenge}
+    {#each challenges as challenge (challenge.id)}
       <div class="relative">
         <div
           class="w-10 h-32 border border-x-base-300 border-transparent bg-base-200 skew-x-[-45deg] translate-x-16"
@@ -448,13 +449,13 @@
 
         <div class="flex flex-wrap gap-2">
           {#if apiTeamTags.loading}
-            {#each Array(3) as _}
+            {#each Array(3) as _, i (i)}
               <div class="skeleton h-8 w-20"></div>
             {/each}
           {:else if teamTags.length === 0}
             <div class="text-sm opacity-70">No team tags available</div>
           {:else}
-            {#each teamTags as tag}
+            {#each teamTags as tag (tag.id)}
               {@const isActive = selectedTags.includes(tag.id)}
               <button
                 class={`btn btn-sm ${isActive ? "btn-primary" : "btn-outline bg-base-200"} pop hover:pop`}
@@ -576,7 +577,7 @@
           >Last Solve</th
         >
         {#if isDetailed}
-          {#each challenges as challenge}
+          {#each challenges as challenge (challenge.id)}
             <th
               class="border border-base-300 bg-base-200 w-10 text-center text-sm"
             >
@@ -587,7 +588,7 @@
       </tr>
     </thead>
     <tbody>
-      {#each Array(getLoadingRowCount()) as _}
+      {#each Array(getLoadingRowCount()) as _, i (i)}
         <tr>
           <td class="border border-base-300 text-center h-12">
             <div class="skeleton h-4 w-6 mx-auto"></div>
@@ -611,7 +612,7 @@
             <div class="skeleton h-4 w-16 mx-auto"></div>
           </td>
           {#if isDetailed}
-            {#each challenges as challenge}
+            {#each challenges as challenge (challenge.id)}
               <td class="border border-base-300 p-0">
                 <div
                   class="w-full h-full flex flex-col items-center justify-center"
@@ -753,7 +754,7 @@
                     class="border border-base-300 bg-base-200 py-2 px-3 text-center font-bold min-w-32 max-w-32"
                     >Last Solve</th
                   >
-                  {#each challenges as challenge}
+                  {#each challenges as challenge (challenge.id)}
                     <th
                       class="border border-base-300 bg-base-200 py-2 px-1 text-center font-bold min-w-10 max-w-10 h-10 text-sm"
                     >

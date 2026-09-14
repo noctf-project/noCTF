@@ -8,6 +8,7 @@
     AllCountries,
   } from "$lib/utils/country";
   import UserQueryService from "$lib/state/user_query.svelte";
+  import { SvelteMap } from "svelte/reactivity";
   import SubmissionsTable from "$lib/components/SubmissionsTable.svelte";
   import { goto } from "$app/navigation";
   import { availableFlags, getFlagConfig } from "$lib/utils/team-flags";
@@ -35,8 +36,9 @@
   const challenges = wrapLoadable(api.GET("/challenges"));
 
   const challengeMap = $derived.by(() => {
-    if (!challenges.r?.data?.data?.challenges) return new Map();
-    const map = new Map();
+    if (!challenges.r?.data?.data?.challenges)
+      return new SvelteMap<number, string>();
+    const map = new SvelteMap<number, string>();
     challenges.r.data.data.challenges.forEach((challenge) => {
       map.set(challenge.id, challenge.title);
     });
@@ -547,7 +549,7 @@
                     class="select select-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
                   >
                     <option value="">No country selected</option>
-                    {#each Object.keys(AllCountries || {}) as countryCode}
+                    {#each Object.keys(AllCountries || {}) as countryCode (countryCode)}
                       <option value={countryCode}>
                         {countryCodeToFlag(countryCode)}
                         {AllCountries[countryCode]}
@@ -601,7 +603,7 @@
                     {#if apiDivisions.loading}
                       <option disabled>Loading divisions...</option>
                     {:else}
-                      {#each divisions as division}
+                      {#each divisions as division (division.id)}
                         <option value={division.id}>
                           {division.name}
                         </option>
@@ -644,7 +646,7 @@
                     class="flex flex-wrap gap-2 p-3 bg-base-200 rounded-lg min-h-[60px]"
                   >
                     {#if apiTeamTags.loading}
-                      {#each Array(3) as _}
+                      {#each Array(3) as _, i (i)}
                         <div class="skeleton h-8 w-20"></div>
                       {/each}
                     {:else if teamTags.length === 0}
@@ -652,7 +654,7 @@
                         No tags available
                       </div>
                     {:else}
-                      {#each teamTags as tag}
+                      {#each teamTags as tag (tag.id)}
                         {@const isSelected = editForm.tag_ids.includes(tag.id)}
                         <label class="cursor-pointer">
                           <input
@@ -689,7 +691,7 @@
                     class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg"
                   >
                     {#if teamData.tag_ids && teamData.tag_ids.length > 0}
-                      {#each teamData.tag_ids as tagId}
+                      {#each teamData.tag_ids as tagId (tagId)}
                         {@const tag = teamTags.find((t) => t.id === tagId)}
                         <div
                           class="btn btn-sm btn-primary pop pointer-events-none"
@@ -716,7 +718,7 @@
                   <div
                     class="flex flex-wrap gap-2 p-3 bg-base-200 rounded-lg min-h-[60px]"
                   >
-                    {#each availableFlags as flag}
+                    {#each availableFlags as flag (flag.name)}
                       {@const isSelected = editForm.flags.includes(flag.name)}
                       <label class="cursor-pointer">
                         <input
@@ -736,7 +738,7 @@
                       </label>
                     {/each}
 
-                    {#each customFlags as flagName}
+                    {#each customFlags as flagName (flagName)}
                       <div
                         class="btn btn-sm badge-warning text-white pop relative group"
                       >
@@ -796,7 +798,7 @@
                     class="flex gap-2 flex-wrap min-h-[60px] p-3 bg-base-200 rounded-lg"
                   >
                     {#if teamData.flags && teamData.flags.length > 0}
-                      {#each teamData.flags as flagName}
+                      {#each teamData.flags as flagName (flagName)}
                         {@const flagConfig = getFlagConfig(flagName)}
                         {@const isCustomFlag =
                           !predefinedFlagNames.includes(flagName)}
@@ -880,7 +882,7 @@
               </tr>
             </thead>
             <tbody>
-              {#each teamData.members as member}
+              {#each teamData.members as member (member.user_id)}
                 <tr class="bg-base-100 hover:bg-base-300/30">
                   <td class="border-y border-base-300 py-2 px-3">
                     {#await UserQueryService.get(member.user_id)}

@@ -150,7 +150,7 @@
                 </tr>
               </thead>
               <tbody>
-                {#each userSearchResults as user}
+                {#each userSearchResults as user (user.id)}
                   {@const isAlreadySelected = excludedUserIds.includes(user.id)}
                   <tr
                     class="bg-base-100 hover:bg-base-300/30"

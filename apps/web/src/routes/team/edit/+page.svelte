@@ -167,7 +167,7 @@
                 class="select select-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
               >
                 <option value="">No country selected</option>
-                {#each Object.keys(AllCountries) as countryCode}
+                {#each Object.keys(AllCountries) as countryCode (countryCode)}
                   <option value={countryCode}>
                     {countryCodeToFlag(countryCode)}
                     {AllCountries[countryCode]}
@@ -200,7 +200,7 @@
                   class="flex flex-wrap gap-2 p-3 bg-base-200 rounded-lg min-h-[60px]"
                 >
                   {#if apiTeamTags.loading}
-                    {#each Array(3) as _}
+                    {#each Array(3) as _, i (i)}
                       <div class="skeleton h-8 w-20"></div>
                     {/each}
                   {:else if teamTags.length === 0}
@@ -208,7 +208,7 @@
                       No tags available
                     </div>
                   {:else}
-                    {#each teamTags as tag}
+                    {#each teamTags as tag (tag.id)}
                       {@const isSelected = selectedTagIds.includes(tag.id)}
                       <label class="cursor-pointer">
                         <input

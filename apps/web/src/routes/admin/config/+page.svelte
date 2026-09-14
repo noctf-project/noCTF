@@ -78,7 +78,7 @@
           <div class="card-body p-4">
             <h3 class="font-semibold mb-3">Configuration Namespaces</h3>
             <div class="space-y-1">
-              {#each configSchemas.r as namespace}
+              {#each configSchemas.r as namespace (namespace.namespace)}
                 <button
                   class="btn btn-ghost btn-sm w-full justify-start {activeTab ===
                   namespace.namespace

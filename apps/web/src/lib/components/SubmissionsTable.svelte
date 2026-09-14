@@ -147,7 +147,7 @@
       </tr>
     </thead>
     <tbody>
-      {#each submissions as submission}
+      {#each submissions as submission (submission.id)}
         <tr
           class="{variant === 'full'
             ? 'border border-r border-base-300 hover:bg-base-50 transition-colors'

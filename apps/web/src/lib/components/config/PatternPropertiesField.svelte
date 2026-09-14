@@ -208,7 +208,7 @@
         </div>
       {:else}
         <div class="space-y-4">
-          {#each Object.entries(value || {}) as [key, _]}
+          {#each Object.entries(value || {}) as [key, _] (key)}
             <div class="border border-base-200 rounded-lg p-3 bg-base-100">
               <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-2 flex-1">

@@ -99,7 +99,7 @@
   {#if isExpanded && value && typeof value === "object"}
     <div class="space-y-4 ml-6">
       {#if schema?.properties && typeof schema.properties === "object"}
-        {#each Object.entries(schema.properties) as [propertyName, propertySchema]}
+        {#each Object.entries(schema.properties) as [propertyName, propertySchema] (propertyName)}
           {#if propertySchema && typeof propertySchema === "object"}
             <div class="form-control">
               {#if propertySchema.type === "object" && propertySchema.patternProperties}

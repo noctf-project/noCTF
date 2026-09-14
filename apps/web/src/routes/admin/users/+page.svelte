@@ -141,7 +141,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each data.entries as user}
+          {#each data.entries as user (user.id)}
             <tr
               class="border border-r border-base-300 hover:bg-base-50 transition-colors"
             >
@@ -180,7 +180,7 @@
               <td class="border-r border-base-400 text-center">
                 {#if user.flags && user.flags.length > 0}
                   <div class="flex gap-1 flex-wrap justify-center">
-                    {#each user.flags as flag}
+                    {#each user.flags as flag (flag)}
                       <span class="badge {getFlagBadgeClass(flag)} badge-sm pop"
                         >{flag}</span
                       >
@@ -193,7 +193,7 @@
               <td class="border-r border-base-400 text-center">
                 {#if user.roles && user.roles.length > 0}
                   <div class="flex gap-1 flex-wrap justify-center">
-                    {#each user.roles as role}
+                    {#each user.roles as role (role)}
                       <span class="badge {getRoleBadgeClass(role)} badge-sm pop"
                         >{role}</span
                       >

@@ -12,6 +12,7 @@
   import CategoryStatsTable from "$lib/components/stats/CategoryStatsTable.svelte";
   import configState from "$lib/state/config.svelte";
   import { untrack } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
   const { canRefresh = true }: Props = $props();
 
@@ -35,9 +36,22 @@
   const teamTags = $derived(apiTeamTags.r?.data?.data?.tags || []);
 
   const challengeMap = $derived.by(() => {
-    const map = new Map();
+    const map = new SvelteMap<
+      number,
+      {
+        title: string;
+        value: number;
+        slug: string;
+        tags: { [key: string]: string };
+      }
+    >();
     challenges.forEach((challenge) => {
-      map.set(challenge.id, challenge);
+      map.set(challenge.id, {
+        title: challenge.title,
+        value: challenge.value || 0,
+        slug: challenge.slug,
+        tags: challenge.tags,
+      });
     });
     return map;
   });
@@ -90,7 +104,7 @@
             bind:value={selectedDivision}
             onchange={refreshData}
           >
-            {#each divisions as division}
+            {#each divisions as division (division.id)}
               <option value={division.id}>{division.name}</option>
             {/each}
           </select>

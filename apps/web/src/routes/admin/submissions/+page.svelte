@@ -1,6 +1,4 @@
 <script lang="ts">
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-
   import Icon from "@iconify/svelte";
   import api, { wrapLoadable } from "$lib/api/index.svelte";
   import UserQueryService from "$lib/state/user_query.svelte";
@@ -8,12 +6,31 @@
   import Pagination from "$lib/components/Pagination.svelte";
   import SubmissionsTable from "$lib/components/SubmissionsTable.svelte";
   import { createDebouncedFields } from "$lib/utils/debounce.svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
   const FILTER_DEBOUNCE_MS = 300;
   const pageSize = 50;
 
+  type SubmissionStatus = "queued" | "incorrect" | "correct" | "invalid";
+  const SUBMISSION_STATUSES: SubmissionStatus[] = [
+    "correct",
+    "incorrect",
+    "queued",
+    "invalid",
+  ];
+  type SubmissionQueryFilters = {
+    page: number;
+    page_size: number;
+    user_id?: number[];
+    team_id?: number[];
+    challenge_id?: number[];
+    status?: SubmissionStatus[];
+    hidden?: boolean;
+    data?: string;
+  };
+
   let currentPage = $state(0);
-  let statusFilter = $state<string[]>([]);
+  let statusFilter = $state<SubmissionStatus[]>([]);
   let hiddenFilter = $state<boolean | undefined>(undefined);
 
   const textFilters = createDebouncedFields(
@@ -30,7 +47,7 @@
   );
 
   const submissions = $derived.by(() => {
-    const filters: any = {
+    const filters: SubmissionQueryFilters = {
       page_size: pageSize,
       page: currentPage + 1,
     };
@@ -86,9 +103,10 @@
 
   const challenges = wrapLoadable(api.GET("/challenges"));
 
-  const challengeMap = $derived.by(() => {
-    if (!challenges.r?.data?.data?.challenges) return new Map();
-    const map = new Map();
+  const challengeMap: SvelteMap<number, string> = $derived.by(() => {
+    if (!challenges.r?.data?.data?.challenges)
+      return new SvelteMap<number, string>();
+    const map = new SvelteMap<number, string>();
     challenges.r.data.data.challenges.forEach((challenge) => {
       map.set(challenge.id, challenge.title);
     });
@@ -124,7 +142,7 @@
     return statusColors[status as keyof typeof statusColors] || "badge-info";
   }
 
-  function toggleStatusFilter(status: string) {
+  function toggleStatusFilter(status: SubmissionStatus) {
     if (statusFilter.includes(status)) {
       statusFilter = statusFilter.filter((s) => s !== status);
     } else {
@@ -186,7 +204,7 @@
             <span class="label-text">Status</span>
           </label>
           <div class="flex flex-wrap gap-2">
-            {#each ["correct", "incorrect", "queued", "invalid"] as status}
+            {#each SUBMISSION_STATUSES as status (status)}
               <label class="cursor-pointer">
                 <input
                   type="checkbox"

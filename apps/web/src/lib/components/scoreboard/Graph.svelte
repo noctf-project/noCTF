@@ -175,7 +175,7 @@
       th.style.textAlign = "center";
       th.style.padding = "4px";
 
-      let titleText = "";
+      let titleText: string;
       if (typeof hoveredXValue === "number") {
         titleText = new Date(hoveredXValue).toLocaleString();
       } else {

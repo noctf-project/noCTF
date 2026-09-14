@@ -223,7 +223,7 @@
         </thead>
         <tbody>
           {#if loading}
-            {#each Array(5) as _}
+            {#each Array(5) as _, i (i)}
               <tr>
                 <td>
                   <div class="flex flex-col gap-1">
@@ -302,7 +302,7 @@
                       {/if}
                       {#if challenge?.tags && getCategoriesFromTags(challenge.tags).length > 0}
                         <div class="flex gap-1 flex-wrap justify-center">
-                          {#each getCategoriesFromTags(challenge.tags) as cat}
+                          {#each getCategoriesFromTags(challenge.tags) as cat (cat)}
                             <div class="tooltip" data-tip={cat}>
                               <Icon
                                 icon={categoryToIcon(cat)}

@@ -178,7 +178,7 @@
       bind:value
       {disabled}
     >
-      {#each getEnumOptions(property) as option}
+      {#each getEnumOptions(property) as option (option)}
         <option value={option}>{option}</option>
       {/each}
     </select>
@@ -250,7 +250,7 @@
 
       {#if Array.isArray(value) && value.length > 0}
         <div class="space-y-3">
-          {#each value as _, index}
+          {#each value as item, index (typeof item === "object" && item !== null ? item : index)}
             <div class="border border-base-200 rounded-lg p-3 bg-base-100">
               <div class="flex items-start justify-between gap-3">
                 <div class="flex-1">

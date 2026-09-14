@@ -37,7 +37,7 @@ export class AuditLogDAO {
     if (limit) {
       query = query.limit(limit);
     }
-    return query.orderBy("created_at desc").execute();
+    return query.orderBy("created_at", "desc").execute();
   }
 
   async getCount(

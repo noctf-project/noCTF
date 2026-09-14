@@ -506,7 +506,7 @@
                       </h4>
                       {#if policy.match_roles.length > 0}
                         <div class="flex flex-wrap gap-1">
-                          {#each policy.match_roles as role}
+                          {#each policy.match_roles as role (role)}
                             <span class="badge badge-outline pop badge-sm"
                               >{role}</span
                             >
@@ -526,7 +526,7 @@
                       </h4>
                       {#if policy.omit_roles.length > 0}
                         <div class="flex flex-wrap gap-1">
-                          {#each policy.omit_roles as role}
+                          {#each policy.omit_roles as role (role)}
                             <span
                               class="badge badge-error badge-outline pop badge-sm"
                               >{role}</span
@@ -545,7 +545,7 @@
                       </h4>
                       {#if policy.permissions.length > 0}
                         <div class="flex flex-wrap gap-1">
-                          {#each policy.permissions as permission}
+                          {#each policy.permissions as permission (permission)}
                             <span
                               class="badge pop {permission.startsWith('!')
                                 ? 'badge-error'

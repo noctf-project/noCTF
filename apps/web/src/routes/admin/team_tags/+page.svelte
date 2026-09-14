@@ -256,7 +256,7 @@
                 </tr>
               </thead>
               <tbody>
-                {#each teamTags.r.tags as tag}
+                {#each teamTags.r.tags as tag (tag.id)}
                   <tr class="hover:bg-base-200/50">
                     <td>
                       {#if editingTag?.id === tag.id}

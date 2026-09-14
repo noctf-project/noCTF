@@ -114,10 +114,11 @@ describe("ChallengeInfo", () => {
       data: {
         data: {
           status: "correct",
-          submission_id: 100,
+          hidden: false,
         },
       },
-    } as any);
+      response: new Response(),
+    });
 
     const { getByRole, findByText } = render(ChallengeInfo, {
       props: {
@@ -163,10 +164,11 @@ describe("ChallengeInfo", () => {
       data: {
         data: {
           status: "incorrect",
-          submission_id: 101,
+          hidden: false,
         },
       },
-    } as any);
+      response: new Response(),
+    });
 
     const { getByRole, findByText } = render(ChallengeInfo, {
       props: {
