@@ -6,6 +6,7 @@ import type { RedisClientFactory } from "./clients/redis.ts";
 import type { ConfigService } from "./services/config.ts";
 import type { UserService } from "./services/user.ts";
 import type { CacheService } from "./services/cache.ts";
+import type { CaptchaService } from "./services/captcha.ts";
 import type { TeamService } from "./services/team.ts";
 import type { Logger } from "./types/primitives.ts";
 import type { PolicyService } from "./services/policy.ts";
@@ -38,6 +39,7 @@ export type ServiceCradle = {
   auditLogService: AuditLogService;
   announcementService: AnnouncementService;
   cacheService: CacheService;
+  captchaService: CaptchaService;
   challengeService: ChallengeService;
   emailService: EmailService;
   eventBusService: EventBusService;

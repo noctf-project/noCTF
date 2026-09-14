@@ -24,7 +24,6 @@
     "@fastify/swagger-ui": "^6.1.1",
     "@noctf/api": "workspace:*",
     "@noctf/mod-auth": "workspace:*",
-    "@noctf/mod-captcha": "workspace:*",
     "@noctf/mod-tickets": "workspace:*",
     "@noctf/server-core": "workspace:*",
     "@sinclair/typebox": "catalog:",

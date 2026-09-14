@@ -21,28 +21,38 @@ import { routes as site } from "./routes/site.ts";
 import { routes as stats } from "./routes/stats.ts";
 
 import { initServer as auth } from "@noctf/mod-auth";
-import { initServer as captcha } from "@noctf/mod-captcha";
 import { initServer as tickets } from "@noctf/mod-tickets";
+import { routes as captcha } from "./routes/captcha.ts";
 
 import type { FastifyInstance } from "fastify";
 import { AuthnHook } from "./hooks/authn.ts";
 import { AuthzHook } from "./hooks/authz.ts";
+import { CaptchaHook } from "./hooks/captcha.ts";
 import { LocalFileProvider } from "@noctf/server-core/services/file/local";
 import { FILE_LOCAL_PATH, TOKEN_SECRET } from "./config.ts";
 import { RateLimitHook } from "./hooks/rate_limit.ts";
 import { NodeMailerProvider } from "@noctf/server-core/services/email/nodemailer";
 import { S3FileProvider } from "@noctf/server-core/services/file/s3";
+import {
+  HCaptchaProvider,
+  CloudflareCaptchaProvider,
+} from "@noctf/server-core/services/captcha";
 
 export default async function (fastify: FastifyInstance) {
   fastify.addHook("preHandler", AuthnHook);
   fastify.addHook("preHandler", AuthzHook);
   fastify.addHook("preHandler", RateLimitHook);
+  fastify.addHook("preHandler", CaptchaHook);
 
-  const { configService, emailService, fileService } = fastify.container.cradle;
+  const { configService, emailService, fileService, captchaService } =
+    fastify.container.cradle;
   fileService.register(new LocalFileProvider(FILE_LOCAL_PATH, TOKEN_SECRET));
   fileService.register(new S3FileProvider());
 
   emailService.register(new NodeMailerProvider({ configService }));
+
+  captchaService.register(new HCaptchaProvider());
+  captchaService.register(new CloudflareCaptchaProvider());
 
   fastify.register(adminAnnouncement);
   fastify.register(adminAuditLog);
