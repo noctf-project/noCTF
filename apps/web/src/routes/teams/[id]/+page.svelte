@@ -1,9 +1,8 @@
 <script lang="ts">
-  import Page from "./page.svelte";
+  import TeamPage from "$lib/components/TeamPage.svelte";
   import type { PageData } from "./$types";
 
-  const props: { data: PageData } = $props();
-  const teamId = props.data.teamId;
+  const { data }: { data: PageData } = $props();
 </script>
 
-<Page {teamId} />
+<TeamPage teamId={data.teamId} />

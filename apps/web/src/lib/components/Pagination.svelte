@@ -1,14 +1,8 @@
 <script lang="ts">
   import Icon from "@iconify/svelte";
+  import { untrack } from "svelte";
 
-  const {
-    totalItems = 0,
-    itemsPerPage = 25,
-    initialPage = 0,
-    compact = false,
-    className = "",
-    onChange = (_page: number) => {},
-  } = $props<{
+  const props = $props<{
     totalItems?: number;
     itemsPerPage?: number;
     initialPage?: number;
@@ -17,7 +11,13 @@
     onChange?: (page: number) => void;
   }>();
 
-  let currentPage = $state(initialPage);
+  const totalItems = $derived(props.totalItems ?? 0);
+  const itemsPerPage = $derived(props.itemsPerPage ?? 25);
+  const compact = $derived(props.compact ?? false);
+  const className = $derived(props.className ?? "");
+  const onChange = $derived(props.onChange ?? ((_page: number) => {}));
+
+  let currentPage = $state(untrack(() => props.initialPage ?? 0));
 
   const totalPages = $derived(
     Math.max(1, Math.ceil(totalItems / itemsPerPage)),

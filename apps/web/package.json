@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "test:unit": "svelte-kit sync && vitest run"
   },
   "devDependencies": {
     "@iconify/svelte": "^4.2.0",
@@ -16,16 +17,21 @@
     "@sveltejs/adapter-static": "^3.0.8",
     "@sveltejs/kit": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/svelte": "^5.4.2",
+    "@testing-library/user-event": "^14.6.7",
     "autoprefixer": "^10.4.20",
     "daisyui": "^4.12.23",
     "eslint": "catalog:",
     "globals": "^15.0.0",
+    "jsdom": "^25.0.1",
     "svelte": "^5.0.0",
     "svelte-check": "^4.0.0",
     "svelte-turnstile": "^0.11.0",
     "tailwindcss": "^3.4.9",
     "typescript": "^5.0.0",
-    "vite": "^5.4.19"
+    "vite": "^5.4.19",
+    "vitest": "catalog:"
   },
   "dependencies": {
     "@tailwindcss/container-queries": "^0.1.1",

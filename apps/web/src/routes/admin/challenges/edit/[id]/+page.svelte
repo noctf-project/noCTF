@@ -86,5 +86,7 @@
     hints: hints ?? [],
     version,
   }}
-  <ChallengeCreateEdit mode="edit" challData={editChallData} />
+  {#key editChallData.id}
+    <ChallengeCreateEdit mode="edit" challData={editChallData} />
+  {/key}
 {/if}

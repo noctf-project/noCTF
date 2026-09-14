@@ -71,24 +71,27 @@
     slugify,
   } from "$lib/utils/challenges";
   import { CATEGORIES } from "$lib/constants/categories";
+  import { untrack } from "svelte";
 
   const { mode, challData }: Props = $props();
 
-  let challengeName = $state<string>(challData?.title ?? "");
+  const initialData = untrack(() => challData);
+
+  let challengeName = $state<string>(initialData?.title ?? "");
   const slug = $derived(slugify(challengeName));
-  let description = $state<string>(challData?.description ?? "");
-  let isHidden = $state<boolean>(challData?.isHidden ?? false);
-  let visibleAt = $state<string>(challData?.visibleAt ?? "");
+  let description = $state<string>(initialData?.description ?? "");
+  let isHidden = $state<boolean>(initialData?.isHidden ?? false);
+  let visibleAt = $state<string>(initialData?.visibleAt ?? "");
   let catInput = $state<string>("");
-  let categories = $state<string[]>(challData?.categories || []);
-  let difficulty = $state<Difficulty | "">(challData?.difficulty || "");
+  let categories = $state<string[]>(initialData?.categories || []);
+  let difficulty = $state<Difficulty | "">(initialData?.difficulty || "");
   let customTags = $state<{ [key: string]: string }>(
-    challData?.customTags || {},
+    initialData?.customTags || {},
   );
   let customTagKey = $state<string>("");
   let customTagValue = $state<string>("");
   let files = $state<File[]>([]);
-  let existingFiles = $state<ExistingFile[]>(challData?.files ?? []);
+  let existingFiles = $state<ExistingFile[]>(initialData?.files ?? []);
   let externalFiles = $state<ExternalFileInput[]>([]);
   let extUrl = $state<string>("");
   let extHash = $state<string>("");
@@ -98,9 +101,9 @@
     extUrl.trim() !== "" || extHash.trim() !== "" || extSize != null,
   );
   let flags = $state<Flag[]>(
-    challData?.flags ?? [{ data: "", strategy: "case_sensitive" }],
+    initialData?.flags ?? [{ data: "", strategy: "case_sensitive" }],
   );
-  let hints = $state<ChallData["hints"]>(challData?.hints ?? []);
+  let hints = $state<ChallData["hints"]>(initialData?.hints ?? []);
 
   let isCreating = $state<boolean>(false);
   let creationStep = $state<string>("");
@@ -109,9 +112,9 @@
   let creationFileUploadProgress = $state<number>(0);
 
   const scoringStrategies = wrapLoadable(api.GET("/admin/scoring_strategies"));
-  let scoringType = $state<string>(challData?.score?.strategy ?? "");
+  let scoringType = $state<string>(initialData?.score?.strategy ?? "");
   let scoringParams = $state<{ [k in string]: number }>(
-    challData?.score?.params ?? {},
+    initialData?.score?.params ?? {},
   );
   const resetScoringParams = () => {
     scoringParams = {};

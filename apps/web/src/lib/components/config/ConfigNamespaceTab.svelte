@@ -5,6 +5,10 @@
   import Icon from "@iconify/svelte";
   import SchemaForm from "./SchemaForm.svelte";
   import JsonConfigEditor from "./JsonConfigEditor.svelte";
+  import {
+    initializeDataFromSchema,
+    cleanDataForSubmission,
+  } from "./schema-utils";
 
   type ConfigNamespace = {
     namespace: string;
@@ -31,120 +35,6 @@
     loadConfigData();
   });
 
-  function initializeDataFromSchema(
-    data: any,
-    currentSchema: any = schema,
-  ): any {
-    if (!currentSchema) return data;
-
-    if (currentSchema.type === "object" || currentSchema.properties) {
-      const initialized =
-        typeof data === "object" && data !== null && !Array.isArray(data)
-          ? { ...data }
-          : {};
-
-      if (currentSchema.properties) {
-        for (const [key, property] of Object.entries(
-          currentSchema.properties,
-        ) as [string, any][]) {
-          if (property && typeof property === "object") {
-            if (property.type === "object" || property.properties) {
-              initialized[key] = initializeDataFromSchema(
-                initialized[key],
-                property,
-              );
-            } else if (property.type === "array") {
-              if (
-                initialized[key] === undefined ||
-                initialized[key] === null ||
-                !Array.isArray(initialized[key])
-              ) {
-                initialized[key] = property.default !== undefined ? property.default : [];
-              }
-            } else if (initialized[key] === undefined && property.default !== undefined) {
-              initialized[key] = property.default;
-            }
-          }
-        }
-      }
-
-      return initialized;
-    }
-
-    if (currentSchema.type === "array") {
-      if (Array.isArray(data)) {
-        return data.map((item) =>
-          initializeDataFromSchema(item, currentSchema.items),
-        );
-      }
-      return currentSchema.default !== undefined ? currentSchema.default : [];
-    }
-
-    return data !== undefined ? data : currentSchema.default;
-  }
-
-  function cleanDataForSubmission(data: any, schemaProps?: any): any {
-    if (!data || typeof data !== "object") {
-      return data;
-    }
-
-    if (Array.isArray(data)) {
-      return data
-        .map((item) => cleanDataForSubmission(item))
-        .filter((item) => !isEmptyValue(item));
-    }
-
-    const cleaned: any = {};
-    const requiredFields = schema?.required || [];
-
-    for (const [key, value] of Object.entries(data)) {
-      const isRequired = requiredFields.includes(key);
-      const propertySchema = schemaProps?.[key] || schema?.properties?.[key];
-
-      if (isRequired) {
-        if (
-          propertySchema?.type === "object" ||
-          (propertySchema?.type === "array" && Array.isArray(value))
-        ) {
-          cleaned[key] = cleanDataForSubmission(
-            value,
-            propertySchema?.properties,
-          );
-        } else {
-          cleaned[key] = value;
-        }
-      } else {
-        if (!isEmptyValue(value)) {
-          if (
-            propertySchema?.type === "object" ||
-            (propertySchema?.type === "array" && Array.isArray(value))
-          ) {
-            const cleanedValue = cleanDataForSubmission(
-              value,
-              propertySchema?.properties,
-            );
-            if (!isEmptyValue(cleanedValue)) {
-              cleaned[key] = cleanedValue;
-            }
-          } else {
-            cleaned[key] = value;
-          }
-        }
-      }
-    }
-
-    return cleaned;
-  }
-
-  function isEmptyValue(value: any): boolean {
-    if (value === null || value === undefined) return true;
-    if (typeof value === "string" && value.trim() === "") return true;
-    if (Array.isArray(value) && value.length === 0) return true;
-    if (typeof value === "object" && Object.keys(value).length === 0)
-      return true;
-    return false;
-  }
-
   async function loadConfigData() {
     const targetNamespace = namespace.namespace;
     try {
@@ -159,8 +49,8 @@
 
       if (response.data) {
         const configValue = response.data.data.value;
-        originalData = initializeDataFromSchema(configValue);
-        editData = initializeDataFromSchema(configValue);
+        originalData = initializeDataFromSchema(configValue, schema);
+        editData = initializeDataFromSchema(configValue, schema);
         version = response.data.data.version;
       } else {
         toasts.error(
@@ -179,7 +69,7 @@
   }
 
   function startEdit() {
-    editData = initializeDataFromSchema(originalData);
+    editData = initializeDataFromSchema(originalData, schema);
     isEditing = true;
   }
 
@@ -191,7 +81,11 @@
   async function saveConfig() {
     try {
       isSaving = true;
-      const cleanedData = cleanDataForSubmission(editData, schema?.properties);
+      const cleanedData = cleanDataForSubmission(
+        editData,
+        schema?.properties,
+        schema?.required,
+      );
       const response = await api.PUT("/admin/config/{namespace}", {
         params: { path: { namespace: namespace.namespace } },
         body: {
