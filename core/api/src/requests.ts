@@ -249,11 +249,9 @@ export const AdminUpdateSubmissionsRequest = Type.Object(
       Type.Composite([
         Type.Object({
           id: Type.Integer(),
-          comments: Type.Optional(Type.String({ maxLength: 512 })),
+          comment: Type.Optional(Type.String({ maxLength: 512 })),
         }),
-        Type.Partial(
-          Type.Pick(Submission, ["status", "hidden", "value", "weight"]),
-        ),
+        Type.Partial(Type.Pick(Submission, ["status", "hidden", "value"])),
       ]),
       { minItems: 1, maxItems: 1000 },
     ),

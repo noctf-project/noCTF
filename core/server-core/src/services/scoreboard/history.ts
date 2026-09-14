@@ -27,6 +27,7 @@ export class ScoreboardHistory {
   }
 
   async saveIteration(division: number, scoreboard: ScoreboardEntry[]) {
+    const existingTeams = new Set<number>(scoreboard.map((x) => x.team_id));
     const hidden = new Set<number>(
       scoreboard.filter((x) => x.hidden).map((x) => x.team_id),
     );
@@ -35,7 +36,7 @@ export class ScoreboardHistory {
     const diff = GetChangedTeamScores(last, minimal);
     await this.scoreHistoryDAO.add(
       diff
-        .filter((x) => !hidden.has(x.team_id))
+        .filter((x) => !hidden.has(x.team_id) && existingTeams.has(x.team_id))
         .map(({ updated_at: _updated_at, ...rest }) => rest),
     );
     const encoded = await Compress(encode(minimal));
