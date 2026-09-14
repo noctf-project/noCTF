@@ -9,7 +9,7 @@ import { EventItem } from "./event_bus.ts";
 import { TeamFlag } from "../types/enums.ts";
 import ky from "ky";
 import Handlebars from "handlebars";
-import TTLCache from "@isaacs/ttlcache";
+import { TTLCache } from "@isaacs/ttlcache";
 import { OutgoingSolveWebhookGeneric } from "@noctf/api/datatypes";
 import { ValidationError } from "../errors.ts";
 import { IsTimeBetweenSeconds } from "../util/time.ts";
