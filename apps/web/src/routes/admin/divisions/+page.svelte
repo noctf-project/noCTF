@@ -2,6 +2,7 @@
   import { toasts } from "$lib/stores/toast";
   import api, { wrapLoadable } from "$lib/api/index.svelte";
   import Icon from "@iconify/svelte";
+  import { SvelteSet } from "svelte/reactivity";
 
   type Division = {
     id: number;
@@ -19,7 +20,7 @@
   let editingDivision = $state<Division | null>(null);
   let isUpdating = $state(false);
   let isDeleting = $state<number | null>(null);
-  let visiblePasswords = $state<Set<number>>(new Set());
+  let visiblePasswords = new SvelteSet<number>();
 
   let createForm = $state({
     name: "",
@@ -190,7 +191,6 @@
     } else {
       visiblePasswords.add(divisionId);
     }
-    visiblePasswords = new Set(visiblePasswords);
   }
 </script>
 
@@ -341,7 +341,7 @@
                 </tr>
               </thead>
               <tbody>
-                {#each divisions.r as division}
+                {#each divisions.r as division (division.id)}
                   <tr class="hover:bg-base-200/50">
                     <td>
                       {#if editingDivision?.id === division.id}

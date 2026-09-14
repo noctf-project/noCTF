@@ -68,7 +68,7 @@ export const slugify = (title: string) => {
 };
 
 export const filenameFromUrl = (url: string): string => {
-  let pathname = "";
+  let pathname: string;
   let host = "";
   try {
     const u = new URL(url);

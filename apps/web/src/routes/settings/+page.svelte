@@ -97,7 +97,7 @@
       class="select select-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
     >
       <option value="">No country selected</option>
-      {#each Object.keys(AllCountries) as countryCode}
+      {#each Object.keys(AllCountries) as countryCode (countryCode)}
         <option value={countryCode}>
           {countryCodeToFlag(countryCode)}
           {AllCountries[countryCode]}

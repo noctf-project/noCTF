@@ -13,6 +13,7 @@
     getDifficultyFromTags,
   } from "$lib/utils/challenges";
   import { getRelativeTime } from "$lib/utils/time";
+  import { SvelteMap } from "svelte/reactivity";
   import type { Difficulty } from "$lib/constants/difficulties";
   import Graph from "$lib/components/scoreboard/Graph.svelte";
   import authState from "$lib/state/auth.svelte";
@@ -45,6 +46,15 @@
     value: number;
     hidden: boolean;
     created_at: Date;
+  };
+
+  type ScoreboardSolve = {
+    user_id: number | null;
+    challenge_id: number;
+    hidden: boolean;
+    bonus?: number;
+    value: number;
+    created_at: string;
   };
 
   let { teamId }: Props = $props();
@@ -157,8 +167,8 @@
     );
     const challengeMap = new Map(challenges.map((v) => [v.id, v]));
 
-    const userSolveMap = new Map();
-    const userPointsMap = new Map();
+    const userSolveMap = new SvelteMap<number, ScoreboardSolve[]>();
+    const userPointsMap = new SvelteMap<number, number>();
 
     if (scoreboardData.solves) {
       scoreboardData.solves.forEach((solve) => {
@@ -177,7 +187,7 @@
     }
 
     const userSolvesToCategoryCounts = (
-      solves: { challenge_id: number; value: number }[],
+      solves: { challenge_id: number; value: number }[] | undefined,
     ) => {
       if (!solves) return [];
       const out = solves.reduce((a, v) => {
@@ -255,7 +265,7 @@
     </p>
     <div class="divider divider-start">
       <div class="flex flex-row gap-1">
-        {#each member.categories as [cat, val]}
+        {#each member.categories as [cat, val] (cat)}
           <div class="tooltip text-lg" data-tip={`${cat} - ${val} points`}>
             <Icon icon={categoryToIcon(cat)} />
           </div>
@@ -318,7 +328,7 @@
             </td>
             <td class="border-y border-base-300 py-2 px-3">
               <div class="flex flex-wrap justify-center gap-1">
-                {#each solve.categories as cat}
+                {#each solve.categories as cat (cat)}
                   <div class="tooltip text-xl" data-tip={cat}>
                     <Icon icon={categoryToIcon(cat)} />
                   </div>
@@ -440,7 +450,7 @@
         </div>
         {#if team && teamTags}
           <div class="flex flex-row gap-2">
-            {#each team.tag_ids as tag_id}
+            {#each team.tag_ids as tag_id (tag_id)}
               {@const tag = teamTags.find((t) => t.id === tag_id)}
               {#if tag}
                 <div class="p-1 px-4 pop bg-secondary/40 rounded-lg">
@@ -475,7 +485,7 @@
           class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
         >
           {#if members !== undefined}
-            {#each members as member}
+            {#each members as member (member.id)}
               {@render memberCard(member)}
             {/each}
           {/if}

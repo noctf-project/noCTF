@@ -155,7 +155,7 @@
         {:else if teamSearchResults.length > 0}
           <div class="space-y-2">
             <div class="max-h-48 overflow-y-auto space-y-1">
-              {#each teamSearchResults as team}
+              {#each teamSearchResults as team (team.id)}
                 <button
                   class="w-full text-left p-3 rounded-lg hover:bg-base-200 border border-base-300 transition-colors"
                   onclick={() => handleTeamSelect(team)}

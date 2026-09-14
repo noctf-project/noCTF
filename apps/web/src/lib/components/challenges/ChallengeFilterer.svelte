@@ -87,7 +87,7 @@
 
 <div class="flex flex-row flex-wrap justify-center md:flex-col gap-4">
   {@render categoryBtn("All", allSolveCount, allCount)}
-  {#each categories as cat}
+  {#each categories as cat (cat)}
     {@const counts = getCategoryCounts(cat!)}
     {@render categoryBtn(cat!, counts.solved, counts.total)}
   {/each}

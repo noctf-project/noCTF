@@ -1,5 +1,6 @@
 import api from "$lib/api/index.svelte";
 import type { PathResponse } from "$lib/api/types";
+import { SvelteMap } from "svelte/reactivity";
 
 type AnnouncementResponse = PathResponse<"/announcements", "get">;
 type Announcement = AnnouncementResponse["data"]["entries"][0];
@@ -19,7 +20,7 @@ class NotificationState {
   private pollInterval: ReturnType<typeof setInterval> | null = null;
 
   private deduplicateAndSort(announcements: Announcement[]): Announcement[] {
-    const uniqueMap = new Map<string, Announcement>();
+    const uniqueMap = new SvelteMap<string, Announcement>();
 
     announcements.forEach((announcement) => {
       const key = announcement.created_at;

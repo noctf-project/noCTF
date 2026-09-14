@@ -34,7 +34,8 @@ jobs:
       - name: Format Check
         run: pnpm format:check
 
-      # TODO: Add lint step (e.g. `pnpm lint`) once existing eslint errors are resolved
+      - name: Lint
+        run: pnpm lint
 
       - name: Unit Tests
         run: pnpm test:unit

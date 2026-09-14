@@ -52,7 +52,7 @@
       <div
         class={`self-center flex flex-row gap-1 text-2xl ${data.isSolved ? "text-primary-content" : "text-neutral-400"}`}
       >
-        {#each data.categories as cat}
+        {#each data.categories as cat (cat)}
           <div class="tooltip" data-tip={cat}>
             <Icon icon={categoryToIcon(cat)} />
           </div>

@@ -97,7 +97,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each challenges.r.data.data as challenge}
+          {#each challenges.r.data.data as challenge (challenge.id)}
             {@const difficulty = getDifficultyFromTags(challenge.tags)}
             {@const isVisible = challenge.hidden
               ? false
@@ -120,7 +120,7 @@
               <td class="border-x border-base-400 text-center">
                 {#if getCategoriesFromTags(challenge.tags).length > 0}
                   <div class="flex gap-1 flex-wrap justify-center">
-                    {#each getCategoriesFromTags(challenge.tags) as cat}
+                    {#each getCategoriesFromTags(challenge.tags) as cat (cat)}
                       <div class="tooltip" data-tip={cat}>
                         <Icon icon={categoryToIcon(cat)} class="text-lg" />
                       </div>

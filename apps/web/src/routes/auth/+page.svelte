@@ -74,7 +74,7 @@
   <div class="divider text-sm text-gray-500 my-6">OR</div>
 
   <div class="flex flex-col gap-3">
-    {#each oAuthProviders as provider}
+    {#each oAuthProviders as provider (provider.name)}
       <button
         class="btn btn-outline w-full"
         onclick={() => handleSocialLogin(provider.name.toLowerCase())}

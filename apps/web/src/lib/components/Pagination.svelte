@@ -69,7 +69,7 @@
 
     <div class="flex gap-1 mx-2">
       {#if totalPages <= 7}
-        {#each Array(totalPages) as _, i}
+        {#each Array(totalPages) as _, i (i)}
           <button
             class="btn btn-sm hover:pop pop {i === currentPage
               ? 'btn-primary'
@@ -94,7 +94,7 @@
         {/if}
 
         {#if currentPage <= 2}
-          {#each [1, 2, 3] as i}
+          {#each [1, 2, 3] as i (i)}
             <button
               class="btn btn-sm hover:pop pop {i === currentPage
                 ? 'btn-primary'
@@ -105,7 +105,7 @@
             </button>
           {/each}
         {:else if currentPage >= totalPages - 3}
-          {#each [totalPages - 4, totalPages - 3, totalPages - 2] as i}
+          {#each [totalPages - 4, totalPages - 3, totalPages - 2] as i (i)}
             <button
               class="btn btn-sm hover:pop pop {i === currentPage
                 ? 'btn-primary'
@@ -116,7 +116,7 @@
             </button>
           {/each}
         {:else}
-          {#each [currentPage - 1, currentPage, currentPage + 1] as i}
+          {#each [currentPage - 1, currentPage, currentPage + 1] as i (i)}
             <button
               class="btn btn-sm hover:pop pop {i === currentPage
                 ? 'btn-primary'

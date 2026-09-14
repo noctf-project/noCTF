@@ -547,7 +547,7 @@
               <span class="label-text-alt">Press Enter to add</span>
             </label>
             <div class="flex flex-wrap gap-2 mb-2">
-              {#each CATEGORIES as cat}
+              {#each CATEGORIES as cat (cat)}
                 {@const has = hasCat(cat)}
                 <button
                   onclick={(e) => {
@@ -577,7 +577,7 @@
               role="list"
               aria-label="Challenge categories"
             >
-              {#each categories as cat, index}
+              {#each categories as cat, index (cat)}
                 <div
                   class="badge badge-primary badge-sm gap-2 pop"
                   role="listitem"
@@ -646,7 +646,7 @@
                 role="list"
                 aria-label="Custom tags"
               >
-                {#each Object.entries(customTags) as [key, value]}
+                {#each Object.entries(customTags) as [key, value] (key)}
                   <div
                     class="badge badge-secondary badge-lg gap-2 pop"
                     role="listitem"
@@ -690,7 +690,7 @@
                     required
                     class="select select-bordered w-full focus:outline-none focus:ring-0 focus:ring-offset-0"
                   >
-                    {#each Object.keys(scoringStrategies.r.data!.data!) as strategy}
+                    {#each Object.keys(scoringStrategies.r.data!.data!) as strategy (strategy)}
                       <option value={strategy}>{strategy}</option>
                     {/each}
                   </select>
@@ -708,7 +708,7 @@
                 <div
                   class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
                 >
-                  {#each paramsFromStrategy(scoringType) as p}
+                  {#each paramsFromStrategy(scoringType) as p (p)}
                     <div class="form-control w-full">
                       <label for={p} class="label">
                         <span class="label-text">{p}</span>
@@ -734,7 +734,7 @@
         <div class="space-y-6">
           <h2 class="text-lg font-semibold">Flags</h2>
           <div role="list" aria-label="Challenge flags" class="space-y-4">
-            {#each flags as flag, index}
+            {#each flags as flag, index (flag)}
               <div
                 class="flex flex-col sm:flex-row gap-4 p-4 bg-base-200 rounded-lg"
                 role="listitem"
@@ -805,7 +805,7 @@
         <div class="space-y-6">
           <h2 class="text-lg font-semibold">Hints</h2>
           <div role="list" aria-label="Challenge hints" class="space-y-4">
-            {#each hints as _hint, index}
+            {#each hints as hint, index (hint)}
               <div
                 class="flex flex-col sm:flex-row gap-4 p-4 bg-base-200 rounded-lg"
                 role="listitem"
@@ -960,7 +960,7 @@
                 role="list"
                 aria-label="Uploaded files"
               >
-                {#each existingFiles as file, index}
+                {#each existingFiles as file, index (file.id)}
                   {@const isExternal = file.provider === "external"}
                   <div class="flex items-center gap-2" role="listitem">
                     <span
@@ -987,7 +987,7 @@
                     </span>
                   </div>
                 {/each}
-                {#each files as file, index}
+                {#each files as file, index (file)}
                   <div class="flex items-center gap-2" role="listitem">
                     <span class="badge badge-primary badge-lg gap-2 pop">
                       <Icon icon="material-symbols:upload" class="text-sm" />
@@ -1003,7 +1003,7 @@
                     </span>
                   </div>
                 {/each}
-                {#each externalFiles as file, index}
+                {#each externalFiles as file, index (file)}
                   <div class="flex items-center gap-2" role="listitem">
                     <span
                       class="badge badge-primary badge-lg gap-2 pop"

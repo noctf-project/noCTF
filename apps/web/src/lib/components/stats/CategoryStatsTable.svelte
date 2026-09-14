@@ -170,7 +170,7 @@
         </thead>
         <tbody>
           {#if loading}
-            {#each Array(5) as _}
+            {#each Array(5) as _, i (i)}
               <tr>
                 <td class="text-center"
                   ><div class="skeleton h-4 w-8 mx-auto"></div></td

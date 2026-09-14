@@ -233,7 +233,7 @@ export class SubmissionDAO {
         "created_at",
         "updated_at",
       ])
-      .orderBy("created_at desc");
+      .orderBy("created_at", "desc");
 
     return query.execute();
   }

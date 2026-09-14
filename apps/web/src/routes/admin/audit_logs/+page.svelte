@@ -371,7 +371,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each data.entries as entry}
+          {#each data.entries as entry (entry)}
             {@const actorInfo = formatActor(entry.actor)}
             <tr
               class="border border-r border-base-300 hover:bg-base-50 transition-colors"
@@ -438,7 +438,7 @@
               <td class="border-r border-base-400">
                 {#if entry.entities.length > 0}
                   <div class="flex flex-wrap gap-1">
-                    {#each entry.entities as entity}
+                    {#each entry.entities as entity (entity)}
                       {@const entityInfo = formatEntity(entity)}
                       {#if entityInfo.type === "user" && entityInfo.id}
                         {#await UserQueryService.get(Number(entityInfo.id))}

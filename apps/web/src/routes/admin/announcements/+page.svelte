@@ -523,7 +523,7 @@
               <div>
                 <span class="text-sm font-medium">Selected Users:</span>
                 <div class="flex flex-wrap gap-1 mt-1">
-                  {#each isForEdit ? editSelectedUsers : selectedUsers as user}
+                  {#each isForEdit ? editSelectedUsers : selectedUsers as user (user.id)}
                     <div class="badge badge-primary gap-1 pop">
                       <Icon icon="material-symbols:person" class="text-xs" />
                       {user.name}
@@ -547,7 +547,7 @@
               <div>
                 <span class="text-sm font-medium">Selected Teams:</span>
                 <div class="flex flex-wrap gap-1 mt-1">
-                  {#each isForEdit ? editSelectedTeams : selectedTeams as team}
+                  {#each isForEdit ? editSelectedTeams : selectedTeams as team (team.id)}
                     <div class="badge badge-secondary gap-1 pop">
                       <Icon icon="material-symbols:group" class="text-xs" />
                       {team.name}
@@ -601,7 +601,7 @@
           <div>
             <span class="text-sm font-medium">Selected Roles:</span>
             <div class="flex flex-wrap gap-1 mt-1">
-              {#each isForEdit ? editSelectedRoles : selectedRoles as role}
+              {#each isForEdit ? editSelectedRoles : selectedRoles as role (role)}
                 <div class="badge badge-warning gap-1 pop">
                   <Icon icon="material-symbols:shield-person" class="text-xs" />
                   {role}
@@ -723,7 +723,7 @@
                   <span class="label-text">Delivery Channels</span>
                 </legend>
                 <div class="flex flex-wrap gap-2">
-                  {#each deliveryChannels.r as channel}
+                  {#each deliveryChannels.r as channel (channel)}
                     <label class="cursor-pointer label justify-start">
                       <input
                         type="checkbox"
@@ -796,7 +796,7 @@
             </div>
 
             <div class="flex flex-wrap gap-2 mb-3">
-              {#each announcement.delivery_channels as channel}
+              {#each announcement.delivery_channels as channel (channel)}
                 <span class="badge badge-primary pop badge-sm">{channel}</span>
               {/each}
             </div>
@@ -819,7 +819,7 @@
                     Public
                   </span>
                 {/if}
-                {#each visibility.users as userId}
+                {#each visibility.users as userId (userId)}
                   <span class="badge badge-primary pop badge-sm">
                     <Icon icon="material-symbols:person" class="text-xs mr-1" />
                     {#await userQueryService.get(parseInt(userId))}
@@ -831,7 +831,7 @@
                     {/await}
                   </span>
                 {/each}
-                {#each visibility.teams as teamId}
+                {#each visibility.teams as teamId (teamId)}
                   <span class="badge badge-secondary pop badge-sm">
                     <Icon icon="material-symbols:group" class="text-xs mr-1" />
                     {#await teamQueryService.get(parseInt(teamId))}
@@ -843,7 +843,7 @@
                     {/await}
                   </span>
                 {/each}
-                {#each visibility.roles as role}
+                {#each visibility.roles as role (role)}
                   <span class="badge badge-warning pop badge-sm">
                     <Icon
                       icon="material-symbols:shield-person"
@@ -852,7 +852,7 @@
                     {role}
                   </span>
                 {/each}
-                {#each visibility.other as item}
+                {#each visibility.other as item (item)}
                   <span class="badge badge-neutral pop badge-sm">
                     <Icon icon="material-symbols:rule" class="text-xs mr-1" />
                     {item}
@@ -1004,7 +1004,7 @@
                   <span class="label-text">Delivery Channels</span>
                 </legend>
                 <div class="flex flex-wrap gap-2">
-                  {#each deliveryChannels.r as channel}
+                  {#each deliveryChannels.r as channel (channel)}
                     <label class="cursor-pointer label justify-start">
                       <input
                         type="checkbox"
@@ -1056,7 +1056,7 @@
           </div>
         {:else if announcements.r?.entries && announcements.r.entries.length > 0}
           <div class="space-y-4">
-            {#each announcements.r.entries as announcement}
+            {#each announcements.r.entries as announcement (announcement.id)}
               {@render announcementCard(announcement)}
             {/each}
           </div>

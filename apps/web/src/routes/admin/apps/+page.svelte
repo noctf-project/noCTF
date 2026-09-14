@@ -535,7 +535,7 @@
                       </h4>
                       {#if app.redirect_uris.length > 0}
                         <div class="space-y-1">
-                          {#each app.redirect_uris as uri}
+                          {#each app.redirect_uris as uri (uri)}
                             <code
                               class="text-xs bg-base-200 px-2 py-1 rounded block"
                             >
@@ -557,7 +557,7 @@
                       </h4>
                       {#if app.scopes.length > 0}
                         <div class="flex flex-wrap gap-1">
-                          {#each app.scopes as scope}
+                          {#each app.scopes as scope (scope)}
                             <span class="badge badge-outline pop badge-sm"
                               >{scope}</span
                             >

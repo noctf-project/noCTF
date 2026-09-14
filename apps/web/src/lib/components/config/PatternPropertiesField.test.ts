@@ -22,7 +22,7 @@ describe("PatternPropertiesField", () => {
       render(PatternPropertiesField, {
         props: {
           schema: sampleSchema,
-          value: undefined as any,
+          value: undefined as unknown as object,
           fieldName: "webhooks",
         },
       });
@@ -31,7 +31,7 @@ describe("PatternPropertiesField", () => {
 
   it("adds a new dynamic key when typed and submitted", async () => {
     const user = userEvent.setup();
-    const data: Record<string, any> = {};
+    const data: Record<string, unknown> = {};
 
     const { getByPlaceholderText, getByRole, getByText } = render(
       PatternPropertiesField,

@@ -170,7 +170,7 @@
         {/if}
         <div class="bg-neutral-400 w-full h-[1px]"></div>
         <div class="self-center flex flex-row gap-1 text-2xl text-neutral-400">
-          {#each challData!.categories! as cat}
+          {#each challData!.categories! as cat (cat)}
             <div class="tooltip" data-tip={cat}>
               <Icon icon={categoryToIcon(cat)} />
             </div>
@@ -189,7 +189,7 @@
 
           {#if challDetails!.hints.length > 0}
             <div class="flex flex-col gap-2 mt-4 mb-2">
-              {#each challDetails!.hints as hint}
+              {#each challDetails!.hints as hint, index (index)}
                 <details
                   class="collapse collapse-arrow bg-base-200 border border-base-content/10"
                 >
@@ -220,7 +220,7 @@
               </button>
             </div>
             <ul class="flex flex-row flex-wrap gap-x-4 gap-y-2">
-              {#each challDetails!.files as file}
+              {#each challDetails!.files as file (file)}
                 <li>
                   <a
                     href={file.url.startsWith("http")
@@ -359,7 +359,7 @@
               </tr>
             </thead>
             <tbody>
-              {#each displayedScores! as { teamId, time, value }, index}
+              {#each displayedScores! as { teamId, time, value }, index (teamId)}
                 <tr class="border-base-300 border-b">
                   <td class="font-medium text-left">
                     {#if index <= 2}

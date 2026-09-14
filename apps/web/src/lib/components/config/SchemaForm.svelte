@@ -47,7 +47,7 @@
     {/if}
 
     <div class="space-y-6">
-      {#each Object.entries(schema.properties) as [fieldName, property]}
+      {#each Object.entries(schema.properties) as [fieldName, property] (fieldName)}
         {#if property.type === "object"}
           <div class="form-control">
             <SchemaFormField
@@ -62,7 +62,7 @@
       {/each}
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {#each Object.entries(schema.properties) as [fieldName, property]}
+        {#each Object.entries(schema.properties) as [fieldName, property] (fieldName)}
           {#if property.type !== "object"}
             <div class="form-control">
               <SchemaFormField

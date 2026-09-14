@@ -17,7 +17,7 @@ describe("NestedObjectField", () => {
       render(NestedObjectField, {
         props: {
           schema,
-          value: undefined as any,
+          value: undefined as unknown as object,
           fieldName: "testNested",
         },
       });

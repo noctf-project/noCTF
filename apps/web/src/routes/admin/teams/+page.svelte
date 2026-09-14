@@ -131,7 +131,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each data.entries as team}
+          {#each data.entries as team (team.id)}
             <tr
               class="border border-r border-base-300 hover:bg-base-50 transition-colors"
             >
@@ -171,7 +171,7 @@
               <td class="border-r border-base-400 text-center">
                 {#if team.tag_ids && team.tag_ids.length > 0}
                   <div class="flex gap-1 flex-wrap justify-center">
-                    {#each team.tag_ids as tagId}
+                    {#each team.tag_ids as tagId (tagId)}
                       {@const tag = teamTags.find((t) => t.id === tagId)}
                       <div
                         class="btn btn-xs btn-primary pop pointer-events-none"
@@ -187,7 +187,7 @@
               <td class="border-r border-base-400 text-center">
                 {#if team.flags && team.flags.length > 0}
                   <div class="flex gap-1 flex-wrap justify-center">
-                    {#each team.flags as flagName}
+                    {#each team.flags as flagName (flagName)}
                       {@const flagConfig = getFlagConfig(flagName)}
                       <div
                         class="btn btn-xs {flagConfig.color} text-white pop pointer-events-none"
