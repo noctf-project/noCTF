@@ -5,22 +5,28 @@ import {
   ReturnedSubmissionUpdate,
   SubmissionDAO,
 } from "../dao/submission.ts";
+import { SubmissionWeightDAO } from "../dao/submission_weight.ts";
 import { SubmissionUpdateEvent } from "@noctf/api/events";
 import { SubmissionStatus } from "@noctf/api/enums";
-import { SubmissionLogDAO } from "../dao/submission_log.ts";
-import { FilterUndefined } from "../util/filter.ts";
 import { BadRequestError } from "../errors.ts";
+import { FilterUndefined } from "../util/filter.ts";
+import { AuditLogActor } from "../types/audit_log.ts";
 
-type Props = Pick<ServiceCradle, "databaseClient" | "eventBusService">;
+type Props = Pick<
+  ServiceCradle,
+  "databaseClient" | "eventBusService" | "auditLogService"
+>;
 export class SubmissionService {
   private readonly dao;
 
   private readonly databaseClient;
   private readonly eventBusService;
+  private readonly auditLogService;
 
-  constructor({ databaseClient, eventBusService }: Props) {
+  constructor({ databaseClient, eventBusService, auditLogService }: Props) {
     this.databaseClient = databaseClient;
     this.eventBusService = eventBusService;
+    this.auditLogService = auditLogService;
     this.dao = new SubmissionDAO(databaseClient.get());
   }
 
@@ -53,7 +59,7 @@ export class SubmissionService {
 
   async update(
     submissions: AdminUpdateSubmissionsRequest["submissions"],
-    actor: string,
+    actor?: AuditLogActor,
   ) {
     const map = submissions.reduce((prev, cur) => {
       prev.set(cur.id, cur);
@@ -75,27 +81,24 @@ export class SubmissionService {
           `Not all submissions found, missing: ${missingIds.join(", ")}`,
         );
       }
-      if (updates.length > 0) {
-        const logDAO = new SubmissionLogDAO(tx);
-        await logDAO.create(
-          updates.map((u) => {
-            const {
-              id: _id,
-              comments,
-              ...c
-            } = map.get(u.id) ||
-            ({} as AdminUpdateSubmissionsRequest["submissions"][0]);
-            return {
-              comments: comments,
-              submission_id: u.id,
-              actor,
-              changes: FilterUndefined(c),
-            };
-          }),
-        );
-      }
       return updates;
     });
+    if (updates.length > 0) {
+      const audit = {
+        changes: {} as Record<string, string | number | boolean | null>,
+        comment: "",
+      };
+      for (const { id: _id, comment, ...fields } of submissions) {
+        if (comment !== undefined) audit.comment = comment;
+        Object.assign(audit.changes, FilterUndefined(fields));
+      }
+      await this.auditLogService.log({
+        operation: "submission.update",
+        entities: updates.map(({ id }) => `submission:${id}`),
+        actor,
+        data: JSON.stringify(audit),
+      });
+    }
     updates.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
     await this.sendUpdateEvents(updates);
     return updates;
@@ -119,7 +122,6 @@ export class SubmissionService {
   async upsertWeightsForChallenge(
     challenge_id: number,
     items: Pick<RawSolve, "team_id" | "weight">[],
-    actor: string,
   ) {
     const map = new Map<number, (typeof items)[number]>();
     const values = items.map((v) => {
@@ -138,16 +140,13 @@ export class SubmissionService {
       const submissionDAO = new SubmissionDAO(tx);
       const updates = await submissionDAO.upsertWeights(values);
       if (updates.length > 0) {
-        const logDAO = new SubmissionLogDAO(tx);
-        await logDAO.create(
-          updates.map((u) => {
-            return {
-              comments: "",
-              submission_id: u.id,
-              actor,
-              changes: { weight: map.get(u.team_id)?.weight },
-            };
-          }),
+        const weightDAO = new SubmissionWeightDAO(tx);
+        await weightDAO.create(
+          updates.map((u) => ({
+            challenge_id: u.challenge_id,
+            team_id: u.team_id,
+            weight: map.get(u.team_id)?.weight ?? 0,
+          })),
         );
       }
       return updates;

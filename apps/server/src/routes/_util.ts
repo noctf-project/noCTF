@@ -8,20 +8,6 @@ import { Policy } from "@noctf/server-core/util/policy";
 export const GetUtils = ({ policyService, configService }: ServiceCradle) => {
   const adminCache = new LocalCache<number, boolean>({ ttl: 1000, max: 5000 });
 
-  const isCompetitionActive = async () => {
-    const ctime = Date.now();
-    const {
-      value: { active, start_time_s, end_time_s },
-    } = await configService.get(SetupConfig);
-    if (!active) {
-      return false;
-    }
-    return !(
-      ctime < (start_time_s ?? 0) * 1000 ||
-      ctime > (end_time_s ?? Infinity) * 1000
-    );
-  };
-
   const gateStartTime = async (policy: Policy, userId?: number) => {
     const ctime = Date.now();
     const admin = await adminCache.load(userId || 0, () =>
@@ -52,5 +38,5 @@ export const GetUtils = ({ policyService, configService }: ServiceCradle) => {
       : default_size;
   };
 
-  return { gateStartTime, getMaxPageSize, isCompetitionActive };
+  return { gateStartTime, getMaxPageSize };
 };

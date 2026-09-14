@@ -28,7 +28,6 @@ import { CoreChallengePlugin } from "./core_plugin.ts";
 import { LocalCache } from "../../util/local_cache.ts";
 import type { SerializableMap } from "@noctf/api/types";
 import { SubmissionStatus } from "@noctf/api/enums";
-import { SubmissionLogDAO } from "../../dao/submission_log.ts";
 
 type Props = Pick<
   ServiceCradle,
@@ -236,7 +235,6 @@ export class ChallengeService {
       const { id, created_at, updated_at, seq } =
         await this.databaseClient.transaction(async (tx) => {
           const submissionDAO = new SubmissionDAO(tx);
-          const logDAO = new SubmissionLogDAO(tx);
           const result = await submissionDAO.create({
             team_id: teamId,
             user_id: userId,
@@ -247,15 +245,6 @@ export class ChallengeService {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             metadata: metadata as any,
           });
-
-          await logDAO.create([
-            {
-              actor: `user:${userId}`,
-              comments: state.comment,
-              submission_id: result.id,
-              changes: { status: state.status, hidden: false, weight: 0 },
-            },
-          ]);
           return result;
         });
 

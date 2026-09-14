@@ -105,15 +105,11 @@ describe(SubmissionDAO, () => {
     expect(stats[0].correct_count).toBe(2);
     expect(stats[0].first_solve_team_id).toBe(team1.id);
 
-    // Update submissions (e.g. adjust value or weight)
+    // Update submissions (e.g. adjust value)
     const updated = await dao.updateSubmissions([
-      { id: sub1.id, weight: 10 },
-      { id: sub2.id, weight: 10 },
+      { id: sub1.id, value: 10 },
+      { id: sub2.id, value: 20 },
     ]);
     expect(updated).toHaveLength(2);
-
-    const weights = await dao.listWeights({ challenge_id: [chal.id] });
-    expect(weights).toHaveLength(2);
-    expect(weights.every((w) => w.weight === 10)).toBe(true);
   });
 });

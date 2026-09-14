@@ -3,7 +3,6 @@ import { mockDeep, DeepMockProxy } from "vitest-mock-extended";
 import { ChallengeService } from "./index.ts";
 import { ChallengeDAO } from "../../dao/challenge.ts";
 import { SubmissionDAO } from "../../dao/submission.ts";
-import { SubmissionLogDAO } from "../../dao/submission_log.ts";
 import { DatabaseClient } from "../../clients/database.ts";
 import { AuditLogService } from "../audit_log.ts";
 import { EventBusService } from "../event_bus.ts";
@@ -29,7 +28,6 @@ import { ActorType } from "../../types/enums.ts";
 
 vi.mock(import("../../dao/challenge.ts"));
 vi.mock(import("../../dao/submission.ts"));
-vi.mock(import("../../dao/submission_log.ts"));
 
 const dummyPrivateMetadata = {
   solve: {
@@ -74,7 +72,6 @@ describe(ChallengeService, () => {
   let scoreService: DeepMockProxy<ScoreService>;
   let challengeDAO: DeepMockProxy<ChallengeDAO>;
   let submissionDAO: DeepMockProxy<SubmissionDAO>;
-  let submissionLogDAO: DeepMockProxy<SubmissionLogDAO>;
   let service: ChallengeService;
 
   beforeEach(() => {
@@ -91,16 +88,12 @@ describe(ChallengeService, () => {
       : never);
     challengeDAO = mockDeep<ChallengeDAO>();
     submissionDAO = mockDeep<SubmissionDAO>();
-    submissionLogDAO = mockDeep<SubmissionLogDAO>();
 
     vi.mocked(ChallengeDAO).mockImplementation(function () {
       return challengeDAO;
     });
     vi.mocked(SubmissionDAO).mockImplementation(function () {
       return submissionDAO;
-    });
-    vi.mocked(SubmissionLogDAO).mockImplementation(function () {
-      return submissionLogDAO;
     });
 
     const txMock = mockDeep<Transaction<DB>>();
@@ -352,14 +345,6 @@ describe(ChallengeService, () => {
           data: "flag{test}",
         }),
       );
-
-      expect(submissionLogDAO.create).toHaveBeenCalledWith([
-        expect.objectContaining({
-          actor: "user:10",
-          submission_id: 99,
-          changes: { status: "correct", hidden: false, weight: 0 },
-        }),
-      ]);
 
       expect(eventBusService.publish).toHaveBeenCalledWith(
         SubmissionUpdateEvent,

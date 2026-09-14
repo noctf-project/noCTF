@@ -3,6 +3,7 @@ import {
   AdminUpdateSubmissions,
 } from "@noctf/api/contract/admin_submission";
 import "@noctf/server-core/types/fastify";
+import { ActorType } from "@noctf/server-core/types/enums";
 import { OffsetPaginate } from "@noctf/server-core/util/paginator";
 import { Policy } from "@noctf/server-core/util/policy";
 import { route } from "@noctf/server-core/util/route";
@@ -54,10 +55,10 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => ({
-      data: await submissionService.update(
-        request.body.submissions,
-        `user:${request.user?.id}`,
-      ),
+      data: await submissionService.update(request.body.submissions, {
+        type: ActorType.USER,
+        id: request.user?.id,
+      }),
     }),
   );
 }

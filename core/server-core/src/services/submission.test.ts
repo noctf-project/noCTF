@@ -3,35 +3,39 @@ import { mockDeep, DeepMockProxy } from "vitest-mock-extended";
 import { SubmissionService } from "./submission.ts";
 import { DatabaseClient } from "../clients/database.ts";
 import { EventBusService } from "./event_bus.ts";
+import { AuditLogService } from "./audit_log.ts";
 import { SubmissionDAO } from "../dao/submission.ts";
-import { SubmissionLogDAO } from "../dao/submission_log.ts";
+import { SubmissionWeightDAO } from "../dao/submission_weight.ts";
 import { BadRequestError } from "../errors.ts";
 import { SubmissionUpdateEvent } from "@noctf/api/events";
+import { ActorType } from "../types/enums.ts";
 
 import type { DB } from "@noctf/schema";
 import type { Transaction } from "kysely";
 
 vi.mock(import("../dao/submission.ts"));
-vi.mock(import("../dao/submission_log.ts"));
+vi.mock(import("../dao/submission_weight.ts"));
 
 describe(SubmissionService, () => {
   let databaseClient: DeepMockProxy<DatabaseClient>;
   let eventBusService: DeepMockProxy<EventBusService>;
+  let auditLogService: DeepMockProxy<AuditLogService>;
   let submissionDAO: DeepMockProxy<SubmissionDAO>;
-  let submissionLogDAO: DeepMockProxy<SubmissionLogDAO>;
+  let submissionWeightDAO: DeepMockProxy<SubmissionWeightDAO>;
   let service: SubmissionService;
 
   beforeEach(() => {
     databaseClient = mockDeep<DatabaseClient>();
     eventBusService = mockDeep<EventBusService>();
+    auditLogService = mockDeep<AuditLogService>();
     submissionDAO = mockDeep<SubmissionDAO>();
-    submissionLogDAO = mockDeep<SubmissionLogDAO>();
+    submissionWeightDAO = mockDeep<SubmissionWeightDAO>();
 
     vi.mocked(SubmissionDAO).mockImplementation(function () {
       return submissionDAO;
     });
-    vi.mocked(SubmissionLogDAO).mockImplementation(function () {
-      return submissionLogDAO;
+    vi.mocked(SubmissionWeightDAO).mockImplementation(function () {
+      return submissionWeightDAO;
     });
 
     const txMock = mockDeep<Transaction<DB>>();
@@ -46,6 +50,7 @@ describe(SubmissionService, () => {
     service = new SubmissionService({
       databaseClient,
       eventBusService,
+      auditLogService,
     });
   });
 
@@ -54,21 +59,23 @@ describe(SubmissionService, () => {
   });
 
   describe("update", () => {
+    const actor = { type: ActorType.USER, id: 1 };
+
     it("throws BadRequestError if duplicate submission IDs are provided", async () => {
       const submissions = [
-        { id: 1, comments: "first", status: "correct" as const },
-        { id: 1, comments: "duplicate", status: "incorrect" as const },
+        { id: 1, comment: "first", status: "correct" as const },
+        { id: 1, comment: "duplicate", status: "incorrect" as const },
       ];
 
-      await expect(service.update(submissions, "admin")).rejects.toThrow(
+      await expect(service.update(submissions, actor)).rejects.toThrow(
         BadRequestError,
       );
     });
 
     it("throws BadRequestError if not all submissions could be updated", async () => {
       const submissions = [
-        { id: 1, comments: "first", status: "correct" as const },
-        { id: 2, comments: "second", status: "incorrect" as const },
+        { id: 1, comment: "first", status: "correct" as const },
+        { id: 2, comment: "second", status: "incorrect" as const },
       ];
 
       submissionDAO.updateSubmissions.mockResolvedValue([
@@ -85,15 +92,15 @@ describe(SubmissionService, () => {
         },
       ]);
 
-      await expect(service.update(submissions, "admin")).rejects.toThrow(
+      await expect(service.update(submissions, actor)).rejects.toThrow(
         "Not all submissions found, missing: 2",
       );
     });
 
-    it("creates submission logs, updates records, and publishes update events", async () => {
+    it("updates records, writes audit log, and publishes update events", async () => {
       const submissions = [
-        { id: 1, comments: "good solve", status: "correct" as const },
-        { id: 2, comments: "wrong flag", status: "incorrect" as const },
+        { id: 1, comment: "good solve", status: "correct" as const },
+        { id: 2, comment: "wrong flag", status: "incorrect" as const },
       ];
 
       const updatedSubmissions = [
@@ -123,25 +130,21 @@ describe(SubmissionService, () => {
 
       submissionDAO.updateSubmissions.mockResolvedValue(updatedSubmissions);
 
-      const result = await service.update(submissions, "admin_user");
+      const result = await service.update(submissions, actor);
 
       expect(submissionDAO.updateSubmissions).toHaveBeenCalledWith(submissions);
-      expect(submissionLogDAO.create).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            submission_id: 1,
-            comments: "good solve",
-            actor: "admin_user",
-            changes: { status: "correct" },
-          }),
-          expect.objectContaining({
-            submission_id: 2,
-            comments: "wrong flag",
-            actor: "admin_user",
-            changes: { status: "incorrect" },
-          }),
-        ]),
+      expect(auditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: "submission.update",
+          entities: ["submission:2", "submission:1"],
+          actor: { type: ActorType.USER, id: 1 },
+        }),
       );
+      const { data } = vi.mocked(auditLogService.log).mock.calls[0][0];
+      expect(JSON.parse(data ?? "")).toEqual({
+        changes: { status: "incorrect" },
+        comment: "wrong flag",
+      });
 
       // Result should be sorted by created_at ascending
       expect(result[0].id).toBe(1);
@@ -175,12 +178,12 @@ describe(SubmissionService, () => {
         { team_id: 1, weight: 200 },
       ];
 
-      await expect(
-        service.upsertWeightsForChallenge(5, items, "admin"),
-      ).rejects.toThrow(BadRequestError);
+      await expect(service.upsertWeightsForChallenge(5, items)).rejects.toThrow(
+        BadRequestError,
+      );
     });
 
-    it("upserts weights, creates logs, and publishes update events", async () => {
+    it("upserts weights, records weight rows, and publishes update events", async () => {
       const items = [{ team_id: 1, weight: 100 }];
 
       submissionDAO.upsertWeights.mockResolvedValue([
@@ -197,22 +200,13 @@ describe(SubmissionService, () => {
         },
       ]);
 
-      const result = await service.upsertWeightsForChallenge(
-        10,
-        items,
-        "admin_user",
-      );
+      const result = await service.upsertWeightsForChallenge(10, items);
 
       expect(submissionDAO.upsertWeights).toHaveBeenCalledWith([
         { challenge_id: 10, team_id: 1, weight: 100 },
       ]);
-      expect(submissionLogDAO.create).toHaveBeenCalledWith([
-        {
-          comments: "",
-          submission_id: 42,
-          actor: "admin_user",
-          changes: { weight: 100 },
-        },
+      expect(submissionWeightDAO.create).toHaveBeenCalledWith([
+        { challenge_id: 10, team_id: 1, weight: 100 },
       ]);
       expect(eventBusService.publishBatch).toHaveBeenCalled();
       expect(result).toHaveLength(1);
