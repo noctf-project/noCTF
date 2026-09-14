@@ -162,7 +162,6 @@ export class OAuthIdentityProvider implements IdentityProvider {
         user_id,
         provider: `${this.id()}:${data.name}`,
         provider_id,
-        secret_data: null,
       },
     ]);
   }

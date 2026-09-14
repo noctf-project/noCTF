@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { UserDAO } from "./user.ts";
 import { createTestClients, TestClients } from "../test/integ-clients.ts";
-import { ConflictError, NotFoundError } from "../errors.ts";
+import { ConflictError } from "../errors.ts";
 
 describe(UserDAO, () => {
   let clients: TestClients;

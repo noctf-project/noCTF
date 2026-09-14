@@ -21,7 +21,9 @@ describe(DivisionService, () => {
     databaseClient = mockDeep<DatabaseClient>();
     auditLogService = mockDeep<AuditLogService>();
 
-    vi.mocked(DivisionDAO).mockReturnValue(divisionDAO);
+    vi.mocked(DivisionDAO).mockImplementation(function () {
+      return divisionDAO;
+    });
 
     service = new DivisionService({
       databaseClient,

@@ -123,7 +123,10 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const admin = await policyService.evaluate(request.user?.id, adminPolicy);
+      const admin = await policyService.evaluate(
+        request.user?.id ?? 0,
+        adminPolicy,
+      );
       const { page, page_size, ...query } = request.body;
       const q = {
         ...query,

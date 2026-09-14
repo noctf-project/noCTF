@@ -70,7 +70,7 @@ export async function routes(fastify: FastifyInstance) {
     async (request) => {
       const { app, client_secret } = await appService.update(
         request.params.id,
-        request.body,
+        request.body as Parameters<typeof appService.update>[1],
         {
           actor: {
             type: ActorType.USER,

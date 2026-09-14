@@ -71,7 +71,7 @@ export class AnnouncementDAO {
     if (limit?.offset) {
       query = query.limit(limit.offset);
     }
-    return query.orderBy("updated_at desc").execute();
+    return query.orderBy("updated_at", "desc").execute();
   }
 
   async get(id: number) {

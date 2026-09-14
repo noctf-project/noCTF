@@ -29,8 +29,12 @@ describe(TeamService, () => {
     teamDAO = mockDeep<TeamDAO>();
     teamTagDAO = mockDeep<TeamTagDAO>();
 
-    vi.mocked(TeamDAO).mockReturnValue(teamDAO);
-    vi.mocked(TeamTagDAO).mockReturnValue(teamTagDAO);
+    vi.mocked(TeamDAO).mockImplementation(function () {
+      return teamDAO;
+    });
+    vi.mocked(TeamTagDAO).mockImplementation(function () {
+      return teamTagDAO;
+    });
 
     const txMock = mockDeep<Transaction<DB>>();
     type TxArg = Parameters<

@@ -4,48 +4,44 @@ import { TicketState } from "./schema/datatypes.ts";
 import { NotFoundError } from "@noctf/server-core/errors";
 import { FilterUndefined } from "./util.ts";
 
+type CreateTicket = Pick<Ticket, "category" | "item" | "provider"> &
+  Partial<
+    Pick<
+      Ticket,
+      | "team_id"
+      | "user_id"
+      | "assignee_id"
+      | "provider_id"
+      | "provider_metadata"
+    >
+  >;
+
 export class TicketDAO {
-  async create(
-    db: DBType,
-    {
-      category,
-      item,
-      team_id,
-      user_id,
-      assignee_id,
-      provider,
-      provider_id,
-      provider_metadata,
-    }: Partial<Ticket>,
-  ): Promise<Ticket> {
-    const { id, created_at } = await db
+  async create(db: DBType, params: CreateTicket): Promise<Ticket> {
+    const result = await db
       .insertInto("ticket")
       .values({
         state: TicketState.Created,
-        category,
-        item,
-        team_id,
-        user_id,
-        assignee_id,
-        provider,
-        provider_id,
-        provider_metadata,
+        ...params,
       })
       .returning(["id", "created_at"])
       .executeTakeFirst();
+    if (!result) {
+      throw new Error("Ticket insert returned no row");
+    }
 
     return {
-      id,
+      id: result.id,
       state: TicketState.Created,
-      category,
-      item,
-      team_id,
-      user_id,
-      assignee_id: assignee_id || null,
-      provider,
-      provider_id: provider_id || null,
-      provider_metadata: provider_metadata || null,
-      created_at,
+      category: params.category,
+      item: params.item,
+      team_id: params.team_id,
+      user_id: params.user_id,
+      assignee_id: params.assignee_id || null,
+      provider: params.provider,
+      provider_id: params.provider_id || null,
+      provider_metadata: params.provider_metadata || null,
+      created_at: result.created_at,
     };
   }
 

@@ -1,5 +1,5 @@
 import { defineConfig } from "kysely-ctl";
-import type { MigrationProvider } from "kysely";
+import type { MigrationProvider } from "kysely/migration";
 import { Pool } from "pg";
 import { glob } from "node:fs/promises";
 import { basename } from "node:path";
@@ -14,7 +14,7 @@ class DevMigrationProvider implements MigrationProvider {
       if (!basename(filename).match(MIGRATION_FILE_REGEX)) {
         continue;
       }
-      migrations[filename.replace(/^[^\/]+\//, "")] = await import(
+      migrations[filename.replace(/^[^\\/]+\//, "")] = await import(
         `./${filename}`
       );
     }

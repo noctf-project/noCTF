@@ -375,7 +375,7 @@
                         {:then team}
                           <a
                             href={`/teams/${team?.id}`}
-                            class={`truncate block cursor-pointer bg-base-300/30 hover:bg-base-300/50 p-0.5 px-2 rounded-md font-medium max-w-44`}
+                            class="truncate block cursor-pointer bg-base-300/30 hover:bg-base-300/50 p-0.5 px-2 rounded-md font-medium max-w-44"
                           >
                             {team?.name}
                           </a>

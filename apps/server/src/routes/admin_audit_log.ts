@@ -18,7 +18,7 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       const { page_size, ...query } = request.body;
-      const limit = Math.min(Math.max(0, page_size), 1000);
+      const limit = Math.min(Math.max(0, page_size ?? 0), 1000);
       const entries = await auditLogService.query(query, limit);
       return {
         data: {

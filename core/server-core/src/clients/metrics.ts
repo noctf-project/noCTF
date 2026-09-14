@@ -50,7 +50,7 @@ export class MetricsClient {
 
   constructor(
     logger: Logger,
-    pathName: string,
+    pathName: string | undefined,
     fileNameFormat: string,
     flushInterval = 2000,
   ) {
@@ -63,7 +63,7 @@ export class MetricsClient {
         this.logger.warn("Metrics emission is not currently configured");
       return;
     }
-    mkdirSync(pathName, { recursive: true });
+    mkdirSync(this.pathName, { recursive: true });
   }
 
   record(values: Metric[], labels?: MetricLabels, timestamp?: number) {
@@ -192,7 +192,7 @@ export class MetricsClient {
   }
 
   private async flushToFile() {
-    if (this.flushing) {
+    if (this.flushing || !this.pathName) {
       return;
     }
     this.flushing = true;

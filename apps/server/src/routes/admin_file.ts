@@ -52,6 +52,9 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const data = await request.file();
+      if (!data) {
+        throw new BadRequestError("FileUploadError", "No file provided");
+      }
       if (!data.filename || data.filename.length > 255) {
         throw new BadRequestError("Filename doesn't exist or is too long");
       }

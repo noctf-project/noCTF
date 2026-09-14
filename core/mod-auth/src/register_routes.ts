@@ -109,7 +109,8 @@ export default async function (fastify: FastifyInstance) {
         const tokenEmail = identity.filter(
           ({ provider }) => provider === "email",
         )[0]?.provider_id;
-        if (!tokenEmail && !request.body.email) {
+        const requestEmail = request.body.email;
+        if (!tokenEmail && !requestEmail) {
           throw new BadRequestError(
             "UserRegisterError",
             "An email is required",
@@ -119,7 +120,7 @@ export default async function (fastify: FastifyInstance) {
         const hashed = password && (await Generate(password));
         identity = identity.map((i) => ({
           ...i,
-          secret_data: i.provider === "email" && hashed,
+          secret_data: i.provider === "email" ? hashed : "",
           user_id: 0,
         }));
 
@@ -132,7 +133,7 @@ export default async function (fastify: FastifyInstance) {
                 : [
                     {
                       provider: "email",
-                      provider_id: request.body.email,
+                      provider_id: requestEmail!,
                       user_id: 0,
                     },
                   ],

@@ -38,7 +38,9 @@ describe(ConfigService, () => {
     eventBusService = mockDeep<EventBusService>();
     configDAO = mockDeep<ConfigDAO>();
 
-    vi.mocked(ConfigDAO).mockReturnValue(configDAO);
+    vi.mocked(ConfigDAO).mockImplementation(function () {
+      return configDAO;
+    });
 
     service = new ConfigService({
       logger,

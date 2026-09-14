@@ -43,8 +43,8 @@ export class CaptchaService {
     if (!this.providers.has(provider) || !private_key) {
       throw new Error(`Captcha provider ${provider} is not configured`);
     }
-    await this.providers
-      .get(provider)
+    return await this.providers
+      .get(provider)!
       .validate(private_key, response, clientIp);
   }
 }

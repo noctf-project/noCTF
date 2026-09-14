@@ -3,8 +3,6 @@ import type { KeyService } from "@noctf/server-core/services/key";
 import { CryptoKey, importJWK, JWK } from "jose";
 import { createHash } from "node:crypto";
 
-const EPOCH_SECONDS = 86400;
-
 export class JWKSStore {
   private key: { pub: JWK; secret: CryptoKey };
 

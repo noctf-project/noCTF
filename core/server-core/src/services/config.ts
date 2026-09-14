@@ -194,7 +194,7 @@ export class ConfigService {
       } catch (e) {
         if (e instanceof ValidationError) throw e;
         throw new ValidationError(
-          `Custom validation function failed with error: ${e.message}`,
+          `Custom validation function failed with error: ${e instanceof Error ? e.message : String(e)}`,
         );
       }
     }

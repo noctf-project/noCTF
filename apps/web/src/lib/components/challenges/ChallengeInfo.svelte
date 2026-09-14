@@ -247,7 +247,7 @@
           <input
             type="text"
             aria-label="Flag input"
-            placeholder={"You've solved this challenge!"}
+            placeholder="You've solved this challenge!"
             class="input input-bordered flex-grow !bg-base-100"
             disabled
           />

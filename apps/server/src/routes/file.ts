@@ -8,7 +8,7 @@ export async function routes(fastify: FastifyInstance) {
   const { fileService } = fastify.container.cradle;
 
   route(fastify, GetLocalFile, {}, async (request, reply) => {
-    let range: [number, number];
+    let range: [number | null, number | null] | undefined;
     if (request.headers.range) {
       const matches = request.headers.range.match(/bytes=(\d*)-(\d*)/);
       if (!matches) {
@@ -42,8 +42,8 @@ export async function routes(fastify: FastifyInstance) {
     );
     const [stream, metadata] = await provider.download(
       request.params.ref,
-      range?.[0],
-      range?.[1],
+      range?.[0] ?? undefined,
+      range?.[1] ?? undefined,
     );
     reply.header("content-type", metadata.mime);
     reply.header(

@@ -5,15 +5,17 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "check": "tsc --noEmit",
     "migrate": "kysely migrate"
   },
   "dependencies": {
     "kysely": "catalog:",
-    "kysely-ctl": "^0.10.1",
+    "kysely-ctl": "^0.21.0",
     "pg": "catalog:"
   },
   "devDependencies": {
-    "@types/pg": "catalog:"
+    "@types/pg": "catalog:",
+    "typescript": "catalog:"
   },
   "keywords": [],
   "author": "",

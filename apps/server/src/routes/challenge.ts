@@ -78,7 +78,9 @@ export async function routes(fastify: FastifyInstance) {
             .map((c) => ({
               ...c,
               ...values[c.id],
-              hidden: c.hidden || c.visible_at?.getTime() > ctime,
+              hidden:
+                c.hidden ||
+                (c.visible_at !== null && c.visible_at.getTime() > ctime),
             })),
         },
       };

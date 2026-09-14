@@ -33,9 +33,11 @@ export async function initServer(fastify: FastifyInstance) {
         !public_key ||
         !private_key ||
         !routes ||
-        (await policyService.evaluate(request.user?.id, ["bypass.captcha"]))
+        (await policyService.evaluate(request.user?.id || 0, [
+          "bypass.captcha",
+        ]))
       ) {
-        return { data: null };
+        return { data: undefined };
       }
       return {
         data: {
@@ -66,7 +68,7 @@ export async function initServer(fastify: FastifyInstance) {
       !private_key ||
       !routes ||
       !routes.some((x) => method === x.method && path === x.path) ||
-      (await policyService.evaluate(request.user?.id, ["bypass.captcha"]))
+      (await policyService.evaluate(request.user?.id || 0, ["bypass.captcha"]))
     ) {
       return;
     }

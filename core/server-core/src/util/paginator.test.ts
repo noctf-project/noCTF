@@ -11,7 +11,7 @@ describe("Paginate", () => {
   // Mock query function that simulates database query with limit/offset
   const mockQueryFn = vi.fn(
     async (
-      query: any,
+      query: unknown,
       { limit, offset }: { limit: number; offset: number },
     ) => {
       return mockData.slice(offset, offset + limit);
@@ -77,7 +77,7 @@ describe("Paginate", () => {
 
   describe("Default values", () => {
     it("should default to page 1 when page is not provided", async () => {
-      const result = await OffsetPaginate({ filter: "test" }, {}, mockQueryFn);
+      const _result = await OffsetPaginate({ filter: "test" }, {}, mockQueryFn);
 
       expect(mockQueryFn).toHaveBeenCalledWith(
         { filter: "test" },
@@ -86,7 +86,7 @@ describe("Paginate", () => {
     });
 
     it("should default to page 1 when page is null/undefined", async () => {
-      const result = await OffsetPaginate(
+      const _result = await OffsetPaginate(
         { filter: "test" },
         { page: undefined },
         mockQueryFn,
@@ -253,7 +253,7 @@ describe("Paginate", () => {
     });
 
     it("should handle negative page by defaulting to page 1", async () => {
-      const result = await OffsetPaginate(
+      const _result = await OffsetPaginate(
         { filter: "test" },
         { page: -5, page_size: 10 },
         mockQueryFn,

@@ -12,6 +12,12 @@ allowBuilds:
   cbor-extract: true
   esbuild: true
 
+# sometimes dependencies dont update their ts
+# since dev dep, always safe to override
+peerDependencyRules:
+  allowedVersions:
+    typescript: "6"
+
 catalog:
   "@eslint/js": ^10.0.1
   "@types/node": ^26.5.1
@@ -19,7 +25,7 @@ catalog:
   "eslint": ^10.10.0
   "@nats-io/transport-node": ^3.4.0
   "@nats-io/jetstream": ^3.4.0
-  "typescript": "5.8.3"
+  "typescript": "^6.0.3"
   "cbor-x": ^1.6.0
   "typescript-eslint": ^8.70.0
   "@typescript-eslint/parser": ^8.70.0
@@ -27,21 +33,21 @@ catalog:
   "ajv": ^8.17.1
   "ajv-formats": "^3.0.1"
   "handlebars": "^4.7.8"
-  "esbuild": ^0.24.1
-  "kysely": ^0.27.5
-  "ky": ^1.7.2
-  "pg": ^8.13.1
-  "awilix": ^12.0.4
-  "fastify": ^5.2.0
-  "@fastify/swagger": ^9.3.0
-  "@fastify/formbody": "^8.0.2"
+  "esbuild": ^0.28.2
+  "kysely": ^0.29.5
+  "ky": ^2.1.0
+  "pg": ^8.23.0
+  "awilix": ^13.0.5
+  "fastify": ^5.12.4
+  "@fastify/swagger": ^9.8.1
+  "@fastify/formbody": "^9.0.0"
   "pino-pretty": ^13.0.0
-  "@sinclair/typebox": ^0.34.30
-  "vitest": ^2.1.8
-  "nanoid": ^5.0.9
-  "p-limit": ^6.2.0
-  "@vitest/coverage-v8": ^2.1.8
-  "vitest-mock-extended": ^2.0.2
-  "openapi-typescript": "^7.5.2"
+  "@sinclair/typebox": ^0.34.52
+  "vitest": ^5.0.0
+  "nanoid": ^6.0.1
+  "p-limit": ^7.3.2
+  "@vitest/coverage-v8": ^5.0.0
+  "vitest-mock-extended": ^5.1.1
+  "openapi-typescript": "^7.13.0"
   "openapi-fetch": "^0.13.4"
   "expr-eval": "npm:expr-eval-fork@^3.0.3"

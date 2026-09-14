@@ -2,6 +2,7 @@ import { sql, type Kysely } from "kysely";
 import { CreateTableWithDefaultTimestamps } from "../util";
 import { jsonBuildObject } from "kysely/helpers/postgres";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
   await CreateTableWithDefaultTimestamps(schema, "submission_log", [

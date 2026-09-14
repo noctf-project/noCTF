@@ -1,6 +1,6 @@
 import { ExternalFile, FileMetadata } from "@noctf/api/datatypes";
 import { Readable } from "stream";
-import type { FileProviderInstance, ProviderFileMetadata } from "./types.ts";
+import type { FileProviderInstance } from "./types.ts";
 import { BadRequestError, NotImplementedError } from "../../errors.ts";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 
@@ -25,10 +25,7 @@ export class ExternalFileProviderInstance implements FileProviderInstance {
     throw new NotImplementedError("Method not implemented.");
   }
 
-  async upload(
-    rs: Readable,
-    pm: Omit<ProviderFileMetadata, "size">,
-  ): ReturnType<FileProviderInstance["upload"]> {
+  async upload(rs: Readable): ReturnType<FileProviderInstance["upload"]> {
     let size = 0;
     const buf = Buffer.alloc(MAX_BYTES);
     await new Promise((resolve, reject) => {
@@ -51,7 +48,7 @@ export class ExternalFileProviderInstance implements FileProviderInstance {
     let meta: { url: string; hash: string; size: number } | undefined;
     try {
       meta = JSON.parse(buf.toString("utf-8", 0, size));
-    } catch (e) {
+    } catch {
       throw new BadRequestError(
         "InvalidMetadataError",
         "Metadata failed to pass validation",

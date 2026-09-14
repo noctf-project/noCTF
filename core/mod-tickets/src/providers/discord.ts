@@ -73,7 +73,15 @@ export class DiscordProvider {
       // throw untryable error
       throw new Error("discord config is not present");
     }
-    return { version, ...discord };
+    if (!discord.notifications_channel_id) {
+      throw new Error("discord notifications channel is not present");
+    }
+    return {
+      version,
+      bot_token: discord.bot_token,
+      tickets_channel_id: discord.tickets_channel_id,
+      notifications_channel_id: discord.notifications_channel_id,
+    };
   }
 
   private async getClient() {
@@ -83,7 +91,7 @@ export class DiscordProvider {
     }
     this.client = ky.create({
       keepalive: true,
-      prefixUrl: API_ENDPOINT,
+      prefix: API_ENDPOINT,
       headers: {
         authorization: `Bot ${bot_token}`,
       },
@@ -118,12 +126,19 @@ export class DiscordProvider {
         );
         const members = await res.json();
         for (const member of members) {
-          current.add(member.id);
+          if (member.id) {
+            current.add(member.id);
+          }
         }
         if (members.length < limit) {
           break;
         }
-        after = members[members.length - 1].id;
+        const lastId = members[members.length - 1].id;
+        if (lastId) {
+          after = lastId;
+        } else {
+          break;
+        }
       }
     }
     for (const id of userIds) {
@@ -140,12 +155,12 @@ export class DiscordProvider {
   private async postNotification(
     channelId: string,
     status: keyof typeof EmbedColor,
-    { ticket, assignee }: { ticket: Ticket; assignee?: string },
+    { ticket, assignee }: { ticket: Ticket; assignee?: string | number | null },
     messageId?: string,
-  ) {
+  ): Promise<string> {
     const client = await this.getClient();
     const requesterType = ticket.team_id ? "Team" : "User";
-    const requesterId = (ticket.team_id || ticket.user_id).toString();
+    const requesterId = (ticket.team_id || ticket.user_id)?.toString() ?? "";
     const embed: APIEmbed = {
       title: `Ticket ${status}`,
       color: EmbedColor[status],
@@ -178,7 +193,7 @@ export class DiscordProvider {
         },
         {
           name: "Assignee",
-          value: assignee || "nobody",
+          value: assignee?.toString() || "nobody",
           inline: true,
         },
         { name: "", value: "" },
@@ -199,18 +214,18 @@ export class DiscordProvider {
       } catch (err) {
         this.logger.error(err, "Could not update message, ignoring error.");
       }
-    } else {
-      const result = await client.post<RESTPostAPIChannelMessageResult>(
-        `channels/${channelId}/messages`,
-        {
-          json: {
-            embeds: [embed],
-          } as RESTPostAPIChannelMessageJSONBody,
-        },
-      );
-      const data = await result.json();
-      return data.id;
+      return messageId;
     }
+    const result = await client.post<RESTPostAPIChannelMessageResult>(
+      `channels/${channelId}/messages`,
+      {
+        json: {
+          embeds: [embed],
+        } as RESTPostAPIChannelMessageJSONBody,
+      },
+    );
+    const data = await result.json();
+    return data.id;
   }
 
   async open(ticket: Ticket) {
@@ -252,6 +267,7 @@ export class DiscordProvider {
     }
     // TODO: commit log to db here
     const state = newTicket ? "Opened" : "Re-Opened";
+    const threadId = ticket.provider_id!;
     const notificationId = await this.postNotification(
       notifications_channel_id,
       state,
@@ -265,18 +281,18 @@ export class DiscordProvider {
         notification_id: notificationId,
       },
     });
-    await this.postNotification(ticket.provider_id, state, {
+    await this.postNotification(threadId, state, {
       ticket,
     });
 
     if (ticket.user_id) {
       const members = [ticket.user_id];
-      await this.addUsers(ticket.provider_id, members, newTicket);
+      await this.addUsers(threadId, members, newTicket);
     } else if (ticket.team_id) {
       const members = (await this.teamService.listMembers(ticket.team_id)).map(
         ({ user_id }) => user_id,
       );
-      await this.addUsers(ticket.provider_id, members, newTicket);
+      await this.addUsers(threadId, members, newTicket);
     }
   }
 
@@ -290,7 +306,7 @@ export class DiscordProvider {
         assignee: await this.formatUserIdForDiscord(ticket.assignee_id),
         ticket,
       },
-      ticket.provider_metadata.notification_id,
+      ticket.provider_metadata?.notification_id,
     );
   }
 
@@ -328,7 +344,7 @@ export class DiscordProvider {
     );
   }
 
-  private async formatUserIdForDiscord(actor: string | number) {
+  private async formatUserIdForDiscord(actor: string | number | null) {
     if (!actor) {
       return null;
     }

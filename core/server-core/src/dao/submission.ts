@@ -121,7 +121,7 @@ export class SubmissionDAO {
         hidden: sql`COALESCE(v.hidden, ${eb.ref("submission.hidden")})`,
         weight: sql`COALESCE(v.weight, ${eb.ref("submission.weight")})`,
         status: sql`COALESCE(v.status, ${eb.ref("submission.status")})`,
-        value: sql`CASE 
+        value: sql`CASE
           WHEN v.update_value = TRUE THEN v.value
           ELSE ${eb.ref("submission.value")}
         END`,
@@ -364,7 +364,7 @@ export class SubmissionDAO {
         "created_at",
         "updated_at",
       ])
-      .orderBy("id asc");
+      .orderBy("id", "asc");
 
     return query.execute();
   }

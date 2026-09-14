@@ -45,7 +45,9 @@ describe(AppService, () => {
   let service: AppService;
 
   beforeEach(() => {
-    vi.mocked(AppDAO).mockReturnValue(appDAO);
+    vi.mocked(AppDAO).mockImplementation(function () {
+      return appDAO;
+    });
     lockService.withLease.mockImplementation((_, a) => a());
     service = new AppService({
       cacheService,

@@ -14,18 +14,19 @@ export type PostgresErrorConfig = Partial<
 >;
 
 export const TryPGConstraintError = (
-  e: pg.DatabaseError, // We intentionally don't want to verify if error is an actual pg error
+  e: unknown, // We intentionally don't want to verify if error is an actual pg error
   config: PostgresErrorConfig,
 ) => {
-  if (e.code && config[e.code as PostgresErrorCode]) {
-    const cfg = config[e.code as PostgresErrorCode]!; // typescript is dumb
-    if (e.constraint && cfg[e.constraint]) {
-      return cfg[e.constraint](e);
+  const err = e as Partial<pg.DatabaseError> | undefined;
+  if (err?.code && config[err.code as PostgresErrorCode]) {
+    const cfg = config[err.code as PostgresErrorCode]!; // typescript is dumb
+    if (err.constraint && cfg[err.constraint]) {
+      return cfg[err.constraint](err as pg.DatabaseError);
     }
 
     // hopefully there's no constraint called default
     if (cfg["default"]) {
-      return cfg["default"](e);
+      return cfg["default"](err as pg.DatabaseError);
     }
   }
 };

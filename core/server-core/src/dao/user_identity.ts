@@ -1,7 +1,6 @@
 import { ConflictError } from "../errors.ts";
 import type { DBType } from "../clients/database.ts";
 import type { UserIdentity } from "@noctf/api/datatypes";
-import { sql } from "kysely";
 import {
   PostgresErrorCode,
   PostgresErrorConfig,
@@ -67,7 +66,7 @@ export class UserIdentityDAO {
   async listProvidersForUser(
     ids: number[],
     withSecret?: boolean,
-  ): Promise<any[]> {
+  ): Promise<unknown[]> {
     if (!ids.length) return [];
     const query = this.db
       .selectFrom("user_identity")

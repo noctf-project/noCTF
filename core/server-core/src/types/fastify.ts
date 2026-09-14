@@ -20,6 +20,15 @@ export type RequestConfig<T extends RouteGenericInterface> = {
         | RateLimitBucket[]);
 };
 
+export type UserRequestPayload = {
+  app?: number;
+  id: number;
+  token: string;
+  membership: PromiseLike<
+    Awaited<ReturnType<TeamService["getMembershipForUser"]>>
+  >;
+};
+
 declare module "fastify" {
   interface FastifyInstance {
     readonly apiURL: string;
@@ -31,20 +40,13 @@ declare module "fastify" {
     security?: [{ [key: string]: unknown }];
   }
   interface FastifyContextConfig {
-    auth?: RequestConfig<{}>["auth"];
-    rateLimit?: RequestConfig<{}>["rateLimit"];
+    auth?: RequestConfig<RouteGenericInterface>["auth"];
+    rateLimit?: RequestConfig<RouteGenericInterface>["rateLimit"];
   }
 
   interface FastifyRequest {
     // Won't exist on every request
     digests?: Record<string, Buffer>;
-    user?: {
-      app?: number;
-      id: number;
-      token: string;
-      membership: PromiseLike<
-        Awaited<ReturnType<TeamService["getMembershipForUser"]>>
-      >;
-    };
+    user?: UserRequestPayload;
   }
 }

@@ -93,9 +93,15 @@ describe(ChallengeService, () => {
     submissionDAO = mockDeep<SubmissionDAO>();
     submissionLogDAO = mockDeep<SubmissionLogDAO>();
 
-    vi.mocked(ChallengeDAO).mockReturnValue(challengeDAO);
-    vi.mocked(SubmissionDAO).mockReturnValue(submissionDAO);
-    vi.mocked(SubmissionLogDAO).mockReturnValue(submissionLogDAO);
+    vi.mocked(ChallengeDAO).mockImplementation(function () {
+      return challengeDAO;
+    });
+    vi.mocked(SubmissionDAO).mockImplementation(function () {
+      return submissionDAO;
+    });
+    vi.mocked(SubmissionLogDAO).mockImplementation(function () {
+      return submissionLogDAO;
+    });
 
     const txMock = mockDeep<Transaction<DB>>();
     type TxArg = Parameters<

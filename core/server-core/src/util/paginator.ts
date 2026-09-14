@@ -22,7 +22,7 @@ export const OffsetPaginate = async <Q, T>(
 }> => {
   const o = { ...DEFAULT_PAGINATE_OPTIONS, ...opts };
   page = page || 1;
-  page_size = page_size =
+  page_size =
     o.max_page_size === 0
       ? page_size || o.default_page_size
       : Math.min(o.max_page_size, page_size || o.default_page_size);
@@ -57,7 +57,7 @@ export const CursorPaginate = async <Q, T>(
   next: string;
 }> => {
   const o = { ...DEFAULT_PAGINATE_OPTIONS, ...opts };
-  page_size = page_size =
+  page_size =
     o.max_page_size === 0
       ? page_size || o.default_page_size
       : Math.min(o.max_page_size, page_size || o.default_page_size);

@@ -28,7 +28,9 @@ describe(StatsService, () => {
     databaseClient = mockDeep<DatabaseClient>();
     submissionDAO = mockDeep<SubmissionDAO>();
 
-    vi.mocked(SubmissionDAO).mockReturnValue(submissionDAO);
+    vi.mocked(SubmissionDAO).mockImplementation(function () {
+      return submissionDAO;
+    });
 
     service = new StatsService({
       userService,

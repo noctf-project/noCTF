@@ -19,7 +19,7 @@ const SCRYPT_OPTIONS: ScryptOptions = {
 
 const SCryptValidator = async (password: string, parts: string[]) => {
   const [optionsStr, saltStr, keyStr] = parts;
-  let N: number, r: number, p: number;
+  let N: number | undefined, r: number | undefined, p: number | undefined;
 
   for (const [k, v] of optionsStr.split(",").map((opt) => opt.split("="))) {
     const numVal = parseInt(v);

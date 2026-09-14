@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyError, FastifyInstance, FastifyRequest } from "fastify";
 import fastify from "fastify";
 import { asClass, asFunction, asValue, createContainer } from "awilix";
 import Swagger from "@fastify/swagger";
@@ -55,15 +55,15 @@ import { NotificationService } from "@noctf/server-core/services/notification";
 import { AnnouncementService } from "@noctf/server-core/services/announcement";
 import { StatsService } from "@noctf/server-core/services/stats";
 
-export const server = fastify({
+export const server: FastifyInstance = fastify({
   logger: {
     level: LOG_LEVEL,
   },
   disableRequestLogging: true,
   trustProxy: true,
   genReqId: () => nanoid(),
-  ...{ http2: ENABLE_HTTP2 }, // typescript is being funny
-});
+  http2: ENABLE_HTTP2,
+} as fastify.FastifyServerOptions) as FastifyInstance;
 if (ENABLE_COMPRESSION) server.register(fastifyCompress);
 (server as AsMutable<FastifyInstance, "apiURL">).apiURL = API_URL;
 server.register(fastifyMultipart, {
@@ -168,7 +168,7 @@ const logRequest = async (
   reply: { elapsedTime?: number; statusCode?: number },
   flag?: string,
 ) => {
-  const elapsed = +reply.elapsedTime?.toFixed(2);
+  const elapsed = Math.round((reply.elapsedTime ?? 0) * 100) / 100;
   server.log.info(
     {
       elapsed,
@@ -185,13 +185,13 @@ const logRequest = async (
   );
   server.container.cradle.metricsClient.record(
     [
-      ["ResponseTime", reply.elapsedTime],
+      ["ResponseTime", reply.elapsedTime ?? 0],
       ["ResponseCount", 1],
     ],
     {
       http_route: request.routeOptions.url || "__404__",
       http_method: request.method,
-      http_status: Math.floor(reply.statusCode / 100) + "xx",
+      http_status: Math.floor((reply.statusCode ?? 0) / 100) + "xx",
     },
   );
 };
@@ -206,7 +206,7 @@ server.addHook("onRequestAbort", async (request) => {
   await logRequest(request, {}, "abort");
 });
 
-server.setErrorHandler((error, request, reply) => {
+server.setErrorHandler<FastifyError>((error, request, reply) => {
   if (
     error instanceof SyntaxError &&
     request.headers["content-type"] &&
@@ -226,7 +226,7 @@ server.setErrorHandler((error, request, reply) => {
   if (error.code) {
     switch (error.code) {
       case "FST_ERR_VALIDATION":
-        const messages = error.validation.map(
+        const messages = (error.validation ?? []).map(
           ({ instancePath, message }) =>
             `${instancePath.substring(1)} ${message}`,
         );

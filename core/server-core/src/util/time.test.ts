@@ -58,7 +58,7 @@ describe(Delay, () => {
 
     results.forEach((result) => {
       expect(result.status).toBe("fulfilled");
-      expect((result as any).value).toBe("not-resolved");
+      expect((result as { value: string }).value).toBe("not-resolved");
     });
   });
 });

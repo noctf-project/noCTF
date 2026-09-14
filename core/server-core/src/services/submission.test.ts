@@ -27,8 +27,12 @@ describe(SubmissionService, () => {
     submissionDAO = mockDeep<SubmissionDAO>();
     submissionLogDAO = mockDeep<SubmissionLogDAO>();
 
-    vi.mocked(SubmissionDAO).mockReturnValue(submissionDAO);
-    vi.mocked(SubmissionLogDAO).mockReturnValue(submissionLogDAO);
+    vi.mocked(SubmissionDAO).mockImplementation(function () {
+      return submissionDAO;
+    });
+    vi.mocked(SubmissionLogDAO).mockImplementation(function () {
+      return submissionLogDAO;
+    });
 
     const txMock = mockDeep<Transaction<DB>>();
     databaseClient.transaction.mockImplementation(async (cb) => {

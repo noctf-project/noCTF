@@ -5,7 +5,7 @@ import type { MetricsClient } from "../clients/metrics.ts";
 export class LocalCache<K = unknown, V = unknown> {
   private readonly cache;
 
-  constructor(opts?: TTLCache.Options<K, Promise<V>>) {
+  constructor(opts?: TTLCache.Options<K, V | Promise<V>>) {
     this.cache = new TTLCache<K, V | Promise<V>>(opts);
   }
 

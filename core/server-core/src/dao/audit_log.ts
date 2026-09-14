@@ -1,8 +1,7 @@
 import type { QueryAuditLogRequest } from "@noctf/api/requests";
 import type { DBType } from "../clients/database.ts";
 import { sql } from "kysely";
-import type { AuditLogEntry, LimitOffset } from "@noctf/api/datatypes";
-import { LimitCursorDecoded } from "../types/pagination.ts";
+import type { AuditLogEntry } from "@noctf/api/datatypes";
 
 export class AuditLogDAO {
   constructor(private readonly db: DBType) {}

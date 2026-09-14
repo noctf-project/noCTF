@@ -18,6 +18,7 @@ import { ActorType } from "@noctf/server-core/types/enums";
 import { route } from "@noctf/server-core/util/route";
 import { createVerifier, httpbis } from "http-message-signatures";
 import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { IncomingHttpHeaders } from "node:http";
 import {
   PayloadDigestPreParsingHook,
   PayloadDigestPreValidationHook,
@@ -26,6 +27,16 @@ import { GetUtils } from "./_util.ts";
 import { OffsetPaginate } from "@noctf/server-core/util/paginator";
 
 const MAX_PAGE_SIZE_WEIGHTS = 2000;
+
+export function FilterUndefinedHeaders(
+  headers: IncomingHttpHeaders,
+): Record<string, string | string[]> {
+  return Object.fromEntries(
+    Object.entries(headers).filter(
+      (entry): entry is [string, string | string[]] => entry[1] !== undefined,
+    ),
+  );
+}
 
 export async function routes(fastify: FastifyInstance) {
   const { challengeService, scoreService, submissionService } =
@@ -189,7 +200,7 @@ export async function routes(fastify: FastifyInstance) {
       {
         method: request.method,
         url: new URL(request.url, `${request.protocol}://${request.host}`),
-        headers: request.headers,
+        headers: FilterUndefinedHeaders(request.headers),
       },
     );
     if (!verified) throw new UnauthorizedError("Invalid signature");

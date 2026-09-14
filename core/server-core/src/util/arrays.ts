@@ -8,6 +8,7 @@
 export function bisectLeft<T, V>(
   arr: T[],
   target: V,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getter: (item: T) => V = (item: any) => item,
 ): number {
   let left = 0;
@@ -35,6 +36,7 @@ export function bisectLeft<T, V>(
 export function bisectRight<T, V>(
   arr: T[],
   target: V,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getter: (item: T) => V = (item: any) => item,
 ): number {
   let left = 0;
@@ -62,6 +64,7 @@ export function bisectRight<T, V>(
 export function insort<T, V>(
   arr: T[],
   item: T,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getter: (item: T) => V = (item: any) => item,
 ): T[] {
   const index = bisectRight(arr, getter(item), getter);

@@ -16,7 +16,10 @@ export const GetUtils = ({ policyService, configService }: ServiceCradle) => {
     if (!active) {
       return false;
     }
-    return !(ctime < start_time_s * 1000 || ctime > end_time_s * 1000);
+    return !(
+      ctime < (start_time_s ?? 0) * 1000 ||
+      ctime > (end_time_s ?? Infinity) * 1000
+    );
   };
 
   const gateStartTime = async (policy: Policy, userId?: number) => {
@@ -31,7 +34,7 @@ export const GetUtils = ({ policyService, configService }: ServiceCradle) => {
       if (!active) {
         throw new ForbiddenError("The CTF is not currently active");
       }
-      if (ctime < start_time_s * 1000) {
+      if (ctime < (start_time_s ?? 0) * 1000) {
         throw new ForbiddenError("The CTF has not started yet");
       }
     }
@@ -44,7 +47,7 @@ export const GetUtils = ({ policyService, configService }: ServiceCradle) => {
     default_size = 50,
     max_size = Number.MAX_SAFE_INTEGER,
   ) => {
-    return (await policyService.evaluate(uid, policy))
+    return (await policyService.evaluate(uid || 0, policy))
       ? max_size
       : default_size;
   };
