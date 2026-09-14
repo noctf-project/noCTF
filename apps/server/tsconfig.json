@@ -1,16 +1,21 @@
 {
   "compilerOptions": {
-    "target":"ESNext",
+    "target": "ESNext",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "allowImportingTsExtensions": true,
-    "noEmit": true,
     "isolatedModules": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "noImplicitAny": true,
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+    "composite": true,
+    "outDir": "build",
+    "emitDeclarationOnly": true,
+    "incremental": true,
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ]
 }

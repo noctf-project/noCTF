@@ -11,7 +11,8 @@
     "format:check": "prettier '**/*.{svelte,ts,js,mjs}' --check",
     "test:unit": "pnpm -r --if-present run test:unit --run",
     "dev:migrate": "env `cat .env` pnpm --filter @noctf/migrator migrate",
-    "test:integ": "./scripts/test-integ.sh"
+    "test:integ": "./scripts/test-integ.sh",
+    "check": "pnpm -r --if-present run check"
   },
   "keywords": [],
   "author": "",

@@ -1,0 +1,29 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/migrator"
+    },
+    {
+      "path": "./apps/server"
+    },
+    {
+      "path": "./core/api"
+    },
+    {
+      "path": "./core/mod-auth"
+    },
+    {
+      "path": "./core/mod-captcha"
+    },
+    {
+      "path": "./core/mod-tickets"
+    },
+    {
+      "path": "./core/openapi-spec"
+    },
+    {
+      "path": "./core/server-core"
+    }
+  ]
+}

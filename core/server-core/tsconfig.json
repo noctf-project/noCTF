@@ -12,7 +12,8 @@
     "skipLibCheck": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+    "incremental": true,
   },
   "include": ["src/**/*", "../../apps/server/src/hooks/authn.ts", "../../apps/server/src/hooks/authz.ts"]
 }
