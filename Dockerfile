@@ -12,7 +12,8 @@ FROM node:$NODE_VERSION AS base
 ENV CI=1
 ENV DOCKER_ENV=1
 WORKDIR /build
-RUN corepack enable pnpm
+COPY --from=staging /staging/package.json ./package.json
+RUN npm install -g "$(node -e 'try { console.log(require("./package.json").packageManager || "pnpm@latest"); } catch { console.log("pnpm@latest"); }')"
 COPY --from=staging /staging/ .
 RUN pnpm install -r --ignore-scripts --frozen-lockfile
 COPY . .
