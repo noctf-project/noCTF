@@ -438,15 +438,13 @@
                     id="user-bio"
                     bind:value={editForm.bio}
                     class="input input-bordered h-32 w-full focus:outline-none focus:ring-0 focus:ring-offset-0 pt-2"
-                    placeholder="Enter bio"
-                  ></textarea>
+                    placeholder="Enter bio"></textarea>
                 {:else}
                   <textarea
                     id="user-bio"
                     value={userData.bio}
                     class="input input-bordered h-32 w-full focus:outline-none focus:ring-0 focus:ring-offset-0 pt-2 bg-base-200 text-base-content/70"
-                    readonly
-                  ></textarea>
+                    readonly></textarea>
                 {/if}
               </div>
 

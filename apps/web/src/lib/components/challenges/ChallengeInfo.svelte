@@ -44,12 +44,8 @@
 
   let flagInput = $state("");
   let flagSubmitStatus:
-    | "waiting"
-    | "invalid"
-    | "submitting"
-    | "incorrect"
-    | "correct"
-    | "queued" = $state("waiting");
+    "waiting" | "invalid" | "submitting" | "incorrect" | "correct" | "queued" =
+    $state("waiting");
   let scoreModalVisible = $state(false);
   let scoresLoading = $state(false);
   let showHash = $state(false);

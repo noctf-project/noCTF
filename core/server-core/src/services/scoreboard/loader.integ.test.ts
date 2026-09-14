@@ -186,14 +186,20 @@ describe(ScoreboardDataLoader, () => {
     const rank102 = await loader.getTeamRank(divisionId, version, 102);
     expect(rank102).toBe(2);
 
-    const taggedRank102 = await loader.getTeamRank(divisionId, version, 102, [
-      2,
-    ]);
+    const taggedRank102 = await loader.getTeamRank(
+      divisionId,
+      version,
+      102,
+      [2],
+    );
     expect(taggedRank102).toBe(2);
 
-    const taggedRank103 = await loader.getTeamRank(divisionId, version, 103, [
-      2,
-    ]);
+    const taggedRank103 = await loader.getTeamRank(
+      divisionId,
+      version,
+      103,
+      [2],
+    );
     expect(taggedRank103).toBeNull();
 
     const summary = await loader.getChallengeSummary(divisionId, version);

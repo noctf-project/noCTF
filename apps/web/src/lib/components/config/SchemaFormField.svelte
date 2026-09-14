@@ -190,8 +190,7 @@
       placeholder={property.description}
       minlength={property.minLength}
       maxlength={property.maxLength}
-      {disabled}
-    ></textarea>
+      {disabled}></textarea>
   {:else if property.type === "string"}
     <input
       id={getFieldId()}
@@ -359,8 +358,7 @@
         placeholder="Enter JSON..."
         rows="6"
         oninput={handleJsonInput}
-        {disabled}
-      ></textarea>
+        {disabled}></textarea>
     </div>
   {:else}
     <input

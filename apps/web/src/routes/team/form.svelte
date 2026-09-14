@@ -320,8 +320,8 @@
           <Icon icon="mdi:check-circle" class="text-5xl text-primary mb-2" />
           <h1 class="card-title text-2xl">Team Created!</h1>
           <p class="py-2">
-            Your team <span class="font-bold">{createdTeam.name}</span> has been
-            created successfully.
+            Your team <span class="font-bold">{createdTeam.name}</span> has been created
+            successfully.
           </p>
 
           <div class="w-full mt-4">

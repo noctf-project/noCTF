@@ -25,11 +25,11 @@ export const DiscordProviderData = Type.Object({
 });
 
 export enum EmbedColor {
-  "Opened" = 0x57f287,
+  Opened = 0x57f287,
   // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
   "Re-Opened" = 0x57f287,
-  "Assigned" = 0xf1c40f,
-  "Closed" = 0xed4245,
+  Assigned = 0xf1c40f,
+  Closed = 0xed4245,
 }
 
 export const API_ENDPOINT = "https://discord.com/api/v10";

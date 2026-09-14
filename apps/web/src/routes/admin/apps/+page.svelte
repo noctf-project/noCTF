@@ -283,8 +283,7 @@
           <textarea
             placeholder="One URI per line&#10;https://example.com/callback&#10;https://app.example.com/auth"
             class="textarea textarea-bordered h-24"
-            bind:value={createForm.redirect_uris}
-          ></textarea>
+            bind:value={createForm.redirect_uris}></textarea>
           <div class="label">
             <span class="label-text-alt">Valid redirect URIs for this app</span>
           </div>
@@ -298,8 +297,7 @@
           <textarea
             placeholder="One scope per line&#10;openid&#10;profile&#10;email"
             class="textarea textarea-bordered h-24"
-            bind:value={createForm.scopes}
-          ></textarea>
+            bind:value={createForm.scopes}></textarea>
           <div class="label">
             <span class="label-text-alt">OAuth scopes this app can request</span
             >
@@ -398,8 +396,7 @@
                     <textarea
                       id="edit-redirect-uris"
                       class="textarea textarea-bordered h-24"
-                      bind:value={editForm.redirect_uris}
-                    ></textarea>
+                      bind:value={editForm.redirect_uris}></textarea>
                   </div>
 
                   <!-- Scopes -->
@@ -410,8 +407,7 @@
                     <textarea
                       id="edit-scopes"
                       class="textarea textarea-bordered h-24"
-                      bind:value={editForm.scopes}
-                    ></textarea>
+                      bind:value={editForm.scopes}></textarea>
                   </div>
 
                   <!-- Enabled -->

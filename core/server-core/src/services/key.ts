@@ -11,7 +11,7 @@ export class KeyService {
     this.secret = createHash("sha256").update(secret).digest();
   }
 
-  deriveKey(payload: BinaryLike) {
+  deriveKey(payload: string | NodeJS.ArrayBufferView) {
     return createHmac("sha256", this.secret).update(payload).digest();
   }
 }

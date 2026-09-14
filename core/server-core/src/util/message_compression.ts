@@ -13,6 +13,7 @@ type Method = {
  *
  * 0: none
  * 1: brotli
+ * 2: zstd
  */
 const COMPRESSION_THRESHOLD_BYTES = 2048;
 const METHODS: Method[] = [
@@ -39,9 +40,23 @@ const METHODS: Method[] = [
       i.pipe(c).pipe(o);
     },
   },
+  {
+    encode: (i, o) => {
+      const c = zlib.createZstdCompress({
+        params: {
+          [zlib.constants.ZSTD_c_compressionLevel]: 1,
+        },
+      });
+      i.pipe(c).pipe(o);
+    },
+    decode: (i, o) => {
+      const c = zlib.createZstdDecompress();
+      i.pipe(c).pipe(o);
+    },
+  },
 ];
 
-const DEFAULT_METHOD = 1;
+const DEFAULT_METHOD = 2;
 
 const DoStream = (
   chunks: Uint8Array[],

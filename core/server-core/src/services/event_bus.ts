@@ -1,15 +1,17 @@
 import type { ServiceCradle } from "../index.ts";
-import type { ConsumerConfig, JsMsg, StreamConfig } from "nats";
+import type { ConsumerConfig, JsMsg, StreamConfig } from "@nats-io/jetstream";
 import {
   AckPolicy,
   DeliverPolicy,
-  NatsError,
+  JetStreamApiError,
   RetentionPolicy,
   StorageType,
-} from "nats";
+  jetstream,
+  jetstreamManager,
+} from "@nats-io/jetstream";
 import type { NATSClientFactory } from "../clients/nats.ts";
 import type { Metric } from "../clients/metrics.ts";
-import { SimpleMutex } from "nats/lib/nats-base-client/util.js";
+import { SimpleMutex } from "@nats-io/transport-node";
 import { decode, encode } from "cbor-x";
 import { Compress, Decompress } from "../util/message_compression.ts";
 import { Static, TSchema } from "@sinclair/typebox";
@@ -116,8 +118,7 @@ export class EventBusService {
       types.values(),
     )[0] as unknown as StreamType;
 
-    const js = await this.natsClient.jetstream();
-    const manager = await js.jetstreamManager();
+    const manager = await jetstreamManager(this.natsClient);
     const stream = STREAMS[type];
     const updateable: Partial<ConsumerConfig> = {
       filter_subjects: subjects,
@@ -143,7 +144,7 @@ export class EventBusService {
     } catch (e) {
       if (!consumer) throw e;
       name = consumer;
-      if (e instanceof NatsError) {
+      if (e instanceof JetStreamApiError) {
         const c = await manager.consumers.info(stream.name, consumer);
         const config = { ...c.config, ...updateable };
         await manager.consumers.update(stream.name, consumer, config);
@@ -186,9 +187,9 @@ export class EventBusService {
     options: EventSubscribeOptions<T> & { ephemeral: boolean },
   ) {
     const rl = new SimpleMutex(options.concurrency || 1);
-    const jetstream = this.natsClient.jetstream();
+    const js = jetstream(this.natsClient);
     const stream = STREAMS[streamType];
-    const q = await jetstream.consumers.get(stream.name, name);
+    const q = await js.consumers.get(stream.name, name);
     const logName = options.ephemeral ? `ephemeral-${name}` : name;
     while (!signal.aborted) {
       this.logger.info(
@@ -198,16 +199,25 @@ export class EventBusService {
       const messages = await q.consume({
         max_messages: options.concurrency || 1,
       });
-      for await (const m of messages) {
-        await rl.lock();
-        void this.consume(m, options)
-          .catch((err) =>
-            this.logger.error(
-              { consumer: logName, stack: err.stack },
-              "Failed to consume",
-            ),
-          )
-          .finally(() => rl.unlock());
+      const abortHandler = () => {
+        void messages.close();
+      };
+      signal.addEventListener("abort", abortHandler, { once: true });
+      try {
+        for await (const m of messages) {
+          await rl.lock();
+          void this.consume(m, options)
+            .catch((err) =>
+              this.logger.error(
+                { consumer: logName, stack: err.stack },
+                "Failed to consume",
+              ),
+            )
+            .finally(() => rl.unlock());
+        }
+      } finally {
+        signal.removeEventListener("abort", abortHandler);
+        void messages.close();
       }
     }
   }
@@ -221,7 +231,7 @@ export class EventBusService {
     const metrics: Metric[] = [];
     const interval = setInterval(async () => {
       try {
-        await message.working();
+        message.working();
       } catch (err) {
         this.logger.warn(err, "Failed to heartbeat message");
       }
@@ -237,7 +247,7 @@ export class EventBusService {
         id: message.seq,
         subject: message.subject,
         timestamp: new Date(timestamp),
-        attempt: message.info.redeliveryCount,
+        attempt: message.info.deliveryCount,
         data: decode(await Decompress(message.data)),
       });
       await message.ack();
@@ -283,7 +293,7 @@ export class EventBusService {
         await message.nak(
           Math.floor(
             (options.backoff ? options.backoff : DEFAULT_BACKOFF_STRATEGY)(
-              message.info.redeliveryCount,
+              message.info.deliveryCount,
             ),
           ),
         );
@@ -297,7 +307,7 @@ export class EventBusService {
 
   private async init() {
     this.natsClient = await this.natsClientFactory.getClient();
-    const manager = await this.natsClient.jetstream().jetstreamManager();
+    const manager = await jetstreamManager(this.natsClient);
     for (const type of Object.keys(STREAMS)) {
       const stream = STREAMS[type as unknown as StreamType];
       this.logger.info("Upserting stream %s", stream.name);
@@ -307,7 +317,7 @@ export class EventBusService {
           subjects: [`${type}.>`],
         });
       } catch (e) {
-        if (e instanceof NatsError) {
+        if (e instanceof JetStreamApiError) {
           this.logger.warn(
             {
               stack: e.stack,

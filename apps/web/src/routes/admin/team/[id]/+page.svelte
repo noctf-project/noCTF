@@ -523,8 +523,7 @@
                     bind:value={editForm.bio}
                     class="input input-bordered h-32 w-full focus:outline-none focus:ring-0 focus:ring-offset-0 pt-2"
                     placeholder="Describe your team..."
-                    maxlength="256"
-                  ></textarea>
+                    maxlength="256"></textarea>
                   <span class="label-text-alt text-right mt-1"
                     >{editForm.bio.length}/256</span
                   >
@@ -533,8 +532,7 @@
                     id="team-bio"
                     value={teamData.bio}
                     class="input input-bordered h-32 w-full focus:outline-none focus:ring-0 focus:ring-offset-0 pt-2 bg-base-200 text-base-content/70"
-                    readonly
-                  ></textarea>
+                    readonly></textarea>
                 {/if}
               </div>
 

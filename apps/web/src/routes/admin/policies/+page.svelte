@@ -254,8 +254,7 @@
           <textarea
             placeholder="One role per line (e.g., admin, user, organiser)"
             class="textarea textarea-bordered h-24"
-            bind:value={createForm.match_roles}
-          ></textarea>
+            bind:value={createForm.match_roles}></textarea>
           <div class="label">
             <span class="label-text-alt">Roles that this policy applies to</span
             >
@@ -270,8 +269,7 @@
           <textarea
             placeholder="One role per line (e.g., blocked, frozen)"
             class="textarea textarea-bordered h-24"
-            bind:value={createForm.omit_roles}
-          ></textarea>
+            bind:value={createForm.omit_roles}></textarea>
           <div class="label">
             <span class="label-text-alt">Roles that this policy excludes</span>
           </div>
@@ -285,8 +283,7 @@
           <textarea
             placeholder="One permission per line (e.g., admin.*, challenge.get, team.get)"
             class="textarea textarea-bordered h-32"
-            bind:value={createForm.permissions}
-          ></textarea>
+            bind:value={createForm.permissions}></textarea>
           <div class="label">
             <span class="label-text-alt">
               Permission strings. Use ! prefix for negative permissions (e.g.,
@@ -400,8 +397,7 @@
                     <textarea
                       id="edit-match-roles"
                       class="textarea textarea-bordered h-24"
-                      bind:value={editForm.match_roles}
-                    ></textarea>
+                      bind:value={editForm.match_roles}></textarea>
                   </div>
 
                   <!-- Omit Roles -->
@@ -412,8 +408,7 @@
                     <textarea
                       id="edit-omit-roles"
                       class="textarea textarea-bordered h-24"
-                      bind:value={editForm.omit_roles}
-                    ></textarea>
+                      bind:value={editForm.omit_roles}></textarea>
                   </div>
 
                   <!-- Permissions -->
@@ -424,8 +419,7 @@
                     <textarea
                       id="edit-permissions"
                       class="textarea textarea-bordered h-32"
-                      bind:value={editForm.permissions}
-                    ></textarea>
+                      bind:value={editForm.permissions}></textarea>
                   </div>
 
                   <!-- Checkboxes -->
