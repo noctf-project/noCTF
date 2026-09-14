@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
-import TTLCache from "@isaacs/ttlcache";
+import { TTLCache } from "@isaacs/ttlcache";
 import { RateLimitBucket, RateLimitService } from "./rate_limit.ts";
 import { RedisClientFactory } from "../clients/redis.ts";
 import { Logger } from "../types/primitives.ts";

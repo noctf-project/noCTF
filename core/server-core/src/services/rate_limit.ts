@@ -1,4 +1,4 @@
-import TTLCache from "@isaacs/ttlcache";
+import { TTLCache } from "@isaacs/ttlcache";
 import { ServiceCradle } from "../index.ts";
 import { RedisClientFactory } from "../clients/redis.ts";
 

@@ -1,18 +1,23 @@
-import type { Disposer, TTLOptions } from "@isaacs/ttlcache";
-import TTLCache from "@isaacs/ttlcache";
+import {
+  TTLCache,
+  type DisposeFunction,
+  type SetOptions,
+  type TTLCacheOptions,
+} from "@isaacs/ttlcache";
 import type { MetricsClient } from "../clients/metrics.ts";
 
 export class LocalCache<K = unknown, V = unknown> {
   private readonly cache;
 
-  constructor(opts?: TTLCache.Options<K, V | Promise<V>>) {
+  constructor(opts?: TTLCacheOptions<K, V | Promise<V>>) {
     this.cache = new TTLCache<K, V | Promise<V>>(opts);
   }
 
   load(
     key: K,
     loader: () => V | Promise<V>,
-    setTTL?: ((v: V) => TTLOptions | undefined) | TTLOptions | undefined,
+    setTTL?:
+      ((v: V) => SetOptions<K, V> | undefined) | SetOptions<K, V> | undefined,
   ): V | Promise<V> {
     let p = this.cache.get(key);
     if (typeof p === "undefined") {
@@ -55,7 +60,7 @@ export class LocalCache<K = unknown, V = unknown> {
   static disposeMetricsHook<K, V>(
     metrics: MetricsClient,
     name: string,
-  ): Disposer<K, V> {
+  ): DisposeFunction<K, V> {
     const labels = {
       local_cache: name,
     };

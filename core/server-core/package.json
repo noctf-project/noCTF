@@ -14,7 +14,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@isaacs/ttlcache": "^1.4.1",
+    "@isaacs/ttlcache": "^2.1.5",
     "@nats-io/jetstream": "catalog:",
     "@nats-io/transport-node": "catalog:",
     "@noctf/api": "workspace:*",
