@@ -97,10 +97,12 @@
 
       <div class="flex-1">
         {#if activeNamespace}
-          <ConfigNamespaceTab
-            namespace={activeNamespace}
-            schema={activeNamespace.schema}
-          />
+          {#key activeNamespace.namespace}
+            <ConfigNamespaceTab
+              namespace={activeNamespace}
+              schema={activeNamespace.schema}
+            />
+          {/key}
         {:else}
           <div class="card bg-base-100 shadow-sm border border-base-300 pop">
             <div class="card-body text-center py-12">

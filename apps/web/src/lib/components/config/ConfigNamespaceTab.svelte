@@ -31,31 +31,56 @@
     loadConfigData();
   });
 
-  function initializeDataFromSchema(data: any): Record<string, any> {
-    const initialized =
-      typeof data === "object" && data !== null ? { ...data } : {};
+  function initializeDataFromSchema(
+    data: any,
+    currentSchema: any = schema,
+  ): any {
+    if (!currentSchema) return data;
 
-    if (schema?.properties) {
-      for (const [key, property] of Object.entries(schema.properties)) {
-        if (property && typeof property === "object") {
-          const prop = property as any;
-          if (
-            prop.type === "object" &&
-            (initialized[key] === undefined || initialized[key] === null)
-          ) {
-            initialized[key] = {};
-          }
-          if (
-            prop.type === "array" &&
-            (initialized[key] === undefined || initialized[key] === null)
-          ) {
-            initialized[key] = [];
+    if (currentSchema.type === "object" || currentSchema.properties) {
+      const initialized =
+        typeof data === "object" && data !== null && !Array.isArray(data)
+          ? { ...data }
+          : {};
+
+      if (currentSchema.properties) {
+        for (const [key, property] of Object.entries(
+          currentSchema.properties,
+        ) as [string, any][]) {
+          if (property && typeof property === "object") {
+            if (property.type === "object" || property.properties) {
+              initialized[key] = initializeDataFromSchema(
+                initialized[key],
+                property,
+              );
+            } else if (property.type === "array") {
+              if (
+                initialized[key] === undefined ||
+                initialized[key] === null ||
+                !Array.isArray(initialized[key])
+              ) {
+                initialized[key] = property.default !== undefined ? property.default : [];
+              }
+            } else if (initialized[key] === undefined && property.default !== undefined) {
+              initialized[key] = property.default;
+            }
           }
         }
       }
+
+      return initialized;
     }
 
-    return initialized;
+    if (currentSchema.type === "array") {
+      if (Array.isArray(data)) {
+        return data.map((item) =>
+          initializeDataFromSchema(item, currentSchema.items),
+        );
+      }
+      return currentSchema.default !== undefined ? currentSchema.default : [];
+    }
+
+    return data !== undefined ? data : currentSchema.default;
   }
 
   function cleanDataForSubmission(data: any, schemaProps?: any): any {
@@ -121,11 +146,16 @@
   }
 
   async function loadConfigData() {
+    const targetNamespace = namespace.namespace;
     try {
       isLoading = true;
       const response = await api.GET("/admin/config/{namespace}", {
-        params: { path: { namespace: namespace.namespace } },
+        params: { path: { namespace: targetNamespace } },
       });
+
+      if (namespace.namespace !== targetNamespace) {
+        return;
+      }
 
       if (response.data) {
         const configValue = response.data.data.value;
@@ -134,14 +164,17 @@
         version = response.data.data.version;
       } else {
         toasts.error(
-          `Failed to load config for ${namespace.namespace}: ${response.error?.message}`,
+          `Failed to load config for ${targetNamespace}: ${response.error?.message}`,
         );
       }
     } catch (error) {
+      if (namespace.namespace !== targetNamespace) return;
       console.error("Failed to load config data:", error);
-      toasts.error(`Failed to load config for ${namespace.namespace}`);
+      toasts.error(`Failed to load config for ${targetNamespace}`);
     } finally {
-      isLoading = false;
+      if (namespace.namespace === targetNamespace) {
+        isLoading = false;
+      }
     }
   }
 
