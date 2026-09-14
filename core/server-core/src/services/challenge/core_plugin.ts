@@ -153,7 +153,7 @@ export class CoreChallengePlugin implements ChallengePlugin {
     } catch (e) {
       throw new ValidationError(
         `Failed to evaluate scoring algorithm ${m.score.strategy}: ` +
-          e.message,
+          (e instanceof Error ? e.message : String(e)),
       );
     }
     if (m.solve.source === "flag" && !m.solve.flag) {

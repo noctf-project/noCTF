@@ -493,7 +493,14 @@
             {/if}
 
             {#if scoreboardData?.graph}
-              <Graph data={[{ name: team.name, data: scoreboardData.graph }]} />
+              <Graph
+                data={[
+                  {
+                    name: team.name,
+                    data: scoreboardData.graph as [number[], number[]],
+                  },
+                ]}
+              />
             {/if}
           {/if}
         </div>

@@ -149,7 +149,7 @@ export default async function (fastify: FastifyInstance) {
           await appService.generateAuthorizationCode(
             app,
             redirect_uri,
-            request.user.id,
+            request.user!.id,
             scope,
           ),
         );
@@ -160,7 +160,7 @@ export default async function (fastify: FastifyInstance) {
         scope.includes("openid")
       ) {
         const param = new URLSearchParams();
-        param.set("id_token", await signIdToken(client_id, request.user.id));
+        param.set("id_token", await signIdToken(client_id, request.user!.id));
         param.set("state", state);
         url.hash = param.toString();
         return { data: { url: url.toString() } };

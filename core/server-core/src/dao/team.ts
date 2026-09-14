@@ -111,7 +111,10 @@ export class TeamDAO {
     params?: Parameters<TeamDAO["listQuery"]>[0],
     limit?: Parameters<TeamDAO["listQuery"]>[1],
   ): Promise<TeamSummary[]> {
-    const query = this.select(this.listQuery(params, limit)).orderBy("id");
+    const query = this.select(this.listQuery(params, limit)).orderBy(
+      "id",
+      "asc",
+    );
     return query.execute() as Promise<TeamSummary[]>;
   }
 
@@ -367,8 +370,8 @@ export class TeamDAO {
       ).as("members"),
       sql<number[]>`
         COALESCE(
-          (SELECT json_agg(ttm.tag_id) 
-          FROM team_tag_member ttm 
+          (SELECT json_agg(ttm.tag_id)
+          FROM team_tag_member ttm
           WHERE ttm.team_id = team.id),
           '[]'::json
         )

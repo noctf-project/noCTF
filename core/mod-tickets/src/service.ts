@@ -121,7 +121,7 @@ export class TicketService {
     await this.dao.update(
       this.databaseClient.get(),
       id,
-      Value.Clean(UpdateTicket, properties),
+      Value.Clean(UpdateTicket, properties) as UpdateTicket,
     );
   }
 

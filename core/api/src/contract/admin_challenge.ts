@@ -15,7 +15,6 @@ import {
 import {
   AdminListChallengeWeightsQuery,
   FilterChallengesQuery,
-  PaginatedQuery,
 } from "../query.ts";
 import { IdOrSlugParams, IdParams } from "../params.ts";
 import { RouteDef } from "../types.ts";

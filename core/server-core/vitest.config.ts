@@ -11,7 +11,16 @@ export default defineConfig({
       exclude: ["vitest.config.ts", "**/**.test.ts"],
     },
     fakeTimers: {
-      toFake: [...(configDefaults.fakeTimers.toFake || []), "performance"],
+      toFake: [
+        "setTimeout",
+        "clearTimeout",
+        "setInterval",
+        "clearInterval",
+        "setImmediate",
+        "clearImmediate",
+        "Date",
+        "performance",
+      ],
     },
   },
 });

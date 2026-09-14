@@ -37,7 +37,7 @@ export class NodeMailerProvider implements EmailProvider {
   }
 
   private async getTransport() {
-    const data = (await this.configService.get(EmailConfig)) || ({} as any);
+    const data = (await this.configService.get(EmailConfig)) || ({} as unknown);
     if (!this.transport || this.configVersion !== data.version) {
       if (this.transport) this.transport.close();
       this.transport = createTransport(data.value.config);

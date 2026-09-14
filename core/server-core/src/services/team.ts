@@ -155,7 +155,7 @@ export class TeamService {
     }: {
       name?: string;
       bio?: string;
-      country?: string;
+      country?: string | null;
       flags?: string[];
       division_id?: number;
       tag_ids?: number[];

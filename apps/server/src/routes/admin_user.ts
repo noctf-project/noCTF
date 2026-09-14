@@ -223,7 +223,6 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const { id } = request.params;
       const { app_id } = request.body;
       const [me, test] = await Promise.all([
         policyService.evaluate(request.user.id, PRIVILEGED_POLICY),

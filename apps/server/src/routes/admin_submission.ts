@@ -2,7 +2,6 @@ import {
   AdminQuerySubmissions,
   AdminUpdateSubmissions,
 } from "@noctf/api/contract/admin_submission";
-import { ActorType } from "@noctf/server-core/types/enums";
 import "@noctf/server-core/types/fastify";
 import { OffsetPaginate } from "@noctf/server-core/util/paginator";
 import { Policy } from "@noctf/server-core/util/policy";

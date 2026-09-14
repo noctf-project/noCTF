@@ -25,7 +25,9 @@ describe(CacheService, () => {
 
   const coleascer = mockDeep<Coleascer<unknown>>();
   beforeEach(() => {
-    vi.mocked(Coleascer).mockReturnValue(coleascer);
+    vi.mocked(Coleascer).mockImplementation(function () {
+      return coleascer;
+    });
     redisClientFactory.getClient.mockResolvedValue(redisClient);
   });
 

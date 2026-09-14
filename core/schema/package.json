@@ -15,7 +15,7 @@
     "kysely": "catalog:"
   },
   "devDependencies": {
-    "kysely-codegen": "^0.18.0",
+    "kysely-codegen": "^0.20.0",
     "typescript": "catalog:"
   },
   "type": "module",

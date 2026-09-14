@@ -1,6 +1,6 @@
 import { BadRequestError, ConflictError, NotFoundError } from "../errors.ts";
 import type { ServiceCradle } from "../index.ts";
-import type { AuditLogActor, AuditParams } from "../types/audit_log.ts";
+import type { AuditParams } from "../types/audit_log.ts";
 import { ActorType } from "../types/enums.ts";
 import { UserDAO } from "../dao/user.ts";
 import { UserIdentityDAO } from "../dao/user_identity.ts";
@@ -27,7 +27,7 @@ export class UserService {
   }
 
   async get(id: number) {
-    const result = this.userDAO.get(id);
+    const result = await this.userDAO.get(id);
     if (!result) throw new NotFoundError("User not found");
     return result;
   }

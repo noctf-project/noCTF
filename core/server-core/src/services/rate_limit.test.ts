@@ -17,13 +17,12 @@ describe(RateLimitService, () => {
 
   beforeEach(() => {
     mockRedisClientFactory.getClient.mockResolvedValue(mockRedisClient);
-    vi.mocked(TTLCache).mockImplementation(
-      () =>
-        ({
-          getRemainingTTL: vi.fn(),
-          set: vi.fn(),
-        }) as unknown as TTLCache<unknown, unknown>,
-    );
+    vi.mocked(TTLCache).mockImplementation(function () {
+      return {
+        getRemainingTTL: vi.fn(),
+        set: vi.fn(),
+      } as unknown as TTLCache<unknown, unknown>;
+    });
 
     service = new RateLimitService({
       redisClientFactory: mockRedisClientFactory,

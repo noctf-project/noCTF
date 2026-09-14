@@ -5,6 +5,7 @@
   "scripts": {
     "test:unit": "vitest",
     "build": "tsc",
+    "check": "tsc -noEmit",
     "dev": "echo 'Nothing to do' && exit"
   },
   "keywords": [],

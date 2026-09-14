@@ -26,7 +26,6 @@ export class SingletonWorker implements BaseWorker {
   private readonly lockTimeoutSeconds;
   private readonly intervalSeconds;
   private readonly name;
-  private readonly triggerHook;
   private readonly handler;
 
   private abort: AbortController;
@@ -37,7 +36,6 @@ export class SingletonWorker implements BaseWorker {
     lockTimeoutSeconds,
     intervalSeconds,
     name,
-    triggerHook,
     handler,
   }: Props) {
     this.lockService = lockService;
@@ -45,7 +43,6 @@ export class SingletonWorker implements BaseWorker {
     this.lockTimeoutSeconds = lockTimeoutSeconds || 30;
     this.intervalSeconds = intervalSeconds;
     this.name = name;
-    this.triggerHook = triggerHook;
     this.handler = handler;
   }
 

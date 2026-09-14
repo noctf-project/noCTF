@@ -7,13 +7,16 @@
     "test:integ": "vitest --config vitest.integ.config.ts",
     "build": "tsc",
     "release": "pnpm run build && pnpm run test:unit --run",
-    "dev": "echo 'Nothing to do' && exit"
+    "dev": "echo 'Nothing to do' && exit",
+    "check": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@isaacs/ttlcache": "^1.4.1",
+    "@nats-io/jetstream": "catalog:",
+    "@nats-io/transport-node": "catalog:",
     "@noctf/api": "workspace:*",
     "@noctf/schema": "workspace:*",
     "@sinclair/typebox": "catalog:",
@@ -28,12 +31,10 @@
     "jose": "^6.0.11",
     "ky": "catalog:",
     "kysely": "catalog:",
-    "mime-types": "^2.1.35",
+    "mime-types": "^3.0.2",
     "minio": "^8.0.5",
     "nanoid": "catalog:",
-    "@nats-io/transport-node": "catalog:",
-    "@nats-io/jetstream": "catalog:",
-    "nodemailer": "^6.10.0",
+    "nodemailer": "^10.0.9",
     "p-limit": "catalog:",
     "pg": "catalog:",
     "redis": "^4.7.0"

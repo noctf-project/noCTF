@@ -55,12 +55,24 @@ describe(ScoreboardService, () => {
     submissionDAO = mockDeep<SubmissionDAO>();
     awardDAO = mockDeep<AwardDAO>();
 
-    vi.mocked(ScoreboardDataLoader).mockReturnValue(scoreboardDataLoader);
-    vi.mocked(ScoreboardHistory).mockReturnValue(scoreboardHistory);
-    vi.mocked(DivisionDAO).mockReturnValue(divisionDAO);
-    vi.mocked(TeamDAO).mockReturnValue(teamDAO);
-    vi.mocked(SubmissionDAO).mockReturnValue(submissionDAO);
-    vi.mocked(AwardDAO).mockReturnValue(awardDAO);
+    vi.mocked(ScoreboardDataLoader).mockImplementation(function () {
+      return scoreboardDataLoader;
+    });
+    vi.mocked(ScoreboardHistory).mockImplementation(function () {
+      return scoreboardHistory;
+    });
+    vi.mocked(DivisionDAO).mockImplementation(function () {
+      return divisionDAO;
+    });
+    vi.mocked(TeamDAO).mockImplementation(function () {
+      return teamDAO;
+    });
+    vi.mocked(SubmissionDAO).mockImplementation(function () {
+      return submissionDAO;
+    });
+    vi.mocked(AwardDAO).mockImplementation(function () {
+      return awardDAO;
+    });
 
     service = new ScoreboardService({
       configService,

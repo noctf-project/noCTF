@@ -1,5 +1,4 @@
 import type { Readable } from "node:stream";
-import { PassThrough } from "node:stream";
 import { lookup } from "mime-types";
 
 import { FileConfig } from "@noctf/api/config";
@@ -71,7 +70,6 @@ export class FileService {
       this.instances = new Map([
         ["external", new ExternalFileProviderInstance()],
       ]);
-      this.configVersion = this.configVersion;
     }
     let instance = this.instances.get(name);
     if (instance) return instance;

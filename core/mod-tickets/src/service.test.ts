@@ -49,7 +49,9 @@ describe(TicketService, () => {
   beforeEach(() => {
     vi.resetAllMocks();
     databaseClient.get.mockReturnThis();
-    vi.mocked(TicketDAO).mockReturnValue(ticketDAO);
+    vi.mocked(TicketDAO).mockImplementation(function () {
+      return ticketDAO;
+    });
   });
 
   it("Fails to create a ticket if no provider", async () => {
@@ -61,7 +63,7 @@ describe(TicketService, () => {
         item: "test",
         team_id: 1,
       }),
-    ).rejects.toThrowError("A provider has not been configured");
+    ).rejects.toThrow("A provider has not been configured");
   });
 
   it("Creates a ticket", async () => {
@@ -97,7 +99,7 @@ describe(TicketService, () => {
     ticketDAO.getState.mockResolvedValueOnce(TicketState.Created);
     lockService.acquireLease.mockResolvedValueOnce("lease");
     await service.requestStateChange("user:1", 42, TicketState.Open);
-    expect(eventBusService.publish).toBeCalledWith("queue.ticket.state", {
+    expect(eventBusService.publish).toHaveBeenCalledWith("queue.ticket.state", {
       lease: "lease",
       desired_state: TicketState.Open,
       id: 42,
@@ -109,15 +111,15 @@ describe(TicketService, () => {
     ticketDAO.getState.mockResolvedValueOnce(TicketState.Open);
     lockService.acquireLease.mockResolvedValueOnce("lease");
     await service.requestStateChange("user:1", 42, TicketState.Open);
-    expect(lockService.acquireLease).not.toBeCalled();
-    expect(eventBusService.publish).not.toBeCalled();
+    expect(lockService.acquireLease).not.toHaveBeenCalled();
+    expect(eventBusService.publish).not.toHaveBeenCalled();
   });
 
   it("Throws error if ticket state does not exist", async () => {
     const service = new TicketService(props);
-    expect(() =>
+    await expect(() =>
       service.requestStateChange("user:1", 42, "NonExistent" as TicketState),
-    ).rejects.toThrowError(BadRequestError);
+    ).rejects.toThrow(BadRequestError);
   });
 
   it("Ticket state throws an error if it fails to acquire a lease", async () => {
@@ -126,14 +128,14 @@ describe(TicketService, () => {
     lockService.acquireLease.mockRejectedValueOnce(new Error("lol"));
     await expect(() =>
       service.requestStateChange("user:1", 42, TicketState.Open),
-    ).rejects.toThrowError(ConflictError);
-    expect(eventBusService.publish).not.toBeCalled();
+    ).rejects.toThrow(ConflictError);
+    expect(eventBusService.publish).not.toHaveBeenCalled();
   });
 
   it("successfully drops the lease", async () => {
     const service = new TicketService(props);
     await service.dropLease(42, "token");
-    expect(lockService.dropLease).toBeCalledWith("ticket:42", "token");
+    expect(lockService.dropLease).toHaveBeenCalledWith("ticket:42", "token");
   });
 
   it("does not throw when dropping the lease if it returns an error", async () => {
@@ -154,7 +156,7 @@ describe(TicketService, () => {
       provider_id: "1",
       state: TicketState.Open,
     });
-    expect(ticketDAO.update).toBeCalledWith(databaseClient, 42, {
+    expect(ticketDAO.update).toHaveBeenCalledWith(databaseClient, 42, {
       provider_id: "1",
       state: TicketState.Open,
     });
@@ -166,10 +168,10 @@ describe(TicketService, () => {
     await service.apply("user:1", 42, {
       assignee_id: 1,
     });
-    expect(ticketDAO.update).toBeCalledWith(databaseClient, 42, {
+    expect(ticketDAO.update).toHaveBeenCalledWith(databaseClient, 42, {
       assignee_id: 1,
     });
-    expect(eventBusService.publish).toBeCalledWith("queue.ticket.apply", {
+    expect(eventBusService.publish).toHaveBeenCalledWith("queue.ticket.apply", {
       lease: "lease",
       properties: { assignee_id: 1 },
       id: 42,
@@ -184,7 +186,7 @@ describe(TicketService, () => {
       service.apply("user:1", 42, {
         assignee_id: 1,
       }),
-    ).rejects.toThrowError();
-    expect(lockService.dropLease).toBeCalledWith("ticket:42", "lease");
+    ).rejects.toThrow();
+    expect(lockService.dropLease).toHaveBeenCalledWith("ticket:42", "lease");
   });
 });

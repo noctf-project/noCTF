@@ -1,4 +1,4 @@
-import { BinaryLike, createHash, createHmac } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 
 export class KeyService {
   private readonly secret;

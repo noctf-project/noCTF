@@ -2,7 +2,11 @@ import type { AuthMethod, UserIdentity } from "@noctf/api/datatypes";
 import type { AuthToken } from "@noctf/api/token";
 import { createHash } from "node:crypto";
 
-import { TokenInvalidatedError, TokenValidationError } from "../errors.ts";
+import {
+  NotFoundError,
+  TokenInvalidatedError,
+  TokenValidationError,
+} from "../errors.ts";
 import type { ServiceCradle } from "../index.ts";
 import { UserIdentityDAO } from "../dao/user_identity.ts";
 import { LocalCache } from "../util/local_cache.ts";
@@ -286,7 +290,14 @@ export class IdentityService {
   }
 
   async getProviderForUser(user_id: number, provider: string) {
-    return this.identityDAO.getIdentityForUser(user_id, provider);
+    const identity = await this.identityDAO.getIdentityForUser(
+      user_id,
+      provider,
+    );
+    if (!identity) {
+      throw new NotFoundError("Identity not found for user_id and provider");
+    }
+    return identity;
   }
 
   async getIdentityForProvider(provider: string, provider_id: string) {

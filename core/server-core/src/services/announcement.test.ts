@@ -28,7 +28,9 @@ describe(AnnouncementService, () => {
     eventBusService = mockDeep<EventBusService>();
     announcementDAO = mockDeep<AnnouncementDAO>();
 
-    vi.mocked(AnnouncementDAO).mockReturnValue(announcementDAO);
+    vi.mocked(AnnouncementDAO).mockImplementation(function () {
+      return announcementDAO;
+    });
 
     service = new AnnouncementService({
       auditLogService,

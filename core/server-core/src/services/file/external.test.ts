@@ -14,10 +14,7 @@ describe("ExternalFileProviderInstance", () => {
         size: 123,
       };
       const rs = Readable.from(Buffer.from(JSON.stringify(meta)));
-      const result = await provider.upload(rs, {
-        filename: "file.txt",
-        mime: "text/plain",
-      });
+      const result = await provider.upload(rs);
       expect(result.ref).toBe(meta.url);
       expect(result.hash).toBe(meta.hash);
       expect(result.size).toBe(meta.size);
@@ -26,12 +23,7 @@ describe("ExternalFileProviderInstance", () => {
     it("should throw an error if the metadata is too large", async () => {
       const largeData = "a".repeat(3073);
       const rs = Readable.from(Buffer.from(largeData));
-      await expect(
-        provider.upload(rs, {
-          filename: "file.txt",
-          mime: "text/plain",
-        }),
-      ).rejects.toThrow(
+      await expect(provider.upload(rs)).rejects.toThrow(
         new BadRequestError(
           "Metadata exceeded maximum allowed number of bytes",
         ),
@@ -45,12 +37,7 @@ describe("ExternalFileProviderInstance", () => {
         size: 123,
       };
       const rs = Readable.from(Buffer.from(JSON.stringify(invalidMeta)));
-      await expect(
-        provider.upload(rs, {
-          filename: "file.txt",
-          mime: "text/plain",
-        }),
-      ).rejects.toThrow(
+      await expect(provider.upload(rs)).rejects.toThrow(
         new BadRequestError(
           "InvalidMetadataError",
           "Metadata failed to pass validation",
@@ -64,12 +51,6 @@ describe("ExternalFileProviderInstance", () => {
       const ref = "https://example.com/file.txt";
       const result = await provider.getURL(ref);
       expect(result).toBe(ref);
-    });
-  });
-
-  describe("delete", () => {
-    it("should resolve without errors", async () => {
-      await expect(provider.delete("some-ref")).resolves;
     });
   });
 

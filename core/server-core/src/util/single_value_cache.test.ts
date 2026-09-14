@@ -1,15 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { SingleValueCache } from "./single_value_cache.ts";
 
-const createDelayedResolver = (values: any[], delay = 50) => {
-  return vi.fn().mockImplementation(() => {
-    const value = values.shift();
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(value), delay);
-    });
-  });
-};
-
 describe(SingleValueCache, () => {
   beforeEach(() => {
     vi.useFakeTimers();

@@ -1,5 +1,5 @@
 import { PasswordProvider } from "./password_provider.ts";
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyInstance } from "fastify";
 import {
   ActorType,
   EntityType,
@@ -37,10 +37,6 @@ import {
   InitEmailAuth,
   VerifyEmailAuth,
 } from "@noctf/api/contract/mod_auth";
-import {
-  CreateResetAuthEmailRequest,
-  InitAuthEmailRequest,
-} from "@noctf/api/requests";
 
 const IsEmailAllowed = (allowedDomains: string[] | undefined, email: string) =>
   !allowedDomains?.length ||

@@ -50,7 +50,7 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const canList = policyService.evaluate(request.user?.id, [
+      const canList = policyService.evaluate(request.user?.id ?? 0, [
         "OR",
         "division.get",
         "admin.division.get",
@@ -65,7 +65,7 @@ export async function routes(fastify: FastifyInstance) {
         if (!division) return { data: [] };
         return { data: [{ ...division, is_password: !!division.password }] };
       }
-      const admin = await policyService.evaluate(request.user?.id, [
+      const admin = await policyService.evaluate(request.user?.id ?? 0, [
         "admin.division.get",
       ]);
       return {
@@ -172,7 +172,7 @@ export async function routes(fastify: FastifyInstance) {
     async (request, reply) => {
       const id = await teamService.join(
         request.user.id,
-        request.body.join_code,
+        request.body.join_code ?? "",
       );
 
       return reply.status(201).send({
@@ -259,7 +259,10 @@ export async function routes(fastify: FastifyInstance) {
         };
       }
 
-      const admin = await policyService.evaluate(request.user?.id, adminPolicy);
+      const admin = await policyService.evaluate(
+        request.user?.id ?? 0,
+        adminPolicy,
+      );
       const freezeTime = await scoreboardService.getFreezeTime();
       const pointer = admin ? "latest" : undefined;
       const isFrozenNonAdmin = Boolean(freezeTime && !admin);
@@ -365,7 +368,10 @@ export async function routes(fastify: FastifyInstance) {
       },
     },
     async (request) => {
-      const admin = await policyService.evaluate(request.user?.id, adminPolicy);
+      const admin = await policyService.evaluate(
+        request.user?.id ?? 0,
+        adminPolicy,
+      );
       const { page, page_size, ...query } = request.body;
       const q = {
         ...query,

@@ -45,7 +45,7 @@ export async function routes(fastify: FastifyInstance) {
       const membership = await request.user?.membership;
       if (division && !admin && membership?.division_id !== division) {
         const cfg = await divisionService.get(division);
-        if (!cfg.is_visible) throw new NotFoundError("Division not found");
+        if (!cfg?.is_visible) throw new NotFoundError("Division not found");
       }
       if (!division) {
         division =

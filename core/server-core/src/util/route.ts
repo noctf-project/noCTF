@@ -1,7 +1,7 @@
 import { RouteDef } from "@noctf/api/types";
 import { Static, TSchema } from "@sinclair/typebox";
-import { FastifyInstance } from "fastify";
-import { RequestConfig } from "../types/fastify.ts";
+import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { RequestConfig, UserRequestPayload } from "../types/fastify.ts";
 
 export type RouteSchema<T extends RouteDef> = {
   Body: T["schema"]["body"] extends TSchema
@@ -23,37 +23,62 @@ export type RouteSchema<T extends RouteDef> = {
       any;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Options<T> = T extends (arg1: infer U, ...args: any[]) => any ? U : never;
+export type AuthenticatedRequest<SchemaDef extends RouteSchema<RouteDef>> =
+  FastifyRequest<SchemaDef> & {
+    user: UserRequestPayload;
+  };
 
-type AtLeast<T, K extends keyof T> = Partial<Omit<T, K>> & Pick<T, K>;
+export type RequestForConfig<
+  SchemaDef extends RouteSchema<RouteDef>,
+  Config extends RequestConfig<SchemaDef>,
+> = Config extends { auth: { require: true } }
+  ? AuthenticatedRequest<SchemaDef>
+  : FastifyRequest<SchemaDef>;
+
+export type RouteHandler<
+  SchemaDef extends RouteSchema<RouteDef>,
+  Config extends RequestConfig<SchemaDef>,
+> = (
+  this: FastifyInstance,
+  request: RequestForConfig<SchemaDef, Config>,
+  reply: FastifyReply<SchemaDef>,
+) => Promise<unknown> | unknown;
 
 export function route<
   Def extends RouteDef,
   SchemaDef extends RouteSchema<Def>,
+  Config extends RequestConfig<SchemaDef>,
   Instance extends FastifyInstance,
 >(
   fastify: Instance,
   def: Def,
-  config: RequestConfig<SchemaDef>,
+  config: Config,
   handler:
-    | Options<typeof fastify.route<SchemaDef>>["handler"]
-    | AtLeast<Options<typeof fastify.route<SchemaDef>>, "handler">,
+    | RouteHandler<SchemaDef, Config>
+    | {
+        handler: RouteHandler<SchemaDef, Config>;
+        [key: string]: unknown;
+      },
 ) {
   if (typeof handler === "function") {
     return fastify.route<SchemaDef>({
       method: def.method,
       url: def.url,
       schema: { ...def.schema, security: [{ bearer: [] }] },
-      config,
-      handler,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      config: config as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      handler: handler as any,
     });
   }
   return fastify.route<SchemaDef>({
     method: def.method,
     url: def.url,
     schema: { ...def.schema, security: [{ bearer: [] }] },
-    config,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    config: config as any,
     ...handler,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    handler: handler.handler as any,
   });
 }

@@ -34,8 +34,12 @@ describe(PolicyService, () => {
     mockReset(mockPolicyDAO);
     mockReset(mockUserDAO);
 
-    vi.mocked(PolicyDAO).mockImplementation(() => mockPolicyDAO);
-    vi.mocked(UserDAO).mockImplementation(() => mockUserDAO);
+    vi.mocked(PolicyDAO).mockImplementation(function () {
+      return mockPolicyDAO;
+    });
+    vi.mocked(UserDAO).mockImplementation(function () {
+      return mockUserDAO;
+    });
     vi.mocked(PreprocessPermissions).mockImplementation((x) => x);
 
     policyService = new PolicyService({

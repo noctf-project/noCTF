@@ -44,6 +44,7 @@ export async function initServer(fastify: FastifyInstance) {
       },
     },
     async (request) => {
+      if (!request.user) return {};
       try {
         await identityService.revokeToken(request.user.token);
       } catch (e) {

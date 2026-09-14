@@ -32,9 +32,9 @@ export class SignalledWorker implements BaseWorker {
     while (!this.controller.signal.aborted) {
       try {
         await this.handler(this.controller.signal);
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.error(
-          { name: this.name, error, message: error?.message },
+          { name: this.name, error, message: (error as Error)?.message },
           "Worker threw error, restarting",
         );
       } finally {

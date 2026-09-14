@@ -69,7 +69,7 @@ const DoStream = (
         chunks.push(chunk);
         cb();
       } catch (e) {
-        cb(e);
+        cb(e instanceof Error ? e : new Error(String(e)));
       }
     },
   });

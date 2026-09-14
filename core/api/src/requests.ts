@@ -98,7 +98,7 @@ export type FinishAuthEmailRequest = Static<typeof FinishAuthEmailRequest>;
 
 export const ChangeAuthEmailRequest = Type.Object(
   {
-    email: Type.Optional(Type.String({ format: "email" })),
+    email: Type.String({ format: "email" }),
     password: Type.String(),
   },
   { additionalProperties: false },
@@ -108,7 +108,7 @@ export type ChangeAuthEmailRequest = Static<typeof ChangeAuthEmailRequest>;
 export const ChangeAuthPasswordRequest = Type.Object(
   {
     password: Type.String(),
-    newPassword: Type.Optional(Type.String({ minLength: 8, maxLength: 256 })),
+    newPassword: Type.String({ minLength: 8, maxLength: 256 }),
   },
   { additionalProperties: false },
 );
@@ -131,7 +131,7 @@ export const RegisterAuthRequest = Type.Composite(
       email: Type.Optional(Type.String({ format: "email" })),
       password: Type.Optional(Type.String({ minLength: 8, maxLength: 256 })),
     }),
-    Type.Partial(Type.Pick(User, ["name"])),
+    Type.Pick(User, ["name"]),
   ],
   { additionalProperties: false },
 );

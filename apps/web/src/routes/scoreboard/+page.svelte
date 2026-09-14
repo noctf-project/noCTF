@@ -135,7 +135,7 @@
         ...rest,
         created_at: new Date(created_at),
       })),
-      graph: s.graph || [[], []],
+      graph: (s.graph || [[], []]) as [number[], number[]],
     })) || [],
   );
 
@@ -190,7 +190,7 @@
         ...rest,
         created_at: new Date(created_at),
       })),
-      graph: teamData.graph || [[], []],
+      graph: (teamData.graph || [[], []]) as [number[], number[]],
     };
   });
 
@@ -211,7 +211,7 @@
             name:
               (await TeamQueryService.get(team_id).catch(() => null))?.name ||
               "",
-            data: graph || [[], []],
+            data: (graph || [[], []]) as [number[], number[]],
           })),
         )
       : undefined,

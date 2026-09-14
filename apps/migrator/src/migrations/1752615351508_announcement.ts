@@ -4,6 +4,7 @@ import {
   CreateTriggerUpdatedAt,
 } from "../util.ts";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
 

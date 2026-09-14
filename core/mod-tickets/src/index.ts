@@ -35,7 +35,7 @@ export async function initServer(fastify: FastifyInstance) {
         },
         rateLimit: async (r) => [
           {
-            key: `${GetRouteKey(r)}:t${(await r.user.membership).team_id}`,
+            key: `${GetRouteKey(r)}:t${(await r.user!.membership)?.team_id ?? 0}`,
             windowSeconds: 60,
             limit: 1,
           },

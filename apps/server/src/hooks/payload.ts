@@ -77,7 +77,7 @@ export const PayloadDigestPreValidationHook = async (
   if (!request._parsedDigestHeader) throw new Error("Route is misconfigured");
   for (const h in request._parsedDigestHeader) {
     const parsed = request._parsedDigestHeader[h];
-    const computed = request.digests[h];
+    const computed = request.digests![h];
     try {
       if (
         computed.length !== parsed.length ||
