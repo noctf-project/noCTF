@@ -53,9 +53,9 @@ export class TeamDAO {
     join_code,
     division_id,
     flags,
-  }: Insertable<DB["team"]>): Promise<Omit<Team, "tag_ids">> {
+  }: Insertable<DB["team"]>): Promise<Omit<Team, "tag_ids"> & { updated_at: Date }> {
     try {
-      const { id, created_at } = await this.db
+      const { id, created_at, updated_at } = await this.db
         .insertInto("team")
         .values({
           name,
@@ -65,7 +65,7 @@ export class TeamDAO {
           division_id,
           flags,
         })
-        .returning(["id", "created_at"])
+        .returning(["id", "created_at", "updated_at"])
         .executeTakeFirstOrThrow();
 
       return {
@@ -77,6 +77,7 @@ export class TeamDAO {
         division_id,
         flags: flags || [],
         created_at,
+        updated_at,
       };
     } catch (e) {
       const pgerror = TryPGConstraintError(e, CREATE_ERROR_CONFIG);
@@ -168,13 +169,18 @@ export class TeamDAO {
     return await query.execute();
   }
 
-  async update(id: number, v: Updateable<DB["team"]>) {
+  async update(
+    id: number,
+    v: Updateable<DB["team"]>,
+  ): Promise<{ division_id: number; flags: string[]; updated_at: Date }> {
     try {
-      await this.db
+      const result = await this.db
         .updateTable("team")
         .set(FilterUndefined(v))
         .where("id", "=", id)
+        .returning(["division_id", "flags", "updated_at"])
         .executeTakeFirstOrThrow();
+      return result;
     } catch (e) {
       const pgerror = TryPGConstraintError(e, CREATE_ERROR_CONFIG);
       if (pgerror) throw pgerror;
@@ -182,14 +188,18 @@ export class TeamDAO {
     }
   }
 
-  async delete(id: number) {
-    const { numDeletedRows } = await this.db
+  async delete(
+    id: number,
+  ): Promise<{ id: number; division_id: number; flags: string[]; updated_at: Date }> {
+    const result = await this.db
       .deleteFrom("team")
       .where("id", "=", id)
+      .returning(["id", "division_id", "flags", "updated_at"])
       .executeTakeFirst();
-    if (!numDeletedRows) {
+    if (!result) {
       throw new NotFoundError("Team does not exist");
     }
+    return result;
   }
 
   async assign({

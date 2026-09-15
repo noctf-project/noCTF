@@ -42,6 +42,8 @@ describe(TeamDAO, () => {
     expect(team.id).toBeDefined();
     expect(team.name).toBe("Cyber Knights");
     expect(team.division_id).toBe(division.id);
+    expect(team.updated_at).toBeInstanceOf(Date);
+    expect(team.created_at).toEqual(team.updated_at);
 
     const fetched = await teamDAO.get(team.id);
     expect(fetched.name).toBe("Cyber Knights");
@@ -51,14 +53,25 @@ describe(TeamDAO, () => {
     const foundByCode = await teamDAO.findUsingJoinCode("join1234");
     expect(foundByCode.id).toBe(team.id);
 
-    await teamDAO.update(team.id, {
+    const updatedResult = await teamDAO.update(team.id, {
       bio: "Updated Bio",
+      flags: ["verified", "hidden"],
     });
+    expect(updatedResult.division_id).toBe(division.id);
+    expect(updatedResult.flags).toEqual(["verified", "hidden"]);
+    expect(updatedResult.updated_at).toBeInstanceOf(Date);
+    expect(updatedResult.updated_at.getTime()).toBeGreaterThanOrEqual(
+      team.updated_at.getTime(),
+    );
 
     const updated = await teamDAO.get(team.id);
     expect(updated.bio).toBe("Updated Bio");
 
-    await teamDAO.delete(team.id);
+    const deleted = await teamDAO.delete(team.id);
+    expect(deleted.id).toBe(team.id);
+    expect(deleted.division_id).toBe(division.id);
+    expect(deleted.flags).toEqual(["verified", "hidden"]);
+    expect(deleted.updated_at).toBeInstanceOf(Date);
     await expect(teamDAO.get(team.id)).rejects.toThrow(NotFoundError);
   });
 

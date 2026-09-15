@@ -63,6 +63,18 @@ export const ChallengeUpdateEvent = Type.Object(
 );
 export type ChallengeUpdateEvent = Static<typeof ChallengeUpdateEvent>;
 
+export const TeamUpdateEvent = Type.Object(
+  {
+    id: Type.Integer(),
+    division_id: Type.Integer(),
+    flags: Type.Array(Type.String()),
+    type: ObjectUpdateType,
+    updated_at: TypeDate,
+  },
+  { $id: "events.team.update" },
+);
+export type TeamUpdateEvent = Static<typeof TeamUpdateEvent>;
+
 export const ConfigUpdateEvent = Type.Object(
   {
     namespace: Type.String(),
