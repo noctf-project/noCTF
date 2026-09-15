@@ -118,9 +118,10 @@ function ComputeScoresForChallenge(
   }
 
   const rv: Solve[] = withBase.map(
-    ({ team_id, user_id, created_at, baseScore, value }) => {
+    ({ id, team_id, user_id, created_at, baseScore, value }) => {
       const b = value !== null ? undefined : bonusMap.get(team_id);
       return {
+        id,
         team_id,
         user_id,
         challenge_id: metadata.id,
@@ -133,9 +134,10 @@ function ComputeScoresForChallenge(
   );
 
   const rh: Solve[] = hidden.map(
-    ({ team_id, user_id, created_at, updated_at, weight }) => {
+    ({ id, team_id, user_id, created_at, updated_at, weight }) => {
       last_event = MaxDate(last_event, updated_at);
       return {
+        id,
         team_id,
         user_id,
         challenge_id: metadata.id,

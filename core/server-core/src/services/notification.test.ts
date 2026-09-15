@@ -11,14 +11,14 @@ import { ValidationError } from "../errors.ts";
 import { Logger } from "../types/primitives.ts";
 import {
   AnnouncementUpdateEvent,
+  ChallengeSolveEvent,
   NotificationQueueWebhookEvent,
-  SubmissionUpdateEvent,
 } from "@noctf/api/events";
 import { Challenge, User } from "@noctf/api/datatypes";
 import { NotificationConfig as NotificationConfigSchema } from "@noctf/api/config";
 import { TTLCache } from "@isaacs/ttlcache";
 
-type Submitted = (e: EventItem<SubmissionUpdateEvent>) => Promise<void>;
+type Solved = (e: EventItem<ChallengeSolveEvent>) => Promise<void>;
 type Announced = (e: EventItem<AnnouncementUpdateEvent>) => Promise<void>;
 
 describe(NotificationService, () => {
@@ -29,7 +29,7 @@ describe(NotificationService, () => {
   let teamService: DeepMockProxy<TeamService>;
   let userService: DeepMockProxy<UserService>;
   let service: NotificationService;
-  let handleSubmission: Submitted;
+  let handleSolve: Solved;
   let handleAnnouncement: Announced;
 
   const disc = {
@@ -71,22 +71,21 @@ describe(NotificationService, () => {
     updated_at: new Date(),
   };
 
-  const submissionEvent: EventItem<SubmissionUpdateEvent> = {
+  const solveEvent: EventItem<ChallengeSolveEvent> = {
     id: 1,
-    subject: "events.submission.update",
+    subject: "events.challenge.solve",
     timestamp: new Date(),
     attempt: 1,
     data: {
       id: 10,
+      division_id: 1,
       team_id: 1,
       user_id: 2,
       challenge_id: 99,
       hidden: false,
+      value: 100,
       created_at: new Date(1_234_567_000),
-      updated_at: new Date(1_234_567_000),
       seq: 1,
-      is_update: false,
-      status: "correct",
     },
   };
 
@@ -120,7 +119,7 @@ describe(NotificationService, () => {
       teamService,
       userService,
     });
-    handleSubmission = (e) => service["handleSubmission"](e);
+    handleSolve = (e) => service["handleSolve"](e);
     handleAnnouncement = (e) => service["handleAnnouncement"](e);
     challengeService.get.mockResolvedValue(challenge);
     teamService.get.mockResolvedValue(team);
@@ -149,7 +148,7 @@ describe(NotificationService, () => {
       ) => void;
       expect(() =>
         validator({
-          submission: [{ url: "https://x", type: "discord", enabled: true }],
+          solve: [{ url: "https://x", type: "discord", enabled: true }],
         }),
       ).toThrow(ValidationError);
     });
@@ -178,9 +177,9 @@ describe(NotificationService, () => {
 
   describe("handleSubmission", () => {
     it("skips hidden submissions", async () => {
-      await handleSubmission({
-        ...submissionEvent,
-        data: { ...submissionEvent.data, hidden: true },
+      await handleSolve({
+        ...solveEvent,
+        data: { ...solveEvent.data, hidden: true },
       });
       expect(configService.get).not.toHaveBeenCalled();
       expect(eventBusService.publish).not.toHaveBeenCalled();
@@ -191,7 +190,7 @@ describe(NotificationService, () => {
         ...setupConfig,
         value: { ...setupConfig.value, start_time_s: 2_000_000_000 },
       });
-      await handleSubmission(submissionEvent);
+      await handleSolve(solveEvent);
       expect(eventBusService.publish).not.toHaveBeenCalled();
     });
 
@@ -199,7 +198,7 @@ describe(NotificationService, () => {
       configService.get.mockResolvedValue({
         version: 1,
         value: {
-          submission: [
+          solve: [
             {
               url: "https://example.com/hook",
               type: "discord",
@@ -213,7 +212,7 @@ describe(NotificationService, () => {
         ...team,
         flags: [TeamFlag.HIDDEN],
       });
-      await handleSubmission(submissionEvent);
+      await handleSolve(solveEvent);
       expect(eventBusService.publish).not.toHaveBeenCalled();
     });
 
@@ -221,7 +220,7 @@ describe(NotificationService, () => {
       configService.get.mockResolvedValue({
         version: 1,
         value: {
-          submission: [
+          solve: [
             {
               url: "https://example.com/hook",
               type: "discord",
@@ -234,9 +233,9 @@ describe(NotificationService, () => {
               division_ids: [42],
             },
           ],
-        },
+        } as NotificationConfigSchema,
       });
-      await handleSubmission(submissionEvent);
+      await handleSolve(solveEvent);
       expect(eventBusService.publish).not.toHaveBeenCalled();
     });
 
@@ -244,7 +243,7 @@ describe(NotificationService, () => {
       configService.get.mockResolvedValue({
         version: 1,
         value: {
-          submission: [
+          solve: [
             {
               url: "https://example.com/hook",
               type: "discord",
@@ -255,7 +254,7 @@ describe(NotificationService, () => {
           ],
         },
       });
-      await handleSubmission(submissionEvent);
+      await handleSolve(solveEvent);
 
       expect(eventBusService.publish).toHaveBeenCalledWith(
         NotificationQueueWebhookEvent,
@@ -273,7 +272,7 @@ describe(NotificationService, () => {
       configService.get.mockResolvedValue({
         version: 1,
         value: {
-          submission: [
+          solve: [
             {
               url: "https://example.com/hook",
               type: "discord",
@@ -290,9 +289,9 @@ describe(NotificationService, () => {
       ).templateCache;
       const setSpy = vi.spyOn(templateCache, "set");
 
-      await handleSubmission(submissionEvent);
+      await handleSolve(solveEvent);
       expect(setSpy).toHaveBeenCalledTimes(1);
-      await handleSubmission(submissionEvent);
+      await handleSolve(solveEvent);
       expect(setSpy).toHaveBeenCalledTimes(1);
     });
 
@@ -300,7 +299,7 @@ describe(NotificationService, () => {
       configService.get.mockResolvedValue({
         version: 1,
         value: {
-          submission: [
+          solve: [
             {
               url: "https://example.com/hook",
               type: "webhook",
@@ -309,23 +308,26 @@ describe(NotificationService, () => {
           ],
         },
       });
-      await handleSubmission(submissionEvent);
+      await handleSolve(solveEvent);
 
       expect(eventBusService.publish).toHaveBeenCalledWith(
         NotificationQueueWebhookEvent,
         {
           url: "https://example.com/hook",
           payload: expect.objectContaining({
-            challenge_id: 99,
-            challenge_title: "The Pledge",
-            team_id: 1,
-            team_name: "Team1",
-            user_id: 2,
-            user_name: "alice",
-            id: 10,
-            seq: 1,
-            status: "correct",
-            is_update: false,
+            challenge: {
+              id: 99,
+              title: "The Pledge",
+            },
+            team: {
+              id: 1,
+              name: "Team1",
+            },
+            user: {
+              id: 2,
+              name: "alice",
+            },
+            event: solveEvent.data,
           }),
         },
       );

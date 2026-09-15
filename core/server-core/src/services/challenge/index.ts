@@ -233,19 +233,15 @@ export class ChallengeService {
       );
       const solved = state.status === "correct";
       const { id, created_at, updated_at, seq } =
-        await this.databaseClient.transaction(async (tx) => {
-          const submissionDAO = new SubmissionDAO(tx);
-          const result = await submissionDAO.create({
-            team_id: teamId,
-            user_id: userId,
-            challenge_id: challenge.id,
-            source: challenge.private_metadata.solve.source,
-            data,
-            status: state.status,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            metadata: metadata as any,
-          });
-          return result;
+        await this.submissionDAO.create({
+          team_id: teamId,
+          user_id: userId,
+          challenge_id: challenge.id,
+          source: challenge.private_metadata.solve.source,
+          data,
+          status: state.status,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          metadata: metadata as any,
         });
 
       await this.eventBusService.publish(SubmissionUpdateEvent, {

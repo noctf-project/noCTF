@@ -294,6 +294,7 @@ export type ScoringStrategy = Static<typeof ScoringStrategy>;
 
 export const Solve = Type.Object(
   {
+    id: Type.Integer(),
     team_id: Type.Integer(),
     user_id: Type.Union([Type.Integer(), Type.Null()]),
     challenge_id: Type.Integer(),
@@ -455,29 +456,6 @@ export const Session = Type.Object({
   refreshed_at: TypeDate,
 });
 export type Session = Static<typeof Session>;
-
-export const OutgoingSolveWebhookGeneric = Type.Composite([
-  Type.Pick(Submission, [
-    "id",
-    "seq",
-    "status",
-    "comments",
-    "is_update",
-    "created_at",
-    "updated_at",
-  ]),
-  Type.Object({
-    team_id: Type.Integer(),
-    team_name: Type.String(),
-    user_id: Type.Integer(),
-    user_name: Type.String(),
-    challenge_id: Type.Integer(),
-    challenge_title: Type.String(),
-  }),
-]);
-export type OutgoingSolveWebhookGeneric = Static<
-  typeof OutgoingSolveWebhookGeneric
->;
 
 export const Announcement = Type.Object({
   id: Type.Integer(),

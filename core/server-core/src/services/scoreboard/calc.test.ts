@@ -396,6 +396,7 @@ describe(ComputeScoreboard, () => {
             value: 1,
             solves: [
               {
+                id: 1,
                 bonus: 2,
                 created_at: new Date(1),
                 hidden: false,
@@ -405,6 +406,7 @@ describe(ComputeScoreboard, () => {
                 user_id: 1,
               },
               {
+                id: 2,
                 bonus: undefined,
                 created_at: new Date(3),
                 hidden: false,
@@ -452,7 +454,7 @@ describe(ComputeScoreboard, () => {
           {
             challenge_id: 1,
             hidden: false,
-            id: 2,
+            id: 3,
             created_at: new Date(3) as unknown as Timestamp & Date, // fuck TS
             updated_at: new Date(3) as unknown as Timestamp & Date,
             team_id: 2,
@@ -547,6 +549,7 @@ describe(ComputeScoreboard, () => {
             value: 1,
             solves: [
               {
+                id: 1,
                 bonus: undefined,
                 created_at: new Date(1),
                 hidden: false,
@@ -556,6 +559,7 @@ describe(ComputeScoreboard, () => {
                 user_id: 1,
               },
               {
+                id: 2,
                 bonus: undefined,
                 created_at: new Date(2),
                 hidden: false,
@@ -565,6 +569,7 @@ describe(ComputeScoreboard, () => {
                 user_id: 3,
               },
               {
+                id: 3,
                 bonus: undefined,
                 created_at: new Date(3),
                 hidden: false,
@@ -668,6 +673,7 @@ describe(ComputeScoreboard, () => {
           ],
           solves: [
             {
+              id: 1,
               bonus: undefined,
               created_at: new Date(1),
               hidden: false,
@@ -687,6 +693,7 @@ describe(ComputeScoreboard, () => {
             value: 1,
             solves: [
               {
+                id: 1,
                 bonus: undefined,
                 created_at: new Date(1),
                 hidden: false,

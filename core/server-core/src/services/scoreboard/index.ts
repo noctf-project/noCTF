@@ -2,12 +2,14 @@ import type { ServiceCradle } from "../../index.ts";
 import { DivisionDAO } from "../../dao/division.ts";
 import {
   ChallengeMetadataWithExpr,
+  ComputedChallengeScoreData,
   ComputeFullGraph,
   ComputeScoreboard,
   PartitionSolvesByChallenge,
 } from "./calc.ts";
 import { HistoryDataPoint } from "../../dao/score_history.ts";
 import { SetupConfig } from "@noctf/api/config";
+import roaring from "roaring";
 import { AwardDAO } from "../../dao/award.ts";
 import { ScoreboardDataLoader } from "./loader.ts";
 import { MinimalTeamInfo, TeamDAO } from "../../dao/team.ts";
@@ -16,6 +18,7 @@ import { Award, ScoreboardEntry } from "@noctf/api/datatypes";
 import { MaxDate } from "../../util/date.ts";
 import { ScoreboardHistory } from "./history.ts";
 import { LocalCache } from "../../util/local_cache.ts";
+import { ChallengeSolveEvent } from "@noctf/api/events";
 
 type PointerTarget = {
   name: string;
@@ -37,16 +40,24 @@ type Props = Pick<
   | "configService"
   | "challengeService"
   | "scoreService"
+  | "eventBusService"
   | "databaseClient"
   | "redisClientFactory"
   | "logger"
 >;
+
+type CommittedDivision = {
+  version: number;
+  scoreboard: ScoreboardEntry[];
+  challenges: Map<number, ComputedChallengeScoreData>;
+};
 
 export class ScoreboardService {
   private readonly logger;
   private readonly challengeService;
   private readonly configService;
   private readonly scoreService;
+  private readonly eventBusService;
 
   private readonly history;
   private readonly dataLoader;
@@ -68,6 +79,7 @@ export class ScoreboardService {
     configService,
     challengeService,
     databaseClient,
+    eventBusService,
     redisClientFactory,
     scoreService,
     logger,
@@ -76,6 +88,7 @@ export class ScoreboardService {
     this.challengeService = challengeService;
     this.configService = configService;
     this.scoreService = scoreService;
+    this.eventBusService = eventBusService;
 
     this.dataLoader = new ScoreboardDataLoader(redisClientFactory);
     this.history = new ScoreboardHistory({
@@ -203,15 +216,42 @@ export class ScoreboardService {
         .toArray(),
     );
 
+    const commits: [number, CommittedDivision][] = [];
     for (const { division, pointers } of divisions) {
-      await this.commitDivisionScoreboard(
-        teams.get(division.id) || [],
-        challenges,
+      commits.push([
         division.id,
-        pointers,
-        timestamp,
-      );
+        await this.commitDivisionScoreboard(
+          teams.get(division.id) || [],
+          challenges,
+          division.id,
+          pointers,
+          timestamp,
+        ),
+      ]);
     }
+    await this.emitEvents(commits);
+  }
+
+  async emitEvents(commits: [number, CommittedDivision][]) {
+    const bin = await this.dataLoader.getNotifiedSolves();
+    const items: ChallengeSolveEvent[] = [];
+    const map = bin
+      ? roaring.RoaringBitmap32.deserialize(bin, false)
+      : new roaring.RoaringBitmap32();
+    for (const [id, division] of commits) {
+      for (const solves of division.challenges.values()) {
+        for (const [idx, solve] of solves.solves.entries()) {
+          if (!solve.hidden && !map.has(solve.id)) {
+            map.add(solve.id);
+            if (bin) items.push({ ...solve, seq: idx + 1, division_id: id });
+          }
+        }
+      }
+    }
+    if (items)
+      await this.eventBusService.publishBatch(ChallengeSolveEvent, items);
+    map.runOptimize();
+    await this.dataLoader.saveNotifiedSolves(map.serialize(false) as Buffer);
   }
 
   async recomputeFullGraph() {
@@ -406,7 +446,7 @@ export class ScoreboardService {
     id: number,
     currentPointers: Record<string, number>,
     timestamp?: Date,
-  ) {
+  ): Promise<CommittedDivision> {
     const [solves, awards, { value: setup }] = await Promise.all([
       this.submissionDAO.getSolvesForCalculation(id),
       this.awardDAO.getAllAwards(id),
@@ -427,7 +467,7 @@ export class ScoreboardService {
     const prevVersions = Object.values(currentPointers).filter(Boolean);
     const activeVersions = new Set<number>();
 
-    let latestScoreboard: ScoreboardEntry[] = [];
+    let latest: CommittedDivision | undefined;
 
     for (const target of targetPointers) {
       const prevVersion = currentPointers[target.name];
@@ -445,24 +485,25 @@ export class ScoreboardService {
       const res = await this.commitDivisionForPointer(ctx, target);
       activeVersions.add(res.version);
       if (target.name === "latest") {
-        latestScoreboard = res.scoreboard;
+        latest = res;
       }
     }
 
-    if (latestScoreboard.length) {
-      await this.history.saveIteration(id, latestScoreboard);
+    if (latest && latest.scoreboard.length) {
+      await this.history.saveIteration(id, latest.scoreboard);
     }
 
     // Expire unused versions somewhat eagerly (with a small grace period)
     const toExpire = prevVersions.filter((v) => !activeVersions.has(v));
     await this.dataLoader.expireVersions(id, toExpire, 10);
     this.pointerCache.delete(id);
+    return latest!; // latest always exists
   }
 
   private async commitDivisionForPointer(
     ctx: DivisionContext,
     target: PointerTarget,
-  ): Promise<{ version: number; scoreboard: ScoreboardEntry[] }> {
+  ): Promise<CommittedDivision> {
     const targetVersion = target.cutoff?.getTime();
     const solvesByChallenge = PartitionSolvesByChallenge(
       ctx.solves,
@@ -506,6 +547,6 @@ export class ScoreboardService {
       target.name,
     );
 
-    return { version, scoreboard };
+    return { version, scoreboard, challenges: challengeScores };
   }
 }

@@ -2,15 +2,15 @@ import { NotificationConfig, SetupConfig } from "@noctf/api/config";
 import { ServiceCradle } from "../index.ts";
 import {
   AnnouncementUpdateEvent,
+  ChallengeSolveEvent,
   NotificationQueueWebhookEvent,
-  SubmissionUpdateEvent,
+  OutgoingSolveWebhookGeneric,
 } from "@noctf/api/events";
 import { EventItem } from "./event_bus.ts";
 import { TeamFlag } from "../types/enums.ts";
 import ky from "ky";
 import Handlebars from "handlebars";
 import { TTLCache } from "@isaacs/ttlcache";
-import { OutgoingSolveWebhookGeneric } from "@noctf/api/datatypes";
 import { ValidationError } from "../errors.ts";
 import { IsTimeBetweenSeconds } from "../util/time.ts";
 
@@ -90,7 +90,7 @@ export class NotificationService {
 
   async init() {
     await this.configService.register(NotificationConfig, {}, (v) => {
-      for (const item of v.submission || []) {
+      for (const item of v.solve || []) {
         if (item.type === "discord") {
           if (typeof item.template !== "string") {
             throw new ValidationError("Discord webhooks must have a template");
@@ -111,13 +111,13 @@ export class NotificationService {
 
   async worker(signal: AbortSignal) {
     await Promise.all([
-      this.eventBusService.subscribe<SubmissionUpdateEvent>(
+      this.eventBusService.subscribe<ChallengeSolveEvent>(
         signal,
         "NotificationBloodWorker",
-        [SubmissionUpdateEvent.$id!],
+        [ChallengeSolveEvent.$id!],
         {
           concurrency: 2,
-          handler: (data) => this.handleSubmission(data),
+          handler: (data) => this.handleSolve(data),
         },
       ),
       this.eventBusService.subscribe<AnnouncementUpdateEvent>(
@@ -184,7 +184,7 @@ export class NotificationService {
     }
   }
 
-  private async handleSubmission(data: EventItem<SubmissionUpdateEvent>) {
+  private async handleSolve(data: EventItem<ChallengeSolveEvent>) {
     const event = data.data;
     if (event.hidden) return;
     const [{ value: notification }, { value: setup }] = await Promise.all([
@@ -201,11 +201,13 @@ export class NotificationService {
       return;
     }
 
-    const enabled = notification.submission?.filter(
+    const enabled = notification.solve?.filter(
       (b) =>
         b.enabled &&
         (!b.max_seq || event.seq <= b.max_seq) &&
-        (!b.status_filter?.length || b.status_filter.includes(event.status)),
+        (!b.division_ids ||
+          (b.division_ids.length &&
+            b.division_ids.includes(event.division_id))),
     );
     if (!enabled?.length) return;
 
@@ -223,13 +225,6 @@ export class NotificationService {
 
     for (const cfg of enabled) {
       if (!cfg.enabled) continue;
-      if (
-        cfg.division_ids &&
-        cfg.division_ids.length &&
-        !cfg.division_ids.includes(team.division_id)
-      ) {
-        continue;
-      }
       switch (cfg.type) {
         case "discord":
           if (!cfg.template) {
@@ -254,18 +249,19 @@ export class NotificationService {
           await this.eventBusService.publish(NotificationQueueWebhookEvent, {
             url: cfg.url,
             payload: {
-              challenge_id: challenge.id,
-              challenge_title: challenge.title,
-              team_id: team.id,
-              team_name: team.name,
-              user_id: user?.id || 0,
-              user_name: user?.name || "",
-              id: event.id,
-              seq: event.seq,
-              status: event.status,
-              is_update: event.is_update,
-              created_at: event.created_at,
-              updated_at: event.updated_at,
+              challenge: {
+                id: challenge.id,
+                title: challenge.title,
+              },
+              team: {
+                id: team.id,
+                name: team.name,
+              },
+              user: user && {
+                id: user.id,
+                name: user.name,
+              },
+              event,
             } as OutgoingSolveWebhookGeneric,
           });
           break;
