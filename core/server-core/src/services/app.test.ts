@@ -48,7 +48,9 @@ describe(AppService, () => {
     vi.mocked(AppDAO).mockImplementation(function () {
       return appDAO;
     });
-    lockService.withLease.mockImplementation((_, a) => a());
+    lockService.withLease.mockImplementation((_, a) =>
+      a(new AbortController().signal),
+    );
     service = new AppService({
       cacheService,
       identityService,

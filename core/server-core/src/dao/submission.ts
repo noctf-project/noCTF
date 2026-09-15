@@ -398,4 +398,25 @@ export class SubmissionDAO {
       incorrect_count: Number(x.incorrect_count),
     }));
   }
+
+  async getLatestActivityTimestamp(): Promise<Date | null> {
+    const res = await this.db
+      .selectNoFrom((eb) =>
+        eb
+          .fn<Date | null>("greatest", [
+            eb
+              .selectFrom("submission")
+              .select((subEb) => subEb.fn.max("updated_at").as("max")),
+            eb
+              .selectFrom("submission_weight")
+              .select((subEb) => subEb.fn.max("created_at").as("max")),
+            eb
+              .selectFrom("award")
+              .select((subEb) => subEb.fn.max("created_at").as("max")),
+          ])
+          .as("latest"),
+      )
+      .executeTakeFirst();
+    return res?.latest ? new Date(res.latest) : null;
+  }
 }

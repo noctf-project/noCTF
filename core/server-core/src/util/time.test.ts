@@ -61,6 +61,22 @@ describe(Delay, () => {
       expect((result as { value: string }).value).toBe("not-resolved");
     });
   });
+
+  it("should resolve immediately if signal is already aborted", async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    const delayPromise = Delay(5000, controller.signal);
+    await expect(delayPromise).resolves.toBeUndefined();
+  });
+
+  it("should resolve early when signal aborts", async () => {
+    const controller = new AbortController();
+    const delayPromise = Delay(5000, controller.signal);
+
+    controller.abort();
+    await expect(delayPromise).resolves.toBeUndefined();
+  });
 });
 
 describe(IsTimeBetweenSeconds, () => {

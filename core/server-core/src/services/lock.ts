@@ -14,6 +14,12 @@ const SCRIPTS = {
 
 export class LockServiceError extends Error {}
 
+export type WithLeaseOptions = {
+  leaseDurationSeconds?: number;
+  renewIntervalSeconds?: number;
+  maxFailedRenewAttempts?: number;
+};
+
 export class LockService {
   private readonly redisClientFactory;
   private readonly logger;
@@ -25,25 +31,55 @@ export class LockService {
 
   async withLease<T>(
     name: string,
-    handler: () => Promise<T>,
-    durationSeconds = 10,
+    handler: (signal: AbortSignal) => Promise<T>,
+    options?: number | WithLeaseOptions,
   ): Promise<T> {
-    const token = await this.acquireLease(name, durationSeconds);
-    const timeout = setInterval(
-      async () => {
-        try {
-          await this.renewLease(name, token, durationSeconds);
-        } catch (e) {
-          this.logger.warn(e, "Could not renew lease on lock");
+    const opts: WithLeaseOptions =
+      typeof options === "number"
+        ? { leaseDurationSeconds: options }
+        : (options ?? {});
+
+    const leaseDurationSeconds = opts.leaseDurationSeconds ?? 10;
+    const renewIntervalSeconds =
+      opts.renewIntervalSeconds ?? leaseDurationSeconds / 3;
+    const maxFailedRenewAttempts = opts.maxFailedRenewAttempts ?? 2;
+
+    const token = await this.acquireLease(name, leaseDurationSeconds);
+    const controller = new AbortController();
+    let consecutiveFailures = 0;
+
+    const timeout = setInterval(async () => {
+      try {
+        await this.renewLease(name, token, leaseDurationSeconds);
+        consecutiveFailures = 0;
+      } catch (e) {
+        if (e instanceof LockServiceError) {
+          this.logger.error(
+            e,
+            "Lease token mismatch or lost, aborting immediately",
+          );
+          clearInterval(timeout);
+          controller.abort(e);
+          return;
         }
-      },
-      (durationSeconds * 1000) / 3,
-    );
+
+        consecutiveFailures++;
+        this.logger.warn(e, "Could not renew lease on lock");
+        if (consecutiveFailures >= maxFailedRenewAttempts) {
+          clearInterval(timeout);
+          controller.abort(new LockServiceError("Lost lease"));
+        }
+      }
+    }, renewIntervalSeconds * 1000);
     try {
-      return await handler();
+      return await handler(controller.signal);
     } finally {
-      clearTimeout(timeout);
-      await this.dropLease(name, token);
+      clearInterval(timeout);
+      try {
+        await this.dropLease(name, token);
+      } catch (e) {
+        this.logger.warn(e, "Could not drop lease on exit");
+      }
     }
   }
 

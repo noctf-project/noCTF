@@ -27,7 +27,10 @@ export class WorkerRegistry implements BaseWorker {
 
   dispose() {
     this.logger.info("Gracefully shutting down workers");
-    this.workers.forEach((w) => w.dispose());
+    this.workers.forEach((w) => {
+      this.logger.info({ worker_name: w.name }, "Disposing worker");
+      w.dispose();
+    });
     this.cancellation = setTimeout(() => {
       this.timeout?.reject(
         new Error("Worker failed to shut down within allotted timeout"),
