@@ -1,12 +1,8 @@
 import { AdminUpdateSubmissionsRequest } from "@noctf/api/requests";
 import { ServiceCradle } from "../index.ts";
-import {
-  RawSolve,
-  ReturnedSubmissionUpdate,
-  SubmissionDAO,
-} from "../dao/submission.ts";
+import { SubmissionDAO } from "../dao/submission.ts";
 import { SubmissionWeightDAO } from "../dao/submission_weight.ts";
-import { SubmissionUpdateEvent } from "@noctf/api/events";
+import { ScoreboardTriggerEvent } from "@noctf/api/events";
 import { SubmissionStatus } from "@noctf/api/enums";
 import { BadRequestError } from "../errors.ts";
 import { FilterUndefined } from "../util/filter.ts";
@@ -17,7 +13,8 @@ type Props = Pick<
   "databaseClient" | "eventBusService" | "auditLogService"
 >;
 export class SubmissionService {
-  private readonly dao;
+  private readonly submissionDAO;
+  private readonly weightDAO;
 
   private readonly databaseClient;
   private readonly eventBusService;
@@ -27,7 +24,8 @@ export class SubmissionService {
     this.databaseClient = databaseClient;
     this.eventBusService = eventBusService;
     this.auditLogService = auditLogService;
-    this.dao = new SubmissionDAO(databaseClient.get());
+    this.submissionDAO = new SubmissionDAO(databaseClient.get());
+    this.weightDAO = new SubmissionWeightDAO(databaseClient.get());
   }
 
   async listSummary(
@@ -42,7 +40,7 @@ export class SubmissionService {
     },
     limit?: { limit?: number; offset?: number },
   ) {
-    return this.dao.listSummary(params, limit);
+    return this.submissionDAO.listSummary(params, limit);
   }
 
   async getCount(params?: {
@@ -54,7 +52,7 @@ export class SubmissionService {
     challenge_id?: number[];
     data?: string;
   }) {
-    return this.dao.getCount(params);
+    return this.submissionDAO.getCount(params);
   }
 
   async update(
@@ -99,95 +97,41 @@ export class SubmissionService {
         data: JSON.stringify(audit),
       });
     }
+    await this.eventBusService.publish(ScoreboardTriggerEvent, {});
     updates.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
-    await this.sendUpdateEvents(updates);
     return updates;
   }
 
-  async listWeights(
-    params?: {
-      created_at?: [Date | null, Date | null];
-      user_id?: number[];
-      team_id?: number[];
-      status?: SubmissionStatus[];
-      hidden?: boolean;
-      challenge_id?: number[];
-      data?: string;
-    },
-    limit?: { limit?: number; offset?: number },
-  ) {
-    return await this.dao.listWeights(params, limit);
+  async listWeights(challenge_id: number, team_id?: number[]) {
+    return await this.weightDAO.listLatest(challenge_id, team_id);
   }
 
   async upsertWeightsForChallenge(
     challenge_id: number,
-    items: Pick<RawSolve, "team_id" | "weight">[],
+    items: { team_id: number; weight: number }[],
   ) {
     const map = new Map<number, (typeof items)[number]>();
     const values = items.map((v) => {
       map.set(v.team_id, v);
       return {
         team_id: v.team_id,
-        weight: v.weight,
         challenge_id,
+        source: "weight",
+        status: "correct" as SubmissionStatus,
       };
     });
     if (map.size !== items.length) {
       throw new BadRequestError("Duplicate items detected in update");
     }
 
-    const updates = await this.databaseClient.transaction(async (tx) => {
+    await this.databaseClient.transaction(async (tx) => {
       const submissionDAO = new SubmissionDAO(tx);
-      const updates = await submissionDAO.upsertWeights(values);
-      if (updates.length > 0) {
-        const weightDAO = new SubmissionWeightDAO(tx);
-        await weightDAO.create(
-          updates.map((u) => ({
-            challenge_id: u.challenge_id,
-            team_id: u.team_id,
-            weight: map.get(u.team_id)?.weight ?? 0,
-          })),
-        );
-      }
-      return updates;
+      const weightDAO = new SubmissionWeightDAO(tx);
+      await submissionDAO.create(values, true);
+      await weightDAO.create(
+        items.map(({ team_id, weight }) => ({ challenge_id, team_id, weight })),
+      );
     });
-    updates.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
-    await this.sendUpdateEvents(updates);
-    return updates;
-  }
-
-  private async sendUpdateEvents(updates: ReturnedSubmissionUpdate[]) {
-    // The DB returns the same seq if we update multiple records for the
-    // same challenge to correct at the same time.
-    const seqMap = new Map<number, number>();
-    const messages = new Array(updates.length);
-    let i = 0;
-    for (const {
-      id,
-      status,
-      user_id,
-      team_id,
-      hidden,
-      challenge_id,
-      created_at,
-      updated_at,
-      seq,
-    } of updates) {
-      const vSeq = (seqMap.get(challenge_id) || 0) + 1;
-      seqMap.set(challenge_id, vSeq);
-      messages[i++] = {
-        id,
-        user_id: user_id || undefined,
-        team_id,
-        challenge_id,
-        status,
-        created_at,
-        updated_at,
-        hidden,
-        seq: status === "correct" ? seq + vSeq : 0,
-        is_update: true,
-      };
-    }
-    await this.eventBusService.publishBatch(SubmissionUpdateEvent, messages);
+    await this.eventBusService.publish(ScoreboardTriggerEvent, {});
   }
 }

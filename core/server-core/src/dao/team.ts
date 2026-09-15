@@ -53,7 +53,9 @@ export class TeamDAO {
     join_code,
     division_id,
     flags,
-  }: Insertable<DB["team"]>): Promise<Omit<Team, "tag_ids"> & { updated_at: Date }> {
+  }: Insertable<DB["team"]>): Promise<
+    Omit<Team, "tag_ids"> & { updated_at: Date }
+  > {
     try {
       const { id, created_at, updated_at } = await this.db
         .insertInto("team")
@@ -188,9 +190,12 @@ export class TeamDAO {
     }
   }
 
-  async delete(
-    id: number,
-  ): Promise<{ id: number; division_id: number; flags: string[]; updated_at: Date }> {
+  async delete(id: number): Promise<{
+    id: number;
+    division_id: number;
+    flags: string[];
+    updated_at: Date;
+  }> {
     const result = await this.db
       .deleteFrom("team")
       .where("id", "=", id)

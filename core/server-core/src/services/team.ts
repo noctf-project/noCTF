@@ -227,11 +227,7 @@ export class TeamService {
       data: message,
       entities: [`${ActorType.TEAM}:${id}`],
     });
-    await this.publishTeamUpdate(
-      { id, ...team },
-      "update",
-      team.updated_at,
-    );
+    await this.publishTeamUpdate({ id, ...team }, "update", team.updated_at);
     return {
       join_code: j,
     };

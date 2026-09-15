@@ -14,7 +14,10 @@ import {
   ConflictError,
   ValidationError,
 } from "../../errors.ts";
-import { ChallengeUpdateEvent, SubmissionUpdateEvent } from "@noctf/api/events";
+import {
+  ChallengeUpdateEvent,
+  ScoreboardTriggerEvent,
+} from "@noctf/api/events";
 import {
   Challenge,
   ChallengeMetadata,
@@ -318,16 +321,17 @@ describe(ChallengeService, () => {
       );
     });
 
-    it("processes correct flag submission, records in db, and publishes SubmissionUpdateEvent", async () => {
+    it("processes correct flag submission, records in db, and publishes ScoreboardTrigggerEvent on correct", async () => {
       challengeDAO.get.mockResolvedValue(dummyChallenge);
       submissionDAO.getCurrentMetadata.mockResolvedValue(undefined);
 
-      submissionDAO.create.mockResolvedValue({
-        id: 99,
-        created_at: new Date(2000),
-        updated_at: new Date(2000),
-        seq: 1,
-      });
+      submissionDAO.create.mockResolvedValue([
+        {
+          id: 99,
+          created_at: new Date(2000),
+          updated_at: new Date(2000),
+        },
+      ]);
 
       const result = await service.solve(dummyChallenge, 100, 10, "flag{test}");
 
@@ -336,7 +340,7 @@ describe(ChallengeService, () => {
         created_at: new Date(2000),
       });
 
-      expect(submissionDAO.create).toHaveBeenCalledWith(
+      expect(submissionDAO.create).toHaveBeenCalledWith([
         expect.objectContaining({
           challenge_id: 1,
           team_id: 100,
@@ -344,20 +348,45 @@ describe(ChallengeService, () => {
           status: "correct",
           data: "flag{test}",
         }),
-      );
+      ]);
 
       expect(eventBusService.publish).toHaveBeenCalledWith(
-        SubmissionUpdateEvent,
-        expect.objectContaining({
-          id: 99,
-          challenge_id: 1,
-          team_id: 100,
-          user_id: 10,
-          status: "correct",
-          seq: 2,
-        }),
+        ScoreboardTriggerEvent,
+        {},
       );
     });
+  });
+
+  it("processes correct flag submission, records in db, and does not publish ScoreboardTriggerEvent for incorrect", async () => {
+    challengeDAO.get.mockResolvedValue(dummyChallenge);
+    submissionDAO.getCurrentMetadata.mockResolvedValue(undefined);
+
+    submissionDAO.create.mockResolvedValue([
+      {
+        id: 99,
+        created_at: new Date(2000),
+        updated_at: new Date(2000),
+      },
+    ]);
+
+    const result = await service.solve(dummyChallenge, 100, 10, "flag{wrong}");
+
+    expect(result).toEqual({
+      status: "incorrect",
+      created_at: new Date(2000),
+    });
+
+    expect(submissionDAO.create).toHaveBeenCalledWith([
+      expect.objectContaining({
+        challenge_id: 1,
+        team_id: 100,
+        user_id: 10,
+        status: "incorrect",
+        data: "flag{wrong}",
+      }),
+    ]);
+
+    expect(eventBusService.publish).not.toHaveBeenCalled();
   });
 
   describe("getRendered", () => {

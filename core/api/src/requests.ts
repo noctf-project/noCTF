@@ -370,9 +370,15 @@ export type AdminUpdateChallengeRequest = Static<
 
 export const AdminUpdateChallengeWeightsRequest = Type.Object(
   {
-    items: Type.Array(Type.Pick(Submission, ["team_id", "weight"]), {
-      minItems: 1,
-    }),
+    items: Type.Array(
+      Type.Object({
+        team_id: Type.Integer({ minimum: 1 }),
+        weight: Type.Integer({ minimum: -1 << 31, maximum: ~(-1 << 31) }),
+      }),
+      {
+        minItems: 1,
+      },
+    ),
   },
   { additionalProperties: false },
 );

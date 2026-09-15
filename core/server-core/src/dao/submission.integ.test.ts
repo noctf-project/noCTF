@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { SubmissionDAO } from "./submission.ts";
 import { TeamDAO } from "./team.ts";
-import { UserDAO } from "./user.ts";
-import { ChallengeDAO } from "./challenge.ts";
 import { DivisionDAO } from "./division.ts";
 import { createTestClients, TestClients } from "../test/integ-clients.ts";
 
@@ -10,16 +8,12 @@ describe(SubmissionDAO, () => {
   let clients: TestClients;
   let dao: SubmissionDAO;
   let teamDAO: TeamDAO;
-  let userDAO: UserDAO;
-  let challengeDAO: ChallengeDAO;
   let divisionDAO: DivisionDAO;
 
   beforeAll(() => {
     clients = createTestClients();
     dao = new SubmissionDAO(clients.getDb());
     teamDAO = new TeamDAO(clients.getDb());
-    userDAO = new UserDAO(clients.getDb());
-    challengeDAO = new ChallengeDAO(clients.getDb());
     divisionDAO = new DivisionDAO(clients.getDb());
   });
 
@@ -44,51 +38,35 @@ describe(SubmissionDAO, () => {
       name: "Sub Team 2",
       division_id: div.id,
     });
-    const user = await userDAO.create({ name: "sub_user" });
-
-    const chal = await challengeDAO.create({
-      title: "Misc 1",
-      slug: "misc-1",
-      description: "Easy misc",
-      tags: { category: "misc" },
-      hidden: false,
-      visible_at: null,
-      private_metadata: {
-        solve: { source: "flag" },
-        score: { strategy: "core:static", params: { base: 100 } },
-        files: [],
-      },
-    });
 
     // Team 1 first blood
-    const sub1 = await dao.create({
-      challenge_id: chal.id,
-      team_id: team1.id,
-      user_id: user,
-      source: "flag",
-      status: "correct",
-      value: 100,
-      hidden: false,
-      data: "flag{first}",
-    });
-    expect(sub1.id).toBeDefined();
-    expect(sub1.seq).toBe(0);
-
-    // Team 2 second blood
-    const sub2 = await dao.create({
-      challenge_id: chal.id,
-      team_id: team2.id,
-      user_id: user,
-      source: "flag",
-      status: "correct",
-      value: 100,
-      hidden: false,
-      data: "flag{second}",
-    });
-    expect(sub2.seq).toBe(1);
+    const sub = await dao.create([
+      {
+        challenge_id: 1,
+        team_id: team1.id,
+        user_id: 1,
+        source: "flag",
+        status: "correct",
+        value: 100,
+        hidden: false,
+        data: "flag{first}",
+      },
+      {
+        challenge_id: 1,
+        team_id: team2.id,
+        user_id: 2,
+        source: "flag",
+        status: "correct",
+        value: 100,
+        hidden: false,
+        data: "flag{second}",
+      },
+    ]);
+    expect(sub[0].id).toBeTruthy();
+    expect(sub[1].id).toBeTruthy();
 
     // Check metadata
-    const meta = await dao.getCurrentMetadata(chal.id, team1.id);
+    const meta = await dao.getCurrentMetadata(1, team1.id);
     expect(meta?.status).toBe("correct");
 
     // Check solves for calculation
@@ -99,17 +77,14 @@ describe(SubmissionDAO, () => {
     // Check stats
     const stats = await dao.listStats({
       division_id: div.id,
-      challenge_ids: [chal.id],
+      challenge_ids: [1],
     });
     expect(stats).toHaveLength(1);
     expect(stats[0].correct_count).toBe(2);
     expect(stats[0].first_solve_team_id).toBe(team1.id);
 
     // Update submissions (e.g. adjust value)
-    const updated = await dao.updateSubmissions([
-      { id: sub1.id, value: 10 },
-      { id: sub2.id, value: 20 },
-    ]);
-    expect(updated).toHaveLength(2);
+    const updated = await dao.updateSubmissions([{ id: sub[0].id, value: 10 }]);
+    expect(updated).toHaveLength(1);
   });
 });

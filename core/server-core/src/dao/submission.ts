@@ -17,8 +17,7 @@ export type RawSolve = Pick<
   | "created_at"
   | "updated_at"
   | "value"
-  | "weight"
->;
+> & { weight: number };
 
 export type ReturnedSubmissionUpdate = Pick<
   Submission,
@@ -31,11 +30,6 @@ export type ReturnedSubmissionUpdate = Pick<
   | "created_at"
   | "updated_at"
 > & { seq: number };
-
-export type SubmissionWeight = Pick<
-  Submission,
-  "id" | "team_id" | "challenge_id" | "weight" | "created_at" | "updated_at"
->;
 
 const GetSeq = (eb: ExpressionBuilder<DB, "submission">) =>
   eb
@@ -65,18 +59,17 @@ const GetSeq = (eb: ExpressionBuilder<DB, "submission">) =>
 export class SubmissionDAO {
   constructor(private readonly db: DBType) {}
 
-  async create(v: Insertable<DB["submission"]>) {
-    const data = await this.db
-      .insertInto("submission")
-      .values(v)
-      .returning((eb) => [
-        "id",
-        "created_at",
-        "updated_at",
-        GetSeq(eb).as("seq"),
-      ])
-      .executeTakeFirstOrThrow();
-    return { ...data, seq: Number(data.seq) };
+  async create(values: Insertable<DB["submission"]>[], skipIfExists?: boolean) {
+    let query = this.db.insertInto("submission").values(values);
+    if (skipIfExists) {
+      query = query.onConflict((oc) =>
+        oc
+          .columns(["challenge_id", "team_id"])
+          .where(sql`status`, "in", sql`('queued', 'correct')`)
+          .doNothing(),
+      );
+    }
+    return await query.returning(["id", "created_at", "updated_at"]).execute();
   }
 
   async getCurrentMetadata(challenge_id: number, team_id: number) {
@@ -225,7 +218,6 @@ export class SubmissionDAO {
         "source",
         "hidden",
         "value",
-        "weight",
         "status",
         "created_at",
         "updated_at",
@@ -253,9 +245,22 @@ export class SubmissionDAO {
       offset?: number;
     },
   ): Promise<RawSolve[]> {
+    // TODO: fix this abomination of a query
     let query = this.db
       .selectFrom("submission as s")
       .innerJoin("team", "s.team_id", "team.id")
+      .leftJoinLateral(
+        (eb) =>
+          eb
+            .selectFrom("submission_weight as w")
+            .select(["w.weight", "w.created_at as weight_created_at"])
+            .whereRef("w.challenge_id", "=", "s.challenge_id")
+            .whereRef("w.team_id", "=", "s.team_id")
+            .orderBy("w.created_at", "desc")
+            .limit(1)
+            .as("latest_w"),
+        (join) => join.onTrue(),
+      )
       .select([
         "s.id as id",
         "s.team_id as team_id",
@@ -263,9 +268,12 @@ export class SubmissionDAO {
         "s.challenge_id as challenge_id",
         "s.hidden as hidden",
         "s.created_at as created_at",
-        "s.updated_at as updated_at",
+        (eb) =>
+          eb.fn
+            .coalesce("latest_w.weight_created_at", "s.updated_at")
+            .as("updated_at"),
+        (eb) => eb.fn.coalesce("latest_w.weight", sql<number>`0`).as("weight"),
         "s.value as value",
-        "s.weight as weight",
       ])
       .where("s.status", "=", "correct")
       .orderBy("s.created_at", params?.sort || "asc");
@@ -346,74 +354,5 @@ export class SubmissionDAO {
       correct_count: Number(x.correct_count),
       incorrect_count: Number(x.incorrect_count),
     }));
-  }
-
-  async listWeights(
-    filters: Parameters<SubmissionDAO["listQuery"]>[0],
-    limit?: LimitOffset,
-  ): Promise<SubmissionWeight[]> {
-    const query = this.listQuery(filters, limit)
-      .select([
-        "id",
-        "team_id",
-        "challenge_id",
-        "weight",
-        "created_at",
-        "updated_at",
-      ])
-      .orderBy("id", "asc");
-
-    return query.execute();
-  }
-
-  async upsertWeights(
-    values: {
-      challenge_id: number;
-      team_id: number;
-      weight: number;
-    }[],
-  ): Promise<ReturnedSubmissionUpdate[]> {
-    return (
-      await this.db
-        .insertInto("submission")
-        .values(
-          values.map((v) => ({
-            status: "correct",
-            challenge_id: v.challenge_id,
-            team_id: v.team_id,
-            weight: v.weight,
-            source: "weight",
-          })),
-        )
-        .onConflict((oc) =>
-          oc
-            .columns(["challenge_id", "team_id"])
-            .where(sql`status`, "in", sql`('queued', 'correct')`)
-            .doUpdateSet((eb) => ({
-              status: "correct",
-              weight: eb.ref("excluded.weight"),
-              user_id: null,
-            }))
-            .where((eb) =>
-              eb.or([
-                eb("submission.status", "!=", "correct"),
-                eb("submission.weight", "!=", eb.ref("excluded.weight")),
-                eb("submission.user_id", "!=", null),
-              ]),
-            ),
-        )
-        .returning((eb) => [
-          "submission.id as id",
-          "submission.hidden as hidden",
-          "submission.status as status",
-          "user_id",
-          "team_id",
-          "challenge_id",
-          "created_at",
-          "updated_at",
-          GetSeq(eb).as("seq"),
-        ])
-        .execute()
-    ).map((x) => ({ ...x, seq: Number(x.seq) }));
   }
 }

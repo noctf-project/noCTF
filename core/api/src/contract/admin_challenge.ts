@@ -123,7 +123,7 @@ export const AdminUpdateChallengeWeights = {
     params: IdParams,
     body: AdminUpdateChallengeWeightsRequest,
     response: {
-      200: AdminListChallengeWeightsResponse,
+      200: BaseResponse,
     },
   },
 } as const satisfies RouteDef;

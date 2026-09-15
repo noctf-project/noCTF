@@ -19,7 +19,6 @@ import {
   PayloadDigestPreParsingHook,
   PayloadDigestPreValidationHook,
 } from "../hooks/payload.ts";
-import { OffsetPaginate } from "@noctf/server-core/util/paginator";
 
 const MAX_PAGE_SIZE_WEIGHTS = 2000;
 
@@ -211,22 +210,17 @@ export async function routes(fastify: FastifyInstance) {
     },
     async (request) => {
       await validateWeightKey(request);
-      const query = {
-        challenge_id: [request.params.id],
-        team_id: request.query.team_id,
+      const entries = await submissionService.listWeights(
+        request.params.id,
+        request.query.team_id,
+      );
+      return {
+        data: {
+          total: entries.length,
+          page_size: entries.length,
+          entries,
+        },
       };
-      const [result, total] = await Promise.all([
-        OffsetPaginate(
-          query,
-          request.query,
-          (q, l) => submissionService.listWeights(q, l),
-          {
-            max_page_size: MAX_PAGE_SIZE_WEIGHTS,
-          },
-        ),
-        submissionService.getCount(query),
-      ]);
-      return { data: { ...result, total } };
     },
   );
 
@@ -254,17 +248,11 @@ export async function routes(fastify: FastifyInstance) {
         }
         await validateWeightKey(request, true);
 
-        const entries = await submissionService.upsertWeightsForChallenge(
+        await submissionService.upsertWeightsForChallenge(
           request.params.id,
           request.body.items,
         );
-        return {
-          data: {
-            entries,
-            page_size: 1000,
-            total: entries.length,
-          },
-        };
+        return { data: {} };
       },
     },
   );

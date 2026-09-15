@@ -6,7 +6,10 @@ import { ChallengeDAO } from "../../dao/challenge.ts";
 import type { ServiceCradle } from "../../index.ts";
 import type { AuditLogActor } from "../../types/audit_log.ts";
 import type { ChallengePublicMetadataBase } from "@noctf/api/datatypes";
-import { ChallengeUpdateEvent, SubmissionUpdateEvent } from "@noctf/api/events";
+import {
+  ChallengeUpdateEvent,
+  ScoreboardTriggerEvent,
+} from "@noctf/api/events";
 import {
   Slug,
   type Challenge,
@@ -231,9 +234,9 @@ export class ChallengeService {
         { name: impl.name() },
         "Presolve plugin returned a valid result",
       );
-      const solved = state.status === "correct";
-      const { id, created_at, updated_at, seq } =
-        await this.submissionDAO.create({
+
+      const result = await this.submissionDAO.create([
+        {
           team_id: teamId,
           user_id: userId,
           challenge_id: challenge.id,
@@ -242,23 +245,11 @@ export class ChallengeService {
           status: state.status,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           metadata: metadata as any,
-        });
-
-      await this.eventBusService.publish(SubmissionUpdateEvent, {
-        id,
-        challenge_id: challenge.id,
-        status: state.status,
-        team_id: teamId,
-        user_id: userId,
-        updated_at,
-        created_at,
-        seq: solved ? seq + 1 : 0,
-        hidden: false,
-        is_update: false,
-      });
-      return { status: state.status, created_at };
-      // TODO: queueing, currently it is just marked as queued. probably emit
-      // TODO: to event bus
+        },
+      ]);
+      if (state.status === "correct")
+        await this.eventBusService.publish(ScoreboardTriggerEvent, {});
+      return { status: state.status, created_at: result[0]!.created_at };
     }
     throw new NotImplementedError("The challenge is not solvable");
   }
