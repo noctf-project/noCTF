@@ -1,8 +1,63 @@
-import type { CaptchaProvider } from "./provider.ts";
-import type { ServiceCradle } from "@noctf/server-core";
 import { CaptchaConfig } from "@noctf/api/config";
+import { ValidationError } from "../errors.ts";
+import type { ServiceCradle } from "../index.ts";
+import ky from "ky";
 
 type Props = Pick<ServiceCradle, "configService">;
+
+export interface CaptchaProvider {
+  id(): string;
+  validate(
+    privateKey: string,
+    response: string,
+    clientIp?: string,
+  ): Promise<number>;
+}
+
+export abstract class BaseSiteVerifyCaptchaProvider implements CaptchaProvider {
+  constructor(
+    private readonly _id: string,
+    private readonly verifyURL: string,
+  ) {}
+
+  async validate(
+    privateKey: string,
+    response: string,
+    clientIp: string,
+  ): Promise<number> {
+    const res = await ky.post(this.verifyURL, {
+      body: new URLSearchParams({
+        response,
+        remoteip: clientIp,
+        secret: privateKey,
+      }),
+    });
+    const result = await res.json<{ success: boolean; challenge_ts: string }>();
+    if (!result.success) {
+      throw new ValidationError("CAPTCHA failed validation");
+    }
+    return new Date(result.challenge_ts).valueOf();
+  }
+
+  id() {
+    return this._id;
+  }
+}
+
+export class HCaptchaProvider extends BaseSiteVerifyCaptchaProvider {
+  constructor() {
+    super("hcaptcha", "https://api.hcaptcha.com/siteverify");
+  }
+}
+
+export class CloudflareCaptchaProvider extends BaseSiteVerifyCaptchaProvider {
+  constructor() {
+    super(
+      "cloudflare",
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    );
+  }
+}
 
 export class CaptchaService {
   private readonly configService: Props["configService"];

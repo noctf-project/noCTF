@@ -54,6 +54,7 @@ import { TokenService } from "@noctf/server-core/services/token";
 import { NotificationService } from "@noctf/server-core/services/notification";
 import { AnnouncementService } from "@noctf/server-core/services/announcement";
 import { StatsService } from "@noctf/server-core/services/stats";
+import { CaptchaService } from "@noctf/server-core/services/captcha";
 
 export const server: FastifyInstance = fastify({
   logger: {
@@ -99,6 +100,7 @@ server.register(async () => {
     ).singleton(),
     announcementService: asClass(AnnouncementService).singleton(),
     cacheService: asClass(CacheService).singleton(),
+    captchaService: asClass(CaptchaService).singleton(),
     appService: asClass(AppService).singleton(),
     auditLogService: asClass(AuditLogService).singleton(),
     challengeService: asClass(ChallengeService).singleton(),
