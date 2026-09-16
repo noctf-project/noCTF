@@ -1,5 +1,5 @@
 import { Static, Type } from "@sinclair/typebox";
-import { ObjectUpdateType, SubmissionStatus } from "./enums.ts";
+import { ObjectUpdateType } from "./enums.ts";
 import {
   Announcement,
   Challenge,
@@ -9,23 +9,6 @@ import {
   TypeDate,
   User,
 } from "./datatypes.ts";
-
-export const SubmissionUpdateEvent = Type.Object(
-  {
-    id: Type.Integer(),
-    team_id: Type.Integer(),
-    user_id: Type.Optional(Type.Integer()),
-    challenge_id: Type.Integer(),
-    hidden: Type.Boolean(),
-    created_at: TypeDate,
-    updated_at: TypeDate,
-    seq: Type.Integer(),
-    is_update: Type.Boolean(),
-    status: SubmissionStatus,
-  },
-  { $id: "events.submission.update" },
-);
-export type SubmissionUpdateEvent = Static<typeof SubmissionUpdateEvent>;
 
 export const ChallengeSolveEvent = Type.Composite(
   [
@@ -62,6 +45,18 @@ export const ChallengeUpdateEvent = Type.Object(
   { $id: "events.challenge.update" },
 );
 export type ChallengeUpdateEvent = Static<typeof ChallengeUpdateEvent>;
+
+export const TeamUpdateEvent = Type.Object(
+  {
+    id: Type.Integer(),
+    division_id: Type.Integer(),
+    flags: Type.Array(Type.String()),
+    type: ObjectUpdateType,
+    updated_at: TypeDate,
+  },
+  { $id: "events.team.update" },
+);
+export type TeamUpdateEvent = Static<typeof TeamUpdateEvent>;
 
 export const ConfigUpdateEvent = Type.Object(
   {

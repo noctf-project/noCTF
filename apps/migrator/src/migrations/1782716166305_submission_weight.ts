@@ -1,14 +1,10 @@
-import type { Kysely } from "kysely";
+import { type Kysely } from "kysely";
 import { CreateTableWithDefaultTimestamps } from "../util.ts";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export async function up(db: Kysely<any>): Promise<void> {
   const schema = db.schema;
-  await schema
-    .alterTable("submission")
-    .addColumn("weight", "integer", (c) => c.notNull().defaultTo(0))
-    .execute();
 
   await schema
     .alterTable("submission")
@@ -25,6 +21,11 @@ export async function up(db: Kysely<any>): Promise<void> {
   await schema
     .alterTable("score_history")
     .dropConstraint("score_history_team_id_fkey")
+    .execute();
+  await schema
+    .createIndex("submission_idx_updated_at")
+    .on("submission")
+    .column("updated_at")
     .execute();
 
   await schema.dropTable("submission_log").execute();
@@ -66,6 +67,8 @@ export async function down(db: Kysely<any>): Promise<void> {
     .addColumn("changes", "jsonb", (col) => col.notNull().defaultTo("{}"))
     .execute();
 
+  await schema.dropIndex("submission_idx_updated_at").execute();
+
   await schema
     .alterTable("submission")
     .addForeignKeyConstraint("submission_team_id_fkey", ["team_id"], "team", [
@@ -103,6 +106,4 @@ export async function down(db: Kysely<any>): Promise<void> {
     )
     .onDelete("cascade")
     .execute();
-
-  await schema.alterTable("submission").dropColumn("weight").execute();
 }

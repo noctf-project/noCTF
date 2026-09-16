@@ -7,11 +7,12 @@ import { ActorType } from "../types/enums.ts";
 import { TeamConfig } from "@noctf/api/config";
 import { TeamDAO } from "../dao/team.ts";
 import { LocalCache } from "../util/local_cache.ts";
-import { TeamMembership } from "@noctf/api/datatypes";
+import { TeamMembership, TeamSummary } from "@noctf/api/datatypes";
 import { TeamTagDAO } from "../dao/team_tag.ts";
+import { TeamUpdateEvent } from "@noctf/api/events";
 type Props = Pick<
   ServiceCradle,
-  "configService" | "databaseClient" | "auditLogService"
+  "configService" | "databaseClient" | "auditLogService" | "eventBusService"
 >;
 
 const GenerateJoinCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 16);
@@ -20,6 +21,7 @@ export class TeamService {
   private readonly auditLogService;
   private readonly databaseClient;
   private readonly configService;
+  private readonly eventBusService;
 
   private readonly teamDAO;
   private readonly teamTagDAO;
@@ -31,10 +33,16 @@ export class TeamService {
     ttl: 10000,
   });
 
-  constructor({ configService, databaseClient, auditLogService }: Props) {
+  constructor({
+    configService,
+    databaseClient,
+    auditLogService,
+    eventBusService,
+  }: Props) {
     this.databaseClient = databaseClient;
     this.auditLogService = auditLogService;
     this.configService = configService;
+    this.eventBusService = eventBusService;
     this.teamDAO = new TeamDAO(databaseClient.get());
     this.teamTagDAO = new TeamTagDAO(databaseClient.get());
     void this.init();
@@ -139,7 +147,30 @@ export class TeamService {
       data: message,
       entities: [`${ActorType.TEAM}:${team.id}`],
     });
+    await this.publishTeamUpdate(
+      {
+        id: team.id,
+        division_id: team.division_id,
+        flags: team.flags,
+      },
+      "create",
+      team.updated_at,
+    );
     return { ...team, tag_ids };
+  }
+
+  private async publishTeamUpdate(
+    team: Pick<TeamSummary, "id" | "division_id" | "flags">,
+    type: "create" | "update" | "delete",
+    updated_at: Date,
+  ) {
+    await this.eventBusService.publish(TeamUpdateEvent, {
+      id: team.id,
+      division_id: team.division_id,
+      flags: team.flags,
+      type,
+      updated_at,
+    });
   }
 
   async update(
@@ -170,11 +201,11 @@ export class TeamService {
       j = null;
     }
 
-    await this.databaseClient.transaction(async (tx) => {
+    const team = await this.databaseClient.transaction(async (tx) => {
       const teamDAO = new TeamDAO(tx);
       const teamTagDAO = new TeamTagDAO(tx);
 
-      await teamDAO.update(id, {
+      const team = await teamDAO.update(id, {
         name,
         bio,
         country,
@@ -187,6 +218,7 @@ export class TeamService {
         await teamTagDAO.unassignAll(id);
         await teamTagDAO.assign(id, tag_ids);
       }
+      return team;
     });
 
     await this.auditLogService.log({
@@ -195,6 +227,7 @@ export class TeamService {
       data: message,
       entities: [`${ActorType.TEAM}:${id}`],
     });
+    await this.publishTeamUpdate({ id, ...team }, "update", team.updated_at);
     return {
       join_code: j,
     };
@@ -231,13 +264,14 @@ export class TeamService {
   }
 
   async delete(id: number, { actor, message }: AuditParams = {}) {
-    await this.teamDAO.delete(id);
+    const team = await this.teamDAO.delete(id);
     await this.auditLogService.log({
       actor,
       operation: "team.delete",
       entities: [`${ActorType.TEAM}:${id}`],
       data: message,
     });
+    await this.publishTeamUpdate(team, "delete", team.updated_at);
   }
 
   /**

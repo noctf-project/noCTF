@@ -6,10 +6,12 @@ import { TeamService } from "./team.ts";
 import { ConfigService } from "./config.ts";
 import { DatabaseClient } from "../clients/database.ts";
 import { AuditLogService } from "./audit_log.ts";
+import { EventBusService } from "./event_bus.ts";
 import { TeamDAO } from "../dao/team.ts";
 import { TeamTagDAO } from "../dao/team_tag.ts";
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors.ts";
 import { ActorType, TeamFlag } from "../types/enums.ts";
+import { TeamUpdateEvent } from "@noctf/api/events";
 
 vi.mock(import("../dao/team.ts"));
 vi.mock(import("../dao/team_tag.ts"));
@@ -18,6 +20,7 @@ describe(TeamService, () => {
   let configService: DeepMockProxy<ConfigService>;
   let databaseClient: DeepMockProxy<DatabaseClient>;
   let auditLogService: DeepMockProxy<AuditLogService>;
+  let eventBusService: DeepMockProxy<EventBusService>;
   let teamDAO: DeepMockProxy<TeamDAO>;
   let teamTagDAO: DeepMockProxy<TeamTagDAO>;
   let service: TeamService;
@@ -26,6 +29,7 @@ describe(TeamService, () => {
     configService = mockDeep<ConfigService>();
     databaseClient = mockDeep<DatabaseClient>();
     auditLogService = mockDeep<AuditLogService>();
+    eventBusService = mockDeep<EventBusService>();
     teamDAO = mockDeep<TeamDAO>();
     teamTagDAO = mockDeep<TeamTagDAO>();
 
@@ -50,6 +54,7 @@ describe(TeamService, () => {
       configService,
       databaseClient,
       auditLogService,
+      eventBusService,
     });
   });
 
@@ -68,6 +73,7 @@ describe(TeamService, () => {
         country: null,
         join_code: null,
         created_at: new Date(1000),
+        updated_at: new Date(1000),
       });
 
       const result = await service.create(
@@ -94,6 +100,13 @@ describe(TeamService, () => {
       });
       expect(result.id).toBe(1);
       expect(result.tag_ids).toEqual([10, 20]);
+      expect(eventBusService.publish).toHaveBeenCalledWith(TeamUpdateEvent, {
+        id: 1,
+        division_id: 1,
+        flags: [],
+        type: "create",
+        updated_at: new Date(1000),
+      });
     });
 
     it("generates a join code when generate_join_code is true", async () => {
@@ -106,6 +119,7 @@ describe(TeamService, () => {
         country: null,
         join_code: "ABC123XYZ",
         created_at: new Date(1000),
+        updated_at: new Date(1000),
       });
 
       await service.create({
@@ -119,6 +133,72 @@ describe(TeamService, () => {
           join_code: expect.any(String),
         }),
       );
+    });
+  });
+
+  describe("update", () => {
+    it("updates a team, audits and publishes TeamUpdateEvent", async () => {
+      teamDAO.update.mockResolvedValue({
+        division_id: 2,
+        flags: [],
+        updated_at: new Date(2000),
+      });
+
+      await service.update(
+        1,
+        {
+          name: "CyberTeam2",
+          division_id: 2,
+          tag_ids: [10, 30],
+        },
+        { actor: { type: ActorType.USER, id: 99 }, message: "updated" },
+      );
+
+      expect(teamDAO.update).toHaveBeenCalled();
+      expect(auditLogService.log).toHaveBeenCalledWith({
+        operation: "team.update",
+        actor: { type: ActorType.USER, id: 99 },
+        data: "updated",
+        entities: ["team:1"],
+      });
+      expect(eventBusService.publish).toHaveBeenCalledWith(TeamUpdateEvent, {
+        id: 1,
+        division_id: 2,
+        flags: [],
+        type: "update",
+        updated_at: new Date(2000),
+      });
+    });
+  });
+
+  describe("delete", () => {
+    it("deletes a team, audits and publishes TeamUpdateEvent", async () => {
+      teamDAO.delete.mockResolvedValue({
+        id: 1,
+        division_id: 1,
+        flags: [],
+        updated_at: new Date(3000),
+      });
+
+      await service.delete(1, {
+        actor: { type: ActorType.USER, id: 99 },
+        message: "removed",
+      });
+
+      expect(teamDAO.delete).toHaveBeenCalledWith(1);
+      expect(auditLogService.log).toHaveBeenCalledWith({
+        actor: { type: ActorType.USER, id: 99 },
+        operation: "team.delete",
+        entities: ["team:1"],
+        data: "removed",
+      });
+      expect(eventBusService.publish).toHaveBeenCalledWith(TeamUpdateEvent, {
+        id: 1,
+        division_id: 1,
+        flags: [],
+        type: "delete",
+        updated_at: new Date(3000),
+      });
     });
   });
 

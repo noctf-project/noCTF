@@ -9,7 +9,7 @@ export class SubmissionWeightDAO {
     return await this.db.insertInto("submission_weight").values(v).execute();
   }
 
-  async listByChallenge(challenge_id: number, team_id?: number) {
+  async listAll(challenge_id: number, team_id?: number) {
     let query = this.db
       .selectFrom("submission_weight")
       .select(["challenge_id", "team_id", "weight", "created_at"])
@@ -21,12 +21,18 @@ export class SubmissionWeightDAO {
     return query.execute();
   }
 
-  async listLatestByChallenge(challenge_id: number) {
-    return this.db
+  async listLatest(challenge_id: number, team_id?: number[]) {
+    let query = this.db
       .selectFrom("submission_weight")
       .select(["challenge_id", "team_id", "weight", "created_at"])
       .distinctOn(["challenge_id", "team_id"])
-      .where("challenge_id", "=", challenge_id)
+      .where("challenge_id", "=", challenge_id);
+
+    if (team_id) {
+      query = query.where("team_id", "in", team_id);
+    }
+
+    return await query
       .orderBy("challenge_id")
       .orderBy("team_id")
       .orderBy("created_at", "desc")

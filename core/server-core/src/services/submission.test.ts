@@ -7,7 +7,7 @@ import { AuditLogService } from "./audit_log.ts";
 import { SubmissionDAO } from "../dao/submission.ts";
 import { SubmissionWeightDAO } from "../dao/submission_weight.ts";
 import { BadRequestError } from "../errors.ts";
-import { SubmissionUpdateEvent } from "@noctf/api/events";
+import { ScoreboardTriggerEvent } from "@noctf/api/events";
 import { ActorType } from "../types/enums.ts";
 
 import type { DB } from "@noctf/schema";
@@ -150,23 +150,9 @@ describe(SubmissionService, () => {
       expect(result[0].id).toBe(1);
       expect(result[1].id).toBe(2);
 
-      // Should publish events
-      expect(eventBusService.publishBatch).toHaveBeenCalledWith(
-        SubmissionUpdateEvent,
-        expect.arrayContaining([
-          expect.objectContaining({
-            id: 1,
-            status: "correct",
-            seq: 2,
-            is_update: true,
-          }),
-          expect.objectContaining({
-            id: 2,
-            status: "incorrect",
-            seq: 0,
-            is_update: true,
-          }),
-        ]),
+      expect(eventBusService.publish).toHaveBeenCalledWith(
+        ScoreboardTriggerEvent,
+        {},
       );
     });
   });
@@ -183,34 +169,22 @@ describe(SubmissionService, () => {
       );
     });
 
-    it("upserts weights, records weight rows, and publishes update events", async () => {
+    it("upserts weights, records weight rows, and publishes scoreboard triger", async () => {
       const items = [{ team_id: 1, weight: 100 }];
 
-      submissionDAO.upsertWeights.mockResolvedValue([
-        {
-          id: 42,
-          hidden: false,
-          status: "correct",
-          user_id: 5,
-          team_id: 1,
-          challenge_id: 10,
-          created_at: new Date(1000),
-          updated_at: new Date(2000),
-          seq: 1,
-        },
-      ]);
+      await service.upsertWeightsForChallenge(10, items);
 
-      const result = await service.upsertWeightsForChallenge(10, items);
-
-      expect(submissionDAO.upsertWeights).toHaveBeenCalledWith([
-        { challenge_id: 10, team_id: 1, weight: 100 },
-      ]);
+      expect(submissionDAO.create).toHaveBeenCalledWith(
+        [{ challenge_id: 10, team_id: 1, status: "correct", source: "weight" }],
+        true,
+      );
       expect(submissionWeightDAO.create).toHaveBeenCalledWith([
         { challenge_id: 10, team_id: 1, weight: 100 },
       ]);
-      expect(eventBusService.publishBatch).toHaveBeenCalled();
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(42);
+      expect(eventBusService.publish).toHaveBeenCalledWith(
+        ScoreboardTriggerEvent,
+        {},
+      );
     });
   });
 
