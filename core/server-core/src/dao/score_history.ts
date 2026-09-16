@@ -1,39 +1,35 @@
 import { sql } from "kysely";
 import { DBType } from "../clients/database.ts";
 import { ScoreboardEntry } from "@noctf/api/datatypes";
+import { buildUnnest } from "./util.ts";
 
 export type HistoryDataPoint = Pick<
   ScoreboardEntry,
   "team_id" | "score" | "updated_at"
 >;
 
-// Postgres supports 65535 parameters
-// since we are pushing 3 params per request roughly 20k requests will fit in a chunk
-const ADD_CHUNK_SIZE = 20000;
-
 export class ScoreHistoryDAO {
   constructor(private readonly db: DBType) {}
 
   async add(entries: { team_id: number; updated_at?: Date; score: number }[]) {
     if (!entries.length) return;
-    for (let i = 0; i < entries.length; i += ADD_CHUNK_SIZE) {
-      const values = entries
-        .slice(i, i + ADD_CHUNK_SIZE)
-        .map(({ team_id, updated_at, score }) => ({
-          team_id,
-          updated_at: updated_at || sql<Date>`CURRENT_TIMESTAMP::timestamp(1)`,
-          score,
-        }));
-      await this.db
-        .insertInto("score_history")
-        .values(values)
-        .onConflict((o) =>
-          o.columns(["team_id", "updated_at"]).doUpdateSet({
-            score: (eb) => eb.ref("excluded.score"),
-          }),
-        )
-        .execute();
-    }
+
+    const unnest = buildUnnest(entries, {
+      team_id: "integer",
+      updated_at: {
+        type: "timestamptz",
+        default: sql`CURRENT_TIMESTAMP::timestamp(1)`,
+      },
+      score: "integer",
+    });
+
+    await sql`
+      INSERT INTO score_history (${unnest.columns})
+      SELECT ${unnest.selectColumns}
+      FROM ${unnest.source}
+      ON CONFLICT (team_id, updated_at)
+      DO UPDATE SET score = EXCLUDED.score
+    `.execute(this.db);
   }
 
   async flushAll() {

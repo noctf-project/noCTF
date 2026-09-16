@@ -6,6 +6,7 @@ import { SubmissionStatus } from "@noctf/api/enums";
 import { PostgresErrorCode, TryPGConstraintError } from "../util/pgerror.ts";
 import { ConflictError } from "../errors.ts";
 import { ExpressionBuilder } from "kysely";
+import { buildUnnest } from "./util.ts";
 
 export type RawSolve = Pick<
   Submission,
@@ -60,16 +61,56 @@ export class SubmissionDAO {
   constructor(private readonly db: DBType) {}
 
   async create(values: Insertable<DB["submission"]>[], skipIfExists?: boolean) {
-    let query = this.db.insertInto("submission").values(values);
-    if (skipIfExists) {
-      query = query.onConflict((oc) =>
-        oc
-          .columns(["challenge_id", "team_id"])
-          .where(sql`status`, "in", sql`('queued', 'correct')`)
-          .doNothing(),
-      );
+    if (!values.length) return [];
+    if (values.length === 1) {
+      let query = this.db.insertInto("submission").values(values);
+      if (skipIfExists) {
+        query = query.onConflict((oc) =>
+          oc
+            .columns(["challenge_id", "team_id"])
+            .where(sql`status`, "in", sql`('queued', 'correct')`)
+            .doNothing(),
+        );
+      }
+      return await query
+        .returning(["id", "created_at", "updated_at"])
+        .execute();
     }
-    return await query.returning(["id", "created_at", "updated_at"]).execute();
+
+    const unnest = buildUnnest(values, {
+      challenge_id: "integer",
+      team_id: "integer",
+      user_id: "integer",
+      source: { type: "text", default: sql`''` },
+      status: "submission_status",
+      data: { type: "text", default: sql`''` },
+      value: "integer",
+      metadata: {
+        type: "jsonb",
+        default: sql`'{}'::jsonb`,
+        get: (v) =>
+          v.metadata === undefined
+            ? null
+            : typeof v.metadata === "string"
+              ? v.metadata
+              : JSON.stringify(v.metadata),
+      },
+      hidden: { type: "boolean", default: sql`false` },
+    });
+
+    const onConflictClause = skipIfExists
+      ? sql`ON CONFLICT (challenge_id, team_id) WHERE status IN ('queued', 'correct') DO NOTHING`
+      : sql``;
+
+    return await sql<{ id: number; created_at: Date; updated_at: Date }>`
+      INSERT INTO submission (${unnest.columns})
+      SELECT ${unnest.selectColumns}
+      FROM ${unnest.source}
+      ${onConflictClause}
+      RETURNING id, created_at, updated_at
+    `
+      .execute(this.db)
+      .then((r) => r.rows);
   }
 
   async getCurrentMetadata(challenge_id: number, team_id: number) {
@@ -90,24 +131,26 @@ export class SubmissionDAO {
       value?: number | null;
     }[],
   ): Promise<ReturnedSubmissionUpdate[]> {
-    const vs = sql.join(
-      values.map(
-        (v) => sql`(
-        ${sql.val(v.id)}::integer,
-        ${sql.val(v.hidden)}::boolean,
-        ${sql.val(v.status)}::submission_status,
-        ${sql.val(v.value)}::integer,
-        ${sql.val(!!v.value || v.value === 0 || v.value === null)}::boolean
-        )`,
-      ),
+    if (!values.length) return [];
+
+    const unnest = buildUnnest(
+      values,
+      {
+        id: "integer",
+        hidden: "boolean",
+        status: "submission_status",
+        value: "integer",
+        update_value: {
+          type: "boolean",
+          get: (v) => !!v.value || v.value === 0 || v.value === null,
+        },
+      },
+      "v",
     );
+
     const query = this.db
       .updateTable("submission")
-      .from(
-        sql`(VALUES ${vs})`.as<"v">(
-          sql`v(id, hidden, status, value, update_value)`,
-        ),
-      )
+      .from(unnest.asTable("v"))
       .set((eb) => ({
         hidden: sql`COALESCE(v.hidden, ${eb.ref("submission.hidden")})`,
         status: sql`COALESCE(v.status, ${eb.ref("submission.status")})`,
