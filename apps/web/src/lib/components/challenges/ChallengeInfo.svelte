@@ -379,6 +379,14 @@
                       >
                         {team?.name}
                       </a>
+                    {:catch}
+                      <a
+                        href="/teams/{teamId}"
+                        title="Team name unavailable"
+                        class="block truncate hover:text-primary-focus"
+                      >
+                        Team #{teamId}
+                      </a>
                     {/await}
                   </td>
                   {#if showScores}
