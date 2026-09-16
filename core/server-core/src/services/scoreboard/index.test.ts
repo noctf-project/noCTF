@@ -15,6 +15,7 @@ import { RedisClientFactory } from "../../clients/redis.ts";
 import { Logger } from "../../types/primitives.ts";
 import { Expression } from "expr-eval";
 import { ChallengePrivateMetadataBase } from "@noctf/api/datatypes";
+import { EventBusService } from "../event_bus.ts";
 
 vi.mock(import("../../dao/division.ts"));
 vi.mock(import("../../dao/award.ts"));
@@ -29,6 +30,7 @@ describe(ScoreboardService, () => {
   let scoreService: DeepMockProxy<ScoreService>;
   let databaseClient: DeepMockProxy<DatabaseClient>;
   let redisClientFactory: DeepMockProxy<RedisClientFactory>;
+  let eventBusService: DeepMockProxy<EventBusService>;
   let logger: DeepMockProxy<Logger>;
 
   let scoreboardDataLoader: DeepMockProxy<ScoreboardDataLoader>;
@@ -46,6 +48,7 @@ describe(ScoreboardService, () => {
     scoreService = mockDeep<ScoreService>();
     databaseClient = mockDeep<DatabaseClient>();
     redisClientFactory = mockDeep<RedisClientFactory>();
+    eventBusService = mockDeep<EventBusService>();
     logger = mockDeep<Logger>();
 
     scoreboardDataLoader = mockDeep<ScoreboardDataLoader>();
@@ -80,6 +83,7 @@ describe(ScoreboardService, () => {
       scoreService,
       databaseClient,
       redisClientFactory,
+      eventBusService,
       logger,
     });
   });

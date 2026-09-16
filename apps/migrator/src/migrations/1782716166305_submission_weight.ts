@@ -32,18 +32,20 @@ export async function up(db: Kysely<any>): Promise<void> {
   await CreateTableWithDefaultTimestamps(schema, "submission_weight", [
     "created_at",
   ])
-    .addColumn("challenge_id", "integer", (col) =>
-      col.notNull().references("challenge.id").onDelete("cascade"),
-    )
-    .addColumn("team_id", "integer", (col) =>
-      col.notNull().references("team.id").onDelete("cascade"),
-    )
+    .addColumn("challenge_id", "integer", (col) => col.notNull())
+    .addColumn("team_id", "integer", (col) => col.notNull())
     .addColumn("weight", "integer", (col) => col.notNull())
     .addPrimaryKeyConstraint("submission_weight_pkey", [
       "challenge_id",
       "team_id",
       "created_at",
     ])
+    .execute();
+
+  await schema
+    .createIndex("submission_weight_idx_created_at")
+    .on("submission_weight")
+    .column("created_at")
     .execute();
 }
 

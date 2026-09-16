@@ -2,7 +2,6 @@ import type { Static } from "@sinclair/typebox";
 import { Type } from "@sinclair/typebox";
 import { EmailAddress, ScoringStrategy } from "./datatypes.ts";
 import { CaptchaHTTPMethod } from "./types.ts";
-import { SubmissionStatus } from "./enums.ts";
 
 export const TeamConfig = Type.Object(
   {
@@ -190,7 +189,7 @@ export type EmailConfig = Static<typeof EmailConfig>;
 
 export const NotificationConfig = Type.Object(
   {
-    submission: Type.Optional(
+    solve: Type.Optional(
       Type.Array(
         Type.Object({
           url: Type.String({ format: "uri", title: "Webhook URL" }),
@@ -208,14 +207,6 @@ export const NotificationConfig = Type.Object(
           division_ids: Type.Optional(
             Type.Array(Type.Number(), { title: "Division Filter" }),
           ),
-          status_filter: Type.Optional(
-            Type.Array(SubmissionStatus, {
-              title: "Submission Status Filter",
-              description:
-                "Only send notifications for these statuses if filter is defined",
-              uniqueItems: true,
-            }),
-          ),
           max_seq: Type.Optional(
             Type.Integer({
               title: "Maximum solve count",
@@ -226,7 +217,7 @@ export const NotificationConfig = Type.Object(
           ),
           enabled: Type.Boolean({ title: "Enabled" }),
         }),
-        { title: "Submission Notifications" },
+        { title: "Solve Notifications" },
       ),
     ),
     announcement: Type.Optional(

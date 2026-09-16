@@ -76,6 +76,7 @@ server.register(fastifyCors, {
   origin: CompileDomainMatcher(ALLOWED_ORIGINS),
   credentials: true,
   maxAge: 86400,
+  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
 });
 
 server.register(async () => {

@@ -1,6 +1,14 @@
 import { Static, Type } from "@sinclair/typebox";
 import { ObjectUpdateType, SubmissionStatus } from "./enums.ts";
-import { Announcement, EmailAddressOrUserId, TypeDate } from "./datatypes.ts";
+import {
+  Announcement,
+  Challenge,
+  EmailAddressOrUserId,
+  Solve,
+  Team,
+  TypeDate,
+  User,
+} from "./datatypes.ts";
 
 export const SubmissionUpdateEvent = Type.Object(
   {
@@ -18,6 +26,18 @@ export const SubmissionUpdateEvent = Type.Object(
   { $id: "events.submission.update" },
 );
 export type SubmissionUpdateEvent = Static<typeof SubmissionUpdateEvent>;
+
+export const ChallengeSolveEvent = Type.Composite(
+  [
+    Solve,
+    Type.Object({
+      seq: Type.Integer(),
+      division_id: Type.Integer(),
+    }),
+  ],
+  { $id: "events.challenge.solve" },
+);
+export type ChallengeSolveEvent = Static<typeof ChallengeSolveEvent>;
 
 export const AnnouncementUpdateEvent = Type.Composite(
   [
@@ -94,4 +114,14 @@ export const NotificationQueueWebhookEvent = Type.Object(
 );
 export type NotificationQueueWebhookEvent = Static<
   typeof NotificationQueueWebhookEvent
+>;
+
+export const OutgoingSolveWebhookGeneric = Type.Object({
+  challenge: Type.Pick(Challenge, ["id", "title"]),
+  team: Type.Pick(Team, ["id", "title"]),
+  user: Type.Optional(Type.Pick(User, ["id", "name"])),
+  event: ChallengeSolveEvent,
+});
+export type OutgoingSolveWebhookGeneric = Static<
+  typeof OutgoingSolveWebhookGeneric
 >;

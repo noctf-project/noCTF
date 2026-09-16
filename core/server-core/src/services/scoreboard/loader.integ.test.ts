@@ -38,6 +38,7 @@ describe(ScoreboardDataLoader, () => {
         hidden: false,
         solves: [
           {
+            id: 1,
             user_id: 1,
             challenge_id: 10,
             value: 500,
@@ -57,6 +58,7 @@ describe(ScoreboardDataLoader, () => {
         hidden: false,
         solves: [
           {
+            id: 2,
             user_id: 2,
             challenge_id: 10,
             value: 300,
@@ -92,6 +94,7 @@ describe(ScoreboardDataLoader, () => {
 
     const challengeSolves: Solve[] = [
       {
+        id: 1,
         team_id: 101,
         user_id: 1,
         challenge_id: 10,
@@ -100,6 +103,7 @@ describe(ScoreboardDataLoader, () => {
         hidden: false,
       },
       {
+        id: 2,
         team_id: 102,
         user_id: 2,
         challenge_id: 10,

@@ -19,17 +19,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Install pnpm
+      - name: Read Node version
+        id: nvm
+        run: echo "version=$(cat .nvmrc)" >> $GITHUB_OUTPUT
+
+      - name: Install pnpm and deps
         uses: pnpm/setup@v2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
         with:
-          node-version: 26
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+          runtime: node@${{ steps.nvm.outputs.version }}
+          cache: true
 
       - name: Format Check
         run: pnpm format:check

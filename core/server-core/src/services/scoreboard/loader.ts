@@ -421,6 +421,20 @@ export class ScoreboardDataLoader {
     );
   }
 
+  async getNotifiedSolves() {
+    const client = await this.factory.getClient();
+    return await client.get(
+      client.commandOptions({ returnBuffers: true }),
+      `${CACHE_NAMESPACE}:notified_solves`,
+    );
+  }
+
+  async saveNotifiedSolves(data?: Buffer) {
+    const client = await this.factory.getClient();
+    if (!data) return await client.del(`${CACHE_NAMESPACE}:notified_solves`);
+    return await client.set(`${CACHE_NAMESPACE}:notified_solves`, data);
+  }
+
   private getDivisionString(division: number) {
     return `${CACHE_NAMESPACE}:d:${division}`;
   }

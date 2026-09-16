@@ -11,6 +11,7 @@ allowBuilds:
   '@sveltejs/kit': true
   cbor-extract: true
   esbuild: true
+  roaring: true
 
 # sometimes dependencies dont update their ts
 # since dev dep, always safe to override
@@ -46,6 +47,7 @@ catalog:
   "vitest": ^5.0.0
   "nanoid": ^6.0.1
   "p-limit": ^7.3.2
+  "roaring": ^2.7.0
   "@vitest/coverage-v8": ^5.0.0
   "vitest-mock-extended": ^5.1.1
   "openapi-typescript": "^7.13.0"
