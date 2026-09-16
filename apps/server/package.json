@@ -32,7 +32,8 @@
     "fastify": "catalog:",
     "http-message-signatures": "^1.0.6",
     "kysely": "catalog:",
-    "nanoid": "catalog:"
+    "nanoid": "catalog:",
+    "roaring": "catalog:"
   },
   "type": "module",
   "devDependencies": {

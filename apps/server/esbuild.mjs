@@ -38,6 +38,7 @@ await esbuild.build({
   outdir: "dist/",
   outExtension: { ".js": ".cjs" },
   platform: "node",
+  external: ["roaring"],
   format: "cjs",
   plugins: [dirnamePlugin],
 });
