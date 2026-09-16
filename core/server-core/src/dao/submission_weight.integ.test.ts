@@ -34,4 +34,19 @@ describe(SubmissionWeightDAO, () => {
     expect(latest.find((r) => r.team_id === 1)?.weight).toBe(25);
     expect(latest.find((r) => r.team_id === 2)?.weight).toBe(40);
   });
+
+  it("handles batch insert with unnest for multiple rows", async () => {
+    const items = Array.from({ length: 250 }, (_, i) => ({
+      challenge_id: 2,
+      team_id: i + 1,
+      weight: (i + 1) * 10,
+    }));
+
+    await dao.create(items);
+
+    const latest = await dao.listLatest(2);
+    expect(latest).toHaveLength(250);
+    expect(latest.find((r) => r.team_id === 10)?.weight).toBe(100);
+    expect(latest.find((r) => r.team_id === 250)?.weight).toBe(2500);
+  });
 });

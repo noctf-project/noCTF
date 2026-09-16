@@ -56,4 +56,42 @@ describe(ScoreHistoryDAO, () => {
     const afterFlush = await dao.getByTeams([team.id]);
     expect(afterFlush).toHaveLength(0);
   });
+
+  it("handles batch upsert with default timestamps, on-conflict updates, and hundreds of entries", async () => {
+    const teamCount = 300;
+    const baseTeamId = 10000;
+    const teamIds = Array.from({ length: teamCount }, (_, i) => baseTeamId + i);
+
+    // 1. Insert hundreds of entries without explicit updated_at (tests default timestamp & unnest arrays)
+    await dao.add(teamIds.map((id, idx) => ({ team_id: id, score: idx * 10 })));
+
+    const scores = await dao.getByTeams(teamIds);
+    expect(scores).toHaveLength(teamCount);
+
+    // 2. Test ON CONFLICT DO UPDATE: upsert with identical (team_id, updated_at)
+    const fixedTime = new Date("2026-01-01T00:00:00Z");
+    const testIds = teamIds.slice(0, 10);
+    await dao.add(
+      testIds.map((id) => ({
+        team_id: id,
+        score: 50,
+        updated_at: fixedTime,
+      })),
+    );
+
+    // Upsert same timestamps with new score
+    await dao.add(
+      testIds.map((id) => ({
+        team_id: id,
+        score: 999,
+        updated_at: fixedTime,
+      })),
+    );
+
+    const updatedScores = await dao.getByTeams(testIds, fixedTime, fixedTime);
+    expect(updatedScores).toHaveLength(10);
+    for (const entry of updatedScores) {
+      expect(entry.score).toBe(999);
+    }
+  });
 });
