@@ -51,6 +51,7 @@ export const ScoreboardCalculatorWorker = async (
           return await RunLockedScoreboardCalculator(c, {
             recompute_graph: (data.data as ScoreboardTriggerEvent)
               .recompute_graph,
+            updated_at: data.timestamp,
           });
         }
         if (data.subject === ConfigUpdateEvent.$id!) {

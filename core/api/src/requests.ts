@@ -377,6 +377,7 @@ export const AdminUpdateChallengeWeightsRequest = Type.Object(
       }),
       {
         minItems: 1,
+        maxItems: 2000,
       },
     ),
   },

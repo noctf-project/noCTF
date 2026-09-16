@@ -9,7 +9,7 @@ import {
   AdminUpdateChallenge,
   AdminUpdateChallengeWeights,
 } from "@noctf/api/contract/admin_challenge";
-import { BadRequestError, UnauthorizedError } from "@noctf/server-core/errors";
+import { UnauthorizedError } from "@noctf/server-core/errors";
 import { ActorType } from "@noctf/server-core/types/enums";
 import { route } from "@noctf/server-core/util/route";
 import { createVerifier, httpbis } from "http-message-signatures";
@@ -19,8 +19,6 @@ import {
   PayloadDigestPreParsingHook,
   PayloadDigestPreValidationHook,
 } from "../hooks/payload.ts";
-
-const MAX_PAGE_SIZE_WEIGHTS = 2000;
 
 export function FilterUndefinedHeaders(
   headers: IncomingHttpHeaders,
@@ -239,12 +237,6 @@ export async function routes(fastify: FastifyInstance) {
       handler: async (request) => {
         if (!request.digests) {
           throw new UnauthorizedError("No content-digest provided");
-        }
-        if (request.body.items.length > MAX_PAGE_SIZE_WEIGHTS) {
-          throw new BadRequestError(
-            "TooManyItems",
-            `number of items in request should be less than ${MAX_PAGE_SIZE_WEIGHTS}`,
-          );
         }
         await validateWeightKey(request, true);
 
