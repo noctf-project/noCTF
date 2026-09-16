@@ -1,7 +1,6 @@
 import { LRUCache } from "lru-cache";
 import client from "$lib/api/index.svelte";
 import type { PathResponse } from "$lib/api/types";
-import { SvelteSet } from "svelte/reactivity";
 
 const DEBOUNCE_INTERVAL = 64;
 const MAXIMUM_QUERIES = 60;
@@ -12,7 +11,8 @@ export type User = PathResponse<
 >["data"]["entries"][number];
 
 export class UserQueryService {
-  private queue: SvelteSet<number> = new SvelteSet();
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity
+  private queue: Set<number> = new Set();
   private resolveQueue: [number, (r: User) => void, (r?: unknown) => void][] =
     [];
   private debounce: ReturnType<typeof setTimeout> | null = null;
@@ -75,7 +75,8 @@ export class UserQueryService {
   private async fetch() {
     const ids = this.queue;
     const resolveQueue = this.resolveQueue;
-    this.queue = new SvelteSet();
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
+    this.queue = new Set();
     this.resolveQueue = [];
     if (this.debounce) clearTimeout(this.debounce);
     this.debounce = null;
