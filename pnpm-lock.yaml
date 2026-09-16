@@ -368,6 +368,9 @@ importers:
       nanoid:
         specifier: 'catalog:'
         version: 6.0.1
+      roaring:
+        specifier: 'catalog:'
+        version: 2.7.0(supports-color@10.2.2)
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
