@@ -60,6 +60,7 @@ describe(TeamService, () => {
 
   afterEach(() => {
     vi.resetAllMocks();
+    vi.useRealTimers();
   });
 
   describe("create", () => {
@@ -179,7 +180,7 @@ describe(TeamService, () => {
         flags: [],
         updated_at: new Date(3000),
       });
-
+      vi.setSystemTime(4000);
       await service.delete(1, {
         actor: { type: ActorType.USER, id: 99 },
         message: "removed",
@@ -197,7 +198,7 @@ describe(TeamService, () => {
         division_id: 1,
         flags: [],
         type: "delete",
-        updated_at: new Date(3000),
+        updated_at: new Date(4000),
       });
     });
   });

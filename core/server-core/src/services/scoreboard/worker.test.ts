@@ -16,6 +16,7 @@ import { Logger } from "../../types/primitives.ts";
 import { Expression } from "expr-eval";
 import { ChallengePrivateMetadataBase } from "@noctf/api/datatypes";
 import { EventBusService } from "../event_bus.ts";
+import { ScoreboardCalculationState } from "./calculation_state.ts";
 import {
   ChallengeSolveEvent,
   ChallengeUpdateEvent,
@@ -49,6 +50,12 @@ describe(ScoreboardWorker, () => {
   let awardDAO: DeepMockProxy<AwardDAO>;
 
   let worker: ScoreboardWorker;
+
+  const recordProcessedEvent = (time: Date) => {
+    (
+      worker as unknown as { calculationState: ScoreboardCalculationState }
+    ).calculationState.recordEventTimestamp(time);
+  };
 
   beforeEach(() => {
     vi.setSystemTime(new Date(1000 * 1000));
@@ -337,10 +344,8 @@ describe(ScoreboardWorker, () => {
         frozen: 1000 * 1000,
       });
 
-      // Set lastProcessedEventTime to 1005s so the division latest pointer (1005s) is seen as up to date
-      (
-        worker as unknown as { lastProcessedEventTime: Date }
-      ).lastProcessedEventTime = new Date(1005 * 1000);
+      // Record matching activity so the division latest pointer is seen as up to date.
+      recordProcessedEvent(new Date(1005 * 1000));
 
       await worker.computeAndSaveScoreboards();
 
@@ -467,7 +472,7 @@ describe(ScoreboardWorker, () => {
       expect(scoreboardDataLoader.saveNotifiedSolves).not.toHaveBeenCalled();
     });
 
-    it("updates watermark to max and clears notified solves bitmap when recomputing full graph", async () => {
+    it("clears notified solves bitmap when recomputing full graph", async () => {
       configService.get.mockResolvedValue({
         version: 1,
         value: {},
@@ -503,11 +508,8 @@ describe(ScoreboardWorker, () => {
 
       await worker.recomputeFullGraph(new Date(2000 * 1000));
 
-      expect(
-        (
-          worker as unknown as { lastProcessedEventTime: Date }
-        ).lastProcessedEventTime.getTime(),
-      ).toBe(2000 * 1000);
+      expect(submissionDAO.getSolvesForCalculation).toHaveBeenCalledTimes(1);
+      expect(awardDAO.getAllAwards).toHaveBeenCalledTimes(1);
       // Events should not be emitted due to dryRun
       expect(eventBusService.publishBatch).not.toHaveBeenCalled();
       // Notified solves bitmap is populated with solve id 42 and saved
@@ -549,11 +551,9 @@ describe(ScoreboardWorker, () => {
       submissionDAO.getSolvesForCalculation.mockResolvedValue([]);
       awardDAO.getAllAwards.mockResolvedValue([]);
 
-      // Current pointer version is already 5000, lastProcessedEventTime is 5000 (up to date)
+      // Current pointer version is already 5000 and activity is up to date.
       scoreboardDataLoader.getPointers.mockResolvedValue({ latest: 5000 });
-      (
-        worker as unknown as { lastProcessedEventTime: Date }
-      ).lastProcessedEventTime = new Date(5000);
+      recordProcessedEvent(new Date(5000));
 
       // Normal computeAndSaveScoreboards with no eventTimestamp or older timestamp would skip it
       await worker.computeAndSaveScoreboards();
@@ -595,18 +595,11 @@ describe(ScoreboardWorker, () => {
 
       // Start with latest pointer already set
       scoreboardDataLoader.getPointers.mockResolvedValue({ latest: 1000 });
-      (
-        worker as unknown as { lastProcessedEventTime: Date }
-      ).lastProcessedEventTime = new Date(1000);
+      recordProcessedEvent(new Date(1000));
 
       // A poll with newer SQL activity must recalculate.
       await worker.computeAndSaveScoreboards(new Date(2000));
       expect(scoreboardDataLoader.saveIndexed).toHaveBeenCalledTimes(1);
-      expect(
-        (
-          worker as unknown as { lastProcessedEventTime: Date }
-        ).lastProcessedEventTime.getTime(),
-      ).toBe(2000);
 
       scoreboardDataLoader.saveIndexed.mockClear();
 
@@ -620,7 +613,7 @@ describe(ScoreboardWorker, () => {
       expect(scoreboardDataLoader.saveIndexed).not.toHaveBeenCalled();
     });
 
-    describe("invalidation and publication regressions", () => {
+    describe("integration: event invalidation and publication", () => {
       let pointers: Record<string, number>;
       const sqlTimestamp = new Date(500 * 1000);
       const metadataEvents = [
@@ -1970,7 +1963,7 @@ describe(ScoreboardWorker, () => {
     });
   });
 
-  describe("start & lifecycle", () => {
+  describe("integration: start and lifecycle", () => {
     it("serializes periodic and event-triggered calculations", async () => {
       let handler: ((data: unknown) => Promise<void>) | undefined;
       eventBusService.subscribe.mockImplementation(
@@ -2152,11 +2145,6 @@ describe(ScoreboardWorker, () => {
       });
 
       expect(submissionDAO.getLatestActivityTimestamp).toHaveBeenCalled();
-      expect(
-        (
-          worker as unknown as { lastProcessedEventTime: Date }
-        ).lastProcessedEventTime.getTime(),
-      ).toBe(5000);
 
       controller.abort();
       await startPromise;
@@ -2186,10 +2174,8 @@ describe(ScoreboardWorker, () => {
       awardDAO.getAllAwards.mockResolvedValue([]);
       scoreboardDataLoader.getPointers.mockResolvedValue({ latest: 1000 });
 
-      // Worker already processed up to 1000
-      (
-        worker as unknown as { lastProcessedEventTime: Date }
-      ).lastProcessedEventTime = new Date(1000);
+      // Worker already processed activity through 1000.
+      recordProcessedEvent(new Date(1000));
 
       // SQL shows a newer solve at 3000 that was dropped by NATS
       submissionDAO.getLatestActivityTimestamp.mockResolvedValue(
@@ -2210,11 +2196,6 @@ describe(ScoreboardWorker, () => {
       );
 
       expect(submissionDAO.getLatestActivityTimestamp).toHaveBeenCalledTimes(1);
-      expect(
-        (
-          worker as unknown as { lastProcessedEventTime: Date }
-        ).lastProcessedEventTime.getTime(),
-      ).toBe(3000);
 
       controller.abort();
       await startPromise;

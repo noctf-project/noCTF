@@ -91,7 +91,7 @@ return redis.call('EXISTS', unpack(required)) == #required and 1 or 0`;
 export class ScoreboardDataLoader {
   constructor(private readonly factory: RedisClientFactory) {}
 
-  private readonly getScoreboardCoaleascer = new Coleascer<{
+  private readonly getScoreboardCoalescer = new Coleascer<{
     total: number;
     entries: ScoreboardEntry[];
   }>();
@@ -144,7 +144,7 @@ export class ScoreboardDataLoader {
     if (!version) return { total: 0, entries: [] };
     const sTags = [...new Set(tags)].sort();
 
-    return this.getScoreboardCoaleascer.get(
+    return this.getScoreboardCoalescer.get(
       `${division_id}:${version}:${start}:${end}:${sTags.join()}`,
       async () => {
         const keys = this.getCacheKeys(division_id, version);
