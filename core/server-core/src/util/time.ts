@@ -1,5 +1,22 @@
-export const Delay = (timeoutMillis: number) =>
-  new Promise((resolve) => setTimeout(resolve, timeoutMillis));
+export const Delay = (timeoutMillis: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve) => {
+    if (signal?.aborted) {
+      resolve();
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, timeoutMillis);
+
+    const onAbort = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    };
+
+    signal?.addEventListener("abort", onAbort);
+  });
 
 export const IsTimeBetweenSeconds = (
   time: number | Date,

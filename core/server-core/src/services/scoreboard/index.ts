@@ -1,71 +1,18 @@
 import type { ServiceCradle } from "../../index.ts";
-import { DivisionDAO } from "../../dao/division.ts";
-import {
-  ChallengeMetadataWithExpr,
-  ComputedChallengeScoreData,
-  ComputeFullGraph,
-  ComputeScoreboard,
-  PartitionSolvesByChallenge,
-} from "./calc.ts";
-import { HistoryDataPoint } from "../../dao/score_history.ts";
 import { SetupConfig } from "@noctf/api/config";
-import roaring from "roaring";
-import { AwardDAO } from "../../dao/award.ts";
 import { ScoreboardDataLoader } from "./loader.ts";
-import { MinimalTeamInfo, TeamDAO } from "../../dao/team.ts";
-import { RawSolve, SubmissionDAO } from "../../dao/submission.ts";
-import { Award, ScoreboardEntry } from "@noctf/api/datatypes";
-import { MaxDate } from "../../util/date.ts";
 import { ScoreboardHistory } from "./history.ts";
 import { LocalCache } from "../../util/local_cache.ts";
-import { ChallengeSolveEvent } from "@noctf/api/events";
-
-type PointerTarget = {
-  name: string;
-  cutoff?: Date;
-};
-
-type DivisionContext = {
-  division_id: number;
-  teams: MinimalTeamInfo[];
-  challenges: ChallengeMetadataWithExpr[];
-  solves: RawSolve[];
-  awards: Award[];
-  setup: SetupConfig;
-  timestamp?: Date;
-};
 
 type Props = Pick<
   ServiceCradle,
-  | "configService"
-  | "challengeService"
-  | "scoreService"
-  | "eventBusService"
-  | "databaseClient"
-  | "redisClientFactory"
-  | "logger"
+  "configService" | "databaseClient" | "redisClientFactory"
 >;
 
-type CommittedDivision = {
-  version: number;
-  scoreboard: ScoreboardEntry[];
-  challenges: Map<number, ComputedChallengeScoreData>;
-};
-
 export class ScoreboardService {
-  private readonly logger;
-  private readonly challengeService;
   private readonly configService;
-  private readonly scoreService;
-  private readonly eventBusService;
-
   private readonly history;
   private readonly dataLoader;
-
-  private readonly awardDAO;
-  private readonly submissionDAO;
-  private readonly teamDAO;
-  private readonly divisionDAO;
 
   private readonly pointerCache = new LocalCache<
     number,
@@ -75,31 +22,13 @@ export class ScoreboardService {
     ttl: 1000,
   });
 
-  constructor({
-    configService,
-    challengeService,
-    databaseClient,
-    eventBusService,
-    redisClientFactory,
-    scoreService,
-    logger,
-  }: Props) {
-    this.logger = logger;
-    this.challengeService = challengeService;
+  constructor({ configService, databaseClient, redisClientFactory }: Props) {
     this.configService = configService;
-    this.scoreService = scoreService;
-    this.eventBusService = eventBusService;
-
     this.dataLoader = new ScoreboardDataLoader(redisClientFactory);
     this.history = new ScoreboardHistory({
       redisClientFactory,
       databaseClient,
     });
-
-    this.awardDAO = new AwardDAO(databaseClient.get());
-    this.submissionDAO = new SubmissionDAO(databaseClient.get());
-    this.teamDAO = new TeamDAO(databaseClient.get());
-    this.divisionDAO = new DivisionDAO(databaseClient.get());
   }
 
   private async getPointers(
@@ -203,86 +132,6 @@ export class ScoreboardService {
     );
   }
 
-  async computeAndSaveScoreboards(timestamp?: Date) {
-    this.logger.info({ event_timestamp: timestamp }, "Computing scoreboard");
-    const { challenges, teams, divisions } =
-      await this.fetchScoreboardCalculationParams(timestamp);
-    if (!divisions.length || !teams.size) return;
-
-    await this.dataLoader.saveTeamTags(
-      teams
-        .values()
-        .flatMap((v) => v)
-        .toArray(),
-    );
-
-    const commits: [number, CommittedDivision][] = [];
-    for (const { division, pointers } of divisions) {
-      commits.push([
-        division.id,
-        await this.commitDivisionScoreboard(
-          teams.get(division.id) || [],
-          challenges,
-          division.id,
-          pointers,
-          timestamp,
-        ),
-      ]);
-    }
-    await this.emitEvents(commits);
-  }
-
-  async emitEvents(commits: [number, CommittedDivision][]) {
-    const bin = await this.dataLoader.getNotifiedSolves();
-    const items: ChallengeSolveEvent[] = [];
-    const map = bin
-      ? roaring.RoaringBitmap32.deserialize(bin, false)
-      : new roaring.RoaringBitmap32();
-    for (const [id, division] of commits) {
-      for (const solves of division.challenges.values()) {
-        for (const [idx, solve] of solves.solves.entries()) {
-          if (!solve.hidden && !map.has(solve.id)) {
-            map.add(solve.id);
-            if (bin) items.push({ ...solve, seq: idx + 1, division_id: id });
-          }
-        }
-      }
-    }
-    if (items)
-      await this.eventBusService.publishBatch(ChallengeSolveEvent, items);
-    map.runOptimize();
-    await this.dataLoader.saveNotifiedSolves(map.serialize(false) as Buffer);
-  }
-
-  async recomputeFullGraph() {
-    const { challenges, teams, divisions } =
-      await this.fetchScoreboardCalculationParams();
-
-    let points: HistoryDataPoint[] = [];
-    for (const {
-      division: { id },
-    } of divisions) {
-      const [solveList, awardList, { value: setup }] = await Promise.all([
-        this.submissionDAO.getSolvesForCalculation(id),
-        this.awardDAO.getAllAwards(id),
-        this.configService.get(SetupConfig),
-      ]);
-      const solvesByChallenge = PartitionSolvesByChallenge(solveList, setup);
-      points = points.concat(
-        ComputeFullGraph(
-          new Map(teams.get(id)?.map((x) => [x.id, x])),
-          challenges,
-          solvesByChallenge,
-          awardList,
-        ),
-      );
-    }
-    await this.history.replaceAll(
-      points,
-      divisions.map(({ division: { id } }) => id),
-    );
-  }
-
   async getTeamScoreHistory(id: number[], endTime?: Date) {
     const {
       value: { start_time_s, end_time_s },
@@ -351,202 +200,5 @@ export class ScoreboardService {
     }
 
     return [x, y];
-  }
-
-  private getTargetPointers(setup: SetupConfig): {
-    name: string;
-    cutoff?: Date;
-  }[] {
-    const targets: { name: string; cutoff?: Date }[] = [];
-    if (typeof setup.freeze_time_s === "number") {
-      const freezeDate = new Date(setup.freeze_time_s * 1000);
-      if (Date.now() >= freezeDate.getTime()) {
-        targets.push({ name: "frozen", cutoff: freezeDate });
-      }
-    }
-    targets.push({ name: "latest" });
-    return targets;
-  }
-
-  private async fetchScoreboardCalculationParams(timestamp?: Date) {
-    const { value: setup } = await this.configService.get(SetupConfig);
-    const targetPointers = this.getTargetPointers(setup);
-
-    const divisions = (
-      await Promise.all(
-        (await this.divisionDAO.list()).map(async (d) => {
-          const currentPointers = await this.getPointers(d.id, false);
-
-          const isUpToDate = targetPointers.every(({ name, cutoff }) => {
-            const current = currentPointers[name];
-            if (!current) return false;
-            if (cutoff) {
-              return current === cutoff.getTime();
-            }
-            // For pointers without cutoff (e.g. "latest"), up to date if current >= timestamp
-            return Boolean(timestamp && current >= timestamp.getTime());
-          });
-
-          if (!isUpToDate) {
-            this.logger.info(
-              { division_id: d.id, timestamp },
-              "Queuing division for recalculation",
-            );
-            return { division: d, pointers: currentPointers };
-          }
-
-          this.logger.info(
-            { division_id: d.id, currentPointers },
-            "Skipping recalculation for division",
-          );
-          await this.dataLoader.touchDivision(d.id, currentPointers);
-          return null;
-        }),
-      )
-    ).filter((v): v is Exclude<typeof v, null> => !!v);
-    if (!divisions.length) {
-      return {
-        teams: new Map<number, MinimalTeamInfo[]>(),
-        divisions: [],
-        challenges: [],
-      };
-    }
-
-    const challenges: ChallengeMetadataWithExpr[] = await Promise.all(
-      (
-        await this.challengeService.list({
-          hidden: false,
-          visible_at: new Date(),
-        })
-      ).map(async (metadata) => ({
-        expr: await this.scoreService.getExpr(
-          metadata.private_metadata.score.strategy,
-        ),
-        metadata,
-      })),
-    );
-
-    const teams = await this.teamDAO.listForScoreboard();
-    const teamMap = new Map<number, MinimalTeamInfo[]>(
-      divisions.map(
-        ({ division: { id } }) => [id, []] as [number, MinimalTeamInfo[]],
-      ),
-    );
-    teams.forEach((t) => teamMap.get(t.division_id)?.push(t));
-    return {
-      teams: teamMap,
-      divisions,
-      challenges,
-    };
-  }
-
-  private async commitDivisionScoreboard(
-    teams: MinimalTeamInfo[],
-    challenges: ChallengeMetadataWithExpr[],
-    id: number,
-    currentPointers: Record<string, number>,
-    timestamp?: Date,
-  ): Promise<CommittedDivision> {
-    const [solves, awards, { value: setup }] = await Promise.all([
-      this.submissionDAO.getSolvesForCalculation(id),
-      this.awardDAO.getAllAwards(id),
-      this.configService.get(SetupConfig),
-    ]);
-
-    const ctx: DivisionContext = {
-      division_id: id,
-      teams,
-      challenges,
-      solves,
-      awards,
-      setup,
-      timestamp,
-    };
-
-    const targetPointers = this.getTargetPointers(setup);
-    const prevVersions = Object.values(currentPointers).filter(Boolean);
-    const activeVersions = new Set<number>();
-
-    let latest: CommittedDivision | undefined;
-
-    for (const target of targetPointers) {
-      const prevVersion = currentPointers[target.name];
-      const targetVersion = target.cutoff?.getTime();
-
-      // If pointer has a fixed target version (e.g. cutoff) and is already at that version, just touch
-      if (targetVersion && prevVersion === targetVersion) {
-        await this.dataLoader.touchDivision(id, {
-          [target.name]: targetVersion,
-        });
-        activeVersions.add(targetVersion);
-        continue;
-      }
-
-      const res = await this.commitDivisionForPointer(ctx, target);
-      activeVersions.add(res.version);
-      if (target.name === "latest") {
-        latest = res;
-      }
-    }
-
-    if (latest && latest.scoreboard.length) {
-      await this.history.saveIteration(id, latest.scoreboard);
-    }
-
-    // Expire unused versions somewhat eagerly (with a small grace period)
-    const toExpire = prevVersions.filter((v) => !activeVersions.has(v));
-    await this.dataLoader.expireVersions(id, toExpire, 10);
-    this.pointerCache.delete(id);
-    return latest!; // latest always exists
-  }
-
-  private async commitDivisionForPointer(
-    ctx: DivisionContext,
-    target: PointerTarget,
-  ): Promise<CommittedDivision> {
-    const targetVersion = target.cutoff?.getTime();
-    const solvesByChallenge = PartitionSolvesByChallenge(
-      ctx.solves,
-      ctx.setup,
-      target.cutoff,
-    );
-
-    const {
-      last_event,
-      scoreboard,
-      challenges: challengeScores,
-    } = ComputeScoreboard(
-      new Map(ctx.teams.map((x) => [x.id, x])),
-      ctx.challenges,
-      solvesByChallenge,
-      target.cutoff
-        ? ctx.awards.filter((x) => x.created_at <= target.cutoff!)
-        : ctx.awards,
-    );
-
-    if (target.cutoff) {
-      for (const entry of scoreboard) {
-        if (entry.updated_at > target.cutoff) {
-          entry.updated_at = target.cutoff;
-        }
-        if (entry.last_solve > target.cutoff) {
-          entry.last_solve = target.cutoff;
-        }
-      }
-    }
-
-    const version = targetVersion
-      ? targetVersion
-      : MaxDate(ctx.timestamp || new Date(0), last_event).getTime();
-
-    await this.dataLoader.saveIndexed(
-      ctx.division_id,
-      version,
-      scoreboard,
-      challengeScores,
-      target.name,
-    );
-
-    return { version, scoreboard, challenges: challengeScores };
   }
 }

@@ -2,10 +2,7 @@ import { initWorker as initTickets } from "@noctf/mod-tickets";
 import { server } from "../index.ts";
 import { WorkerRegistry } from "@noctf/server-core/worker/registry";
 import { SignalledWorker } from "@noctf/server-core/worker/signalled";
-import {
-  RunLockedScoreboardCalculator,
-  ScoreboardCalculatorWorker,
-} from "@noctf/server-core/services/scoreboard/worker";
+import { ScoreboardWorker } from "@noctf/server-core/services/scoreboard/worker";
 import { SingletonWorker } from "@noctf/server-core/worker/singleton";
 
 server.ready(async () => {
@@ -30,19 +27,19 @@ server.ready(async () => {
 
   registry.register(
     new SingletonWorker({
-      lockService: lockService,
-      logger: logger,
-      intervalSeconds: 60,
-      name: "scoreboard_periodic",
-      handler: () => RunLockedScoreboardCalculator(server.container.cradle),
-    }),
-  );
-  registry.register(
-    new SignalledWorker({
-      name: "scoreboard_event",
-      handler: (signal) =>
-        ScoreboardCalculatorWorker(signal, server.container.cradle),
+      lockService,
       logger,
+      intervalSeconds: 20,
+      lockOptions: {
+        leaseDurationSeconds: 60,
+        renewIntervalSeconds: 10,
+        maxFailedRenewAttempts: 3,
+      },
+      name: "scoreboard",
+      handler: async (signal) => {
+        const worker = new ScoreboardWorker(server.container.cradle);
+        await worker.start(signal);
+      },
     }),
   );
 
@@ -53,7 +50,15 @@ server.ready(async () => {
       logger,
     }),
   );
-  await registry.run();
+  const shutdown = async () => {
+    logger.info("Received termination signal, stopping workers...");
+    registry.dispose();
+  };
 
-  // TODO: graceful shutdown
+  process.once("SIGTERM", shutdown);
+  process.once("SIGINT", shutdown);
+
+  await registry.run();
+  await server.close();
+  process.exit(0);
 });

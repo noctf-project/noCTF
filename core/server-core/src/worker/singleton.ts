@@ -1,4 +1,8 @@
-import { LockService, LockServiceError } from "../services/lock.ts";
+import {
+  LockService,
+  LockServiceError,
+  WithLeaseOptions,
+} from "../services/lock.ts";
 import { Logger } from "../types/primitives.ts";
 import { Stopwatch } from "../util/stopwatch.ts";
 import { Delay } from "../util/time.ts";
@@ -15,6 +19,7 @@ type Props<T = unknown> = {
   ) => Promise<void>;
   intervalSeconds: number;
   lockTimeoutSeconds?: number;
+  lockOptions?: WithLeaseOptions;
 };
 
 const MIN_DELAY = 100;
@@ -23,9 +28,9 @@ const KEY_PREFIX = "worker:singleton";
 export class SingletonWorker implements BaseWorker {
   private readonly lockService;
   private readonly logger;
-  private readonly lockTimeoutSeconds;
+  private readonly lockOptions: WithLeaseOptions;
   private readonly intervalSeconds;
-  private readonly name;
+  readonly name: string;
   private readonly handler;
 
   private abort: AbortController;
@@ -34,13 +39,18 @@ export class SingletonWorker implements BaseWorker {
     lockService,
     logger,
     lockTimeoutSeconds,
+    lockOptions,
     intervalSeconds,
     name,
     handler,
   }: Props) {
     this.lockService = lockService;
     this.logger = logger;
-    this.lockTimeoutSeconds = lockTimeoutSeconds || 30;
+    this.lockOptions = {
+      leaseDurationSeconds:
+        lockOptions?.leaseDurationSeconds ?? lockTimeoutSeconds ?? 30,
+      ...lockOptions,
+    };
     this.intervalSeconds = intervalSeconds;
     this.name = name;
     this.handler = handler;
@@ -55,16 +65,18 @@ export class SingletonWorker implements BaseWorker {
       try {
         await this.lockService.withLease(
           `${KEY_PREFIX}:${this.name}`,
-          async () => {
-            await this.handler(this.abort.signal);
+          async (leaseSignal) => {
+            const signal = AbortSignal.any([this.abort.signal, leaseSignal]);
+            await this.handler(signal);
             await Delay(
               Math.max(
                 MIN_DELAY,
                 this.intervalSeconds * 1000 - stopwatch.elapsed(),
               ),
+              signal,
             );
           },
-          this.lockTimeoutSeconds,
+          this.lockOptions,
         );
       } catch (e) {
         if (!(e instanceof LockServiceError)) {
@@ -75,6 +87,7 @@ export class SingletonWorker implements BaseWorker {
             MIN_DELAY,
             this.intervalSeconds * 1000 - stopwatch.elapsed(),
           ),
+          this.abort.signal,
         );
       }
     }

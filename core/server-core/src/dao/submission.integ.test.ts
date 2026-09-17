@@ -218,4 +218,76 @@ describe(SubmissionDAO, () => {
       .execute();
     expect(rows).toHaveLength(0);
   });
+
+  it("returns null when no activity exists and greatest timestamp across submission, weight, and award", async () => {
+    // Clean up test rows from relevant tables
+    await db.deleteFrom("submission").execute();
+    await db.deleteFrom("submission_weight").execute();
+    await db.deleteFrom("award").execute();
+
+    // 1. Empty tables -> returns null
+    const empty = await dao.getLatestActivityTimestamp();
+    expect(empty).toBeNull();
+
+    const div = await divisionDAO.create({
+      name: "Watermark Div",
+      slug: "wm-div",
+      description: "Division for watermark tests",
+      is_joinable: true,
+      is_visible: true,
+    });
+    const team = await teamDAO.create({
+      name: "Watermark Team",
+      division_id: div.id,
+    });
+
+    // 2. Insert submission at T1 (1000s)
+    const t1 = new Date(1000 * 1000);
+    await db
+      .insertInto("submission")
+      .values({
+        challenge_id: 100,
+        team_id: team.id,
+        user_id: 1,
+        source: "test",
+        status: "correct",
+        data: "",
+        created_at: t1,
+        updated_at: t1,
+      })
+      .execute();
+
+    let latest = await dao.getLatestActivityTimestamp();
+    expect(latest?.getTime()).toBe(t1.getTime());
+
+    // 3. Insert submission_weight at T2 (2000s) > T1
+    const t2 = new Date(2000 * 1000);
+    await db
+      .insertInto("submission_weight")
+      .values({
+        challenge_id: 100,
+        team_id: team.id,
+        weight: 50,
+        created_at: t2,
+      })
+      .execute();
+
+    latest = await dao.getLatestActivityTimestamp();
+    expect(latest?.getTime()).toBe(t2.getTime());
+
+    // 4. Insert award at T3 (3000s) > T2
+    const t3 = new Date(3000 * 1000);
+    await db
+      .insertInto("award")
+      .values({
+        team_id: team.id,
+        value: 100,
+        title: "First Blood",
+        created_at: t3,
+      })
+      .execute();
+
+    latest = await dao.getLatestActivityTimestamp();
+    expect(latest?.getTime()).toBe(t3.getTime());
+  });
 });

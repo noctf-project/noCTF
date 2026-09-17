@@ -5,7 +5,7 @@ import { BaseWorker } from "./types.ts";
 export class SignalledWorker implements BaseWorker {
   private controller: AbortController;
 
-  private readonly name;
+  readonly name: string;
   private readonly handler;
   private readonly logger;
 
@@ -22,6 +22,7 @@ export class SignalledWorker implements BaseWorker {
     this.handler = handler;
     this.logger = logger;
   }
+
   dispose(): void {
     this.controller.abort("Disposed");
   }
@@ -39,7 +40,7 @@ export class SignalledWorker implements BaseWorker {
         );
       } finally {
         // so it doesn't infinite loop
-        await Delay(100);
+        await Delay(100, this.controller.signal);
       }
     }
   }
