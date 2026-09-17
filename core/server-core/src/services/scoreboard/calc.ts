@@ -179,15 +179,17 @@ function ComputeScoreStreamForChallenge(
   }[] = [];
   const teamScores = new Map<number, { score: number; w: number }>();
   const distinctWeights = new Set<number>();
-  let bonusIdx = 0;
+  const eligible: RawSolve[] = [];
+  let topEligible: RawSolve[] = [];
+  let bonusMap = new Map<number, number>();
   let n = 0;
-  valid.forEach(({ team_id, created_at, value, weight }) => {
+  valid.forEach((solve) => {
+    const { team_id, created_at, value, weight } = solve;
     const updated_at_ms = created_at.getTime();
-    const b = value !== null ? undefined : bonus?.[bonusIdx++];
+    let anyChanged = false;
     if (value === null) {
       n++;
       // Check if any distinct weight produces a non-zero delta
-      let anyChanged = false;
       for (const w of distinctWeights) {
         if (memo(n, w) !== memo(n - 1, w)) {
           anyChanged = true;
@@ -212,8 +214,7 @@ function ComputeScoreStreamForChallenge(
         }
       }
     }
-    const score =
-      value !== null ? value : memo(n, weight) + ((b && Math.round(b)) || 0);
+    const score = value !== null ? value : memo(n, weight);
     stream.push({
       team_id,
       delta: score,
@@ -224,6 +225,38 @@ function ComputeScoreStreamForChallenge(
     if (value === null) {
       distinctWeights.add(weight);
       teamScores.set(team_id, { score: memo(n, weight), w: weight });
+      if (bonus && bonus.length > 0) {
+        eligible.push(solve);
+        // Unchanged base scores mean only the new solve can displace a recipient.
+        topEligible = topK(
+          anyChanged ? eligible : [...topEligible, solve],
+          bonus.length,
+          (a, b) =>
+            memo(n, b.weight) - memo(n, a.weight) ||
+            a.created_at.getTime() - b.created_at.getTime(),
+        );
+        const nextBonuses = new Map(
+          topEligible.map((s, rank) => [
+            s.team_id,
+            Math.round(bonus[rank]) || 0,
+          ]),
+        );
+        for (const tid of new Set([
+          ...bonusMap.keys(),
+          ...nextBonuses.keys(),
+        ])) {
+          const delta = (nextBonuses.get(tid) || 0) - (bonusMap.get(tid) || 0);
+          if (delta !== 0) {
+            stream.push({
+              team_id: tid,
+              delta,
+              updated_at: created_at,
+              updated_at_ms,
+            });
+          }
+        }
+        bonusMap = nextBonuses;
+      }
     }
   });
   return stream;
@@ -368,16 +401,21 @@ export function ComputeScoreboard(
       a.last_solve.getTime() - b.last_solve.getTime() ||
       a.team_id - b.team_id, // this should never happen but used to preserve stability
   );
-  sorted.forEach((x, i) => {
-    x.rank =
-      i > 0 &&
-      sorted[i - 1].score === x.score &&
-      sorted[i - 1].last_solve.getTime() === x.last_solve.getTime()
-        ? i
-        : i + 1;
+  let visibleCount = 0;
+  let previous: ScoreboardEntry | undefined;
+  sorted.forEach((x) => {
     x.hidden =
       x.hidden ||
       (x.score === 0 && !x.awards.length && x.solves.every((s) => s.hidden));
+    if (x.hidden) return;
+    visibleCount++;
+    x.rank =
+      previous &&
+      previous.score === x.score &&
+      previous.last_solve.getTime() === x.last_solve.getTime()
+        ? previous.rank
+        : visibleCount;
+    previous = x;
   });
 
   return {

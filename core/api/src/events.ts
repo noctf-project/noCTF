@@ -83,6 +83,7 @@ export type PolicyUpdateEvent = Static<typeof PolicyUpdateEvent>;
 export const ScoreboardTriggerEvent = Type.Object(
   {
     recompute_graph: Type.Optional(Type.Boolean()),
+    force: Type.Optional(Type.Boolean()),
   },
   { $id: "events.scoreboard.trigger" },
 );

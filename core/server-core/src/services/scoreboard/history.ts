@@ -26,18 +26,25 @@ export class ScoreboardHistory {
     this.scoreHistoryDAO = new ScoreHistoryDAO(databaseClient.get());
   }
 
-  async saveIteration(division: number, scoreboard: ScoreboardEntry[]) {
-    const existingTeams = new Set<number>(scoreboard.map((x) => x.team_id));
-    const hidden = new Set<number>(
-      scoreboard.filter((x) => x.hidden).map((x) => x.team_id),
+  async saveIteration(
+    division: number,
+    scoreboard: ScoreboardEntry[],
+    hiddenTeamIds: number[],
+    force = false,
+  ) {
+    const hidden = new Set(hiddenTeamIds);
+    // Only persisted teams belong in the baseline, so newly visible teams get a point.
+    // Auto-hidden zero-score entries still need to close out their previous scores.
+    const minimal = GetMinimalScoreboard(
+      scoreboard.filter((x) => !hidden.has(x.team_id)),
     );
-    const minimal = GetMinimalScoreboard(scoreboard);
+    const existingTeams = new Set(minimal.map((x) => x.team_id));
     const last = await this.getLastData(division);
-    const diff = GetChangedTeamScores(last, minimal);
+    // Live history uses the worker's publication timestamp; replay retains event times.
+    // Keep millisecond precision to avoid overwriting distinct events in one second.
+    const diff = force ? minimal : GetChangedTeamScores(last, minimal, 1);
     await this.scoreHistoryDAO.add(
-      diff
-        .filter((x) => !hidden.has(x.team_id) && existingTeams.has(x.team_id))
-        .map(({ updated_at: _updated_at, ...rest }) => rest),
+      diff.filter((x) => existingTeams.has(x.team_id)),
     );
     const encoded = await Compress(encode(minimal));
     const multi = (await this.redisClientFactory.getClient()).multi();
@@ -61,13 +68,19 @@ export class ScoreboardHistory {
     await multi.exec();
   }
 
-  async getHistoryForTeams(teams: number[]): Promise<Map<number, DataPoints>> {
+  async getHistoryForTeams(
+    teams: number[],
+    endTime?: Date,
+  ): Promise<Map<number, DataPoints>> {
     if (!teams.length) return new Map();
     const client = await this.redisClientFactory.getClient();
+    const cacheFields = new Map(
+      teams.map((t) => [t, `${t}:${endTime?.getTime() ?? "all"}`]),
+    );
     const data = await client.hmGet(
       client.commandOptions({ returnBuffers: true }),
       CACHE_DATA_HASH_KEY,
-      teams.map((t) => t.toString()),
+      teams.map((t) => cacheFields.get(t)!),
     );
     const out = new Map<number, DataPoints>();
     const inProgress = new Map<number, Promise<DataPoints>>();
@@ -76,7 +89,7 @@ export class ScoreboardHistory {
         out.set(t, decode(data[i]));
         return false;
       }
-      const promise = this.teamColeascer.get(t);
+      const promise = this.teamColeascer.get(cacheFields.get(t)!);
       if (promise) {
         inProgress.set(t, promise);
         return false;
@@ -89,12 +102,16 @@ export class ScoreboardHistory {
           t,
           Promise.withResolvers(),
         ];
-        this.teamColeascer.put(t, result[1].promise);
+        this.teamColeascer.put(cacheFields.get(t)!, result[1].promise);
         return result;
       }),
     );
     if (toFetch.size) {
-      const fetched = await this.fetchFromDatabase(toFetch);
+      const fetched = await this.fetchFromDatabase(
+        toFetch,
+        cacheFields,
+        endTime,
+      );
       fetched.forEach((v, k) => out.set(k, v));
     }
     for (const [team, promise] of inProgress) {
@@ -105,6 +122,8 @@ export class ScoreboardHistory {
 
   private async fetchFromDatabase(
     toFetch: Map<number, PromiseWithResolvers<DataPoints>>,
+    cacheFields: Map<number, string>,
+    endTime?: Date,
   ) {
     const fetched = new Map<number, DataPoints>(
       toFetch.keys().map((t) => [t, [[], []]] as [number, DataPoints]),
@@ -115,29 +134,34 @@ export class ScoreboardHistory {
     let lastScore = 0;
     try {
       // We are assuming that this is sorted by team and then updated_at
-      (await this.scoreHistoryDAO.getByTeams(toFetch.keys().toArray())).forEach(
-        ({ team_id, score, updated_at }) => {
-          const team = fetched.get(team_id);
-          // this shouldn't happen
-          if (!team) {
-            throw new Error("team missing from fetched");
-          }
-          if (lastTeamId !== team_id) {
-            lastTeamId = team_id;
-            lastUpdated = 0;
-            lastScore = 0;
-          }
-          const updated = Math.floor(updated_at.getTime() / 1000);
-          if (team.length && updated === team[0][team.length - 1]) {
-            team[1][team.length - 1] = score - lastScore;
-          } else {
-            team[0].push(updated - lastUpdated);
-            team[1].push(score - lastScore);
-          }
-          lastUpdated = updated;
-          lastScore = score;
-        },
-      );
+      // Apply precise cutoffs in SQL before collapsing points into whole seconds.
+      (
+        await this.scoreHistoryDAO.getByTeams(
+          toFetch.keys().toArray(),
+          undefined,
+          endTime,
+        )
+      ).forEach(({ team_id, score, updated_at }) => {
+        const team = fetched.get(team_id);
+        // this shouldn't happen
+        if (!team) {
+          throw new Error("team missing from fetched");
+        }
+        if (lastTeamId !== team_id) {
+          lastTeamId = team_id;
+          lastUpdated = 0;
+          lastScore = 0;
+        }
+        const updated = Math.floor(updated_at.getTime() / 1000);
+        if (team[0].length && updated === lastUpdated) {
+          team[1][team[1].length - 1] += score - lastScore;
+        } else {
+          team[0].push(updated - lastUpdated);
+          team[1].push(score - lastScore);
+        }
+        lastUpdated = updated;
+        lastScore = score;
+      });
       toFetch.forEach(({ resolve }, t) => resolve(fetched.get(t)!));
     } catch (e) {
       toFetch.forEach(({ reject }) => reject(e));
@@ -150,7 +174,7 @@ export class ScoreboardHistory {
         .entries()
         .map(
           ([team, series]) =>
-            [team.toString(), encode(series)] as [string, Buffer],
+            [cacheFields.get(team)!, encode(series)] as [string, Buffer],
         )
         .toArray(),
     );

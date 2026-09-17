@@ -176,6 +176,104 @@ describe(NotificationService, () => {
   });
 
   describe("handleSubmission", () => {
+    it.each([
+      ["before cutoff", -1, undefined, true],
+      ["at inclusive cutoff", 0, undefined, true],
+      ["after cutoff by default", 1, undefined, false],
+      ["after cutoff explicitly disabled", 1, false, false],
+      ["after cutoff explicitly allowed", 1, true, true],
+    ] as const)(
+      "%s applies to both Discord and generic webhooks",
+      async (_label, offset, allow_during_freeze, shouldSend) => {
+        const freeze_time_s = solveEvent.data.created_at.getTime() / 1000;
+        configService.get
+          .mockResolvedValueOnce({
+            version: 1,
+            value: {
+              solve: ["discord", "webhook"].map((type) => ({
+                type,
+                url: `https://example.com/${type}`,
+                template: "{{team.name}} solved {{challenge.title}}",
+                enabled: true,
+                allow_during_freeze,
+              })),
+            },
+          })
+          .mockResolvedValueOnce({
+            ...setupConfig,
+            value: { ...setupConfig.value, freeze_time_s },
+          });
+        await handleSolve({
+          ...solveEvent,
+          timestamp: new Date(freeze_time_s * 1000 + 60000),
+          data: {
+            ...solveEvent.data,
+            created_at: new Date(freeze_time_s * 1000 + offset),
+          },
+        });
+        expect(eventBusService.publish).toHaveBeenCalledTimes(
+          shouldSend ? 2 : 0,
+        );
+        if (!shouldSend) expect(teamService.get).not.toHaveBeenCalled();
+      },
+    );
+
+    it("allows internal webhooks during freeze without enabling public notifications", async () => {
+      configService.get
+        .mockResolvedValueOnce({
+          version: 1,
+          value: {
+            solve: [
+              {
+                type: "discord",
+                url: "https://example.com/public",
+                enabled: true,
+                template: "{{team.name}}",
+              },
+              {
+                type: "webhook",
+                url: "https://example.com/internal",
+                enabled: true,
+                allow_during_freeze: true,
+              },
+              {
+                type: "webhook",
+                url: "https://example.com/disabled",
+                enabled: false,
+                allow_during_freeze: true,
+              },
+              {
+                type: "webhook",
+                url: "https://example.com/division",
+                enabled: true,
+                allow_during_freeze: true,
+                division_ids: [42],
+              },
+              {
+                type: "webhook",
+                url: "https://example.com/sequence",
+                enabled: true,
+                allow_during_freeze: true,
+                max_seq: 1,
+              },
+            ],
+          },
+        })
+        .mockResolvedValueOnce({
+          ...setupConfig,
+          value: { ...setupConfig.value, freeze_time_s: 0 },
+        });
+      await handleSolve({
+        ...solveEvent,
+        data: { ...solveEvent.data, seq: 2 },
+      });
+      expect(eventBusService.publish).toHaveBeenCalledTimes(1);
+      expect(eventBusService.publish).toHaveBeenCalledWith(
+        NotificationQueueWebhookEvent,
+        expect.objectContaining({ url: "https://example.com/internal" }),
+      );
+    });
+
     it("skips hidden submissions", async () => {
       await handleSolve({
         ...solveEvent,

@@ -10,47 +10,83 @@ import { Compress, Decompress } from "../../util/message_compression.ts";
 import { Coleascer } from "../../util/coleascer.ts";
 import { RunInParallelWithLimit } from "../../util/semaphore.ts";
 import { MinimalTeamInfo } from "../../dao/team.ts";
+import { createHash } from "node:crypto";
 
+const SCOREBOARD_EXPIRE_TIME = 600;
+const CACHE_NAMESPACE = "core:svc:score:data";
+const TEAM_TAGS_KEY = `${CACHE_NAMESPACE}:tags`;
+
+// Shared by the read scripts so preparation, invalidation, and reads cannot race.
 const SCRIPT_PREPARE_RANK = `
-local dest_key = KEYS[1]
-local ranks_key = KEYS[2]
-local num_keys = #KEYS - 2
-local source_keys = {}
-for i = 1, num_keys do
-  source_keys[i] = KEYS[i + 2]
+local ranks_key = KEYS[4]
+if ranks_key ~= KEYS[1] then
+  local generation = redis.call('HGET', KEYS[2], 'generation')
+  if not generation then return nil end
+  ranks_key = ranks_key .. ':' .. generation
 end
-
-local count = nil
-
-if num_keys > 0 then
-  local exists = redis.call('EXISTS', dest_key)
-  if exists == 0 then
-    redis.call('SUNIONSTORE', dest_key, unpack(source_keys))
-    count = redis.call('ZINTERSTORE', dest_key, 2, ranks_key, dest_key)
-    redis.call('EXPIRE', dest_key, 60)
+if ranks_key ~= KEYS[1] and redis.call('EXISTS', KEYS[1]) == 0 then
+  redis.call('DEL', ranks_key)
+  return nil
+end
+if ranks_key ~= KEYS[1] and redis.call('EXISTS', ranks_key) == 0 then
+  for _, tag in ipairs(cjson.decode(ARGV[1])) do
+    local members = redis.call('HGET', KEYS[2], tostring(tag))
+    if members then
+      for _, team in ipairs(cjson.decode(members)) do
+        local score = redis.call('ZSCORE', KEYS[1], tostring(team))
+        if score then
+          redis.call('ZADD', ranks_key, score, tostring(team))
+        end
+      end
+    end
+  end
+  redis.call('EXPIRE', ranks_key, 60)
+  if redis.call('EXISTS', ranks_key) == 1 then
+    redis.call('SADD', KEYS[3], ranks_key)
+    redis.call('EXPIRE', KEYS[3], ${SCOREBOARD_EXPIRE_TIME})
   end
 end`;
 
-const SCRIPT_GET_SCOREBOARD = `
-local ranks_key = KEYS[1]
-local teams_key = KEYS[2]
+const SCRIPT_GET_SCOREBOARD = `${SCRIPT_PREPARE_RANK}
+local teams_key = KEYS[5]
 local exists = redis.call('EXISTS', ranks_key)
 if exists == 0 then
   return nil
 end
 
-local teams = redis.call('ZRANGE', ranks_key, ARGV[1], ARGV[2])
+local teams = redis.call('ZRANGE', ranks_key, ARGV[2], ARGV[3])
 local ret = {}
 ret[1] = redis.call('ZCARD', ranks_key)
+ret[3] = {}
 if #teams > 0 then
   ret[2] = redis.call('HMGET', teams_key, unpack(teams))
+  for i, team in ipairs(teams) do
+    local score = redis.call('ZSCORE', ranks_key, team)
+    ret[3][i] = redis.call('ZCOUNT', ranks_key, '-inf', '(' .. score) + 1
+  end
 else
   ret[2] = {}
 end
 return ret`;
 
-const SCOREBOARD_EXPIRE_TIME = 600;
-const CACHE_NAMESPACE = "core:svc:score:data";
+const SCRIPT_GET_RANKS = `${SCRIPT_PREPARE_RANK}
+return {redis.call('ZCARD', ranks_key), redis.call('ZRANGE', ranks_key, ARGV[2], ARGV[3])}`;
+
+const SCRIPT_GET_TEAM_RANK = `${SCRIPT_PREPARE_RANK}
+local score = redis.call('ZSCORE', ranks_key, ARGV[2])
+if not score then return nil end
+return redis.call('ZCOUNT', ranks_key, '-inf', '(' .. score) + 1`;
+
+const SCRIPT_CLEAR_TAGGED_RANKS = `
+for _, key in ipairs(redis.call('SMEMBERS', KEYS[1])) do
+  redis.call('DEL', key)
+end
+redis.call('DEL', KEYS[1])`;
+
+const SCRIPT_VALIDATE_SNAPSHOT = `
+local required = redis.call('SMEMBERS', KEYS[1])
+if #required == 0 then return 0 end
+return redis.call('EXISTS', unpack(required)) == #required and 1 or 0`;
 
 export class ScoreboardDataLoader {
   constructor(private readonly factory: RedisClientFactory) {}
@@ -66,30 +102,36 @@ export class ScoreboardDataLoader {
   private readonly getTeamCoalescer = new Coleascer<ScoreboardEntry | null>();
   private readonly getTeamRankCoalescer = new Coleascer<number | null>();
 
-  async saveTeamTags(teams: MinimalTeamInfo[]) {
-    const tags = new Map<number, number[]>();
+  async saveTeamTags(teams: MinimalTeamInfo[]): Promise<void> {
+    const tags = new Map<number, Set<number>>();
     for (const { id, tag_ids } of teams) {
-      for (const tid of tag_ids) {
-        let ids = tags.get(tid);
-        if (!ids) {
-          ids = [];
-          tags.set(tid, ids);
-        }
-        ids.push(id);
+      for (const tag of tag_ids) {
+        const members = tags.get(tag) ?? new Set<number>();
+        members.add(id);
+        tags.set(tag, members);
       }
     }
+    const membership = [...tags]
+      .sort(([a], [b]) => a - b)
+      .map(([tag, members]): [string, string] => [
+        tag.toString(),
+        JSON.stringify([...members].sort((a, b) => a - b)),
+      ]);
+    const generation = createHash("sha256")
+      .update(JSON.stringify(membership))
+      .digest("hex");
     const client = await this.factory.getClient();
-    const multi = client.multi();
-    for (const [id, teams] of tags) {
-      const key = `${CACHE_NAMESPACE}:tt:${id}`;
-      multi.del(key);
-      multi.sAdd(
-        key,
-        teams.map((id) => id.toString()),
-      );
-      multi.expire(key, SCOREBOARD_EXPIRE_TIME);
-    }
-    await multi.exec();
+    // Replace even empty membership atomically, without expiring it with snapshots.
+    await client
+      .multi()
+      .del(TEAM_TAGS_KEY)
+      .hSet(TEAM_TAGS_KEY, [...membership, ["generation", generation]])
+      .exec();
+  }
+
+  async hasTeamTags(): Promise<boolean> {
+    const client = await this.factory.getClient();
+    return client.hExists(TEAM_TAGS_KEY, "generation");
   }
 
   async getScoreboard(
@@ -106,33 +148,12 @@ export class ScoreboardDataLoader {
       `${division_id}:${version}:${start}:${end}:${sTags.join()}`,
       async () => {
         const keys = this.getCacheKeys(division_id, version);
-        const set = sTags.length
-          ? `${keys.ranktag}:${sTags.join(",")}`
-          : keys.rank;
-
-        let result: [number, Buffer[]] | null;
-        result = await this.factory.executeScript(
+        const result = await this.factory.executeScript<
+          [number, Buffer[], number[]] | null
+        >(
           SCRIPT_GET_SCOREBOARD,
-          [set, keys.team],
-          [start.toString(), end.toString()],
-          true,
-        );
-        if (!result && !sTags.length) return { total: 0, entries: [] };
-        if (result) {
-          const entries = (
-            await RunInParallelWithLimit(result[1], 8, async (x) => {
-              return decode(await Decompress(x));
-            })
-          )
-            .map((x) => x.status === "fulfilled" && x.value)
-            .filter((x) => x) as ScoreboardEntry[];
-          return { total: result[0], entries };
-        }
-        await this.createTaggedRankTable(set, keys.rank, sTags);
-        result = await this.factory.executeScript(
-          SCRIPT_GET_SCOREBOARD,
-          [set, keys.team],
-          [start.toString(), end.toString()],
+          [...this.getRankKeys(division_id, version, sTags), keys.team],
+          [JSON.stringify(sTags), start.toString(), end.toString()],
           true,
         );
         if (!result) return { total: 0, entries: [] };
@@ -142,7 +163,13 @@ export class ScoreboardDataLoader {
             return decode(await Decompress(x));
           })
         )
-          .map((x) => x.status === "fulfilled" && x.value)
+          .map(
+            (x, i) =>
+              x.status === "fulfilled" && {
+                ...x.value,
+                rank: result[2][i],
+              },
+          )
           .filter((x) => x) as ScoreboardEntry[];
         return { total: result[0], entries };
       },
@@ -156,36 +183,14 @@ export class ScoreboardDataLoader {
     end: number,
     tags?: number[],
   ): Promise<[number, number[]]> {
-    const client = await this.factory.getClient();
-    const query = async (k: string) => {
-      const multi = client.multi();
-      multi.exists(k);
-      multi.zCard(k);
-      multi.zRange(k, start, end);
-      const result = (await multi.exec()) as [number, number, string[]];
-      if (!result[0]) return null;
-      return [result[1], result[2].map((x) => parseInt(x))] as [
-        number,
-        number[],
-      ];
-    };
     if (!version) return [0, []];
-    const keys = this.getCacheKeys(division_id, version);
-
-    let result: [number, number[]] | null;
-    if (!tags || !tags.length) {
-      result = await query(keys.rank);
-      if (!result) return [0, []];
-      return result;
-    }
     const sTags = [...new Set(tags)].sort();
-    const rankKey = `${keys.ranktag}:${sTags.join(",")}`;
-
-    result = await query(rankKey);
-    if (!result) await this.createTaggedRankTable(rankKey, keys.rank, sTags);
-    result = await query(rankKey);
-    if (!result) return [0, []];
-    return result;
+    const result = await this.factory.executeScript<[number, string[]] | null>(
+      SCRIPT_GET_RANKS,
+      this.getRankKeys(division_id, version, sTags),
+      [JSON.stringify(sTags), start.toString(), end.toString()],
+    );
+    return result ? [result[0], result[1].map(Number)] : [0, []];
   }
 
   async getChallengeSolves(
@@ -239,28 +244,14 @@ export class ScoreboardDataLoader {
   ): Promise<number | null> {
     if (!version) return null;
     const sTags = [...new Set(tags)].sort();
-    const keys = this.getCacheKeys(division_id, version);
     return this.getTeamRankCoalescer.get(
       `${division_id}:${version}:${team}:rank:${sTags.join()}`,
       async () => {
-        const client = await this.factory.getClient();
-        const set = sTags.length
-          ? `${keys.ranktag}:${sTags.join(",")}`
-          : keys.rank;
-        let result = await client.zRank(
-          client.commandOptions({ returnBuffers: true }),
-          set,
-          team.toString(),
+        return this.factory.executeScript<number | null>(
+          SCRIPT_GET_TEAM_RANK,
+          this.getRankKeys(division_id, version, sTags),
+          [JSON.stringify(sTags), team.toString()],
         );
-        if (result == null && !sTags.length) return null;
-        await this.createTaggedRankTable(set, keys.rank, sTags);
-        result = await client.zRank(
-          client.commandOptions({ returnBuffers: true }),
-          set,
-          team.toString(),
-        );
-        if (result == null) return null;
-        return result + 1; // zRank will give 0-indexed
       },
     );
   }
@@ -282,9 +273,10 @@ export class ScoreboardDataLoader {
           Buffer,
         ];
       })
-    )
-      .map((x) => x.status === "fulfilled" && x.value)
-      .filter((x) => x) as [string, Buffer][];
+    ).map((x) => {
+      if (x.status === "rejected") throw x.reason;
+      return x.value;
+    });
 
     const csolves = (
       await RunInParallelWithLimit(
@@ -295,9 +287,10 @@ export class ScoreboardDataLoader {
           await Compress(encode(solves)),
         ],
       )
-    )
-      .map((x) => x.status === "fulfilled" && x.value)
-      .filter((x) => x) as [string, Buffer][];
+    ).map((x) => {
+      if (x.status === "rejected") throw x.reason;
+      return x.value;
+    }) as [string, Buffer][];
 
     const csummary = challenges.values().reduce(
       (prev, { challenge_id, value, solves }) => {
@@ -316,6 +309,9 @@ export class ScoreboardDataLoader {
 
     const multi = client.multi();
     const saved: string[] = Object.values(keys);
+    // Replacement and derived-cache invalidation are one Redis transaction.
+    multi.eval(SCRIPT_CLEAR_TAGGED_RANKS, { keys: [keys.ranktag] });
+    multi.del(saved);
     const visible = scoreboard
       .filter((x) => !x.hidden)
       .map(({ rank, team_id }) => ({
@@ -326,6 +322,12 @@ export class ScoreboardDataLoader {
     if (teams.length) multi.hSet(keys.team, teams);
     if (csolves.length) multi.hSet(keys.csolves, csolves);
     multi.set(keys.csummary, (await Compress(encode(csummary))) as Buffer);
+    // Redis omits empty collections, so only require indexes actually written.
+    const required = [keys.csummary];
+    if (visible.length) required.push(keys.rank);
+    if (teams.length) required.push(keys.team);
+    if (csolves.length) required.push(keys.csolves);
+    multi.sAdd(keys.manifest, required);
     for (const key of saved) {
       multi.expire(key, SCOREBOARD_EXPIRE_TIME);
     }
@@ -345,7 +347,9 @@ export class ScoreboardDataLoader {
 
     const multi = (await this.factory.getClient()).multi();
     for (const v of valid) {
-      for (const key of Object.values(this.getCacheKeys(division_id, v))) {
+      const keys = this.getCacheKeys(division_id, v);
+      multi.eval(SCRIPT_CLEAR_TAGGED_RANKS, { keys: [keys.ranktag] });
+      for (const key of Object.values(keys)) {
         multi.expire(key, ttl);
       }
     }
@@ -355,6 +359,7 @@ export class ScoreboardDataLoader {
   async getPointers(
     division_id: number,
     names: string[],
+    validate = false,
   ): Promise<Record<string, number>> {
     if (!names.length) return {};
     const client = await this.factory.getClient();
@@ -367,6 +372,19 @@ export class ScoreboardDataLoader {
         out[names[i]] = (JSON.parse(res) as ScoreboardVersionData).version;
       }
     });
+    if (validate && Object.keys(out).length) {
+      const pointers = Object.entries(out);
+      const multi = client.multi();
+      for (const [, version] of pointers) {
+        multi.eval(SCRIPT_VALIDATE_SNAPSHOT, {
+          keys: [this.getCacheKeys(division_id, version).manifest],
+        });
+      }
+      const exists = await multi.exec();
+      pointers.forEach(([name], i) => {
+        if (!exists[i]) delete out[name];
+      });
+    }
     return out;
   }
 
@@ -447,22 +465,17 @@ export class ScoreboardDataLoader {
       csolves: `${root}:csolves`,
       csummary: `${root}:csummary`,
       ranktag: `${root}:ranktag`,
+      manifest: `${root}:manifest`,
     };
   }
 
-  private async createTaggedRankTable(
-    taggedKey: string,
-    rankKey: string,
-    sortedTags: number[],
-  ) {
-    await this.factory.executeScript(
-      SCRIPT_PREPARE_RANK,
-      [
-        taggedKey,
-        rankKey,
-        ...sortedTags.map((id) => `${CACHE_NAMESPACE}:tt:${id}`),
-      ],
-      [],
-    );
+  private getRankKeys(division: number, version: number, sortedTags: number[]) {
+    const keys = this.getCacheKeys(division, version);
+    return [
+      keys.rank,
+      TEAM_TAGS_KEY,
+      keys.ranktag,
+      sortedTags.length ? `${keys.ranktag}:${sortedTags.join(",")}` : keys.rank,
+    ];
   }
 }

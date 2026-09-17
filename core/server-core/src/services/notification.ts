@@ -201,9 +201,14 @@ export class NotificationService {
       return;
     }
 
+    // Match the frozen scoreboard's inclusive cutoff, independent of delivery delay.
+    const afterFreeze =
+      setup.freeze_time_s !== undefined &&
+      event.created_at.getTime() > setup.freeze_time_s * 1000;
     const enabled = notification.solve?.filter(
       (b) =>
         b.enabled &&
+        (!afterFreeze || b.allow_during_freeze === true) &&
         (!b.max_seq || event.seq <= b.max_seq) &&
         (!b.division_ids ||
           (b.division_ids.length &&

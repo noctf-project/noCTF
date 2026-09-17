@@ -242,10 +242,86 @@ describe(ScoreboardService, () => {
       );
 
       const result = await service.getTeamScoreHistory([5]);
+      expect(scoreboardHistory.getHistoryForTeams).toHaveBeenCalledWith(
+        [5],
+        undefined,
+      );
       expect(result.get(5)).toEqual([
         [100, 20],
         [100, 500],
       ]);
+    });
+
+    it.each([
+      { start: 110, end: 115, expected: [[], []] },
+      { start: undefined, end: 99, expected: [[], []] },
+      { start: 141, end: undefined, expected: [[], []] },
+      { start: 120, end: 119, expected: [[], []] },
+      { start: 110, end: 120, expected: [[120], [600]] },
+      {
+        start: 120,
+        end: 140,
+        expected: [
+          [120, 20],
+          [600, -50],
+        ],
+      },
+    ])(
+      "filters history within inclusive bounds $start to $end",
+      async ({ start, end, expected }) => {
+        configService.get.mockResolvedValue({
+          version: 1,
+          value: { start_time_s: start, end_time_s: end },
+        });
+        const graph: [number[], number[]] = [
+          [100, 20, 20],
+          [100, 500, -50],
+        ];
+        scoreboardHistory.getHistoryForTeams.mockResolvedValue(
+          new Map([[5, graph]]),
+        );
+
+        expect((await service.getTeamScoreHistory([5])).get(5)).toEqual(
+          expected,
+        );
+        expect(scoreboardHistory.getHistoryForTeams).toHaveBeenCalledWith(
+          [5],
+          end === undefined ? undefined : new Date(end * 1000 + 999),
+        );
+        expect(graph).toEqual([
+          [100, 20, 20],
+          [100, 500, -50],
+        ]);
+      },
+    );
+
+    it("uses the entry timestamp rather than competition end for explicit history cutoffs", async () => {
+      configService.get.mockResolvedValue({
+        version: 1,
+        value: { start_time_s: 100, end_time_s: 110 },
+      });
+      scoreboardHistory.getHistoryForTeams.mockResolvedValue(
+        new Map([
+          [
+            5,
+            [
+              [100, 20, 20],
+              [100, 500, -50],
+            ],
+          ],
+        ]),
+      );
+
+      expect(
+        (await service.getTeamScoreHistory([5], new Date(120100))).get(5),
+      ).toEqual([
+        [100, 20],
+        [100, 500],
+      ]);
+      expect(scoreboardHistory.getHistoryForTeams).toHaveBeenCalledWith(
+        [5],
+        new Date(120100),
+      );
     });
 
     it("returns freeze date if freeze_time_s has elapsed, otherwise null", async () => {

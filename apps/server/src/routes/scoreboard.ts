@@ -68,7 +68,7 @@ export async function routes(fastify: FastifyInstance) {
                 (x) => !x.hidden || membership?.team_id === x.team_id || admin,
               )
               .map((x) => x.team_id),
-            freezeTime ?? undefined,
+            freezeTime ?? scoreboard.entries[0]?.updated_at,
           )
         : new Map();
 
