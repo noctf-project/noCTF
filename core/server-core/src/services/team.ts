@@ -265,13 +265,15 @@ export class TeamService {
 
   async delete(id: number, { actor, message }: AuditParams = {}) {
     const team = await this.teamDAO.delete(id);
-    await this.auditLogService.log({
-      actor,
-      operation: "team.delete",
-      entities: [`${ActorType.TEAM}:${id}`],
-      data: message,
-    });
-    await this.publishTeamUpdate(team, "delete", team.updated_at);
+    await Promise.all([
+      this.publishTeamUpdate(team, "delete", new Date()),
+      this.auditLogService.log({
+        actor,
+        operation: "team.delete",
+        entities: [`${ActorType.TEAM}:${id}`],
+        data: message,
+      }),
+    ]);
   }
 
   /**

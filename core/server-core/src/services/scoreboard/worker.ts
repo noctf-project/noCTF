@@ -28,9 +28,9 @@ import {
 import { ScoreboardHistory } from "./history.ts";
 import { ChallengeSolveEvent } from "@noctf/api/events";
 import { Delay } from "../../util/time.ts";
-import { MaxDate } from "../../util/date.ts";
 import { AbortableMutex } from "../../util/abortable_mutex.ts";
 import type { EventItem } from "../event_bus.ts";
+import { ScoreboardCalculationState } from "./calculation_state.ts";
 
 type ScoreboardUpdateEvent =
   | ChallengeUpdateEvent
@@ -72,6 +72,23 @@ export type ScoreboardWorkerProps = Pick<
 const PERIODIC_INTERVAL_SECONDS = 60;
 const RECONCILIATION_INTERVAL_MS = 10 * 60 * 1000;
 
+function computeSnapshotVersion(
+  targetCutoff: Date | undefined,
+  previousVersion: number,
+  lastEventTime: number,
+  freezeTimeSeconds?: number,
+): number {
+  if (targetCutoff) {
+    return targetCutoff.getTime();
+  }
+
+  let version = Math.max(Date.now(), previousVersion + 1, lastEventTime + 1);
+  if (freezeTimeSeconds !== undefined && version === freezeTimeSeconds * 1000) {
+    version++;
+  }
+  return version;
+}
+
 export class ScoreboardWorker {
   private readonly logger;
   private readonly challengeService;
@@ -87,16 +104,7 @@ export class ScoreboardWorker {
   private readonly teamDAO;
   private readonly divisionDAO;
 
-  private lastProcessedEventTime: Date = new Date(0);
-  private triggersCoveredBefore = 0;
-  private teamsCoveredBefore = 0;
-  private challengesCoveredBefore = 0;
-  private hasCalculated = false;
-  private lastCalculationTime = Date.now();
-  // Refresh on challenge release so unsolved challenges display their points, not 0.
-  private nextVisibilityTime = Infinity;
-  private teamTagsDirty = true;
-  private lastTeamTagsRefresh = Date.now();
+  private readonly calculationState = new ScoreboardCalculationState();
   private notifiedSolves: roaring.RoaringBitmap32 | null = null;
   private readonly calculationGate = new AbortableMutex();
 
@@ -210,18 +218,19 @@ export class ScoreboardWorker {
       // JetStream timestamps are post-commit. With synchronized clocks,
       // events before a successful calculation's start are covered.
       // Equality is not covered because event timestamps lose sub-ms precision.
-      const timestamp = data.timestamp.getTime();
-      let force = true;
-      if (data.subject === TeamUpdateEvent.$id!) {
-        force = timestamp >= this.teamsCoveredBefore;
-        if (force) this.teamTagsDirty = true;
-      } else if (data.subject === ChallengeUpdateEvent.$id!) {
-        force = timestamp >= this.challengesCoveredBefore;
-      } else if (data.subject === ScoreboardTriggerEvent.$id!) {
-        force =
-          (data.data as ScoreboardTriggerEvent).force === true ||
-          timestamp >= this.triggersCoveredBefore;
+      const triggerForce =
+        data.subject === ScoreboardTriggerEvent.$id! &&
+        (data.data as ScoreboardTriggerEvent).force === true;
+      const force = this.calculationState.shouldForceForEvent({
+        subject: data.subject,
+        timestamp: data.timestamp,
+        forceTrigger: triggerForce,
+      });
+
+      if (data.subject === TeamUpdateEvent.$id! && force) {
+        this.calculationState.markTeamTagsDirty();
       }
+
       if (data.subject === ConfigUpdateEvent.$id!) {
         this.configService.clearCache();
       }
@@ -273,13 +282,9 @@ export class ScoreboardWorker {
   ) {
     // Timestamps cannot detect scheduled visibility, deletions, or late commits.
     // Keep the cheap polling path, with a bounded reconciliation fallback.
-    force ||=
-      now >= this.nextVisibilityTime ||
-      now - this.lastCalculationTime >= RECONCILIATION_INTERVAL_MS;
+    force ||= this.calculationState.isStale(now, RECONCILIATION_INTERVAL_MS);
     const hasPendingEvents =
-      eventTimestamp !== undefined
-        ? eventTimestamp.getTime() > this.lastProcessedEventTime.getTime()
-        : !this.hasCalculated && this.lastProcessedEventTime.getTime() === 0;
+      this.calculationState.hasPendingEvents(eventTimestamp);
 
     const allDivisions = await this.divisionDAO.list();
     const divisions = (
@@ -333,17 +338,7 @@ export class ScoreboardWorker {
     const { value: setup } = await this.configService.get(SetupConfig);
     const targetPointers = this.getTargetPointers(setup);
     const now = Date.now();
-    let teams: MinimalTeamInfo[] | undefined;
-    if (
-      this.teamTagsDirty ||
-      now - this.lastTeamTagsRefresh >= RECONCILIATION_INTERVAL_MS ||
-      !(await this.dataLoader.hasTeamTags())
-    ) {
-      teams = await this.teamDAO.listForScoreboard();
-      await this.dataLoader.saveTeamTags(teams);
-      this.teamTagsDirty = false;
-      this.lastTeamTagsRefresh = now;
-    }
+    let teams = await this.refreshTeamTagsIfNeeded(now);
     const { divisions, coversAllDivisions } =
       await this.getDivisionsToRecalculate(
         targetPointers,
@@ -356,7 +351,8 @@ export class ScoreboardWorker {
         teams: new Map<number, MinimalTeamInfo[]>(),
         divisions: [],
         challenges: [],
-        nextVisibilityTime: this.nextVisibilityTime,
+        setup,
+        nextVisibilityTime: this.calculationState.getNextVisibilityTime(),
         coversAllDivisions: false,
         refreshedTeamTags: false,
       };
@@ -393,10 +389,29 @@ export class ScoreboardWorker {
       teams: teamMap,
       divisions,
       challenges,
+      setup,
       nextVisibilityTime,
       coversAllDivisions,
       refreshedTeamTags,
     };
+  }
+
+  private async refreshTeamTagsIfNeeded(
+    now: number,
+  ): Promise<MinimalTeamInfo[] | undefined> {
+    if (
+      !this.calculationState.needsTeamTagsRefresh(
+        now,
+        RECONCILIATION_INTERVAL_MS,
+      ) &&
+      (await this.dataLoader.hasTeamTags())
+    ) {
+      return undefined;
+    }
+    const teams = await this.teamDAO.listForScoreboard();
+    await this.dataLoader.saveTeamTags(teams);
+    this.calculationState.recordTeamTagsRefreshed(now);
+    return teams;
   }
 
   async computeAndSaveScoreboards(eventTimestamp?: Date, force = false) {
@@ -409,73 +424,34 @@ export class ScoreboardWorker {
       nextVisibilityTime,
       coversAllDivisions,
       refreshedTeamTags,
+      setup,
     } = await this.fetchScoreboardCalculationParams(eventTimestamp, force);
     if (!divisions.length || !teams.size) {
       if (eventTimestamp) {
-        this.lastProcessedEventTime = MaxDate(
-          this.lastProcessedEventTime,
-          eventTimestamp,
-        );
+        this.calculationState.recordEventTimestamp(eventTimestamp);
       }
       return;
     }
 
     const commits: [number, CommittedDivision][] = [];
     for (const { division, pointers } of divisions) {
-      const committed = await this.commitDivisionScoreboard(
+      const ctx = await this.fetchDivisionContext(
         teams.get(division.id) || [],
         challenges,
         division.id,
-        pointers,
+        setup,
       );
+      const committed = await this.commitDivisionScoreboard(ctx, pointers);
       commits.push([division.id, committed]);
     }
     await this.emitEvents(commits);
-    this.recordSuccessfulCalculation({
+    this.calculationState.recordSuccess({
       startedAt,
       eventTimestamp,
       nextVisibilityTime,
       coversAllDivisions,
       refreshedTeamTags,
     });
-  }
-
-  private recordSuccessfulCalculation({
-    startedAt,
-    eventTimestamp,
-    nextVisibilityTime,
-    coversAllDivisions,
-    refreshedTeamTags,
-  }: {
-    startedAt: number;
-    eventTimestamp?: Date;
-    nextVisibilityTime: number;
-    coversAllDivisions: boolean;
-    refreshedTeamTags: boolean;
-  }) {
-    if (coversAllDivisions) {
-      this.triggersCoveredBefore = Math.max(
-        this.triggersCoveredBefore,
-        startedAt,
-      );
-      this.challengesCoveredBefore = Math.max(
-        this.challengesCoveredBefore,
-        startedAt,
-      );
-      // A team event also changes shared tags, which solve calculations may not refresh.
-      if (refreshedTeamTags) {
-        this.teamsCoveredBefore = Math.max(this.teamsCoveredBefore, startedAt);
-      }
-    }
-    this.hasCalculated = true;
-    this.nextVisibilityTime = nextVisibilityTime;
-    this.lastCalculationTime = Date.now();
-    if (eventTimestamp) {
-      this.lastProcessedEventTime = MaxDate(
-        this.lastProcessedEventTime,
-        eventTimestamp,
-      );
-    }
   }
 
   private async emitEvents(
@@ -526,33 +502,33 @@ export class ScoreboardWorker {
       nextVisibilityTime,
       coversAllDivisions,
       refreshedTeamTags,
+      setup,
     } = await this.fetchScoreboardCalculationParams(eventTimestamp, true);
 
-    let points: HistoryDataPoint[] = [];
+    const points: HistoryDataPoint[] = [];
     const commits: [number, CommittedDivision][] = [];
     for (const { division, pointers } of divisions) {
       const id = division.id;
-      const [solveList, awardList, { value: setup }] = await Promise.all([
-        this.submissionDAO.getSolvesForCalculation(id),
-        this.awardDAO.getAllAwards(id),
-        this.configService.get(SetupConfig),
-      ]);
-      const solvesByChallenge = PartitionSolvesByChallenge(solveList, setup);
-      points = points.concat(
-        ComputeFullGraph(
-          new Map(teams.get(id)?.map((x) => [x.id, x])),
-          challenges,
-          solvesByChallenge,
-          awardList,
-        ),
-      );
-
-      const committed = await this.commitDivisionScoreboard(
+      const ctx = await this.fetchDivisionContext(
         teams.get(id) || [],
         challenges,
         id,
-        pointers,
+        setup,
       );
+      const solvesByChallenge = PartitionSolvesByChallenge(
+        ctx.solves,
+        ctx.setup,
+      );
+      points.push(
+        ...ComputeFullGraph(
+          new Map(ctx.teams.map((x) => [x.id, x])),
+          ctx.challenges,
+          solvesByChallenge,
+          ctx.awards,
+        ),
+      );
+
+      const committed = await this.commitDivisionScoreboard(ctx, pointers);
       commits.push([id, committed]);
     }
     await this.history.replaceAll(
@@ -562,7 +538,7 @@ export class ScoreboardWorker {
 
     // Replace the notified bitmap only after the rebuilt state is persisted.
     await this.emitEvents(commits, true);
-    this.recordSuccessfulCalculation({
+    this.calculationState.recordSuccess({
       startedAt,
       eventTimestamp,
       nextVisibilityTime,
@@ -572,25 +548,10 @@ export class ScoreboardWorker {
   }
 
   private async commitDivisionScoreboard(
-    teams: MinimalTeamInfo[],
-    challenges: ChallengeMetadataWithExpr[],
-    id: number,
+    ctx: DivisionContext,
     currentPointers: Record<string, number>,
   ): Promise<CommittedDivision> {
-    const [solves, awards, { value: setup }] = await Promise.all([
-      this.submissionDAO.getSolvesForCalculation(id),
-      this.awardDAO.getAllAwards(id),
-      this.configService.get(SetupConfig),
-    ]);
-
-    const ctx: DivisionContext = {
-      division_id: id,
-      teams,
-      challenges,
-      solves,
-      awards,
-      setup,
-    };
+    const { division_id: id, teams, setup } = ctx;
 
     const targetPointers = this.getTargetPointers(setup);
     const prevVersions = Object.values(currentPointers).filter(Boolean);
@@ -645,12 +606,31 @@ export class ScoreboardWorker {
     return latest!; // latest always exists
   }
 
+  private async fetchDivisionContext(
+    teams: MinimalTeamInfo[],
+    challenges: ChallengeMetadataWithExpr[],
+    id: number,
+    setup: SetupConfig,
+  ): Promise<DivisionContext> {
+    const [solves, awards] = await Promise.all([
+      this.submissionDAO.getSolvesForCalculation(id),
+      this.awardDAO.getAllAwards(id),
+    ]);
+    return {
+      division_id: id,
+      teams,
+      challenges,
+      solves,
+      awards,
+      setup,
+    };
+  }
+
   private async commitDivisionForPointer(
     ctx: DivisionContext,
     target: PointerTarget,
     previousVersion = 0,
   ): Promise<CommittedDivision> {
-    const targetVersion = target.cutoff?.getTime();
     const solvesByChallenge = PartitionSolvesByChallenge(
       ctx.solves,
       ctx.setup,
@@ -681,11 +661,12 @@ export class ScoreboardWorker {
 
     // Publication generations must advance even when a deletion removes the
     // newest event. Live history and its API cutoff share this timestamp.
-    let version =
-      targetVersion ??
-      Math.max(Date.now(), previousVersion + 1, last_event.getTime() + 1);
-    if (!target.cutoff && version === (ctx.setup.freeze_time_s ?? 0) * 1000)
-      version++;
+    const version = computeSnapshotVersion(
+      target.cutoff,
+      previousVersion,
+      last_event.getTime(),
+      ctx.setup.freeze_time_s,
+    );
     if (!target.cutoff) {
       for (const entry of scoreboard) entry.updated_at = new Date(version);
     }
