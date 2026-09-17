@@ -242,16 +242,68 @@ describe(ComputeScoreboard, () => {
     });
   });
 
-  it("Correctly assigns tied rank when multiple teams have the same score and same last_solve timestamp", () => {
+  it("assigns ranks 1,1,1,4 for three tied teams followed by a later solve", () => {
     mockEvaluate.mockReturnValue(100);
     const teams = new Map<number, MinimalTeamInfo>([
       [1, { id: 1, division_id: 1, flags: [], tag_ids: [] }],
       [2, { id: 2, division_id: 1, flags: [], tag_ids: [] }],
+      [3, { id: 3, division_id: 1, flags: [], tag_ids: [] }],
+      [4, { id: 4, division_id: 1, flags: [], tag_ids: [] }],
     ]);
     const challenges: ChallengeMetadataWithExpr[] = [
       { metadata: challenge1, expr },
     ];
-    // Both teams solved at the exact same timestamp, but distinct Date object instances
+    // Equal timestamps use distinct Date instances.
+    const solvesByChallenge = new Map<number, RawSolve[]>([
+      [
+        1,
+        [1, 2, 3, 4].map((id) => ({
+          id,
+          challenge_id: 1,
+          team_id: id,
+          user_id: id,
+          value: null,
+          weight: 0,
+          hidden: false,
+          created_at: new Date(id === 4 ? 6000 : 5000) as Timestamp & Date,
+          updated_at: new Date(6000) as Timestamp & Date,
+        })),
+      ],
+    ]);
+
+    const result = ComputeScoreboard(teams, challenges, solvesByChallenge, []);
+    expect(result.scoreboard.map((s) => s.score)).toEqual([100, 100, 100, 100]);
+    expect(result.scoreboard.map((s) => s.rank)).toEqual([1, 1, 1, 4]);
+  });
+
+  it("excludes hidden award recipients and auto-hidden inactive teams from visible ranks", () => {
+    mockEvaluate.mockReturnValue(100);
+    const teams = new Map<number, MinimalTeamInfo>(
+      [1, 2, 3, 4, 5, 6, 7, 8, 9].map((id) => [
+        id,
+        {
+          id,
+          division_id: 1,
+          flags: [1, 3].includes(id) ? ["hidden"] : [],
+          tag_ids: [],
+        },
+      ]),
+    );
+    const awards: Award[] = [
+      [1, 200],
+      [2, 100],
+      [3, 100],
+      [4, 100],
+      [5, 100],
+      [8, 0],
+      [9, -10],
+    ].map(([team_id, value]) => ({
+      id: team_id,
+      team_id,
+      value,
+      title: "award",
+      created_at: new Date(1000),
+    }));
     const solvesByChallenge = new Map<number, RawSolve[]>([
       [
         1,
@@ -259,36 +311,41 @@ describe(ComputeScoreboard, () => {
           {
             id: 1,
             challenge_id: 1,
-            team_id: 1,
-            user_id: 1,
+            team_id: 7,
+            user_id: 7,
             value: null,
             weight: 0,
-            hidden: false,
-            created_at: new Date(5000) as unknown as Timestamp & Date,
-            updated_at: new Date(5000) as unknown as Timestamp & Date,
-          },
-          {
-            id: 2,
-            challenge_id: 1,
-            team_id: 2,
-            user_id: 2,
-            value: null,
-            weight: 0,
-            hidden: false,
-            created_at: new Date(5000) as unknown as Timestamp & Date,
-            updated_at: new Date(5000) as unknown as Timestamp & Date,
+            hidden: true,
+            created_at: new Date(1000) as Timestamp & Date,
+            updated_at: new Date(1000) as Timestamp & Date,
           },
         ],
       ],
     ]);
-
-    const result = ComputeScoreboard(teams, challenges, solvesByChallenge, []);
-    expect(result.scoreboard).toHaveLength(2);
-    expect(result.scoreboard[0].score).toBe(100);
-    expect(result.scoreboard[1].score).toBe(100);
-    // Both teams must be tied at rank 1
-    expect(result.scoreboard[0].rank).toBe(1);
-    expect(result.scoreboard[1].rank).toBe(1);
+    const { scoreboard } = ComputeScoreboard(
+      teams,
+      [{ metadata: challenge1, expr }],
+      solvesByChallenge,
+      awards,
+    );
+    expect(
+      scoreboard.filter((s) => !s.hidden).map((s) => [s.team_id, s.rank]),
+    ).toEqual([
+      [2, 1],
+      [4, 1],
+      [5, 1],
+      [8, 4],
+      [9, 5],
+    ]);
+    expect(
+      scoreboard.filter((s) => s.hidden).map((s) => [s.team_id, s.rank]),
+    ).toEqual([
+      [1, 0],
+      [3, 0],
+      [6, 0],
+      [7, 0],
+    ]);
+    expect(scoreboard.find((s) => s.team_id === 1)?.score).toBe(200);
   });
 
   it("Value overrides for solves do not count towards dynamic scoring", () => {
@@ -1407,6 +1464,130 @@ describe("Solve count and weight scoring", () => {
       { score: 830, team_id: 2, updated_at: new Date(2000) },
     ]);
   });
+
+  it.each([
+    {
+      name: "new weights displace recipients without changing existing base scores",
+      evaluate: (_n: number, w: number) => w * 10,
+      weights: [5, 10, 10, 1],
+      history: [
+        [1, 1000, 100],
+        [1, 2000, 71],
+        [1, 3000, 50],
+        [2, 2000, 150],
+        [3, 3000, 121],
+        [4, 4000, 10],
+      ],
+    },
+    {
+      name: "solve count changes reverse weighted ordering and restore former recipients",
+      evaluate: (n: number, w: number) => 100 + (3 - n) * w,
+      weights: [1, 2, 0, 0],
+      history: [
+        [1, 1000, 152],
+        [1, 2000, 122],
+        [1, 3000, 150],
+        [1, 4000, 99],
+        [2, 2000, 152],
+        [2, 3000, 121],
+        [2, 4000, 98],
+        [3, 3000, 100],
+        [3, 4000, 150],
+        [4, 4000, 121],
+      ],
+    },
+  ])(
+    "ComputeFullGraph redistributes bonuses when $name",
+    ({ evaluate, weights, history }) => {
+      mockEvaluate.mockImplementation(MockEvaluateSolvesWithWeight(evaluate));
+      const teams = new Map<number, MinimalTeamInfo>(
+        [1, 2, 3, 4, 5, 6, 7].map((id) => [
+          id,
+          {
+            id,
+            division_id: 1,
+            flags: id === 6 ? ["hidden"] : [],
+            tag_ids: [],
+          },
+        ]),
+      );
+      const challenges = [
+        {
+          metadata: {
+            ...challenge1,
+            private_metadata: {
+              ...challenge1.private_metadata,
+              score: {
+                ...challenge1.private_metadata.score,
+                bonus: [50.4, 20.6],
+              },
+            },
+          },
+          expr,
+        },
+      ];
+      const solves: RawSolve[] = [
+        ...weights.map((weight, i) => ({
+          id: i + 1,
+          team_id: i + 1,
+          created_at: new Date((i + 1) * 1000) as Timestamp & Date,
+          weight,
+          value: null,
+          hidden: false,
+        })),
+        ...[5, 6, 7].map((id) => ({
+          id,
+          team_id: id,
+          created_at: new Date(1500 + id) as Timestamp & Date,
+          weight: 1000,
+          value: id === 5 ? 999 : null,
+          hidden: id === 7,
+        })),
+      ].map((s) => ({
+        ...s,
+        challenge_id: 1,
+        user_id: s.team_id,
+        updated_at: s.created_at,
+      }));
+      solves.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
+      const solvesByChallenge = new Map([[1, solves]]);
+      const graph = ComputeFullGraph(
+        teams,
+        challenges,
+        solvesByChallenge,
+        [],
+        1,
+      );
+      expect(graph).toEqual([
+        ...history.map(([team_id, time, score]) => ({
+          team_id,
+          score,
+          updated_at: new Date(time),
+        })),
+        { team_id: 5, score: 999, updated_at: new Date(1505) },
+      ]);
+
+      // Every historical endpoint must agree with a scoreboard of that solve prefix.
+      for (const solve of solves) {
+        const { scoreboard } = ComputeScoreboard(
+          teams,
+          challenges,
+          new Map([
+            [1, solves.filter((s) => s.created_at <= solve.created_at)],
+          ]),
+          [],
+        );
+        const endpoints = new Map(
+          graph
+            .filter((p) => p.updated_at <= solve.created_at)
+            .map((p) => [p.team_id, p.score]),
+        );
+        for (const team of scoreboard.filter((s) => !s.hidden)) {
+          expect(endpoints.get(team.team_id)).toBe(team.score);
+        }
+      }
+    },
+  );
 
   it("assigns bounty bonuses to highest-scoring weighted solves rather than arrival order", () => {
     expr.variables.mockReturnValue(["ctx.w"]);

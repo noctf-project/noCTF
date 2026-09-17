@@ -23,6 +23,10 @@ export async function up(db: Kysely<any>): Promise<void> {
     .dropConstraint("score_history_team_id_fkey")
     .execute();
   await schema
+    .alterTable("award")
+    .dropConstraint("award_team_id_fkey")
+    .execute();
+  await schema
     .createIndex("submission_idx_updated_at")
     .on("submission")
     .column("updated_at")
@@ -104,6 +108,12 @@ export async function down(db: Kysely<any>): Promise<void> {
       "team",
       ["id"],
     )
+    .onDelete("cascade")
+    .execute();
+
+  await schema
+    .alterTable("award")
+    .addForeignKeyConstraint("award_team_id_fkey", ["team_id"], "team", ["id"])
     .onDelete("cascade")
     .execute();
 }

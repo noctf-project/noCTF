@@ -142,7 +142,13 @@ export class ScoreboardService {
     // When endTime is explicit (e.g. freeze cutoff or post-end adjudication/eval window),
     // prioritize it over end_time_s so graph scores stay consistent with the scoreboard.
     const end = cutoffTimeS !== undefined ? cutoffTimeS : end_time_s;
-    const data = await this.history.getHistoryForTeams(id);
+    // Configured bounds include the whole final second; explicit dates stay precise.
+    const cutoff =
+      endTime ??
+      (end_time_s !== undefined
+        ? new Date(end_time_s * 1000 + 999)
+        : undefined);
+    const data = await this.history.getHistoryForTeams(id, cutoff);
     return new Map(
       data
         .entries()
@@ -179,10 +185,10 @@ export class ScoreboardService {
       return [[], []];
     }
     if (endTime !== undefined) {
-      if (start === 0 && graph[0][0] > endTime) {
+      let t = startTime !== undefined ? ts : graph[0][0];
+      if (t > endTime) {
         return [[], []];
       }
-      let t = ts || graph[0][0];
 
       for (end = start + 1; end < graph[0].length; end++) {
         if ((t += graph[0][end]) > endTime) {
@@ -194,10 +200,8 @@ export class ScoreboardService {
     const x = graph[0].slice(start, end);
     const y = graph[1].slice(start, end);
     if (start === 0) return [x, y];
-    if (x[0] && ts !== 0) {
-      x[0] = ts;
-      y[0] = score;
-    }
+    x[0] = ts;
+    y[0] = score;
 
     return [x, y];
   }

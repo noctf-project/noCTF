@@ -279,7 +279,7 @@ export async function routes(fastify: FastifyInstance) {
         request.query.graph_interval
           ? scoreboardService.getTeamScoreHistory(
               [membership.team_id],
-              admin ? undefined : (freezeTime ?? entry.updated_at),
+              admin ? entry.updated_at : (freezeTime ?? entry.updated_at),
             )
           : null,
       ]);

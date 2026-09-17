@@ -60,6 +60,7 @@ export class RedisClientFactory {
       return await exec(sha);
     } catch (e) {
       if (e instanceof ErrorReply && e.message.startsWith("NOSCRIPT")) {
+        this.scriptCache.delete(script);
         sha = await this.scriptCache.load(script, () =>
           client.scriptLoad(script),
         );

@@ -18,6 +18,7 @@ export async function routes(fastify: FastifyInstance) {
       const { recompute_graph } = request.body;
       await eventBusService.publish(ScoreboardTriggerEvent, {
         recompute_graph,
+        force: true,
       });
       return {};
     },

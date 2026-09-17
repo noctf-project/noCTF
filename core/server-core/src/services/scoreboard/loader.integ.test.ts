@@ -1,31 +1,75 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import { ScoreboardDataLoader } from "./loader.ts";
 import { createTestClients, TestClients } from "../../test/integ-clients.ts";
 import { ScoreboardEntry, Solve } from "@noctf/api/datatypes";
 import { ComputedChallengeScoreData } from "./calc.ts";
+import { randomInt } from "node:crypto";
+import { MinimalTeamInfo } from "../../dao/team.ts";
 
 describe(ScoreboardDataLoader, () => {
   let clients: TestClients;
   let loader: ScoreboardDataLoader;
+  const tagsKey = "core:svc:score:data:tags";
+  const divisionBase = randomInt(1000000, 1000000000);
+  const divisions = new Set<number>();
+  const division = (offset: number) => {
+    const id = divisionBase + offset;
+    divisions.add(id);
+    return id;
+  };
+  const entry = (
+    team_id: number,
+    rank: number,
+    tag_ids: number[] = [],
+  ): ScoreboardEntry => ({
+    team_id,
+    rank,
+    tag_ids,
+    score: 1000 - rank,
+    last_solve: new Date(0),
+    updated_at: new Date(0),
+    hidden: false,
+    solves: [],
+    awards: [],
+  });
+  const toTeams = (
+    entries: ScoreboardEntry[],
+    division_id = 0,
+  ): MinimalTeamInfo[] =>
+    entries.map(({ team_id, tag_ids, hidden }) => ({
+      id: team_id,
+      division_id,
+      tag_ids,
+      flags: hidden ? ["hidden"] : [],
+    }));
 
   beforeAll(() => {
     clients = createTestClients();
     loader = new ScoreboardDataLoader(clients.getRedisFactory());
   });
 
+  beforeEach(async () => {
+    const client = await clients.getRedisFactory().getClient();
+    await client.del(tagsKey);
+  });
+
   afterAll(async () => {
+    const client = await clients.getRedisFactory().getClient();
+    for (const id of divisions) {
+      const keys: string[] = [];
+      for await (const key of client.scanIterator({
+        MATCH: `core:svc:score:data:d:${id}:*`,
+      }))
+        keys.push(key);
+      if (keys.length) await client.del(keys);
+    }
+    await client.del(tagsKey);
     await clients.destroy();
   });
 
   it("saves, indexes, and queries scoreboard data in Redis", async () => {
-    const divisionId = 9999;
+    const divisionId = division(9999);
     const version = 1000000;
-
-    await loader.saveTeamTags([
-      { id: 101, division_id: divisionId, tag_ids: [1, 2], flags: [] },
-      { id: 102, division_id: divisionId, tag_ids: [2], flags: [] },
-      { id: 103, division_id: divisionId, tag_ids: [3], flags: [] },
-    ]);
 
     const sampleEntries: ScoreboardEntry[] = [
       {
@@ -124,6 +168,7 @@ describe(ScoreboardDataLoader, () => {
       ],
     ]);
 
+    await loader.saveTeamTags(toTeams(sampleEntries));
     const saved = await loader.saveIndexed(
       divisionId,
       version,
@@ -222,8 +267,117 @@ describe(ScoreboardDataLoader, () => {
     await loader.expireVersions(divisionId, [version], 1);
   });
 
+  it("optionally omits pointers whose snapshot summary is missing", async () => {
+    const id = division(7);
+    await loader.saveIndexed(id, 1, [entry(1, 1)], new Map(), "latest");
+    await loader.saveIndexed(id, 2, [], new Map(), "frozen");
+    const names = ["latest", "frozen", "missing"];
+    expect(await loader.getPointers(id, names, true)).toEqual({
+      latest: 1,
+      frozen: 2,
+    });
+    const client = await clients.getRedisFactory().getClient();
+    await client.del(`core:svc:score:data:d:${id}:v:2:csummary`);
+    expect(await loader.getPointers(id, names)).toEqual({
+      latest: 1,
+      frozen: 2,
+    });
+    expect(await loader.getPointers(id, names, true)).toEqual({ latest: 1 });
+    await client.del(`core:svc:score:data:d:${id}:v:1:csummary`);
+    expect(await loader.getPointers(id, names, true)).toEqual({});
+    await loader.saveIndexed(id, 2, [], new Map());
+    expect(await loader.getPointers(id, names, true)).toEqual({ frozen: 2 });
+    expect(await loader.getPointers(id, [], true)).toEqual({});
+  });
+
+  it.each(["rank", "team", "csolves", "manifest"])(
+    "invalidates a pointer after its %s key is lost",
+    async (missing) => {
+      const id = division(
+        8 + ["rank", "team", "csolves", "manifest"].indexOf(missing),
+      );
+      const client = await clients.getRedisFactory().getClient();
+      const root = `core:svc:score:data:d:${id}:v:1`;
+      const entries = [entry(1, 1, [7])];
+      const challenges = new Map([
+        [10, { challenge_id: 10, value: 100, solves: [] }],
+      ]);
+      await loader.saveIndexed(id, 1, entries, challenges, "frozen");
+      expect((await client.sMembers(`${root}:manifest`)).sort()).toEqual(
+        ["rank", "team", "csolves", "csummary"]
+          .map((key) => `${root}:${key}`)
+          .sort(),
+      );
+      expect(await loader.getPointers(id, ["frozen"], true)).toEqual({
+        frozen: 1,
+      });
+      await client.del(`${root}:${missing}`);
+      expect(await loader.getPointers(id, ["frozen"])).toEqual({ frozen: 1 });
+      expect(await loader.getPointers(id, ["frozen"], true)).toEqual({});
+      await loader.saveIndexed(id, 1, entries, challenges);
+      expect(await loader.getPointers(id, ["frozen"], true)).toEqual({
+        frozen: 1,
+      });
+
+      await loader.saveIndexed(id, 1, [], new Map());
+      expect(await client.sMembers(`${root}:manifest`)).toEqual([
+        `${root}:csummary`,
+      ]);
+      expect(await loader.getPointers(id, ["frozen"], true)).toEqual({
+        frozen: 1,
+      });
+    },
+  );
+
+  it("tracks membership recovery separately from snapshot validity, including empty membership", async () => {
+    const id = division(12);
+    const entries = [entry(1, 1, [7])];
+    expect(await loader.hasTeamTags()).toBe(false);
+    await loader.saveIndexed(id, 1, entries, new Map(), "frozen");
+    expect(await loader.hasTeamTags()).toBe(false);
+    expect(await loader.getRanks(id, 1, 0, -1, [7])).toEqual([0, []]);
+    await loader.saveTeamTags(toTeams(entries));
+    expect(await loader.hasTeamTags()).toBe(true);
+    expect(await loader.getRanks(id, 1, 0, -1, [7])).toEqual([1, [1]]);
+    const client = await clients.getRedisFactory().getClient();
+    await client.del(tagsKey);
+    expect(await loader.hasTeamTags()).toBe(false);
+    expect(await loader.getPointers(id, ["frozen"], true)).toEqual({
+      frozen: 1,
+    });
+    expect(await loader.getRanks(id, 1, 0, -1)).toEqual([1, [1]]);
+    expect(await loader.getRanks(id, 1, 0, -1, [7])).toEqual([0, []]);
+    await loader.saveTeamTags([]);
+    expect(await loader.hasTeamTags()).toBe(true);
+    expect(await client.hKeys(tagsKey)).toEqual(["generation"]);
+    await loader.saveTeamTags(toTeams(entries));
+    expect(await loader.getRanks(id, 1, 0, -1, [7])).toEqual([1, [1]]);
+  });
+
+  it("validates hidden-only snapshots without requiring absent rank or tag indexes", async () => {
+    const id = division(13);
+    await loader.saveIndexed(
+      id,
+      1,
+      [{ ...entry(1, 1, [7]), hidden: true }],
+      new Map(),
+      "frozen",
+    );
+    const client = await clients.getRedisFactory().getClient();
+    const root = `core:svc:score:data:d:${id}:v:1`;
+    expect((await client.sMembers(`${root}:manifest`)).sort()).toEqual([
+      `${root}:csummary`,
+      `${root}:team`,
+    ]);
+    expect(await loader.getPointers(id, ["frozen"], true)).toEqual({
+      frozen: 1,
+    });
+    await client.del(`${root}:team`);
+    expect(await loader.getPointers(id, ["frozen"], true)).toEqual({});
+  });
+
   it("handles empty or zero version requests gracefully", async () => {
-    const divisionId = 9998;
+    const divisionId = division(9998);
 
     expect(await loader.getScoreboard(divisionId, 0, 0, 10)).toEqual({
       total: 0,
@@ -238,7 +392,7 @@ describe(ScoreboardDataLoader, () => {
   });
 
   it("handles non-existent versions and missing keys gracefully", async () => {
-    const divisionId = 9997;
+    const divisionId = division(9997);
     const nonExistentVersion = 99999999;
 
     const scoreboard = await loader.getScoreboard(
@@ -299,7 +453,7 @@ describe(ScoreboardDataLoader, () => {
   });
 
   it("handles pagination boundaries and out of range offsets", async () => {
-    const divisionId = 9996;
+    const divisionId = division(9996);
     const version = 2000000;
 
     const sampleEntries: ScoreboardEntry[] = [
@@ -351,15 +505,8 @@ describe(ScoreboardDataLoader, () => {
   });
 
   it("handles multiple and overlapping tags with union filtering", async () => {
-    const divisionId = 9995;
+    const divisionId = division(9995);
     const version = 3000000;
-
-    await loader.saveTeamTags([
-      { id: 301, division_id: divisionId, tag_ids: [10], flags: [] },
-      { id: 302, division_id: divisionId, tag_ids: [20], flags: [] },
-      { id: 303, division_id: divisionId, tag_ids: [10, 20], flags: [] },
-      { id: 304, division_id: divisionId, tag_ids: [30], flags: [] },
-    ]);
 
     const entries: ScoreboardEntry[] = [
       {
@@ -408,6 +555,7 @@ describe(ScoreboardDataLoader, () => {
       },
     ];
 
+    await loader.saveTeamTags(toTeams(entries));
     await loader.saveIndexed(divisionId, version, entries, new Map(), "latest");
 
     const unionResult = await loader.getScoreboard(
@@ -464,7 +612,7 @@ describe(ScoreboardDataLoader, () => {
   });
 
   it("handles all-hidden teams and empty scoreboard snapshots", async () => {
-    const divisionId = 9994;
+    const divisionId = division(9994);
     const version = 4000000;
 
     const allHidden: ScoreboardEntry[] = [
@@ -508,5 +656,312 @@ describe(ScoreboardDataLoader, () => {
 
     const rank = await loader.getTeamRank(divisionId, version, 401);
     expect(rank).toBeNull();
+  });
+
+  it("replaces same-version indexes and invalidates derived ranks without changing membership", async () => {
+    const id = division(1);
+    const version = 1;
+    const solves: Solve[] = [
+      {
+        id: 1,
+        team_id: 1,
+        user_id: 1,
+        challenge_id: 10,
+        value: 100,
+        created_at: new Date(0),
+        hidden: false,
+      },
+    ];
+    await loader.saveTeamTags(
+      toTeams([entry(1, 1, [7]), entry(2, 2, [8]), entry(3, 2, [7])]),
+    );
+    const client = await clients.getRedisFactory().getClient();
+    const membership = await client.hGetAll(tagsKey);
+    const root = `core:svc:score:data:d:${id}:v:${version}`;
+    await loader.saveIndexed(
+      id,
+      version,
+      [entry(1, 1, [7]), entry(2, 2, [8])],
+      new Map([[10, { challenge_id: 10, value: 100, solves }]]),
+    );
+    expect(await loader.getRanks(id, version, 0, -1, [7])).toEqual([1, [1]]);
+    expect(await loader.getRanks(id, version, 0, -1, [7, 8])).toEqual([
+      2,
+      [1, 2],
+    ]);
+    expect(await loader.getChallengeSolves(id, version, 10)).toEqual(solves);
+    const derived = await client.sMembers(`${root}:ranktag`);
+    expect(derived).toHaveLength(2);
+
+    await loader.saveIndexed(
+      id,
+      version,
+      [entry(2, 1, [8]), { ...entry(3, 2, [7]), hidden: true }],
+      new Map(),
+    );
+    expect(await client.exists(derived)).toBe(0);
+    expect(await loader.getRanks(id, version, 0, -1)).toEqual([1, [2]]);
+    expect(await loader.getTeam(id, version, 1)).toBeNull();
+    expect(await loader.getTeamRank(id, version, 1)).toBeNull();
+    expect(await loader.getChallengeSolves(id, version, 10)).toEqual([]);
+    expect(await loader.getChallengeSummary(id, version)).toEqual({});
+    expect(await loader.getRanks(id, version, 0, -1, [7])).toEqual([0, []]);
+    expect(await loader.getRanks(id, version, 0, -1, [7, 8])).toEqual([1, [2]]);
+    expect(await loader.getScoreboard(id, version, 0, -1, [7])).toEqual({
+      total: 0,
+      entries: [],
+    });
+
+    await loader.saveIndexed(
+      id,
+      version,
+      [{ ...entry(2, 1, [8]), hidden: true }],
+      new Map(),
+    );
+    expect(await loader.getRanks(id, version, 0, -1)).toEqual([0, []]);
+    expect(await loader.getRanks(id, version, 0, -1, [8])).toEqual([0, []]);
+    expect(await loader.getTeamRank(id, version, 2)).toBeNull();
+    expect((await loader.getTeam(id, version, 2))?.hidden).toBe(true);
+
+    await loader.saveIndexed(id, version, [], new Map());
+    expect(await loader.getScoreboard(id, version, 0, -1)).toEqual({
+      total: 0,
+      entries: [],
+    });
+    expect(await loader.getRanks(id, version, 0, -1, [8])).toEqual([0, []]);
+    expect(await loader.getTeam(id, version, 2)).toBeNull();
+    expect(await loader.getTeam(id, version, 3)).toBeNull();
+    expect(await client.hGetAll(tagsKey)).toEqual(membership);
+  });
+
+  it("applies current tags to latest and frozen snapshots across divisions without republishing", async () => {
+    const id = division(2);
+    const otherId = division(3);
+    const entries = [entry(1, 1, [7]), entry(3, 2, [8])];
+    const others = [entry(2, 1, [7]), { ...entry(4, 2, [7]), hidden: true }];
+    await loader.saveTeamTags([
+      ...toTeams(entries, id),
+      ...toTeams(others, otherId),
+    ]);
+    await loader.saveIndexed(id, 1, entries, new Map(), "frozen");
+    await loader.saveIndexed(id, 2, entries, new Map(), "latest");
+    await loader.saveIndexed(otherId, 1, others, new Map(), "latest");
+    const snapshots = [
+      [id, 1],
+      [id, 2],
+      [otherId, 1],
+    ];
+    for (const [divisionId, version] of snapshots) {
+      expect(await loader.getRanks(divisionId, version, 0, -1, [7])).toEqual([
+        1,
+        [divisionId === id ? 1 : 2],
+      ]);
+    }
+
+    await loader.saveTeamTags([
+      ...toTeams([entry(1, 1, [8]), entry(3, 2, [7])], id),
+      ...toTeams(
+        [entry(2, 1, [8]), { ...entry(4, 2, [7]), hidden: true }],
+        otherId,
+      ),
+    ]);
+    const client = await clients.getRedisFactory().getClient();
+    expect(await client.hGet(tagsKey, "7")).toBe("[3,4]");
+    for (const [divisionId, version] of snapshots) {
+      const teams = divisionId === id ? [3] : [];
+      expect(await loader.getRanks(divisionId, version, 0, -1, [7])).toEqual([
+        teams.length,
+        teams,
+      ]);
+      const result = await loader.getScoreboard(
+        divisionId,
+        version,
+        0,
+        -1,
+        [7],
+      );
+      expect(result.total).toBe(teams.length);
+      expect(result.entries.map((x) => [x.team_id, x.rank])).toEqual(
+        teams.map((team) => [team, 1]),
+      );
+      expect(
+        await loader.getTeamRank(
+          divisionId,
+          version,
+          divisionId === id ? 1 : 2,
+          [7],
+        ),
+      ).toBeNull();
+      expect(await loader.getTeamRank(divisionId, version, 3, [7])).toBe(
+        divisionId === id ? 1 : null,
+      );
+    }
+    expect((await loader.getTeam(id, 1, 1))?.tag_ids).toEqual([7]);
+    expect(await loader.getPointers(id, ["latest", "frozen"], true)).toEqual({
+      latest: 2,
+      frozen: 1,
+    });
+
+    await loader.saveTeamTags([]);
+    expect(await client.hKeys(tagsKey)).toEqual(["generation"]);
+    for (const [divisionId, version] of snapshots) {
+      expect(await loader.getRanks(divisionId, version, 0, -1, [7, 8])).toEqual(
+        [0, []],
+      );
+      expect(
+        (await loader.getScoreboard(divisionId, version, 0, -1, [7])).entries,
+      ).toEqual([]);
+      expect(await loader.getTeamRank(divisionId, version, 3, [7])).toBeNull();
+    }
+  });
+
+  it("reads coherent tagged snapshots during concurrent snapshot and membership replacement", async () => {
+    const id = division(6);
+    const snapshots = [
+      [entry(1, 1, [7])],
+      [entry(2, 1, [7]), entry(3, 1, [7])],
+    ];
+    await loader.saveTeamTags(toTeams(snapshots.flat()));
+    await loader.saveIndexed(id, 1, snapshots[0], new Map());
+    await Promise.all([
+      (async () => {
+        for (let i = 0; i < 20; i++) {
+          await loader.saveIndexed(id, 1, snapshots[i % 2], new Map());
+        }
+      })(),
+      (async () => {
+        for (let i = 0; i < 40; i++) {
+          const result = await loader.getScoreboard(id, 1, 0, -1, [7]);
+          expect(result.total).toBe(result.entries.length);
+          expect([[1], [2, 3]]).toContainEqual(
+            result.entries.map((x) => x.team_id),
+          );
+          expect(result.entries.every((x) => x.rank === 1)).toBe(true);
+        }
+      })(),
+    ]);
+
+    await loader.saveIndexed(id, 1, snapshots.flat(), new Map());
+    const client = await clients.getRedisFactory().getClient();
+    const root = `core:svc:score:data:d:${id}:v:1`;
+    const generations: string[] = [];
+    for (const snapshot of snapshots) {
+      await loader.saveTeamTags(toTeams(snapshot));
+      generations.push((await client.hGet(tagsKey, "generation"))!);
+    }
+    expect(generations[0]).not.toBe(generations[1]);
+    await Promise.all([
+      (async () => {
+        for (let i = 0; i < 40; i++) {
+          await loader.saveTeamTags(toTeams(snapshots[i % 2]));
+        }
+      })(),
+      (async () => {
+        for (let i = 0; i < 40; i++) {
+          const result = await loader.getScoreboard(id, 1, 0, -1, [7]);
+          expect(result.total).toBe(result.entries.length);
+          expect([[1], [2, 3]]).toContainEqual(
+            result.entries.map((x) => x.team_id),
+          );
+          expect(result.entries.every((x) => x.rank === 1)).toBe(true);
+          expect([
+            [1, [1]],
+            [2, [2, 3]],
+          ]).toContainEqual(await loader.getRanks(id, 1, 0, -1, [7]));
+          expect([1, null]).toContain(await loader.getTeamRank(id, 1, 1, [7]));
+        }
+      })(),
+    ]);
+    // A cached generation must contain only the membership read with that generation.
+    for (const [i, generation] of generations.entries()) {
+      await loader.saveTeamTags(toTeams(snapshots[i]));
+      expect(await loader.getRanks(id, 1, 0, -1, [7])).toEqual([
+        snapshots[i].length,
+        snapshots[i].map((x) => x.team_id),
+      ]);
+      expect(
+        await client.zRange(`${root}:ranktag:7:${generation}`, 0, -1),
+      ).toEqual(snapshots[i].map((x) => x.team_id.toString()));
+    }
+    expect((await client.sMembers(`${root}:ranktag`)).sort()).toEqual(
+      generations.map((generation) => `${root}:ranktag:7:${generation}`).sort(),
+    );
+  });
+
+  it("preserves membership through idle touches and snapshot expiration and rebuilds derived indexes", async () => {
+    const id = division(4);
+    const version = 1;
+    await loader.saveTeamTags(
+      toTeams([entry(1, 1, [7, 8]), entry(2, 2, [8, 7])]),
+    );
+    await loader.saveIndexed(
+      id,
+      version,
+      [entry(1, 1, [7])],
+      new Map(),
+      "latest",
+    );
+    expect(await loader.getRanks(id, version, 0, -1, [7])).toEqual([1, [1]]);
+    const client = await clients.getRedisFactory().getClient();
+    const root = `core:svc:score:data:d:${id}:v:${version}`;
+    const membership = await client.hGetAll(tagsKey);
+    const derived = `${root}:ranktag:7:${membership.generation}`;
+    expect(await client.sMembers(`${root}:ranktag`)).toEqual([derived]);
+    expect(await client.ttl(derived)).toBeGreaterThan(50);
+    expect(await client.exists(`${root}:tags`)).toBe(0);
+    await client.expire(derived, 30);
+    await loader.saveTeamTags(
+      toTeams([entry(2, 2, [7, 8, 7]), entry(1, 1, [8, 7])]),
+    );
+    expect(await client.hGetAll(tagsKey)).toEqual(membership);
+    expect(await loader.getRanks(id, version, 0, -1, [7])).toEqual([1, [1]]);
+    expect(await client.ttl(derived)).toBeLessThanOrEqual(30);
+    expect(await client.ttl(derived)).toBeGreaterThan(0);
+    expect(await client.sMembers(`${root}:ranktag`)).toEqual([derived]);
+    await client.expire(`${root}:manifest`, 1);
+    await loader.touchDivision(id, { latest: version });
+    expect(await client.ttl(tagsKey)).toBe(-1);
+    expect(await client.ttl(`${root}:manifest`)).toBeGreaterThan(590);
+    await client.del(derived);
+    expect(await loader.getRanks(id, version, 0, -1, [7])).toEqual([1, [1]]);
+
+    await loader.expireVersions(id, [version], 1);
+    expect(await client.ttl(tagsKey)).toBe(-1);
+    expect(await client.ttl(`${root}:manifest`)).toBeLessThanOrEqual(1);
+    expect(await client.exists(derived)).toBe(0);
+    await loader.expireVersions(id, [version], 0);
+    expect(await loader.getPointers(id, ["latest"], true)).toEqual({});
+    expect(await loader.getRanks(id, version, 0, -1, [7])).toEqual([0, []]);
+    expect(await client.hGetAll(tagsKey)).toEqual(membership);
+    expect(await loader.hasTeamTags()).toBe(true);
+  });
+
+  it("uses competition ranks for ties, tag unions, and pages starting inside a tie", async () => {
+    const id = division(5);
+    const entries = [
+      entry(1, 1),
+      entry(2, 2, [7]),
+      entry(3, 2, [7, 8]),
+      entry(4, 4, [8]),
+    ];
+    await loader.saveTeamTags(toTeams(entries));
+    await loader.saveIndexed(id, 1, entries, new Map());
+    for (const tags of [undefined, [7, 8], [8]]) {
+      const expected =
+        tags?.length === 1 ? [1, 2] : tags ? [1, 1, 3] : [1, 2, 2, 4];
+      const scoreboard = await loader.getScoreboard(id, 1, 0, -1, tags);
+      expect(scoreboard.entries.map((x) => x.rank)).toEqual(expected);
+      for (const [i, team] of scoreboard.entries.entries()) {
+        expect(await loader.getTeamRank(id, 1, team.team_id, tags)).toBe(
+          expected[i],
+        );
+      }
+    }
+    const page = await loader.getScoreboard(id, 1, 1, 2, [7, 8]);
+    expect(page.entries.map((x) => [x.team_id, x.rank])).toEqual([
+      [3, 1],
+      [4, 3],
+    ]);
+    expect(await loader.getTeamRank(id, 1, 1, [7, 8])).toBeNull();
   });
 });

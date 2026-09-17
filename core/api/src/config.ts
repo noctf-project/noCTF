@@ -215,6 +215,14 @@ export const NotificationConfig = Type.Object(
                 "Only notify up to a certain solve count. Set to 0 for unlimited",
             }),
           ),
+          allow_during_freeze: Type.Optional(
+            Type.Boolean({
+              title: "Allow During Scoreboard Freeze",
+              default: false,
+              description:
+                "Send notifications for solves after the scoreboard freeze cutoff. Suppressed notifications are not replayed.",
+            }),
+          ),
           enabled: Type.Boolean({ title: "Enabled" }),
         }),
         { title: "Solve Notifications" },

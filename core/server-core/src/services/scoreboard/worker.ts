@@ -30,6 +30,13 @@ import { ChallengeSolveEvent } from "@noctf/api/events";
 import { Delay } from "../../util/time.ts";
 import { MaxDate } from "../../util/date.ts";
 import { AbortableMutex } from "../../util/abortable_mutex.ts";
+import type { EventItem } from "../event_bus.ts";
+
+type ScoreboardUpdateEvent =
+  | ChallengeUpdateEvent
+  | TeamUpdateEvent
+  | ScoreboardTriggerEvent
+  | ConfigUpdateEvent;
 
 export type PointerTarget = {
   name: string;
@@ -63,6 +70,7 @@ export type ScoreboardWorkerProps = Pick<
 >;
 
 const PERIODIC_INTERVAL_SECONDS = 60;
+const RECONCILIATION_INTERVAL_MS = 10 * 60 * 1000;
 
 export class ScoreboardWorker {
   private readonly logger;
@@ -80,8 +88,16 @@ export class ScoreboardWorker {
   private readonly divisionDAO;
 
   private lastProcessedEventTime: Date = new Date(0);
+  private triggersCoveredBefore = 0;
+  private teamsCoveredBefore = 0;
+  private challengesCoveredBefore = 0;
+  private hasCalculated = false;
+  private lastCalculationTime = Date.now();
+  // Refresh on challenge release so unsolved challenges display their points, not 0.
+  private nextVisibilityTime = Infinity;
+  private teamTagsDirty = true;
+  private lastTeamTagsRefresh = Date.now();
   private notifiedSolves: roaring.RoaringBitmap32 | null = null;
-  private readonly divisionPointers = new Map<number, Record<string, number>>();
   private readonly calculationGate = new AbortableMutex();
 
   constructor({
@@ -145,12 +161,7 @@ export class ScoreboardWorker {
 
   private async subscribeEvents(signal: AbortSignal): Promise<void> {
     try {
-      await this.eventBusService.subscribe<
-        | ChallengeUpdateEvent
-        | TeamUpdateEvent
-        | ScoreboardTriggerEvent
-        | ConfigUpdateEvent
-      >(
+      await this.eventBusService.subscribe<ScoreboardUpdateEvent>(
         signal,
         "ScoreboardWorker",
         [
@@ -161,32 +172,7 @@ export class ScoreboardWorker {
         ],
         {
           concurrency: 1,
-          handler: async (data) => {
-            if (data.subject === ScoreboardTriggerEvent.$id!) {
-              const trigger = data.data as ScoreboardTriggerEvent;
-              const sqlTimestamp =
-                await this.submissionDAO.getLatestActivityTimestamp();
-              const eventTimestamp = sqlTimestamp ?? data.timestamp;
-              if (trigger.recompute_graph) {
-                return await this.runCalculation(signal, () =>
-                  this.recomputeFullGraph(eventTimestamp),
-                );
-              }
-              return await this.runCalculation(signal, () =>
-                this.computeAndSaveScoreboards(eventTimestamp),
-              );
-            }
-
-            // Team, challenge, and config updates use the time the record was updated
-            const record = data.data as { updated_at?: Date | string };
-            const recordTime = record?.updated_at
-              ? new Date(record.updated_at)
-              : data.timestamp;
-
-            await this.runCalculation(signal, () =>
-              this.computeAndSaveScoreboards(recordTime),
-            );
-          },
+          handler: (data) => this.handleEvent(data, signal),
         },
       );
     } catch (e) {
@@ -216,16 +202,52 @@ export class ScoreboardWorker {
     }
   }
 
+  private async handleEvent(
+    data: EventItem<ScoreboardUpdateEvent>,
+    signal: AbortSignal,
+  ): Promise<void> {
+    await this.runCalculation(signal, async () => {
+      // JetStream timestamps are post-commit. With synchronized clocks,
+      // events before a successful calculation's start are covered.
+      // Equality is not covered because event timestamps lose sub-ms precision.
+      const timestamp = data.timestamp.getTime();
+      let force = true;
+      if (data.subject === TeamUpdateEvent.$id!) {
+        force = timestamp >= this.teamsCoveredBefore;
+        if (force) this.teamTagsDirty = true;
+      } else if (data.subject === ChallengeUpdateEvent.$id!) {
+        force = timestamp >= this.challengesCoveredBefore;
+      } else if (data.subject === ScoreboardTriggerEvent.$id!) {
+        force =
+          (data.data as ScoreboardTriggerEvent).force === true ||
+          timestamp >= this.triggersCoveredBefore;
+      }
+      if (data.subject === ConfigUpdateEvent.$id!) {
+        this.configService.clearCache();
+      }
+      const sqlTimestamp =
+        await this.submissionDAO.getLatestActivityTimestamp();
+      if (
+        data.subject === ScoreboardTriggerEvent.$id! &&
+        (data.data as ScoreboardTriggerEvent).recompute_graph
+      ) {
+        await this.recomputeFullGraph(sqlTimestamp ?? undefined);
+      } else {
+        await this.computeAndSaveScoreboards(sqlTimestamp ?? undefined, force);
+      }
+    });
+  }
+
   private async getPointers(
     division_id: number,
   ): Promise<Record<string, number>> {
-    const cached = this.divisionPointers.get(division_id);
-    if (cached) return cached;
-    const loaded =
-      (await this.dataLoader.getPointers(division_id, ["latest", "frozen"])) ??
-      {};
-    this.divisionPointers.set(division_id, loaded);
-    return loaded;
+    return (
+      (await this.dataLoader.getPointers(
+        division_id,
+        ["latest", "frozen"],
+        true,
+      )) ?? {}
+    );
   }
 
   private getTargetPointers(setup: SetupConfig): {
@@ -243,20 +265,26 @@ export class ScoreboardWorker {
     return targets;
   }
 
-  private async fetchScoreboardCalculationParams(
+  private async getDivisionsToRecalculate(
+    targetPointers: PointerTarget[],
+    now: number,
     eventTimestamp?: Date,
     force = false,
   ) {
-    const { value: setup } = await this.configService.get(SetupConfig);
-    const targetPointers = this.getTargetPointers(setup);
+    // Timestamps cannot detect scheduled visibility, deletions, or late commits.
+    // Keep the cheap polling path, with a bounded reconciliation fallback.
+    force ||=
+      now >= this.nextVisibilityTime ||
+      now - this.lastCalculationTime >= RECONCILIATION_INTERVAL_MS;
     const hasPendingEvents =
       eventTimestamp !== undefined
         ? eventTimestamp.getTime() > this.lastProcessedEventTime.getTime()
-        : this.lastProcessedEventTime.getTime() === 0;
+        : !this.hasCalculated && this.lastProcessedEventTime.getTime() === 0;
 
+    const allDivisions = await this.divisionDAO.list();
     const divisions = (
       await Promise.all(
-        (await this.divisionDAO.list()).map(async (d) => {
+        allDivisions.map(async (d) => {
           const currentPointers = await this.getPointers(d.id);
 
           const isUpToDate =
@@ -292,29 +320,69 @@ export class ScoreboardWorker {
         }),
       )
     ).filter((v): v is Exclude<typeof v, null> => !!v);
+    return {
+      divisions,
+      coversAllDivisions: divisions.length === allDivisions.length,
+    };
+  }
+
+  private async fetchScoreboardCalculationParams(
+    eventTimestamp?: Date,
+    force = false,
+  ) {
+    const { value: setup } = await this.configService.get(SetupConfig);
+    const targetPointers = this.getTargetPointers(setup);
+    const now = Date.now();
+    let teams: MinimalTeamInfo[] | undefined;
+    if (
+      this.teamTagsDirty ||
+      now - this.lastTeamTagsRefresh >= RECONCILIATION_INTERVAL_MS ||
+      !(await this.dataLoader.hasTeamTags())
+    ) {
+      teams = await this.teamDAO.listForScoreboard();
+      await this.dataLoader.saveTeamTags(teams);
+      this.teamTagsDirty = false;
+      this.lastTeamTagsRefresh = now;
+    }
+    const { divisions, coversAllDivisions } =
+      await this.getDivisionsToRecalculate(
+        targetPointers,
+        now,
+        eventTimestamp,
+        force,
+      );
     if (!divisions.length) {
       return {
         teams: new Map<number, MinimalTeamInfo[]>(),
         divisions: [],
         challenges: [],
+        nextVisibilityTime: this.nextVisibilityTime,
+        coversAllDivisions: false,
+        refreshedTeamTags: false,
       };
     }
 
+    const allChallenges = await this.challengeService.list({ hidden: false });
+    const nextVisibilityTime = allChallenges.reduce(
+      (next, { visible_at }) =>
+        visible_at && visible_at.getTime() > now
+          ? Math.min(next, visible_at.getTime())
+          : next,
+      Infinity,
+    );
     const challenges: ChallengeMetadataWithExpr[] = await Promise.all(
-      (
-        await this.challengeService.list({
-          hidden: false,
-          visible_at: new Date(),
-        })
-      ).map(async (metadata: ChallengeMetadata) => ({
-        expr: await this.scoreService.getExpr(
-          metadata.private_metadata.score.strategy,
-        ),
-        metadata,
-      })),
+      allChallenges
+        .filter(({ visible_at }) => !visible_at || visible_at.getTime() <= now)
+        .map(async (metadata: ChallengeMetadata) => ({
+          expr: await this.scoreService.getExpr(
+            metadata.private_metadata.score.strategy,
+          ),
+          metadata,
+        })),
     );
 
-    const teams = await this.teamDAO.listForScoreboard();
+    const refreshedTeamTags = teams !== undefined;
+    teams ??= await this.teamDAO.listForScoreboard();
     const teamMap = new Map<number, MinimalTeamInfo[]>(
       divisions.map(
         ({ division: { id } }) => [id, []] as [number, MinimalTeamInfo[]],
@@ -325,13 +393,23 @@ export class ScoreboardWorker {
       teams: teamMap,
       divisions,
       challenges,
+      nextVisibilityTime,
+      coversAllDivisions,
+      refreshedTeamTags,
     };
   }
 
-  async computeAndSaveScoreboards(eventTimestamp?: Date) {
+  async computeAndSaveScoreboards(eventTimestamp?: Date, force = false) {
+    const startedAt = Date.now();
     this.logger.info("Computing scoreboard");
-    const { challenges, teams, divisions } =
-      await this.fetchScoreboardCalculationParams(eventTimestamp);
+    const {
+      challenges,
+      teams,
+      divisions,
+      nextVisibilityTime,
+      coversAllDivisions,
+      refreshedTeamTags,
+    } = await this.fetchScoreboardCalculationParams(eventTimestamp, force);
     if (!divisions.length || !teams.size) {
       if (eventTimestamp) {
         this.lastProcessedEventTime = MaxDate(
@@ -341,13 +419,6 @@ export class ScoreboardWorker {
       }
       return;
     }
-
-    await this.dataLoader.saveTeamTags(
-      teams
-        .values()
-        .flatMap((v) => v)
-        .toArray(),
-    );
 
     const commits: [number, CommittedDivision][] = [];
     for (const { division, pointers } of divisions) {
@@ -360,6 +431,45 @@ export class ScoreboardWorker {
       commits.push([division.id, committed]);
     }
     await this.emitEvents(commits);
+    this.recordSuccessfulCalculation({
+      startedAt,
+      eventTimestamp,
+      nextVisibilityTime,
+      coversAllDivisions,
+      refreshedTeamTags,
+    });
+  }
+
+  private recordSuccessfulCalculation({
+    startedAt,
+    eventTimestamp,
+    nextVisibilityTime,
+    coversAllDivisions,
+    refreshedTeamTags,
+  }: {
+    startedAt: number;
+    eventTimestamp?: Date;
+    nextVisibilityTime: number;
+    coversAllDivisions: boolean;
+    refreshedTeamTags: boolean;
+  }) {
+    if (coversAllDivisions) {
+      this.triggersCoveredBefore = Math.max(
+        this.triggersCoveredBefore,
+        startedAt,
+      );
+      this.challengesCoveredBefore = Math.max(
+        this.challengesCoveredBefore,
+        startedAt,
+      );
+      // A team event also changes shared tags, which solve calculations may not refresh.
+      if (refreshedTeamTags) {
+        this.teamsCoveredBefore = Math.max(this.teamsCoveredBefore, startedAt);
+      }
+    }
+    this.hasCalculated = true;
+    this.nextVisibilityTime = nextVisibilityTime;
+    this.lastCalculationTime = Date.now();
     if (eventTimestamp) {
       this.lastProcessedEventTime = MaxDate(
         this.lastProcessedEventTime,
@@ -379,7 +489,9 @@ export class ScoreboardWorker {
         : new roaring.RoaringBitmap32();
     }
 
-    const map = this.notifiedSolves;
+    const map = dryRun
+      ? new roaring.RoaringBitmap32()
+      : this.notifiedSolves.clone();
     const items: ChallengeSolveEvent[] = [];
     let hasNew = false;
     for (const [id, division] of commits) {
@@ -398,15 +510,23 @@ export class ScoreboardWorker {
     if (items.length && !dryRun) {
       await this.eventBusService.publishBatch(ChallengeSolveEvent, items);
     }
-    if (hasNew) {
+    if (hasNew || dryRun) {
       map.runOptimize();
       await this.dataLoader.saveNotifiedSolves(map.serialize(false) as Buffer);
+      this.notifiedSolves = map;
     }
   }
 
   async recomputeFullGraph(eventTimestamp?: Date) {
-    const { challenges, teams, divisions } =
-      await this.fetchScoreboardCalculationParams(eventTimestamp, true);
+    const startedAt = Date.now();
+    const {
+      challenges,
+      teams,
+      divisions,
+      nextVisibilityTime,
+      coversAllDivisions,
+      refreshedTeamTags,
+    } = await this.fetchScoreboardCalculationParams(eventTimestamp, true);
 
     let points: HistoryDataPoint[] = [];
     const commits: [number, CommittedDivision][] = [];
@@ -440,16 +560,15 @@ export class ScoreboardWorker {
       divisions.map(({ division: { id } }) => id),
     );
 
-    // Reset to an empty bitmap and dryRun emitEvents to fill and save it without emitting events
-    this.notifiedSolves = new roaring.RoaringBitmap32();
+    // Replace the notified bitmap only after the rebuilt state is persisted.
     await this.emitEvents(commits, true);
-
-    if (eventTimestamp) {
-      this.lastProcessedEventTime = MaxDate(
-        this.lastProcessedEventTime,
-        eventTimestamp,
-      );
-    }
+    this.recordSuccessfulCalculation({
+      startedAt,
+      eventTimestamp,
+      nextVisibilityTime,
+      coversAllDivisions,
+      refreshedTeamTags,
+    });
   }
 
   private async commitDivisionScoreboard(
@@ -479,7 +598,6 @@ export class ScoreboardWorker {
 
     let latest: CommittedDivision | undefined;
 
-    const committedPointers = { ...currentPointers };
     for (const target of targetPointers) {
       const prevVersion = currentPointers[target.name];
       const targetVersion = target.cutoff?.getTime();
@@ -493,17 +611,32 @@ export class ScoreboardWorker {
         continue;
       }
 
-      const res = await this.commitDivisionForPointer(ctx, target);
+      const res = await this.commitDivisionForPointer(
+        ctx,
+        target,
+        currentPointers.latest,
+      );
+      if (target.cutoff) {
+        // Record the frozen endpoint even if pre-cutoff solves were processed late.
+        await this.history.saveIteration(
+          id,
+          res.scoreboard,
+          teams.filter((t) => t.flags.includes("hidden")).map((t) => t.id),
+          true,
+        );
+      }
       activeVersions.add(res.version);
-      committedPointers[target.name] = res.version;
       if (target.name === "latest") {
         latest = res;
       }
     }
-    this.divisionPointers.set(id, committedPointers);
 
     if (latest && latest.scoreboard.length) {
-      await this.history.saveIteration(id, latest.scoreboard);
+      await this.history.saveIteration(
+        id,
+        latest.scoreboard,
+        teams.filter((t) => t.flags.includes("hidden")).map((t) => t.id),
+      );
     }
 
     // Expire unused versions somewhat eagerly (with a small grace period)
@@ -515,6 +648,7 @@ export class ScoreboardWorker {
   private async commitDivisionForPointer(
     ctx: DivisionContext,
     target: PointerTarget,
+    previousVersion = 0,
   ): Promise<CommittedDivision> {
     const targetVersion = target.cutoff?.getTime();
     const solvesByChallenge = PartitionSolvesByChallenge(
@@ -538,16 +672,23 @@ export class ScoreboardWorker {
 
     if (target.cutoff) {
       for (const entry of scoreboard) {
-        if (entry.updated_at > target.cutoff) {
-          entry.updated_at = target.cutoff;
-        }
+        entry.updated_at = target.cutoff;
         if (entry.last_solve > target.cutoff) {
           entry.last_solve = target.cutoff;
         }
       }
     }
 
-    const version = targetVersion ? targetVersion : last_event.getTime();
+    // Publication generations must advance even when a deletion removes the
+    // newest event. Live history and its API cutoff share this timestamp.
+    let version =
+      targetVersion ??
+      Math.max(Date.now(), previousVersion + 1, last_event.getTime() + 1);
+    if (!target.cutoff && version === (ctx.setup.freeze_time_s ?? 0) * 1000)
+      version++;
+    if (!target.cutoff) {
+      for (const entry of scoreboard) entry.updated_at = new Date(version);
+    }
 
     await this.dataLoader.saveIndexed(
       ctx.division_id,
