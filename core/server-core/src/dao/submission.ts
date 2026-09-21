@@ -113,14 +113,16 @@ export class SubmissionDAO {
       .then((r) => r.rows);
   }
 
-  async getCurrentMetadata(challenge_id: number, team_id: number) {
-    return await this.db
+  async listTeamView(team_id: number, challenge_id?: number) {
+    let query = this.db
       .selectFrom("submission")
-      .select(["id", "user_id", "status", "created_at"])
-      .where("challenge_id", "=", challenge_id)
+      .select(["id", "user_id", "status", "created_at", "challenge_id"])
       .where("team_id", "=", team_id)
-      .where("status", "in", ["correct", "queued"])
-      .executeTakeFirst();
+      .where("status", "in", ["correct", "queued"]);
+    if (challenge_id) {
+      query = query.where("challenge_id", "=", challenge_id);
+    }
+    return await query.execute();
   }
 
   async updateSubmissions(

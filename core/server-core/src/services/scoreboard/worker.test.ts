@@ -436,6 +436,41 @@ describe(ScoreboardWorker, () => {
       );
     });
 
+    it("does not emit ChallengeSolveEvent when notified solves cache key is missing, but initializes and saves bitmap", async () => {
+      vi.setSystemTime(new Date(1000 * 1000));
+      configService.get.mockResolvedValue({
+        version: 1,
+        value: {},
+      });
+      scoreboardDataLoader.getPointers.mockResolvedValue({});
+      // Cache miss: returns null
+      scoreboardDataLoader.getNotifiedSolves.mockResolvedValue(null);
+
+      submissionDAO.getSolvesForCalculation.mockResolvedValue([
+        {
+          id: 42,
+          team_id: 10,
+          challenge_id: 100,
+          created_at: new Date(500 * 1000),
+          updated_at: new Date(500 * 1000),
+          user_id: 1,
+          weight: 0,
+          hidden: false,
+          value: null,
+        },
+      ]);
+      awardDAO.getAllAwards.mockResolvedValue([]);
+
+      await worker.computeAndSaveScoreboards();
+
+      // Solves should NOT be emitted on initial uninitialized load
+      expect(eventBusService.publishBatch).not.toHaveBeenCalled();
+      // Bitmap should still be populated and saved to cache
+      expect(scoreboardDataLoader.saveNotifiedSolves).toHaveBeenCalledWith(
+        expect.any(Buffer),
+      );
+    });
+
     it("does not re-emit ChallengeSolveEvent if solve was already notified", async () => {
       vi.setSystemTime(new Date(1000 * 1000));
       configService.get.mockResolvedValue({
