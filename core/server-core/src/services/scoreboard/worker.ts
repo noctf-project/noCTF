@@ -458,11 +458,15 @@ export class ScoreboardWorker {
     commits: [number, CommittedDivision][],
     dryRun = false,
   ) {
+    let noSend = dryRun;
     if (this.notifiedSolves === null) {
       const bin = await this.dataLoader.getNotifiedSolves();
-      this.notifiedSolves = bin
-        ? roaring.RoaringBitmap32.deserialize(bin, false)
-        : new roaring.RoaringBitmap32();
+      if (bin) {
+        this.notifiedSolves = roaring.RoaringBitmap32.deserialize(bin, false);
+      } else {
+        this.notifiedSolves = new roaring.RoaringBitmap32();
+        noSend = true;
+      }
     }
 
     const map = dryRun
@@ -476,17 +480,17 @@ export class ScoreboardWorker {
           if (!solve.hidden && !map.has(solve.id)) {
             map.add(solve.id);
             hasNew = true;
-            if (!dryRun) {
+            if (!noSend) {
               items.push({ ...solve, seq: idx + 1, division_id: id });
             }
           }
         }
       }
     }
-    if (items.length && !dryRun) {
+    if (items.length) {
       await this.eventBusService.publishBatch(ChallengeSolveEvent, items);
     }
-    if (hasNew || dryRun) {
+    if (hasNew || noSend) {
       map.runOptimize();
       await this.dataLoader.saveNotifiedSolves(map.serialize(false) as Buffer);
       this.notifiedSolves = map;

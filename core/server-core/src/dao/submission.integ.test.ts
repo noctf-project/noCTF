@@ -68,8 +68,8 @@ describe(SubmissionDAO, () => {
     expect(sub[1].id).toBeTruthy();
 
     // Check metadata
-    const meta = await dao.getCurrentMetadata(1, team1.id);
-    expect(meta?.status).toBe("correct");
+    const meta = await dao.listTeamView(team1.id, 1);
+    expect(meta[0].status).toBe("correct");
 
     // Check solves for calculation
     const solves = await dao.getSolvesForCalculation(div.id);

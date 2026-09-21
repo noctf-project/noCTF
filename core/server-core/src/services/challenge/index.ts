@@ -217,11 +217,11 @@ export class ChallengeService {
     } else {
       challenge = ch;
     }
-    const submission = await this.submissionDAO.getCurrentMetadata(
-      challenge.id,
+    const submission = await this.submissionDAO.listTeamView(
       teamId,
+      challenge.id,
     );
-    if (submission) {
+    if (submission.length) {
       throw new ConflictError("A current (queued or solved) submission exists");
     }
     for (const [_plugin, impl] of this.plugins) {

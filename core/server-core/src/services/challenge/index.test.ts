@@ -309,12 +309,15 @@ describe(ChallengeService, () => {
   describe("solve", () => {
     it("throws ConflictError if an existing submission is already queued or solved", async () => {
       challengeDAO.get.mockResolvedValue(dummyChallenge);
-      submissionDAO.getCurrentMetadata.mockResolvedValue({
-        id: 10,
-        user_id: 1,
-        status: "correct",
-        created_at: new Date(1000),
-      });
+      submissionDAO.listTeamView.mockResolvedValue([
+        {
+          id: 10,
+          user_id: 1,
+          status: "correct",
+          created_at: new Date(1000),
+          challenge_id: 1,
+        },
+      ]);
 
       await expect(service.solve(1, 100, 10, "flag{test}")).rejects.toThrow(
         ConflictError,
@@ -323,7 +326,7 @@ describe(ChallengeService, () => {
 
     it("processes correct flag submission, records in db, and publishes ScoreboardTrigggerEvent on correct", async () => {
       challengeDAO.get.mockResolvedValue(dummyChallenge);
-      submissionDAO.getCurrentMetadata.mockResolvedValue(undefined);
+      submissionDAO.listTeamView.mockResolvedValue([]);
 
       submissionDAO.create.mockResolvedValue([
         {
@@ -359,7 +362,7 @@ describe(ChallengeService, () => {
 
   it("processes correct flag submission, records in db, and does not publish ScoreboardTriggerEvent for incorrect", async () => {
     challengeDAO.get.mockResolvedValue(dummyChallenge);
-    submissionDAO.getCurrentMetadata.mockResolvedValue(undefined);
+    submissionDAO.listTeamView.mockResolvedValue([]);
 
     submissionDAO.create.mockResolvedValue([
       {
