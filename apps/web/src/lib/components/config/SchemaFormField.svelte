@@ -61,6 +61,13 @@
     value = isNaN(intValue) ? null : intValue;
   }
 
+  function handleDatetimeInput(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const date = new Date(target.value);
+    const epoch = Math.floor(date.getTime() / 1000);
+    value = isNaN(epoch) ? null : epoch;
+  }
+
   function handleJsonInput(event: Event) {
     const target = event.target as HTMLTextAreaElement;
     try {
@@ -78,6 +85,13 @@
     } catch (_) {
       return String(val);
     }
+  }
+
+  function timestampToDatetime(epoch: number) {
+    if (!epoch) return "";
+    const date = new Date(epoch * 1000);
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
   }
 
   function isJsonField(prop: SchemaProperty): boolean {
@@ -215,6 +229,34 @@
       oninput={handleNumberInput}
       {disabled}
     />
+  {:else if property.type === "integer" && fieldName.endsWith("_time_s")}
+    <!-- todo: check if there's a better way to do it rather than relying on suffix hack -->
+    <div class="join w-full">
+      <div
+        class="join-item flex items-center px-3 bg-base-200 border border-base-300 text-xs font-medium text-base-content/70"
+      >
+        Local Time
+      </div>
+      <input
+        id={getFieldId()}
+        type="datetime-local"
+        class="input input-bordered join-item grow"
+        value={timestampToDatetime(value)}
+        step="1"
+        oninput={handleDatetimeInput}
+        {disabled}
+      />
+      {#if value}
+        <button
+          type="button"
+          class="btn btn-outline join-item"
+          onclick={() => (value = null)}
+          {disabled}
+        >
+          Clear
+        </button>
+      {/if}
+    </div>
   {:else if property.type === "integer"}
     <input
       id={getFieldId()}
