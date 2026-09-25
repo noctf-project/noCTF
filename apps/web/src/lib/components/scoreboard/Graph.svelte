@@ -2,6 +2,7 @@
   export interface TeamChartData {
     name: string | undefined;
     data: [number[], number[]]; // [timestamp, score]
+    isMyTeam?: boolean;
   }
 
   interface DataPoint {
@@ -41,17 +42,52 @@
     "#EA526F",
     "#23395B",
     "#A0A0A0",
+    "#00D2D3",
+    "#54A0FF",
+    "#5F27CD",
+    "#FF9FF3",
   ];
 
   let chartContainer: HTMLCanvasElement;
   let scoreboardChart: Chart;
 
+  function getTimeBounds() {
+    let minTime = Infinity;
+    let maxTime = -Infinity;
+    let count = 0;
+    for (const team of teamsData) {
+      if (!team.data || !team.data[0]) continue;
+      let x = 0;
+      for (const timestamp of team.data[0]) {
+        x += timestamp * 1000;
+        count++;
+        if (x < minTime) minTime = x;
+        if (x > maxTime) maxTime = x;
+      }
+    }
+    if (count === 0 || !isFinite(minTime) || !isFinite(maxTime)) {
+      return { min: undefined, max: undefined };
+    }
+    if (minTime === maxTime) {
+      return {
+        min: minTime - 30 * 60 * 1000,
+        max: maxTime + 30 * 60 * 1000,
+      };
+    }
+    return { min: undefined, max: undefined };
+  }
+
   function prepareChartData() {
     const datasets = teamsData.map((team, index) => {
       let x = 0;
       let y = 0;
+      const isMe = !!team.isMyTeam;
+      const label = isMe
+        ? `${team.name || "Your Team"} (You)`
+        : team.name || `Team ${index + 1}`;
+      const color = lineColours[index % lineColours.length];
       return {
-        label: team.name,
+        label,
         data: team.data[0].map((timestamp, idx) => {
           x = x + timestamp * 1000;
           y = y + team.data[1][idx]!;
@@ -60,16 +96,35 @@
             y,
           };
         }),
-        borderColor: lineColours[index % lineColours.length],
-        backgroundColor: lineColours[index % lineColours.length],
+        borderColor: color,
+        backgroundColor: color,
+        pointBackgroundColor: color,
+        pointBorderColor: color,
+        pointHitRadius: 10,
+        borderWidth: isMe ? 3 : 2,
+        borderDash: isMe ? [5, 5] : undefined,
         tension: 0.1,
         pointRadius: team.data[0].length === 1 ? 4 : 0,
-        pointHoverRadius: team.data[0].length === 1 ? 4 : 0,
+        pointHoverRadius: team.data[0].length === 1 ? 6 : 0,
       };
     });
 
     return { datasets };
   }
+
+  $effect(() => {
+    if (scoreboardChart && teamsData) {
+      const bounds = getTimeBounds();
+      const xScale = scoreboardChart.options.scales?.x as
+        { min?: number; max?: number } | undefined;
+      if (xScale) {
+        xScale.min = bounds.min;
+        xScale.max = bounds.max;
+      }
+      scoreboardChart.data = prepareChartData();
+      scoreboardChart.update();
+    }
+  });
 
   const getOrCreateTooltip = (chart: ChartType): HTMLDivElement => {
     let tooltipEl = chart.canvas.parentNode?.querySelector(
@@ -355,6 +410,8 @@
       return;
     }
 
+    const bounds = getTimeBounds();
+
     scoreboardChart = new Chart(ctx, {
       type: "line",
       data: prepareChartData(),
@@ -364,6 +421,9 @@
         scales: {
           x: {
             type: "time",
+            bounds: "ticks",
+            min: bounds.min,
+            max: bounds.max,
             time: {
               unit: "hour",
               displayFormats: {
