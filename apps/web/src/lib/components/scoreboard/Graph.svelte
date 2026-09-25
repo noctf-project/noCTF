@@ -54,27 +54,23 @@
   function getTimeBounds() {
     let minTime = Infinity;
     let maxTime = -Infinity;
-    let count = 0;
     for (const team of teamsData) {
       if (!team.data || !team.data[0]) continue;
       let x = 0;
       for (const timestamp of team.data[0]) {
         x += timestamp * 1000;
-        count++;
         if (x < minTime) minTime = x;
         if (x > maxTime) maxTime = x;
       }
     }
-    if (count === 0 || !isFinite(minTime) || !isFinite(maxTime)) {
-      return { min: undefined, max: undefined };
+    if (!isFinite(minTime) || !isFinite(maxTime)) {
+      return { min: undefined, max: undefined, singleTimestamp: false };
     }
-    if (minTime === maxTime) {
-      return {
-        min: minTime - 60 * 1000,
-        max: maxTime + 60 * 1000,
-      };
-    }
-    return { min: undefined, max: undefined };
+    return {
+      min: minTime - 60 * 1000,
+      max: maxTime + 60 * 1000,
+      singleTimestamp: minTime === maxTime,
+    };
   }
 
   function prepareChartData() {
@@ -113,7 +109,7 @@
   }
 
   $effect(() => {
-    if (scoreboardChart && teamsData) {
+    if (teamsData && scoreboardChart) {
       const bounds = getTimeBounds();
       const xScale = scoreboardChart.options.scales?.x as
         | {
@@ -127,9 +123,9 @@
         xScale.min = bounds.min;
         xScale.max = bounds.max;
         if (xScale.time)
-          xScale.time.unit = bounds.min === undefined ? "hour" : "minute";
+          xScale.time.unit = bounds.singleTimestamp ? "minute" : "hour";
         if (xScale.ticks)
-          xScale.ticks.stepSize = bounds.min === undefined ? 0.5 : 1;
+          xScale.ticks.stepSize = bounds.singleTimestamp ? 1 : 0.5;
       }
       scoreboardChart.data = prepareChartData();
       scoreboardChart.update();
@@ -431,11 +427,10 @@
         scales: {
           x: {
             type: "time",
-            bounds: "ticks",
             min: bounds.min,
             max: bounds.max,
             time: {
-              unit: bounds.min === undefined ? "hour" : "minute",
+              unit: bounds.singleTimestamp ? "minute" : "hour",
               displayFormats: {
                 minute: "dd/MM HH:mm",
                 hour: "dd/MM HH:mm",
@@ -449,7 +444,7 @@
               display: true,
             },
             ticks: {
-              stepSize: bounds.min === undefined ? 0.5 : 1,
+              stepSize: bounds.singleTimestamp ? 1 : 0.5,
               maxRotation: 0,
               minRotation: 0,
             },
