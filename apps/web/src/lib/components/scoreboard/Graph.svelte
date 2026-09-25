@@ -70,8 +70,8 @@
     }
     if (minTime === maxTime) {
       return {
-        min: minTime - 30 * 60 * 1000,
-        max: maxTime + 30 * 60 * 1000,
+        min: minTime - 60 * 1000,
+        max: maxTime + 60 * 1000,
       };
     }
     return { min: undefined, max: undefined };
@@ -116,10 +116,20 @@
     if (scoreboardChart && teamsData) {
       const bounds = getTimeBounds();
       const xScale = scoreboardChart.options.scales?.x as
-        { min?: number; max?: number } | undefined;
+        | {
+            min?: number;
+            max?: number;
+            time?: { unit?: "hour" | "minute" };
+            ticks?: { stepSize?: number };
+          }
+        | undefined;
       if (xScale) {
         xScale.min = bounds.min;
         xScale.max = bounds.max;
+        if (xScale.time)
+          xScale.time.unit = bounds.min === undefined ? "hour" : "minute";
+        if (xScale.ticks)
+          xScale.ticks.stepSize = bounds.min === undefined ? 0.5 : 1;
       }
       scoreboardChart.data = prepareChartData();
       scoreboardChart.update();
@@ -425,7 +435,7 @@
             min: bounds.min,
             max: bounds.max,
             time: {
-              unit: "hour",
+              unit: bounds.min === undefined ? "hour" : "minute",
               displayFormats: {
                 minute: "dd/MM HH:mm",
                 hour: "dd/MM HH:mm",
@@ -439,7 +449,7 @@
               display: true,
             },
             ticks: {
-              stepSize: 0.5,
+              stepSize: bounds.min === undefined ? 0.5 : 1,
               maxRotation: 0,
               minRotation: 0,
             },
