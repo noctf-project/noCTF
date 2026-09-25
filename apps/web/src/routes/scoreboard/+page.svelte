@@ -79,6 +79,21 @@
             page: currentPage + 1,
             page_size: TEAMS_PER_PAGE,
             tags: selectedTags.length > 0 ? selectedTags : undefined,
+          },
+        },
+      }),
+    ),
+  );
+
+  const apiTopScoreboard = $derived(
+    wrapLoadable(
+      api.GET("/scoreboard/divisions/{id}", {
+        params: {
+          path: { id: division },
+          query: {
+            page: 1,
+            page_size: 10,
+            tags: selectedTags.length > 0 ? selectedTags : undefined,
             graph_interval: 60,
           },
         },
@@ -105,7 +120,10 @@
     );
   });
   const loading = $derived(
-    (apiChallenges.loading || apiScoreboard.loading || apiTeamTags.loading) &&
+    (apiChallenges.loading ||
+      apiScoreboard.loading ||
+      apiTeamTags.loading ||
+      apiTopScoreboard.loading) &&
       !initialLoadComplete,
   );
 
@@ -145,13 +163,21 @@
       apiTeams.some((t) => t.team_id === authState.user!.team_id),
   );
 
+  const isMyTeamInTop10 = $derived(
+    !!authState.user?.team_id &&
+      !!apiTopScoreboard.r?.data?.data?.entries.some(
+        (t: { team_id: number }) => t.team_id === authState.user!.team_id,
+      ),
+  );
+
   let apiMyTeam = $derived(
-    authState.user?.team_id && !isMyTeamInCurrentPage
+    authState.user?.team_id && (!isMyTeamInCurrentPage || !isMyTeamInTop10)
       ? wrapLoadable(
           api.GET("/team/scoreboard", {
             params: {
               query: {
                 tags: selectedTags.length > 0 ? selectedTags : undefined,
+                graph_interval: 60,
               },
             },
           }),
@@ -205,17 +231,54 @@
       : [...apiTeams, myTeamEntry];
   });
 
-  let scoreboardChartsData: Promise<TeamChartData[]> | undefined = $derived(
-    apiScoreboard.r?.data
-      ? Promise.all(
-          apiTeams.map(async ({ team_id, graph }) => ({
-            name:
-              (await TeamQueryService.get(team_id).catch(() => null))?.name ||
-              "",
-            data: (graph || [[], []]) as [number[], number[]],
-          })),
-        )
-      : undefined,
+  let scoreboardChartsData: Promise<TeamChartData[]> | undefined = $derived.by(
+    () => {
+      if (!apiTopScoreboard.r?.data?.data) return undefined;
+
+      const myTeamId = authState.user?.team_id;
+      const topEntries = apiTopScoreboard.r.data.data.entries;
+      const inTop10 =
+        myTeamId !== undefined &&
+        topEntries.some((e: { team_id: number }) => e.team_id === myTeamId);
+
+      // If user has a team that is not in the top 10, wait for apiMyTeam to finish loading
+      if (myTeamId && !inTop10 && apiMyTeam?.loading) {
+        return undefined;
+      }
+
+      const teamsToGraph: {
+        team_id: number;
+        graph: [number[], number[]];
+        isMyTeam: boolean;
+      }[] = topEntries.map((e) => ({
+        team_id: e.team_id,
+        graph: (e.graph || [[], []]) as [number[], number[]],
+        isMyTeam: myTeamId !== undefined && e.team_id === myTeamId,
+      }));
+
+      if (myTeamId && !inTop10) {
+        const myGraph = (apiMyTeam?.r?.data?.data?.graph || [[], []]) as [
+          number[],
+          number[],
+        ];
+        teamsToGraph.push({
+          team_id: myTeamId,
+          graph: myGraph,
+          isMyTeam: true,
+        });
+      }
+
+      return Promise.all(
+        teamsToGraph.map(async ({ team_id, graph, isMyTeam }) => ({
+          name:
+            (await TeamQueryService.get(team_id).catch(() => null))?.name ||
+            (isMyTeam ? authState.user?.team_name : "") ||
+            "",
+          data: graph,
+          isMyTeam,
+        })),
+      );
+    },
   );
 
   const currentPageTeams: Map<number, ScoreboardEntry> = $derived(
@@ -485,7 +548,9 @@
     class="mx-auto mt-8 min-w-[98%] h-[33rem] lg:min-w-[66rem] max-w-[66rem] mb-8"
   >
     {#if scoreboardChartsData}
-      {#await scoreboardChartsData then data}
+      {#await scoreboardChartsData}
+        <div class="skeleton w-full h-[33rem] mb-8"></div>
+      {:then data}
         <Graph {data} extraClasses="h-[33rem]" />
       {/await}
     {:else}
