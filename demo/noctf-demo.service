@@ -1,0 +1,19 @@
+[Unit]
+Description=noCTF demo stack (hourly reset)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/noctf-demo
+ExecStart=/opt/noctf-demo/start.sh
+RuntimeMaxSec=1h
+Restart=always
+RestartSec=10s
+TimeoutStartSec=0
+TimeoutStopSec=1m
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

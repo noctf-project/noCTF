@@ -4,6 +4,9 @@ noCTF
 Welcome to the noCTF monorepo. There's a lot of code here so you must be wondering on how to
 get started.
 
+## Demo
+If you want to have a look at a live demo of the platform, please visit [demo.noctf.dev](https://demo.noctf.dev)
+
 ## Getting Started
 You can skip the rest of the sections for now, but I promise that it is a good read so that you
 can understand how the app is laid out. Currently the docker-compose is only used to set up
