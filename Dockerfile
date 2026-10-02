@@ -30,6 +30,14 @@ WORKDIR "/build/apps/server"
 USER 1000
 CMD ["node", "dist/www.cjs"]
 
+FROM base AS build_migrator
+RUN pnpm --filter '@noctf/migrator' --prefer-offline --prod deploy /deploy/migrator
+FROM node:$NODE_VERSION AS out_migrator
+COPY --from=build_migrator /deploy/migrator /build/apps/migrator
+WORKDIR "/build/apps/migrator"
+USER 1000
+CMD ["./node_modules/.bin/kysely", "migrate", "latest"]
+
 FROM base AS build_web
 RUN VITE_API_BASE_URL="___REPLACEME_NOCTF_API_BASE_URL___" pnpm --filter '@noctf/web' build
 

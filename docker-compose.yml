@@ -1,4 +1,3 @@
-# TODO: make this auto-migrate
 services:
   server:
     image: ghcr.io/noctf-project/noctf/server
@@ -7,9 +6,12 @@ services:
       dockerfile: Dockerfile
       target: out_server
     depends_on:
-      - redis
-      - nats
-      - postgres
+      redis:
+        condition: service_started
+      nats:
+        condition: service_started
+      migrator:
+        condition: service_completed_successfully
     environment:
       NATS_URL: "nats://nats:4222"
       REDIS_URL: "redis://redis:6379"
@@ -17,6 +19,33 @@ services:
       HOST: "::"
       ENABLE_SWAGGER: 0
       ALLOWED_ORIGINS: "example.com,localhost"
+      TOKEN_SECRET: "${TOKEN_SECRET:-noctf-compose-dev-secret-change-before-use}"
+  worker:
+    image: ghcr.io/noctf-project/noctf/server
+    command: ["node", "dist/worker.cjs"]
+    depends_on:
+      redis:
+        condition: service_started
+      nats:
+        condition: service_started
+      migrator:
+        condition: service_completed_successfully
+    environment:
+      NATS_URL: "nats://nats:4222"
+      REDIS_URL: "redis://redis:6379"
+      POSTGRES_URL: "postgres://postgres:noctf@postgres/noctf"
+      TOKEN_SECRET: "${TOKEN_SECRET:-noctf-compose-dev-secret-change-before-use}"
+  migrator:
+    image: ghcr.io/noctf-project/noctf/migrator
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: out_migrator
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_URL: "postgres://postgres:noctf@postgres/noctf"
   web:
     image: ghcr.io/noctf-project/noctf/web
     build:
@@ -35,5 +64,10 @@ services:
     environment:
       - POSTGRES_PASSWORD=noctf
       - POSTGRES_DB=noctf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d noctf"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 volumes:
   postgres:

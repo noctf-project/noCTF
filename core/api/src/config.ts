@@ -94,6 +94,13 @@ export const SetupConfig = Type.Object(
       title: "Public Root URL",
     }),
     name: Type.String({ title: "Name of the CTF" }),
+    message: Type.Optional(
+      Type.String({
+        title: "Homepage message",
+        description: "Markdown message shown publicly on the homepage.",
+        contentMediaType: "textarea",
+      }),
+    ),
     start_time_s: Type.Optional(
       Type.Integer({
         title: "CTF Start Time (Epoch seconds)",
