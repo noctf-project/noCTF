@@ -1,7 +1,5 @@
 services:
   server:
-    ports:
-      - "${DEMO_API_PORT:-8000}:8000"
     environment:
       ALLOWED_ORIGINS: "${DEMO_DOMAIN:-demo.noctf.dev},localhost,*.noctf-beta.pages.dev"
       API_URL: "${DEMO_API_BASE_URL:-https://api.demo.noctf.dev}"
@@ -26,9 +24,29 @@ services:
     volumes:
       - "${DEMO_DIR:?}/seed.mjs:/demo/seed.mjs:ro"
 
+  # since all the containers are running as private, we need to forward out the port
+  proxy:
+    image: gogost/gost:3
+    command:
+      - -L
+      - tcp://:8000/server:8000
+    depends_on:
+      server:
+        condition: service_started
+    ports:
+      - "${DEMO_API_PORT:-8000}:8000"
+    networks:
+      - default
+      - public
+
   web: !reset null
 
   postgres:
     volumes: !reset []
 
 volumes: !reset {}
+
+networks:
+  default:
+    internal: true
+  public: {}
