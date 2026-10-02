@@ -10,9 +10,8 @@
   }
 }
 
-.markdown-body {
-  @apply prose;
-  max-width: 95%;
+.homepage-message {
+  overflow-wrap: anywhere;
 }
 
 .markdown-body a {

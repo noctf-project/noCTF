@@ -199,7 +199,7 @@
   {:else if property.type === "string" && property.contentMediaType === "textarea"}
     <textarea
       id={getFieldId()}
-      class="textarea textarea-bordered"
+      class="textarea textarea-bordered min-h-32"
       bind:value
       placeholder={property.description}
       minlength={property.minLength}
